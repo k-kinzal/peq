@@ -1,0 +1,49 @@
+{
+    "name": "k-kinzal/peq",
+    "description": "A CLI application using Symfony Console.",
+    "type": "project",
+    "bin": ["bin/console"],
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^8.0",
+        "symfony/console": "^7.1"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.0",
+        "phpunit/phpunit": "^9.5",
+        "phpstan/phpstan": "^1.0",
+        "squizlabs/php_codesniffer": "^3.6",
+        "bamarni/composer-bin-plugin": "^1.8"
+    },
+    "scripts": {
+        "post-install-cmd": ["@composer bin box require --dev humbug/box"],
+        "post-update-cmd": ["@composer bin box require --dev humbug/box"],
+        "format": "php-cs-fixer fix .",
+        "lint:php-cs-fixer": "php-cs-fixer fix --diff --dry-run .",
+        "lint:phpcs": "phpcs --ignore=vendor",
+        "lint:phpstan": "phpstan analyze",
+        "lint": [
+            "@lint:php-cs-fixer",
+            "@lint:phpcs",
+            "@lint:phpstan"
+        ],
+        "test": "phpunit tests",
+        "compile": "box compile"
+    },
+    "extra": {
+        "bamarni-bin": {
+            "bin-links": true,
+            "target-directory": "vendor-bin",
+            "forward-command": true
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "bamarni/composer-bin-plugin": true
+        }
+    }
+}

@@ -1,0 +1,4 @@
+{
+    "output": "dist/peq.phar",
+    "chmod": "0755"
+}
