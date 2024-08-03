@@ -1,0 +1,27 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  phar:
+    runs-on: 'ubuntu-latest'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+            php-version: 8.3
+            tools: composer:v2
+      - uses: "ramsey/composer-install@v3"
+      - name: composer compile
+        run: composer compile
+      - uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          prerelease: false
+          files: dist/peq.phar
