@@ -178,3 +178,4 @@ fabric.properties
 
 # Box
 dist/
+.qodo
