@@ -4,5 +4,6 @@
     "force-autodiscovery": true,
     "directories": [
         "config"
-    ]
+    ],
+    "git-version": "git_version"
 }
