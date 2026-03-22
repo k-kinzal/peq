@@ -8,6 +8,7 @@ use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
 use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
 use PHPStan\DependencyInjection\Container;
 use PHPStan\DependencyInjection\ContainerFactory as PhpStanContainerFactory;
+use PHPStan\PharAutoloader;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -15,6 +16,8 @@ use Symfony\Component\Yaml\Yaml;
  */
 final class ContainerFactory
 {
+    private static bool $phpStanAutoloaderInitialized = false;
+
     /**
      * Creates a PHPStan container with the necessary configuration.
      *
@@ -24,6 +27,8 @@ final class ContainerFactory
      */
     public function create(array $files): Container
     {
+        $this->ensurePhpStanAutoloader();
+
         $cwd = getcwd();
         if ($cwd === false) {
             throw new \RuntimeException('Unable to determine current working directory');
@@ -122,5 +127,44 @@ final class ContainerFactory
     {
         // We use symfony/yaml as it is available
         return Yaml::dump($content, 4);
+    }
+
+    /**
+     * When running inside a PHAR, PHPStan's PharAutoloader constructs nested
+     * phar://phar://... paths that PHP cannot resolve. This method extracts the
+     * bundled phpstan.phar to a temp directory and registers its autoloader.
+     */
+    private function ensurePhpStanAutoloader(): void
+    {
+        if (self::$phpStanAutoloaderInitialized || \Phar::running() === '') {
+            return;
+        }
+        self::$phpStanAutoloaderInitialized = true;
+
+        $pharPhpstan = \Phar::running().'/vendor/phpstan/phpstan/phpstan.phar';
+        if (!file_exists($pharPhpstan)) {
+            throw new \RuntimeException('phpstan.phar not found inside the PHAR archive');
+        }
+
+        $peqPhar = \Phar::running(false);
+        $cacheKey = md5($peqPhar.'@'.filemtime($peqPhar));
+        $cacheDir = sys_get_temp_dir().'/peq-phpstan-'.$cacheKey;
+        $extractedPhar = $cacheDir.'/phpstan.phar';
+
+        if (!file_exists($extractedPhar)) {
+            if (!is_dir($cacheDir)) {
+                mkdir($cacheDir, 0o777, true);
+            }
+            copy($pharPhpstan, $extractedPhar);
+        }
+
+        // Remove the broken PharAutoloader and register one from the extracted PHAR
+        // @phpstan-ignore phpstanApi.classConstant
+        if (class_exists(PharAutoloader::class, false)) {
+            // @phpstan-ignore phpstanApi.classConstant
+            spl_autoload_unregister([PharAutoloader::class, 'loadClass']);
+        }
+
+        require_once 'phar://'.$extractedPhar.'/vendor/autoload.php';
     }
 }
