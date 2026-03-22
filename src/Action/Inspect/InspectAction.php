@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Action\Inspect;
 
 use App\Analyzer\DebugAnalyzer\DebugAnalyzer;
+use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
+use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
+use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use App\Config\AnalyzerType;
 
 /**
@@ -24,6 +27,7 @@ final class InspectAction
         $config = $input->config;
 
         $analyzer = match ($config->type) {
+            AnalyzerType::PhpStan => new PhpStanAnalyzer(new ContainerFactory(), new PhpFileCollector()),
             AnalyzerType::Debug => DebugAnalyzer::create($config),
         };
         $graph = $analyzer->analyze($config->basePath);

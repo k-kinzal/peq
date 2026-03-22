@@ -9,5 +9,6 @@ namespace App\Config;
  */
 enum AnalyzerType: string
 {
+    case PhpStan = 'phpstan';
     case Debug = 'debug';
 }

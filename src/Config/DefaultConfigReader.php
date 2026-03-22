@@ -26,7 +26,7 @@ final class DefaultConfigReader implements ConfigReader
             'level' => null,
             'includes' => [],
             'excludes' => [],
-            'type' => 'debug',
+            'type' => 'phpstan',
             'debug' => [
                 'depth' => 5,
                 'seed' => null,

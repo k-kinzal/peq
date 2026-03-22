@@ -89,8 +89,8 @@ final class InspectCommand extends Command
             'type',
             null,
             InputOption::VALUE_REQUIRED,
-            'Analyzer type (debug)',
-            'debug',
+            'Analyzer type (phpstan|debug)',
+            'phpstan',
         )->addOption(
             'debug-depth',
             null,
