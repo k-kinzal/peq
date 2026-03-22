@@ -75,16 +75,6 @@ final class ContainerFactory
             'includes' => [],
         ];
 
-        // If there is a project phpstan.neon, include it
-        $cwd = getcwd();
-        if ($cwd !== false) {
-            if (file_exists($cwd.'/phpstan.neon')) {
-                $content['includes'][] = $cwd.'/phpstan.neon';
-            } elseif (file_exists($cwd.'/phpstan.neon.dist')) {
-                $content['includes'][] = $cwd.'/phpstan.neon.dist';
-            }
-        }
-
         file_put_contents($tempConfig, $this->generateNeon($content));
 
         try {
