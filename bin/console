@@ -2,6 +2,8 @@
 <?php
 declare(strict_types=1);
 
+ini_set('memory_limit', '512M');
+
 require __DIR__ . '/../vendor/autoload.php';
 
 use Symfony\Component\Console\Application;
