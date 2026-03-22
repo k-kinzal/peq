@@ -1,0 +1,12 @@
+# peq configuration file
+# Patterns to exclude from analysis:
+# - vendor: Composer dependencies
+# - vendor-bin: Development tools
+# - .git: Git metadata
+# - tests: Test files (avoids analyzing test dependencies)
+
+excludes:
+  - vendor
+  - vendor-bin
+  - .git
+  - tests

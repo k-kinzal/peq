@@ -1,9 +1,33 @@
 #!/usr/bin/env php
 <?php
+declare(strict_types=1);
 
-require __DIR__.'/../vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 use Symfony\Component\Console\Application;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
+use Symfony\Component\Config\FileLocator;
 
-$app = new Application();
-$app->run();
+try {
+    $container = new ContainerBuilder();
+    $loader = new PhpFileLoader($container, new FileLocator(__DIR__ . '/../config'));
+    $loader->load('services.php');
+    $container->compile();
+
+    $app = new Application('peq', '0.0.1');
+
+    foreach ($container->findTaggedServiceIds('console.command') as $id => $tags) {
+        $app->add($container->get($id));
+    }
+
+    // Make the CLI behave like a single-command app: `peq.phar <Target>`
+    if ($app->has('inspect')) {
+        $app->setDefaultCommand('inspect', true);
+    }
+
+    $app->run();
+} catch (Exception $e) {
+    fprintf(STDERR, "Error: %s\n", $e->getMessage());
+    exit(1);
+}
