@@ -143,7 +143,7 @@ trait ReflectionCrossValidator
                     ++$verified;
                 } elseif ($result === null) {
                     ++$skipped;
-                } else {
+                } elseif (is_string($result)) {
                     $failures[] = $result;
                 }
             }
@@ -153,9 +153,10 @@ trait ReflectionCrossValidator
     }
 
     /**
-     * @return null|string|true true=verified, null=skipped, string=failure message
+     * true=verified, null=skipped, string=failure message.
+     * Runtime type uses bool instead of true for PHP 8.1 compatibility.
      */
-    private static function verifySoundEdge(Edge $edge): string|true|null
+    private static function verifySoundEdge(Edge $edge): bool|string|null
     {
         $fromFqn = $edge->from()->toString();
         $toFqn = $edge->to()->toString();
@@ -176,7 +177,7 @@ trait ReflectionCrossValidator
         };
     }
 
-    private static function verifySoundExtends(string $fromFqn, string $toFqn): string|true|null
+    private static function verifySoundExtends(string $fromFqn, string $toFqn): bool|string|null
     {
         $refl = self::safeReflectClass($fromFqn);
         if ($refl === null) {
@@ -194,7 +195,7 @@ trait ReflectionCrossValidator
         return true;
     }
 
-    private static function verifySoundImplements(string $fromFqn, string $toFqn): string|true|null
+    private static function verifySoundImplements(string $fromFqn, string $toFqn): bool|string|null
     {
         $refl = self::safeReflectClass($fromFqn);
         if ($refl === null) {
@@ -209,7 +210,7 @@ trait ReflectionCrossValidator
         return true;
     }
 
-    private static function verifySoundTraitUse(string $fromFqn, string $toFqn): string|true|null
+    private static function verifySoundTraitUse(string $fromFqn, string $toFqn): bool|string|null
     {
         $refl = self::safeReflectClass($fromFqn);
         if ($refl === null) {
@@ -226,7 +227,7 @@ trait ReflectionCrossValidator
     /**
      * @param 'constant'|'method'|'property' $memberType
      */
-    private static function verifySoundMember(string $fromFqn, string $toFqn, string $memberType): string|true|null
+    private static function verifySoundMember(string $fromFqn, string $toFqn, string $memberType): bool|string|null
     {
         $classFqn = self::parseClassFqn($fromFqn);
         $memberName = self::parseMember($toFqn);
@@ -252,7 +253,7 @@ trait ReflectionCrossValidator
         return true;
     }
 
-    private static function verifySoundEnumCase(string $fromFqn, string $toFqn): string|true|null
+    private static function verifySoundEnumCase(string $fromFqn, string $toFqn): bool|string|null
     {
         $classFqn = self::parseClassFqn($fromFqn);
         $caseName = self::parseMember($toFqn);
@@ -276,7 +277,7 @@ trait ReflectionCrossValidator
         return true;
     }
 
-    private static function verifySoundAttribute(string $fromFqn, string $toFqn): string|true|null
+    private static function verifySoundAttribute(string $fromFqn, string $toFqn): bool|string|null
     {
         $attributes = self::getAttributeNames($fromFqn);
         if ($attributes === null) {
@@ -290,7 +291,7 @@ trait ReflectionCrossValidator
         return true;
     }
 
-    private static function verifySoundTypeParameter(string $fromFqn, string $toFqn): string|true|null
+    private static function verifySoundTypeParameter(string $fromFqn, string $toFqn): bool|string|null
     {
         $reflMethod = self::safeReflectMethod($fromFqn);
         if ($reflMethod === null) {
@@ -309,7 +310,7 @@ trait ReflectionCrossValidator
         return true;
     }
 
-    private static function verifySoundTypeReturn(string $fromFqn, string $toFqn): string|true|null
+    private static function verifySoundTypeReturn(string $fromFqn, string $toFqn): bool|string|null
     {
         $reflMethod = self::safeReflectMethod($fromFqn);
         if ($reflMethod === null) {
@@ -324,7 +325,7 @@ trait ReflectionCrossValidator
         return true;
     }
 
-    private static function verifySoundTypeProperty(string $fromFqn, string $toFqn): string|true|null
+    private static function verifySoundTypeProperty(string $fromFqn, string $toFqn): bool|string|null
     {
         $memberName = self::parseMember($fromFqn);
         $classFqn = self::parseClassFqn($fromFqn);
@@ -422,8 +423,9 @@ trait ReflectionCrossValidator
             EdgeKind::DeclarationTypeParameter,
             EdgeKind::DeclarationTypeProperty,
         ], true)) {
-            // 'self' resolved to the declaring class name by Reflection
-            if ($to === $context->getName()) {
+            // 'self' resolved to the declaring class name by Reflection,
+            // or left as literal 'self' depending on PHP version
+            if ($to === $context->getName() || strtolower($to) === 'self') {
                 return 'self-type: self resolves to declaring class (self-referential)';
             }
             // 'static'/'parent' remain as literal type names
