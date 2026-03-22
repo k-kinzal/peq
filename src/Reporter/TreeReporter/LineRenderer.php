@@ -14,7 +14,7 @@ use App\Analyzer\Graph\NodeKind;
  * and the node information (ID, recursion status, builtin status) for a single node
  * in the dependency tree output.
  */
-final readonly class LineRenderer
+final class LineRenderer
 {
     /**
      * @param bool[] $continuationFlags

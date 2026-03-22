@@ -19,7 +19,7 @@ use App\Analyzer\Graph\NodeId;
  *
  * @property string $fullQualifiedName Alias for fullQualifiedName()
  */
-final readonly class EnumCaseNodeId implements NodeId
+final class EnumCaseNodeId implements NodeId
 {
     use IdentifierAssert;
 
@@ -29,9 +29,9 @@ final readonly class EnumCaseNodeId implements NodeId
      * @param string $caseName  The case name (must be a valid PHP identifier)
      */
     public function __construct(
-        public string $namespace,
-        public string $enumName,
-        public string $caseName,
+        public readonly string $namespace,
+        public readonly string $enumName,
+        public readonly string $caseName,
     ) {
         if ($namespace !== '') {
             self::assertNamespace($namespace);

@@ -16,7 +16,7 @@ use App\Analyzer\Graph\Node\MethodNode;
 /**
  * Represents a constant fetch relationship.
  */
-final readonly class ConstFetchEdge implements Edge
+final class ConstFetchEdge implements Edge
 {
     use EdgeTrait;
 

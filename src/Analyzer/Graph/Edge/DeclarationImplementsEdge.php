@@ -15,7 +15,7 @@ use App\Analyzer\Graph\Node\GraphInterfaceNode;
 /**
  * Represents an interface implementation declaration relationship.
  */
-final readonly class DeclarationImplementsEdge implements Edge
+final class DeclarationImplementsEdge implements Edge
 {
     use EdgeTrait;
 

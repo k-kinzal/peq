@@ -14,13 +14,13 @@ use Symfony\Component\Console\Input\InputInterface;
  * configuration cascade, allowing users to override all other configuration sources
  * (defaults, YAML files, environment variables) directly from the command line.
  */
-final readonly class InputConfigReader implements ConfigReader
+final class InputConfigReader implements ConfigReader
 {
     /**
      * @param InputInterface $input The Symfony Console input interface to read from
      */
     public function __construct(
-        private InputInterface $input,
+        private readonly InputInterface $input,
     ) {}
 
     /**

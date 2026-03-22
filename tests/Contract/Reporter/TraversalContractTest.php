@@ -17,8 +17,6 @@ use Eris\Generator;
 use Eris\TestTrait;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Random\Engine\Mt19937;
-use Random\Randomizer;
 
 /**
  * @internal
@@ -46,10 +44,10 @@ final class TraversalContractTest extends TestCase
                 }
 
                 // Pick a deterministic subset of start nodes
-                $rng = new Randomizer(new Mt19937($seed));
+                mt_srand($seed);
                 $startIndices = [0];
                 if (count($nodes) > 1) {
-                    $startIndices[] = $rng->getInt(0, count($nodes) - 1);
+                    $startIndices[] = mt_rand(0, count($nodes) - 1);
                 }
 
                 foreach ($startIndices as $idx) {
@@ -109,10 +107,10 @@ final class TraversalContractTest extends TestCase
                     return;
                 }
 
-                $rng = new Randomizer(new Mt19937($seed));
+                mt_srand($seed);
                 $startIndices = [0];
                 if (count($nodes) > 1) {
-                    $startIndices[] = $rng->getInt(0, count($nodes) - 1);
+                    $startIndices[] = mt_rand(0, count($nodes) - 1);
                 }
 
                 $nodeCount = count($nodes);
@@ -179,9 +177,10 @@ final class TraversalContractTest extends TestCase
                 }
 
                 // Sample up to 10 edges to keep test time bounded
-                $rng = new Randomizer(new Mt19937($seed));
+                mt_srand($seed);
                 $indices = range(0, count($forwardEdges) - 1);
-                $rng->shuffleArray($indices);
+
+                self::fisherYatesShuffle($indices);
                 $sampleIndices = array_slice($indices, 0, min(10, count($indices)));
 
                 foreach ($sampleIndices as $i) {
@@ -217,6 +216,19 @@ final class TraversalContractTest extends TestCase
                 }
             })
         ;
+    }
+
+    /**
+     * Fisher-Yates shuffle using mt_rand for PHP 8.1 compatibility.
+     *
+     * @param array<int, int> $array
+     */
+    private static function fisherYatesShuffle(array &$array): void
+    {
+        for ($i = count($array) - 1; $i > 0; --$i) {
+            $j = mt_rand(0, $i);
+            [$array[$i], $array[$j]] = [$array[$j], $array[$i]];
+        }
     }
 
     /**

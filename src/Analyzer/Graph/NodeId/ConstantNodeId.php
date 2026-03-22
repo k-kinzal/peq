@@ -19,7 +19,7 @@ use App\Analyzer\Graph\NodeId;
  *
  * @property string $fullQualifiedName Alias for fullQualifiedName()
  */
-final readonly class ConstantNodeId implements NodeId
+final class ConstantNodeId implements NodeId
 {
     use IdentifierAssert;
 
@@ -29,9 +29,9 @@ final readonly class ConstantNodeId implements NodeId
      * @param string $constantName The constant name (must be a valid PHP identifier)
      */
     public function __construct(
-        public string $namespace,
-        public string $className,
-        public string $constantName,
+        public readonly string $namespace,
+        public readonly string $className,
+        public readonly string $constantName,
     ) {
         if ($namespace !== '') {
             self::assertNamespace($namespace);

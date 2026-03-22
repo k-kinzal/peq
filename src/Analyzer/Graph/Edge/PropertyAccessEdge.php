@@ -15,7 +15,7 @@ use App\Analyzer\Graph\Node\PropertyNode;
 /**
  * Represents an instance property access relationship.
  */
-final readonly class PropertyAccessEdge implements Edge
+final class PropertyAccessEdge implements Edge
 {
     use EdgeTrait;
 

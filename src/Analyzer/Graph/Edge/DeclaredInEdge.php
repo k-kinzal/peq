@@ -23,7 +23,7 @@ use App\Analyzer\Graph\Node\TraitNode;
 /**
  * Represents a reverse declaration relationship (e.g., method declared in class).
  */
-final readonly class DeclaredInEdge implements Edge
+final class DeclaredInEdge implements Edge
 {
     use EdgeTrait;
 

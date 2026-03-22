@@ -15,7 +15,7 @@ use App\Analyzer\Graph\NodeKind;
  * Encapsulates information about a PHP global function including its identifier,
  * file location metadata, and whether it has been fully resolved during analysis.
  */
-final readonly class FunctionNode implements Node
+final class FunctionNode implements Node
 {
     /**
      * @param FunctionNodeId $id       Unique identifier for this function
@@ -23,9 +23,9 @@ final readonly class FunctionNode implements Node
      * @param null|FileMeta  $meta     File location metadata (null if not available)
      */
     public function __construct(
-        public FunctionNodeId $id,
-        public bool $resolved = false,
-        public ?FileMeta $meta = null,
+        public readonly FunctionNodeId $id,
+        public readonly bool $resolved = false,
+        public readonly ?FileMeta $meta = null,
     ) {}
 
     /**

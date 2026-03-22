@@ -15,7 +15,7 @@ use App\Analyzer\Graph\Node\TraitNode;
 /**
  * Represents a trait use declaration relationship.
  */
-final readonly class DeclarationTraitUseEdge implements Edge
+final class DeclarationTraitUseEdge implements Edge
 {
     use EdgeTrait;
 

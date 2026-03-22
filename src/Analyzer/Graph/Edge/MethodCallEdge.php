@@ -14,7 +14,7 @@ use App\Analyzer\Graph\Node\MethodNode;
 /**
  * Represents a method call relationship.
  */
-final readonly class MethodCallEdge implements Edge
+final class MethodCallEdge implements Edge
 {
     use EdgeTrait;
 

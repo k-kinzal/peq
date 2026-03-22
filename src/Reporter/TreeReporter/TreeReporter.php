@@ -21,12 +21,12 @@ use Symfony\Component\Console\Output\OutputInterface;
  * Unix `tree` command. It uses a traversal strategy to visit nodes and a line renderer
  * to format the output. It supports depth limiting and handles cyclic dependencies.
  */
-final readonly class TreeReporter implements Reporter
+final class TreeReporter implements Reporter
 {
     public function __construct(
-        private TreeReporterOptions $options,
-        private Traversal $traversal = new DependencyTraversal(),
-        private LineRenderer $lineRenderer = new LineRenderer(),
+        private readonly TreeReporterOptions $options,
+        private readonly Traversal $traversal = new DependencyTraversal(),
+        private readonly LineRenderer $lineRenderer = new LineRenderer(),
     ) {}
 
     /**

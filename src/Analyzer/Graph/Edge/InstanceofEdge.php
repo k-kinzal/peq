@@ -17,7 +17,7 @@ use App\Analyzer\Graph\Node\MethodNode;
 /**
  * Represents an instanceof check relationship.
  */
-final readonly class InstanceofEdge implements Edge
+final class InstanceofEdge implements Edge
 {
     use EdgeTrait;
 

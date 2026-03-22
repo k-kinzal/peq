@@ -15,8 +15,6 @@ use PhpParser\Node\NullableType;
 use PhpParser\Node\UnionType;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Random\Engine\Mt19937;
-use Random\Randomizer;
 
 /**
  * @internal
@@ -90,10 +88,10 @@ final class TypeResolverContractTest extends TestCase
      */
     private static function buildTypeTree(int $seed): ?Node
     {
-        $rng = new Randomizer(new Mt19937($seed));
+        mt_srand($seed);
         $counter = 0;
 
-        return self::buildTypeNode($counter, $rng, maxDepth: 4);
+        return self::buildTypeNode($counter, maxDepth: 4);
     }
 
     /**
@@ -103,20 +101,20 @@ final class TypeResolverContractTest extends TestCase
      * 0 = null, 1 = Identifier, 2 = Name, 3 = FullyQualified Name,
      * 4 = NullableType, 5 = UnionType, 6 = IntersectionType
      */
-    private static function buildTypeNode(int &$counter, Randomizer $rng, int $maxDepth): ?Node
+    private static function buildTypeNode(int &$counter, int $maxDepth): ?Node
     {
         if ($maxDepth <= 0) {
-            return self::buildLeafOrNull($counter, $rng);
+            return self::buildLeafOrNull($counter);
         }
 
-        return match ($rng->getInt(0, 6)) {
+        return match (mt_rand(0, 6)) {
             0 => null,
-            1 => new Identifier(self::pickBuiltin($rng)),
+            1 => new Identifier(self::pickBuiltin()),
             2 => self::makeName($counter),
             3 => new Name\FullyQualified(self::makeNameParts($counter)),
-            4 => new NullableType(self::buildLeafNode($counter, $rng)),
-            5 => self::buildUnionType($counter, $rng, $maxDepth - 1),
-            6 => self::buildIntersectionType($counter, $rng),
+            4 => new NullableType(self::buildLeafNode($counter)),
+            5 => self::buildUnionType($counter, $maxDepth - 1),
+            6 => self::buildIntersectionType($counter),
             default => null,
         };
     }
@@ -124,11 +122,11 @@ final class TypeResolverContractTest extends TestCase
     /**
      * At max depth, produce only a leaf (Name, Identifier) or null.
      */
-    private static function buildLeafOrNull(int &$counter, Randomizer $rng): ?Node
+    private static function buildLeafOrNull(int &$counter): ?Node
     {
-        return match ($rng->getInt(0, 2)) {
+        return match (mt_rand(0, 2)) {
             0 => null,
-            1 => new Identifier(self::pickBuiltin($rng)),
+            1 => new Identifier(self::pickBuiltin()),
             2 => self::makeName($counter),
             default => null,
         };
@@ -138,10 +136,10 @@ final class TypeResolverContractTest extends TestCase
      * Produces a Name or Identifier leaf (never null, never composite).
      * Suitable for NullableType wrapping and IntersectionType members.
      */
-    private static function buildLeafNode(int &$counter, Randomizer $rng): Identifier|Name
+    private static function buildLeafNode(int &$counter): Identifier|Name
     {
-        return $rng->getInt(0, 1) === 0
-            ? new Identifier(self::pickBuiltin($rng))
+        return mt_rand(0, 1) === 0
+            ? new Identifier(self::pickBuiltin())
             : self::makeName($counter);
     }
 
@@ -149,12 +147,12 @@ final class TypeResolverContractTest extends TestCase
      * Builds a UnionType with 2-4 members.
      * Members can be Name, Identifier, or IntersectionType (DNF).
      */
-    private static function buildUnionType(int &$counter, Randomizer $rng, int $maxDepth): UnionType
+    private static function buildUnionType(int &$counter, int $maxDepth): UnionType
     {
-        $count = $rng->getInt(2, 4);
+        $count = mt_rand(2, 4);
         $types = [];
         for ($i = 0; $i < $count; ++$i) {
-            $types[] = self::buildUnionMember($counter, $rng, $maxDepth);
+            $types[] = self::buildUnionMember($counter, $maxDepth);
         }
 
         return new UnionType($types);
@@ -163,29 +161,29 @@ final class TypeResolverContractTest extends TestCase
     /**
      * A union member: Name, Identifier, or IntersectionType.
      */
-    private static function buildUnionMember(int &$counter, Randomizer $rng, int $maxDepth): Identifier|IntersectionType|Name
+    private static function buildUnionMember(int &$counter, int $maxDepth): Identifier|IntersectionType|Name
     {
         if ($maxDepth <= 0) {
-            return self::buildLeafNode($counter, $rng);
+            return self::buildLeafNode($counter);
         }
 
-        return match ($rng->getInt(0, 2)) {
-            0 => new Identifier(self::pickBuiltin($rng)),
+        return match (mt_rand(0, 2)) {
+            0 => new Identifier(self::pickBuiltin()),
             1 => self::makeName($counter),
-            2 => self::buildIntersectionType($counter, $rng),
-            default => self::buildLeafNode($counter, $rng),
+            2 => self::buildIntersectionType($counter),
+            default => self::buildLeafNode($counter),
         };
     }
 
     /**
      * Builds an IntersectionType with 2-3 members (Name or Identifier only).
      */
-    private static function buildIntersectionType(int &$counter, Randomizer $rng): IntersectionType
+    private static function buildIntersectionType(int &$counter): IntersectionType
     {
-        $count = $rng->getInt(2, 3);
+        $count = mt_rand(2, 3);
         $types = [];
         for ($i = 0; $i < $count; ++$i) {
-            $types[] = self::buildLeafNode($counter, $rng);
+            $types[] = self::buildLeafNode($counter);
         }
 
         return new IntersectionType($types);
@@ -208,9 +206,9 @@ final class TypeResolverContractTest extends TestCase
         return ['Generated', 'Type'.$counter];
     }
 
-    private static function pickBuiltin(Randomizer $rng): string
+    private static function pickBuiltin(): string
     {
-        return self::BUILTINS[$rng->getInt(0, count(self::BUILTINS) - 1)];
+        return self::BUILTINS[mt_rand(0, count(self::BUILTINS) - 1)];
     }
 
     /**

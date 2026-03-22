@@ -15,13 +15,13 @@ use Symfony\Component\Yaml\Yaml;
  * array, allowing the application to continue with other configuration sources.
  * YAML parsing errors are wrapped in ConfigException for consistent error handling.
  */
-final readonly class YamlConfigLoader implements ConfigReader
+final class YamlConfigLoader implements ConfigReader
 {
     /**
      * @param string $path Path to the YAML configuration file
      */
     public function __construct(
-        private string $path,
+        private readonly string $path,
     ) {}
 
     /**

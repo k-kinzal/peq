@@ -16,7 +16,7 @@ use App\Analyzer\Graph\Node\GraphInterfaceNode;
 /**
  * Represents a constant declaration relationship within a class/interface.
  */
-final readonly class DeclarationConstantEdge implements Edge
+final class DeclarationConstantEdge implements Edge
 {
     use EdgeTrait;
 

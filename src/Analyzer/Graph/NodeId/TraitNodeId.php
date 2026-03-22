@@ -19,7 +19,7 @@ use App\Analyzer\Graph\NodeId;
  *
  * @property string $fullQualifiedName Alias for fullQualifiedName()
  */
-final readonly class TraitNodeId implements NodeId
+final class TraitNodeId implements NodeId
 {
     use IdentifierAssert;
 
@@ -28,8 +28,8 @@ final readonly class TraitNodeId implements NodeId
      * @param string $traitName The trait name (must be a valid PHP identifier)
      */
     public function __construct(
-        public string $namespace,
-        public string $traitName,
+        public readonly string $namespace,
+        public readonly string $traitName,
     ) {
         if ($namespace !== '') {
             self::assertNamespace($namespace);

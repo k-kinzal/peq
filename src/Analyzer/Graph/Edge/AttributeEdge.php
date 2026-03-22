@@ -14,7 +14,7 @@ use App\Analyzer\Graph\Node\ClassNode;
 /**
  * Represents an attribute usage relationship.
  */
-final readonly class AttributeEdge implements Edge
+final class AttributeEdge implements Edge
 {
     use EdgeTrait;
 

@@ -19,7 +19,7 @@ use App\Analyzer\Graph\Node\TraitNode;
 /**
  * Represents a return type declaration relationship.
  */
-final readonly class DeclarationTypeReturnEdge implements Edge
+final class DeclarationTypeReturnEdge implements Edge
 {
     use EdgeTrait;
 

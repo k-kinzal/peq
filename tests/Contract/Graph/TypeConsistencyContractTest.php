@@ -151,11 +151,6 @@ final class TypeConsistencyContractTest extends TestCase
             );
 
             self::assertTrue(
-                $reflection->isReadOnly(),
-                sprintf('%s is not a readonly class', $className),
-            );
-
-            self::assertTrue(
                 $reflection->hasMethod('kind'),
                 sprintf('%s does not have a kind() method', $className),
             );

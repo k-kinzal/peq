@@ -13,7 +13,7 @@ namespace App\Config;
  * when merged by the ConfigLoader. It should typically be registered first in the
  * ConfigLoader's reader chain to establish a foundation of sensible defaults.
  */
-final readonly class DefaultConfigReader implements ConfigReader
+final class DefaultConfigReader implements ConfigReader
 {
     /**
      * {@inheritdoc}

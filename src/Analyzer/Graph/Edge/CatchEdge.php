@@ -16,7 +16,7 @@ use App\Analyzer\Graph\Node\MethodNode;
 /**
  * Represents a caught exception relationship.
  */
-final readonly class CatchEdge implements Edge
+final class CatchEdge implements Edge
 {
     use EdgeTrait;
 

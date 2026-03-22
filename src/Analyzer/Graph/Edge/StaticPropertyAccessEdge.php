@@ -15,7 +15,7 @@ use App\Analyzer\Graph\Node\PropertyNode;
 /**
  * Represents a static property access relationship.
  */
-final readonly class StaticPropertyAccessEdge implements Edge
+final class StaticPropertyAccessEdge implements Edge
 {
     use EdgeTrait;
 

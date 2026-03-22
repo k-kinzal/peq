@@ -9,12 +9,12 @@ use App\Analyzer\Graph\Graph;
 /**
  * Data transfer object for the output of the InspectAction.
  */
-final readonly class InspectActionOutput
+final class InspectActionOutput
 {
     /**
      * @param Graph $graph the graph resulting from the inspection
      */
     public function __construct(
-        public Graph $graph,
+        public readonly Graph $graph,
     ) {}
 }

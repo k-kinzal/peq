@@ -10,11 +10,11 @@ use Symfony\Component\Validator\Validation;
 /**
  * Configuration for the debug analyzer.
  */
-final readonly class DebugAnalyzerConfig
+final class DebugAnalyzerConfig
 {
     public function __construct(
-        public int $depth = 5,
-        public ?int $seed = null,
+        public readonly int $depth = 5,
+        public readonly ?int $seed = null,
     ) {
         assert($this->depth > 0);
     }

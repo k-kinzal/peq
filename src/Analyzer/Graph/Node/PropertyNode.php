@@ -15,7 +15,7 @@ use App\Analyzer\Graph\NodeKind;
  * Encapsulates information about a PHP class property including its identifier,
  * file location metadata, and whether it has been fully resolved during analysis.
  */
-final readonly class PropertyNode implements Node
+final class PropertyNode implements Node
 {
     /**
      * @param PropertyNodeId $id       Unique identifier for this property
@@ -23,9 +23,9 @@ final readonly class PropertyNode implements Node
      * @param null|FileMeta  $meta     File location metadata (null if not available)
      */
     public function __construct(
-        public PropertyNodeId $id,
-        public bool $resolved = false,
-        public ?FileMeta $meta = null,
+        public readonly PropertyNodeId $id,
+        public readonly bool $resolved = false,
+        public readonly ?FileMeta $meta = null,
     ) {}
 
     /**

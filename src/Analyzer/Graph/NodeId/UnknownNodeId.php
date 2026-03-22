@@ -16,13 +16,13 @@ use App\Analyzer\Graph\NodeId;
  *
  * @implements NodeId<UnknownNode>
  */
-final readonly class UnknownNodeId implements NodeId
+final class UnknownNodeId implements NodeId
 {
     /**
      * @param string $name The name of the unknown node (must not be empty)
      */
     public function __construct(
-        public string $name,
+        public readonly string $name,
     ) {
         assert($name !== '');
     }

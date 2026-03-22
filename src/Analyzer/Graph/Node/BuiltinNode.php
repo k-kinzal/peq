@@ -16,7 +16,7 @@ use App\Analyzer\Graph\NodeKind;
  * including their identifier and resolution status. Builtin types typically
  * do not have file metadata as they are part of the PHP language itself.
  */
-final readonly class BuiltinNode implements Node
+final class BuiltinNode implements Node
 {
     /**
      * @param BuiltinNodeId $id       Unique identifier for this builtin type
@@ -24,9 +24,9 @@ final readonly class BuiltinNode implements Node
      * @param null|FileMeta $meta     File location metadata (typically null for builtin types)
      */
     public function __construct(
-        public BuiltinNodeId $id,
-        public bool $resolved = false,
-        public ?FileMeta $meta = null,
+        public readonly BuiltinNodeId $id,
+        public readonly bool $resolved = false,
+        public readonly ?FileMeta $meta = null,
     ) {}
 
     /**

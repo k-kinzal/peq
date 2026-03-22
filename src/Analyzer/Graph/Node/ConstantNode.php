@@ -15,7 +15,7 @@ use App\Analyzer\Graph\NodeKind;
  * Encapsulates information about a PHP class constant including its identifier,
  * file location metadata, and whether it has been fully resolved during analysis.
  */
-final readonly class ConstantNode implements Node
+final class ConstantNode implements Node
 {
     /**
      * @param ConstantNodeId $id       Unique identifier for this constant
@@ -23,9 +23,9 @@ final readonly class ConstantNode implements Node
      * @param null|FileMeta  $meta     File location metadata (null if not available)
      */
     public function __construct(
-        public ConstantNodeId $id,
-        public bool $resolved = false,
-        public ?FileMeta $meta = null,
+        public readonly ConstantNodeId $id,
+        public readonly bool $resolved = false,
+        public readonly ?FileMeta $meta = null,
     ) {}
 
     /**

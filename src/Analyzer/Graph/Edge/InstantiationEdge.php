@@ -15,7 +15,7 @@ use App\Analyzer\Graph\Node\MethodNode;
 /**
  * Represents an object instantiation (new) relationship.
  */
-final readonly class InstantiationEdge implements Edge
+final class InstantiationEdge implements Edge
 {
     use EdgeTrait;
 

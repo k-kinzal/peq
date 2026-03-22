@@ -4,7 +4,7 @@ A CLI tool that analyzes PHP code dependencies and visualizes the blast radius o
 
 ## Supported Versions
 
-- **PHP**: 8.2 / 8.3 / 8.4 / 8.5
+- **PHP**: 8.1 / 8.2 / 8.3 / 8.4 / 8.5
 
 ## Core Concepts
 

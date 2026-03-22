@@ -16,7 +16,7 @@ use App\Analyzer\Graph\NodeKind;
  * Encapsulates information about a PHP trait including its identifier,
  * file location metadata, and whether it has been fully resolved during analysis.
  */
-final readonly class TraitNode implements Node
+final class TraitNode implements Node
 {
     /**
      * @param TraitNodeId   $id       Unique identifier for this trait
@@ -24,9 +24,9 @@ final readonly class TraitNode implements Node
      * @param null|FileMeta $meta     File location metadata (null if not available)
      */
     public function __construct(
-        public TraitNodeId $id,
-        public bool $resolved = false,
-        public ?FileMeta $meta = null,
+        public readonly TraitNodeId $id,
+        public readonly bool $resolved = false,
+        public readonly ?FileMeta $meta = null,
     ) {}
 
     /**

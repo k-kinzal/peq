@@ -16,7 +16,7 @@ use App\Analyzer\Graph\NodeKind;
  * during analysis. These are typically used as placeholders for unresolved
  * dependencies or external references not present in the analyzed codebase.
  */
-final readonly class UnknownNode implements Node
+final class UnknownNode implements Node
 {
     /**
      * @param UnknownNodeId $id       Unique identifier for this unknown node
@@ -24,9 +24,9 @@ final readonly class UnknownNode implements Node
      * @param null|FileMeta $meta     File location metadata (typically null for unknown nodes)
      */
     public function __construct(
-        public UnknownNodeId $id,
-        public bool $resolved = false,
-        public ?FileMeta $meta = null,
+        public readonly UnknownNodeId $id,
+        public readonly bool $resolved = false,
+        public readonly ?FileMeta $meta = null,
     ) {}
 
     /**

@@ -15,7 +15,7 @@ use App\Analyzer\Graph\NodeKind;
  * Encapsulates information about a PHP enum case including its identifier,
  * file location metadata, and whether it has been fully resolved during analysis.
  */
-final readonly class EnumCaseNode implements Node
+final class EnumCaseNode implements Node
 {
     /**
      * @param EnumCaseNodeId $id       Unique identifier for this enum case
@@ -23,9 +23,9 @@ final readonly class EnumCaseNode implements Node
      * @param null|FileMeta  $meta     File location metadata (null if not available)
      */
     public function __construct(
-        public EnumCaseNodeId $id,
-        public bool $resolved = false,
-        public ?FileMeta $meta = null,
+        public readonly EnumCaseNodeId $id,
+        public readonly bool $resolved = false,
+        public readonly ?FileMeta $meta = null,
     ) {}
 
     /**

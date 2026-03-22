@@ -19,7 +19,7 @@ use App\Analyzer\Graph\NodeId;
  *
  * @property string $fullQualifiedName Alias for fullQualifiedName()
  */
-final readonly class FunctionNodeId implements NodeId
+final class FunctionNodeId implements NodeId
 {
     use IdentifierAssert;
 
@@ -28,8 +28,8 @@ final readonly class FunctionNodeId implements NodeId
      * @param string $functionName The function name (must be a valid PHP identifier)
      */
     public function __construct(
-        public string $namespace,
-        public string $functionName,
+        public readonly string $namespace,
+        public readonly string $functionName,
     ) {
         if ($namespace !== '') {
             self::assertNamespace($namespace);

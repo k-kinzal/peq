@@ -18,7 +18,7 @@ use App\Analyzer\Graph\Node\PropertyNode;
 /**
  * Represents a reverse usage relationship (e.g., function called by method).
  */
-final readonly class UsedByEdge implements Edge
+final class UsedByEdge implements Edge
 {
     use EdgeTrait;
 

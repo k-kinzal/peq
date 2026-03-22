@@ -16,7 +16,7 @@ use App\Analyzer\Graph\NodeKind;
  * Encapsulates information about a PHP enum including its identifier,
  * file location metadata, and whether it has been fully resolved during analysis.
  */
-final readonly class EnumNode implements Node
+final class EnumNode implements Node
 {
     /**
      * @param EnumNodeId    $id       Unique identifier for this enum
@@ -24,9 +24,9 @@ final readonly class EnumNode implements Node
      * @param null|FileMeta $meta     File location metadata (null if not available)
      */
     public function __construct(
-        public EnumNodeId $id,
-        public bool $resolved = false,
-        public ?FileMeta $meta = null,
+        public readonly EnumNodeId $id,
+        public readonly bool $resolved = false,
+        public readonly ?FileMeta $meta = null,
     ) {}
 
     /**

@@ -15,7 +15,7 @@ use App\Analyzer\Graph\NodeKind;
  * Encapsulates information about a PHP interface including its identifier,
  * file location metadata, and well as whether it has been fully resolved during analysis.
  */
-final readonly class GraphInterfaceNode implements Node
+final class GraphInterfaceNode implements Node
 {
     /**
      * @param InterfaceNodeId $id       Unique identifier for this interface
@@ -23,9 +23,9 @@ final readonly class GraphInterfaceNode implements Node
      * @param null|FileMeta   $meta     File location metadata (null if not available)
      */
     public function __construct(
-        public InterfaceNodeId $id,
-        public bool $resolved = false,
-        public ?FileMeta $meta = null,
+        public readonly InterfaceNodeId $id,
+        public readonly bool $resolved = false,
+        public readonly ?FileMeta $meta = null,
     ) {}
 
     /**

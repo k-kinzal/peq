@@ -12,13 +12,13 @@ namespace App\Config;
  * Later readers override values from earlier readers, allowing a priority-based
  * configuration cascade (e.g., defaults < file config < environment < CLI args).
  */
-final readonly class ConfigLoader
+final class ConfigLoader
 {
     /**
      * @param ConfigReader[] $readers Array of configuration readers to merge, in priority order
      */
     public function __construct(
-        private array $readers,
+        private readonly array $readers,
     ) {}
 
     /**

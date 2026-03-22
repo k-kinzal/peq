@@ -6,12 +6,12 @@ namespace Tests\Unit\Config;
 
 use App\Config\ConfigReader;
 
-final readonly class StubConfigReader implements ConfigReader
+final class StubConfigReader implements ConfigReader
 {
     /**
      * @param array<string, mixed> $data
      */
-    public function __construct(private array $data) {}
+    public function __construct(private readonly array $data) {}
 
     /**
      * @return array<string, mixed>

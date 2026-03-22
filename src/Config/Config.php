@@ -14,7 +14,7 @@ use Symfony\Component\Validator\Validation;
  * including the target path, analysis direction, depth limits, and file filtering rules.
  * Configuration values are immutable and validated upon creation to ensure consistency.
  */
-final readonly class Config
+final class Config
 {
     /**
      * @param string                   $basePath  The base path for the PHP project to analyze
@@ -27,13 +27,13 @@ final readonly class Config
      * @param null|DebugAnalyzerConfig $debug     Debug analyzer configuration
      */
     public function __construct(
-        public string $basePath,
-        public string $direction,
-        public ?int $level = null,
-        public array $includes = [],
-        public array $excludes = [],
-        public AnalyzerType $type = AnalyzerType::Debug,
-        public ?DebugAnalyzerConfig $debug = new DebugAnalyzerConfig(),
+        public readonly string $basePath,
+        public readonly string $direction,
+        public readonly ?int $level = null,
+        public readonly array $includes = [],
+        public readonly array $excludes = [],
+        public readonly AnalyzerType $type = AnalyzerType::Debug,
+        public readonly ?DebugAnalyzerConfig $debug = new DebugAnalyzerConfig(),
     ) {
         assert($this->basePath !== '');
         assert(in_array($this->direction, ['uses', 'used-by'], true));

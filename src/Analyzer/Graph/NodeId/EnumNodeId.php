@@ -19,7 +19,7 @@ use App\Analyzer\Graph\NodeId;
  *
  * @property string $fullQualifiedName Alias for fullQualifiedName()
  */
-final readonly class EnumNodeId implements NodeId
+final class EnumNodeId implements NodeId
 {
     use IdentifierAssert;
 
@@ -28,8 +28,8 @@ final readonly class EnumNodeId implements NodeId
      * @param string $enumName  The enum name (must be a valid PHP identifier)
      */
     public function __construct(
-        public string $namespace,
-        public string $enumName,
+        public readonly string $namespace,
+        public readonly string $enumName,
     ) {
         if ($namespace !== '') {
             self::assertNamespace($namespace);

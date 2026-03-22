@@ -12,13 +12,13 @@ namespace App\Config;
  * to camelCase to match the Config class property names. This allows configuration
  * to be provided via environment variables in CI/CD pipelines or containerized environments.
  */
-final readonly class EnvConfigReader implements ConfigReader
+final class EnvConfigReader implements ConfigReader
 {
     /**
      * @param string $prefix The prefix for environment variables to read (e.g., 'PEQ_')
      */
     public function __construct(
-        private string $prefix = 'PEQ_'
+        private readonly string $prefix = 'PEQ_'
     ) {}
 
     /**

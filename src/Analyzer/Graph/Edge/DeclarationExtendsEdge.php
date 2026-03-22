@@ -14,7 +14,7 @@ use App\Analyzer\Graph\Node\GraphInterfaceNode;
 /**
  * Represents an inheritance relationship (extends) between classes or interfaces.
  */
-final readonly class DeclarationExtendsEdge implements Edge
+final class DeclarationExtendsEdge implements Edge
 {
     use EdgeTrait;
 

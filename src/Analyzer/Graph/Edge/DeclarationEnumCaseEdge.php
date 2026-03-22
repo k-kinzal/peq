@@ -14,7 +14,7 @@ use App\Analyzer\Graph\Node\EnumNode;
 /**
  * Represents an enum case declaration relationship within an enum.
  */
-final readonly class DeclarationEnumCaseEdge implements Edge
+final class DeclarationEnumCaseEdge implements Edge
 {
     use EdgeTrait;
 

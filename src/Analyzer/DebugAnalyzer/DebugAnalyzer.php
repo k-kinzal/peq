@@ -21,15 +21,15 @@ use Faker;
  * but fake PHP code structure graphs. It's useful for testing the graph visualization and
  * analysis features without needing real PHP code to parse.
  */
-final readonly class DebugAnalyzer implements Analyzer
+final class DebugAnalyzer implements Analyzer
 {
     /**
      * @param null|int $seed  Random seed for reproducible fake data generation
      * @param int      $depth Maximum depth of the generated graph
      */
     public function __construct(
-        private ?int $seed = null,
-        private int $depth = 5,
+        private readonly ?int $seed = null,
+        private readonly int $depth = 5,
     ) {}
 
     /**

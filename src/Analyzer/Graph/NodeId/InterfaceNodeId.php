@@ -19,7 +19,7 @@ use App\Analyzer\Graph\NodeId;
  *
  * @property string $fullQualifiedName Alias for fullQualifiedName()
  */
-final readonly class InterfaceNodeId implements NodeId
+final class InterfaceNodeId implements NodeId
 {
     use IdentifierAssert;
 
@@ -28,8 +28,8 @@ final readonly class InterfaceNodeId implements NodeId
      * @param string $interfaceName The interface name (must be a valid PHP identifier)
      */
     public function __construct(
-        public string $namespace,
-        public string $interfaceName,
+        public readonly string $namespace,
+        public readonly string $interfaceName,
     ) {
         if ($namespace !== '') {
             self::assertNamespace($namespace);

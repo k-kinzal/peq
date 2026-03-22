@@ -15,7 +15,7 @@ use App\Analyzer\Graph\NodeKind;
  * Encapsulates information about a PHP class method including its identifier,
  * file location metadata, and whether it has been fully resolved during analysis.
  */
-final readonly class MethodNode implements Node
+final class MethodNode implements Node
 {
     /**
      * @param MethodNodeId  $id       Unique identifier for this method
@@ -23,9 +23,9 @@ final readonly class MethodNode implements Node
      * @param null|FileMeta $meta     File location metadata (null if not available)
      */
     public function __construct(
-        public MethodNodeId $id,
-        public bool $resolved = false,
-        public ?FileMeta $meta = null,
+        public readonly MethodNodeId $id,
+        public readonly bool $resolved = false,
+        public readonly ?FileMeta $meta = null,
     ) {}
 
     /**
