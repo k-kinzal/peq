@@ -19,7 +19,7 @@ return (new Config())
     ->setUsingCache(true)
     ->setRules([
         '@PhpCsFixer' => true,
-        '@PHP83Migration' => true,
+        '@PHP81Migration' => true,
         'declare_strict_types' => true,
         'strict_comparison' => true,
         'strict_param' => true,

@@ -2,6 +2,10 @@
 
 A CLI tool that analyzes PHP code dependencies and visualizes the blast radius of changes. Provides tree output for humans via TreeReporter and structured output for AI agents, enabling both to modify PHP code safely.
 
+## Supported Versions
+
+- **PHP**: 8.1 / 8.2 / 8.3 / 8.4 / 8.5
+
 ## Core Concepts
 
 - **Impact analysis is the primary goal** — automatically identify what breaks when a class, method, or function changes
@@ -49,7 +53,7 @@ bin/            # Entry point (console)
 
 ## Build & Test Commands
 
-- `composer install` — install PHP 8.3 dependencies and `vendor-bin/` tools
+- `composer install` — install dependencies and `vendor-bin/` tools
 - `composer test` — run PHPUnit (random order, `APP_ENV=test`). Append `-- tests/App/...` or `--filter testName` to narrow scope
 - `composer lint` — run PHP CS Fixer + PHPStan (max level)
 - `composer format` — apply PHP CS Fixer
