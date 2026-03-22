@@ -7,7 +7,7 @@ A CLI tool that analyzes PHP code dependencies and visualizes the blast radius o
 
 ## Requirements
 
-- PHP 8.1 or higher
+- PHP 8.2 or higher
 - `ext-ast` PHP extension
 
 ## Installation
