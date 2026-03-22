@@ -101,6 +101,11 @@ final class InspectCommand extends Command
             null,
             InputOption::VALUE_REQUIRED,
             'Debug analyzer seed',
+        )->addOption(
+            'memory-limit',
+            null,
+            InputOption::VALUE_REQUIRED,
+            'Memory limit (e.g. 1G, 256M)',
         );
         $this->addArgument(
             'target',
@@ -125,6 +130,11 @@ final class InspectCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        $memoryLimit = $input->getOption('memory-limit');
+        if (is_string($memoryLimit)) {
+            ini_set('memory_limit', $memoryLimit);
+        }
+
         $target = $input->getArgument('target');
         if (!is_string($target)) {
             $output->writeln('<error>Target argument must be a string</error>');

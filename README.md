@@ -46,6 +46,7 @@ Options:
   -L, --level=LEVEL          Limit depth of the dependency graph
   -I, --include=INCLUDE      Include patterns (multiple values allowed)
   -E, --exclude=EXCLUDE      Exclude patterns (multiple values allowed)
+      --memory-limit=MEMORY-LIMIT  Memory limit (e.g. 1G, 256M)
   -h, --help                 Display help for the given command
   -V, --version              Display this application version
 ```
