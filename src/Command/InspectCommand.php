@@ -152,6 +152,20 @@ final class InspectCommand extends Command
             target: $target,
         ));
 
+        $symbol = null;
+        foreach ($result->graph->nodes() as $node) {
+            if ($node->id()->toString() === $target) {
+                $symbol = $node;
+
+                break;
+            }
+        }
+        if ($symbol === null) {
+            $output->writeln(sprintf('<error>Target "%s" not found in the dependency graph</error>', $target));
+
+            return Command::FAILURE;
+        }
+
         $reporter = new TreeReporter(
             options: new TreeReporterOptions(
                 level: $config->level,
@@ -160,9 +174,6 @@ final class InspectCommand extends Command
                 ? new DependencyTraversal()
                 : new DependsTraversal(),
         );
-        $symbol = $config->direction === 'uses'
-            ? $result->graph->nodes()[0]
-            : $result->graph->nodes()[count($result->graph->nodes()) - 1];
         $reporter->report($result->graph, $symbol->id(), $output);
 
         return Command::SUCCESS;
