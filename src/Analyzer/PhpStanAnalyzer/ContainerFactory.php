@@ -69,7 +69,7 @@ final class ContainerFactory
             ],
             'parameters' => [
                 'customRulesetUsed' => true,
-                'level' => 5, // Try higher level to ensure method bodies are traversed
+                'level' => 0, // Collectors work at all levels; level 0 skips unused type-checking rules
                 'tmpDir' => $tempDir.'/tmp',
             ],
             'includes' => [],

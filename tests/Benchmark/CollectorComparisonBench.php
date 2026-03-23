@@ -120,7 +120,7 @@ final class CollectorComparisonBench
             'services' => $services,
             'parameters' => [
                 'customRulesetUsed' => true,
-                'level' => 5,
+                'level' => 0,
                 'tmpDir' => $tempDir.'/tmp',
             ],
             'includes' => [],
