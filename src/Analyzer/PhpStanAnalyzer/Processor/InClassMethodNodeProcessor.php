@@ -31,6 +31,8 @@ final class InClassMethodNodeProcessor
 
     private static ?NodeTraverser $traverser = null;
 
+    private static ?\Closure $findPredicate = null;
+
     /**
      * @return array<Edge|Node>
      */
@@ -44,7 +46,7 @@ final class InClassMethodNodeProcessor
 
         if ($stmts !== null) {
             $finder = self::$nodeFinder ??= new NodeFinder();
-            $dependencies = $finder->find($stmts, function (PhpParserNode $n) {
+            $predicate = self::$findPredicate ??= static function (PhpParserNode $n): bool {
                 return $n instanceof PhpParserNode\Expr\ClassConstFetch
                     || $n instanceof PhpParserNode\Expr\New_
                     || $n instanceof PhpParserNode\Expr\StaticCall
@@ -56,7 +58,8 @@ final class InClassMethodNodeProcessor
                     || $n instanceof PhpParserNode\Expr\PropertyFetch
                     || $n instanceof PhpParserNode\Expr\NullsafePropertyFetch
                     || $n instanceof PhpParserNode\Expr\StaticPropertyFetch;
-            });
+            };
+            $dependencies = $finder->find($stmts, $predicate);
 
             foreach ($dependencies as $dep) {
                 if ($dep instanceof PhpParserNode\Expr\ClassConstFetch) {
