@@ -15,6 +15,7 @@ use PhpParser\Node\Stmt\Trait_;
 use PhpParser\NodeFinder;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
+use PhpParser\Parser;
 use PhpParser\ParserFactory;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\InClassMethodNode;
@@ -23,6 +24,10 @@ final class InClassMethodNodeProcessor
 {
     /** @var array<string, false|PhpParserNode\Stmt[]> */
     private static array $astCache = [];
+
+    private static ?Parser $parser = null;
+
+    private static ?NodeFinder $nodeFinder = null;
 
     /**
      * @return array<Edge|Node>
@@ -36,8 +41,8 @@ final class InClassMethodNodeProcessor
         $stmts = self::getOriginalStmts($node, $scope);
 
         if ($stmts !== null) {
-            $nodeFinder = new NodeFinder();
-            $dependencies = $nodeFinder->find($stmts, function (PhpParserNode $n) {
+            $finder = self::$nodeFinder ??= new NodeFinder();
+            $dependencies = $finder->find($stmts, function (PhpParserNode $n) {
                 return $n instanceof PhpParserNode\Expr\ClassConstFetch
                     || $n instanceof PhpParserNode\Expr\New_
                     || $n instanceof PhpParserNode\Expr\StaticCall
@@ -102,7 +107,7 @@ final class InClassMethodNodeProcessor
             return null;
         }
 
-        $parser = (new ParserFactory())->createForHostVersion();
+        $parser = self::$parser ??= (new ParserFactory())->createForHostVersion();
 
         try {
             $ast = $parser->parse($fileContent);
@@ -145,7 +150,7 @@ final class InClassMethodNodeProcessor
         }
 
         $methodNode = $node->getOriginalNode();
-        $nodeFinder = new NodeFinder();
+        $nodeFinder = self::$nodeFinder ??= new NodeFinder();
         $classReflection = $scope->getClassReflection();
         if ($classReflection === null) {
             return null;
