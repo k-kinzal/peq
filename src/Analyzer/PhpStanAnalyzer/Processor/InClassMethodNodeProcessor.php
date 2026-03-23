@@ -53,27 +53,27 @@ final class InClassMethodNodeProcessor
 
             foreach ($dependencies as $dep) {
                 if ($dep instanceof PhpParserNode\Expr\ClassConstFetch) {
-                    $items = array_merge($items, ConstFetchProcessor::process($dep, $scope));
+                    array_push($items, ...ConstFetchProcessor::process($dep, $scope));
                 } elseif ($dep instanceof PhpParserNode\Expr\New_) {
-                    $items = array_merge($items, InstantiationProcessor::process($dep, $scope));
+                    array_push($items, ...InstantiationProcessor::process($dep, $scope));
                 } elseif ($dep instanceof PhpParserNode\Expr\StaticCall) {
-                    $items = array_merge($items, StaticCallProcessor::process($dep, $scope));
+                    array_push($items, ...StaticCallProcessor::process($dep, $scope));
                 } elseif ($dep instanceof PhpParserNode\Stmt\Catch_) {
-                    $items = array_merge($items, CatchProcessor::process($dep, $scope));
+                    array_push($items, ...CatchProcessor::process($dep, $scope));
                 } elseif ($dep instanceof PhpParserNode\Expr\Instanceof_) {
-                    $items = array_merge($items, InstanceofProcessor::process($dep, $scope));
+                    array_push($items, ...InstanceofProcessor::process($dep, $scope));
                 } elseif ($dep instanceof PhpParserNode\Expr\FuncCall) {
-                    $items = array_merge($items, FunctionCallProcessor::process($dep, $scope));
+                    array_push($items, ...FunctionCallProcessor::process($dep, $scope));
                 } elseif ($dep instanceof PhpParserNode\Expr\NullsafeMethodCall) {
-                    $items = array_merge($items, MethodCallProcessor::process($dep, $scope));
+                    array_push($items, ...MethodCallProcessor::process($dep, $scope));
                 } elseif ($dep instanceof PhpParserNode\Expr\MethodCall) {
-                    $items = array_merge($items, MethodCallProcessor::process($dep, $scope));
+                    array_push($items, ...MethodCallProcessor::process($dep, $scope));
                 } elseif ($dep instanceof PhpParserNode\Expr\NullsafePropertyFetch) {
-                    $items = array_merge($items, PropertyAccessProcessor::process($dep, $scope));
+                    array_push($items, ...PropertyAccessProcessor::process($dep, $scope));
                 } elseif ($dep instanceof PhpParserNode\Expr\PropertyFetch) {
-                    $items = array_merge($items, PropertyAccessProcessor::process($dep, $scope));
+                    array_push($items, ...PropertyAccessProcessor::process($dep, $scope));
                 } elseif ($dep instanceof PhpParserNode\Expr\StaticPropertyFetch) {
-                    $items = array_merge($items, StaticPropertyAccessProcessor::process($dep, $scope));
+                    array_push($items, ...StaticPropertyAccessProcessor::process($dep, $scope));
                 }
             }
         }

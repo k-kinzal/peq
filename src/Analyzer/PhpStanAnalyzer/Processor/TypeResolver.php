@@ -35,7 +35,7 @@ final class TypeResolver
         if ($type instanceof UnionType) {
             $names = [];
             foreach ($type->types as $inner) {
-                $names = array_merge($names, self::resolveNames($inner));
+                array_push($names, ...self::resolveNames($inner));
             }
 
             return $names;
@@ -44,7 +44,7 @@ final class TypeResolver
         if ($type instanceof IntersectionType) {
             $names = [];
             foreach ($type->types as $inner) {
-                $names = array_merge($names, self::resolveNames($inner));
+                array_push($names, ...self::resolveNames($inner));
             }
 
             return $names;
