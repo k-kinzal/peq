@@ -21,6 +21,9 @@ use PHPStan\Node\InClassMethodNode;
 
 final class InClassMethodNodeProcessor
 {
+    /** @var array<string, false|PhpParserNode\Stmt[]> */
+    private static array $astCache = [];
+
     /**
      * @return array<Edge|Node>
      */
@@ -79,7 +82,53 @@ final class InClassMethodNodeProcessor
     }
 
     /**
-     * Always re-parses the source file to recover the full method body AST.
+     * Returns the parsed and name-resolved AST for the given file, using a cache
+     * to avoid re-parsing the same file for every method it contains.
+     *
+     * @return null|PhpParserNode\Stmt[]
+     */
+    private static function getParsedAst(string $filePath): ?array
+    {
+        if (array_key_exists($filePath, self::$astCache)) {
+            $cached = self::$astCache[$filePath];
+
+            return $cached === false ? null : $cached;
+        }
+
+        $fileContent = file_get_contents($filePath);
+        if ($fileContent === false) {
+            self::$astCache[$filePath] = false;
+
+            return null;
+        }
+
+        $parser = (new ParserFactory())->createForHostVersion();
+
+        try {
+            $ast = $parser->parse($fileContent);
+            if ($ast === null) {
+                self::$astCache[$filePath] = false;
+
+                return null;
+            }
+
+            $traverser = new NodeTraverser();
+            $traverser->addVisitor(new NameResolver());
+
+            /** @var PhpParserNode\Stmt[] $ast */
+            $ast = $traverser->traverse($ast);
+            self::$astCache[$filePath] = $ast;
+
+            return $ast;
+        } catch (\Throwable) {
+            self::$astCache[$filePath] = false;
+
+            return null;
+        }
+    }
+
+    /**
+     * Recovers the full method body AST by looking up the cached parsed file.
      *
      * DO NOT restore the stmts shortcut (checking $methodNode->stmts first).
      * PHPStan v2's CleaningVisitor can PARTIALLY strip expressions, leaving
@@ -90,49 +139,37 @@ final class InClassMethodNodeProcessor
      */
     private static function getOriginalStmts(InClassMethodNode $node, Scope $scope): ?array
     {
-        $methodNode = $node->getOriginalNode();
-
-        $fileContent = file_get_contents($scope->getFile());
-        if ($fileContent === false) {
+        $ast = self::getParsedAst($scope->getFile());
+        if ($ast === null) {
             return null;
         }
-        $parserFactory = new ParserFactory();
-        $parser = $parserFactory->createForHostVersion();
 
-        try {
-            $ast = $parser->parse($fileContent);
-            if ($ast !== null) {
-                $traverser = new NodeTraverser();
-                $traverser->addVisitor(new NameResolver());
-                $ast = $traverser->traverse($ast);
+        $methodNode = $node->getOriginalNode();
+        $nodeFinder = new NodeFinder();
+        $classReflection = $scope->getClassReflection();
+        if ($classReflection === null) {
+            return null;
+        }
 
-                $nodeFinder = new NodeFinder();
-                $classReflection = $scope->getClassReflection();
-                if ($classReflection !== null) {
-                    $className = $classReflection->getName();
-                    $classNode = $nodeFinder->findFirst($ast, function (PhpParserNode $n) use ($className) {
-                        if (($n instanceof Class_ || $n instanceof Interface_ || $n instanceof Trait_ || $n instanceof Enum_)
-                            && isset($n->namespacedName)) {
-                            return $n->namespacedName->toString() === $className;
-                        }
-
-                        return false;
-                    });
-
-                    if ($classNode instanceof Class_ || $classNode instanceof Trait_ || $classNode instanceof Enum_) {
-                        $methodName = $methodNode->name->toString();
-                        $foundMethod = $nodeFinder->findFirst($classNode->stmts, function (PhpParserNode $n) use ($methodName) {
-                            return $n instanceof ClassMethod && $n->name->toString() === $methodName;
-                        });
-
-                        if ($foundMethod instanceof ClassMethod) {
-                            return $foundMethod->stmts;
-                        }
-                    }
-                }
+        $className = $classReflection->getName();
+        $classNode = $nodeFinder->findFirst($ast, function (PhpParserNode $n) use ($className) {
+            if (($n instanceof Class_ || $n instanceof Interface_ || $n instanceof Trait_ || $n instanceof Enum_)
+                && isset($n->namespacedName)) {
+                return $n->namespacedName->toString() === $className;
             }
-        } catch (\Throwable $e) {
-            // Ignore parsing errors
+
+            return false;
+        });
+
+        if ($classNode instanceof Class_ || $classNode instanceof Trait_ || $classNode instanceof Enum_) {
+            $methodName = $methodNode->name->toString();
+            $foundMethod = $nodeFinder->findFirst($classNode->stmts, function (PhpParserNode $n) use ($methodName) {
+                return $n instanceof ClassMethod && $n->name->toString() === $methodName;
+            });
+
+            if ($foundMethod instanceof ClassMethod) {
+                return $foundMethod->stmts;
+            }
         }
 
         return null;
