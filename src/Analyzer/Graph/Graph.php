@@ -30,6 +30,11 @@ final class Graph
     private array $adjacency = [];
 
     /**
+     * @var array<string, true> Hash set for O(1) edge duplicate detection, keyed by "from\0kind\0to"
+     */
+    private array $edgeSet = [];
+
+    /**
      * Adds a single node to the graph.
      *
      * If a node with the same ID already exists and is not Unknown, an exception is thrown.
@@ -98,26 +103,20 @@ final class Graph
             );
         }
 
-        foreach ($this->adjacency[$fromKey] ?? [] as $existing) {
-            if ($existing->kind() === $kind && $existing->to()->toString() === $toKey) {
-                return;
-            }
+        $edgeKey = $fromKey."\0".$kind->value."\0".$toKey;
+        if (isset($this->edgeSet[$edgeKey])) {
+            return;
         }
 
+        $this->edgeSet[$edgeKey] = true;
         $this->adjacency[$fromKey][] = $edge;
 
         $inverse = $edge->invert();
         $inverseKind = $inverse->kind();
         $inverseToKey = $inverse->to()->toString();
-        $inverseDuplicate = false;
-        foreach ($this->adjacency[$toKey] ?? [] as $existing) {
-            if ($existing->kind() === $inverseKind && $existing->to()->toString() === $inverseToKey) {
-                $inverseDuplicate = true;
-
-                break;
-            }
-        }
-        if (!$inverseDuplicate) {
+        $inverseKey = $toKey."\0".$inverseKind->value."\0".$inverseToKey;
+        if (!isset($this->edgeSet[$inverseKey])) {
+            $this->edgeSet[$inverseKey] = true;
             $this->adjacency[$toKey][] = $inverse;
         }
         assert(
