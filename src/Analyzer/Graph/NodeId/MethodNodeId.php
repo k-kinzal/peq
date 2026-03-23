@@ -28,6 +28,8 @@ final class MethodNodeId implements NodeId
      * @param string $className  The class name containing the method (must be a valid PHP identifier)
      * @param string $methodName The method name (must be a valid PHP identifier)
      */
+    private readonly string $stringValue;
+
     public function __construct(
         public readonly string $namespace,
         public readonly string $className,
@@ -38,6 +40,8 @@ final class MethodNodeId implements NodeId
         }
         self::assertIdentifier($className);
         self::assertIdentifier($methodName);
+        $prefix = $namespace === '' ? $className : $namespace.'\\'.$className;
+        $this->stringValue = $prefix.'::'.$methodName;
     }
 
     public function __toString(): string
@@ -63,11 +67,7 @@ final class MethodNodeId implements NodeId
      */
     public function fullQualifiedName(): string
     {
-        if ($this->namespace === '') {
-            return $this->className.'::'.$this->methodName;
-        }
-
-        return $this->namespace.'\\'.$this->className.'::'.$this->methodName;
+        return $this->stringValue;
     }
 
     /**
@@ -77,6 +77,6 @@ final class MethodNodeId implements NodeId
      */
     public function toString(): string
     {
-        return $this->fullQualifiedName();
+        return $this->stringValue;
     }
 }

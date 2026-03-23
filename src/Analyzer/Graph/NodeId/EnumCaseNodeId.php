@@ -28,6 +28,8 @@ final class EnumCaseNodeId implements NodeId
      * @param string $enumName  The enum name containing the case (must be a valid PHP identifier)
      * @param string $caseName  The case name (must be a valid PHP identifier)
      */
+    private readonly string $stringValue;
+
     public function __construct(
         public readonly string $namespace,
         public readonly string $enumName,
@@ -38,6 +40,8 @@ final class EnumCaseNodeId implements NodeId
         }
         self::assertIdentifier($enumName);
         self::assertIdentifier($caseName);
+        $prefix = $namespace === '' ? $enumName : $namespace.'\\'.$enumName;
+        $this->stringValue = $prefix.'::'.$caseName;
     }
 
     public function __toString(): string
@@ -63,11 +67,7 @@ final class EnumCaseNodeId implements NodeId
      */
     public function fullQualifiedName(): string
     {
-        if ($this->namespace === '') {
-            return $this->enumName.'::'.$this->caseName;
-        }
-
-        return $this->namespace.'\\'.$this->enumName.'::'.$this->caseName;
+        return $this->stringValue;
     }
 
     /**
@@ -77,6 +77,6 @@ final class EnumCaseNodeId implements NodeId
      */
     public function toString(): string
     {
-        return $this->fullQualifiedName();
+        return $this->stringValue;
     }
 }

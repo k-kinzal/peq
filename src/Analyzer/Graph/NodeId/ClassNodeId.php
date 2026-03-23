@@ -26,6 +26,8 @@ final class ClassNodeId implements NodeId
      * @param string $namespace The namespace of the class (must be a valid PHP namespace)
      * @param string $className The class name (must be a valid PHP identifier)
      */
+    private readonly string $stringValue;
+
     public function __construct(
         public readonly string $namespace,
         public readonly string $className,
@@ -34,6 +36,7 @@ final class ClassNodeId implements NodeId
             self::assertNamespace($namespace);
         }
         self::assertIdentifier($className);
+        $this->stringValue = $namespace === '' ? $className : $namespace.'\\'.$className;
     }
 
     public function __toString(): string
@@ -59,11 +62,7 @@ final class ClassNodeId implements NodeId
      */
     public function fullQualifiedName(): string
     {
-        if ($this->namespace === '') {
-            return $this->className;
-        }
-
-        return $this->namespace.'\\'.$this->className;
+        return $this->stringValue;
     }
 
     /**
@@ -73,6 +72,6 @@ final class ClassNodeId implements NodeId
      */
     public function toString(): string
     {
-        return $this->fullQualifiedName();
+        return $this->stringValue;
     }
 }

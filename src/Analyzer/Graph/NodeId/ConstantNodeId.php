@@ -28,6 +28,8 @@ final class ConstantNodeId implements NodeId
      * @param string $className    The class name containing the constant (must be a valid PHP identifier)
      * @param string $constantName The constant name (must be a valid PHP identifier)
      */
+    private readonly string $stringValue;
+
     public function __construct(
         public readonly string $namespace,
         public readonly string $className,
@@ -38,6 +40,8 @@ final class ConstantNodeId implements NodeId
         }
         self::assertIdentifier($className);
         self::assertIdentifier($constantName);
+        $prefix = $namespace === '' ? $className : $namespace.'\\'.$className;
+        $this->stringValue = $prefix.'::'.$constantName;
     }
 
     public function __toString(): string
@@ -63,11 +67,7 @@ final class ConstantNodeId implements NodeId
      */
     public function fullQualifiedName(): string
     {
-        if ($this->namespace === '') {
-            return $this->className.'::'.$this->constantName;
-        }
-
-        return $this->namespace.'\\'.$this->className.'::'.$this->constantName;
+        return $this->stringValue;
     }
 
     /**
@@ -77,6 +77,6 @@ final class ConstantNodeId implements NodeId
      */
     public function toString(): string
     {
-        return $this->fullQualifiedName();
+        return $this->stringValue;
     }
 }

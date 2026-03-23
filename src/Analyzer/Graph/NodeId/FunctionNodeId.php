@@ -27,6 +27,8 @@ final class FunctionNodeId implements NodeId
      * @param string $namespace    The namespace of the function (must be a valid PHP namespace)
      * @param string $functionName The function name (must be a valid PHP identifier)
      */
+    private readonly string $stringValue;
+
     public function __construct(
         public readonly string $namespace,
         public readonly string $functionName,
@@ -35,6 +37,7 @@ final class FunctionNodeId implements NodeId
             self::assertNamespace($namespace);
         }
         self::assertIdentifier($functionName);
+        $this->stringValue = $namespace === '' ? $functionName : $namespace.'\\'.$functionName;
     }
 
     public function __toString(): string
@@ -60,11 +63,7 @@ final class FunctionNodeId implements NodeId
      */
     public function fullQualifiedName(): string
     {
-        if ($this->namespace === '') {
-            return $this->functionName;
-        }
-
-        return $this->namespace.'\\'.$this->functionName;
+        return $this->stringValue;
     }
 
     /**
@@ -74,6 +73,6 @@ final class FunctionNodeId implements NodeId
      */
     public function toString(): string
     {
-        return $this->fullQualifiedName();
+        return $this->stringValue;
     }
 }

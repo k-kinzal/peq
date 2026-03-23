@@ -28,6 +28,8 @@ final class PropertyNodeId implements NodeId
      * @param string $className    The class name containing the property (must be a valid PHP identifier)
      * @param string $propertyName The property name (must be a valid PHP identifier)
      */
+    private readonly string $stringValue;
+
     public function __construct(
         public readonly string $namespace,
         public readonly string $className,
@@ -38,6 +40,8 @@ final class PropertyNodeId implements NodeId
         }
         self::assertIdentifier($className);
         self::assertIdentifier($propertyName);
+        $prefix = $namespace === '' ? $className : $namespace.'\\'.$className;
+        $this->stringValue = $prefix.'::'.$propertyName;
     }
 
     public function __toString(): string
@@ -63,11 +67,7 @@ final class PropertyNodeId implements NodeId
      */
     public function fullQualifiedName(): string
     {
-        if ($this->namespace === '') {
-            return $this->className.'::'.$this->propertyName;
-        }
-
-        return $this->namespace.'\\'.$this->className.'::'.$this->propertyName;
+        return $this->stringValue;
     }
 
     /**
@@ -77,6 +77,6 @@ final class PropertyNodeId implements NodeId
      */
     public function toString(): string
     {
-        return $this->fullQualifiedName();
+        return $this->stringValue;
     }
 }

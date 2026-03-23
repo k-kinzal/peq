@@ -77,26 +77,26 @@ final class Graph
      */
     public function addEdge(Edge $edge): void
     {
-        if (!isset($this->nodes[$edge->from()->toString()])) {
-            $unknownId = $edge->from() instanceof UnknownNodeId
-                ? $edge->from()
-                : new UnknownNodeId($edge->from()->toString());
-            $this->nodes[$edge->from()->toString()] = new UnknownNode(
-                id: $unknownId,
-            );
-        }
-        if (!isset($this->nodes[$edge->to()->toString()])) {
-            $unknownId = $edge->to() instanceof UnknownNodeId
-                ? $edge->to()
-                : new UnknownNodeId($edge->to()->toString());
-            $this->nodes[$edge->to()->toString()] = new UnknownNode(
-                id: $unknownId,
-            );
-        }
-
         $fromKey = $edge->from()->toString();
         $toKey = $edge->to()->toString();
         $kind = $edge->kind();
+
+        if (!isset($this->nodes[$fromKey])) {
+            $unknownId = $edge->from() instanceof UnknownNodeId
+                ? $edge->from()
+                : new UnknownNodeId($fromKey);
+            $this->nodes[$fromKey] = new UnknownNode(
+                id: $unknownId,
+            );
+        }
+        if (!isset($this->nodes[$toKey])) {
+            $unknownId = $edge->to() instanceof UnknownNodeId
+                ? $edge->to()
+                : new UnknownNodeId($toKey);
+            $this->nodes[$toKey] = new UnknownNode(
+                id: $unknownId,
+            );
+        }
 
         foreach ($this->adjacency[$fromKey] ?? [] as $existing) {
             if ($existing->kind() === $kind && $existing->to()->toString() === $toKey) {

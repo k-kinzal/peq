@@ -27,6 +27,8 @@ final class TraitNodeId implements NodeId
      * @param string $namespace The namespace of the trait (must be a valid PHP namespace)
      * @param string $traitName The trait name (must be a valid PHP identifier)
      */
+    private readonly string $stringValue;
+
     public function __construct(
         public readonly string $namespace,
         public readonly string $traitName,
@@ -35,6 +37,7 @@ final class TraitNodeId implements NodeId
             self::assertNamespace($namespace);
         }
         self::assertIdentifier($traitName);
+        $this->stringValue = $namespace === '' ? $traitName : $namespace.'\\'.$traitName;
     }
 
     public function __toString(): string
@@ -60,11 +63,7 @@ final class TraitNodeId implements NodeId
      */
     public function fullQualifiedName(): string
     {
-        if ($this->namespace === '') {
-            return $this->traitName;
-        }
-
-        return $this->namespace.'\\'.$this->traitName;
+        return $this->stringValue;
     }
 
     /**
@@ -74,6 +73,6 @@ final class TraitNodeId implements NodeId
      */
     public function toString(): string
     {
-        return $this->fullQualifiedName();
+        return $this->stringValue;
     }
 }

@@ -27,6 +27,8 @@ final class InterfaceNodeId implements NodeId
      * @param string $namespace     The namespace of the interface (must be a valid PHP namespace)
      * @param string $interfaceName The interface name (must be a valid PHP identifier)
      */
+    private readonly string $stringValue;
+
     public function __construct(
         public readonly string $namespace,
         public readonly string $interfaceName,
@@ -35,6 +37,7 @@ final class InterfaceNodeId implements NodeId
             self::assertNamespace($namespace);
         }
         self::assertIdentifier($interfaceName);
+        $this->stringValue = $namespace === '' ? $interfaceName : $namespace.'\\'.$interfaceName;
     }
 
     public function __toString(): string
@@ -60,11 +63,7 @@ final class InterfaceNodeId implements NodeId
      */
     public function fullQualifiedName(): string
     {
-        if ($this->namespace === '') {
-            return $this->interfaceName;
-        }
-
-        return $this->namespace.'\\'.$this->interfaceName;
+        return $this->stringValue;
     }
 
     /**
@@ -74,6 +73,6 @@ final class InterfaceNodeId implements NodeId
      */
     public function toString(): string
     {
-        return $this->fullQualifiedName();
+        return $this->stringValue;
     }
 }

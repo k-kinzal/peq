@@ -26,12 +26,15 @@ final class BuiltinNodeId implements NodeId
      * @param string $namespace The namespace of the builtin type (must be a valid PHP namespace)
      * @param string $name      The builtin type name (must be a valid PHP identifier)
      */
+    private readonly string $stringValue;
+
     public function __construct(
         public readonly string $namespace,
         public readonly string $name,
     ) {
         self::assertNamespace($namespace);
         self::assertIdentifier($name);
+        $this->stringValue = $namespace === '' ? $name : $namespace.'\\'.$name;
     }
 
     public function __toString(): string
@@ -56,11 +59,7 @@ final class BuiltinNodeId implements NodeId
      */
     public function fullQualifiedName(): string
     {
-        if ($this->namespace === '') {
-            return $this->name;
-        }
-
-        return $this->namespace.'\\'.$this->name;
+        return $this->stringValue;
     }
 
     /**
@@ -70,6 +69,6 @@ final class BuiltinNodeId implements NodeId
      */
     public function toString(): string
     {
-        return $this->fullQualifiedName();
+        return $this->stringValue;
     }
 }

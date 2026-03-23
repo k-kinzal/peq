@@ -27,6 +27,8 @@ final class EnumNodeId implements NodeId
      * @param string $namespace The namespace of the enum (must be a valid PHP namespace)
      * @param string $enumName  The enum name (must be a valid PHP identifier)
      */
+    private readonly string $stringValue;
+
     public function __construct(
         public readonly string $namespace,
         public readonly string $enumName,
@@ -35,6 +37,7 @@ final class EnumNodeId implements NodeId
             self::assertNamespace($namespace);
         }
         self::assertIdentifier($enumName);
+        $this->stringValue = $namespace === '' ? $enumName : $namespace.'\\'.$enumName;
     }
 
     public function __toString(): string
@@ -60,11 +63,7 @@ final class EnumNodeId implements NodeId
      */
     public function fullQualifiedName(): string
     {
-        if ($this->namespace === '') {
-            return $this->enumName;
-        }
-
-        return $this->namespace.'\\'.$this->enumName;
+        return $this->stringValue;
     }
 
     /**
@@ -74,6 +73,6 @@ final class EnumNodeId implements NodeId
      */
     public function toString(): string
     {
-        return $this->fullQualifiedName();
+        return $this->stringValue;
     }
 }
