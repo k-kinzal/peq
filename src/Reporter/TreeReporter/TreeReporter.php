@@ -76,6 +76,7 @@ final class TreeReporter implements Reporter
                         }
                     }
 
+                    $siblings = array_unique($siblings);
                     if ($siblings !== []) {
                         $lastSiblingId = end($siblings);
                         $isLastChild = ($nodeKey === $lastSiblingId);

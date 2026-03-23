@@ -65,12 +65,16 @@ final class DependencyTraversal implements Traversal
 
             $shouldContinue = $callback($node, $depth);
             if ($shouldContinue) {
+                $visitedChildren = [];
                 $edges = $graph->edges($nodeId);
                 foreach ($edges as $edge) {
+                    $targetKey = $edge->to()->toString();
                     if (
                         $edge->kind() !== EdgeKind::UsedBy
                         && $edge->kind() !== EdgeKind::DeclaredIn
+                        && !isset($visitedChildren[$targetKey])
                     ) {
+                        $visitedChildren[$targetKey] = true;
                         $traverseRecursive($edge->to(), $depth + 1);
                     }
                 }
