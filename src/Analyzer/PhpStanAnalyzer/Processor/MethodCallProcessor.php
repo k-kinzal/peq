@@ -6,6 +6,7 @@ namespace App\Analyzer\PhpStanAnalyzer\Processor;
 
 use App\Analyzer\Graph\Edge\MethodCallEdge;
 use App\Analyzer\Graph\FileMeta;
+use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\Node\MethodNode;
 use App\Analyzer\Graph\NodeId\MethodNodeId;
@@ -28,10 +29,10 @@ final class MethodCallProcessor
     /**
      * @return list<MethodCallEdge>
      */
-    public static function process(MethodCall|NullsafeMethodCall $node, Scope $scope): array
+    public static function process(MethodCall|NullsafeMethodCall $node, Scope $scope, ?Node $sourceNode = null): array
     {
         $items = [];
-        $sourceNode = SourceResolver::resolve($scope);
+        $sourceNode ??= SourceResolver::resolve($scope);
 
         if ($node->var instanceof PhpParserNode\Expr\Variable
             && is_string($node->var->name)

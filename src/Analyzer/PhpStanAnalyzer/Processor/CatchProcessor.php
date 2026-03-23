@@ -6,6 +6,7 @@ namespace App\Analyzer\PhpStanAnalyzer\Processor;
 
 use App\Analyzer\Graph\Edge\CatchEdge;
 use App\Analyzer\Graph\FileMeta;
+use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\Node\MethodNode;
@@ -19,10 +20,10 @@ final class CatchProcessor
     /**
      * @return array<CatchEdge>
      */
-    public static function process(Catch_ $node, Scope $scope): array
+    public static function process(Catch_ $node, Scope $scope, ?Node $sourceNode = null): array
     {
         $items = [];
-        $sourceNode = SourceResolver::resolve($scope);
+        $sourceNode ??= SourceResolver::resolve($scope);
 
         foreach ($node->types as $type) {
             $className = $type->toString(); // Catch types are Names

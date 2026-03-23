@@ -6,6 +6,7 @@ namespace App\Analyzer\PhpStanAnalyzer\Processor;
 
 use App\Analyzer\Graph\Edge\PropertyAccessEdge;
 use App\Analyzer\Graph\FileMeta;
+use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\Node\MethodNode;
 use App\Analyzer\Graph\Node\PropertyNode;
@@ -29,10 +30,10 @@ final class PropertyAccessProcessor
     /**
      * @return list<PropertyAccessEdge>
      */
-    public static function process(NullsafePropertyFetch|PropertyFetch $node, Scope $scope): array
+    public static function process(NullsafePropertyFetch|PropertyFetch $node, Scope $scope, ?Node $sourceNode = null): array
     {
         $items = [];
-        $sourceNode = SourceResolver::resolve($scope);
+        $sourceNode ??= SourceResolver::resolve($scope);
 
         if ($node->var instanceof PhpParserNode\Expr\Variable
             && is_string($node->var->name)

@@ -6,6 +6,7 @@ namespace App\Analyzer\PhpStanAnalyzer\Processor;
 
 use App\Analyzer\Graph\Edge;
 use App\Analyzer\Graph\Node;
+use App\Analyzer\PhpStanAnalyzer\SourceResolver;
 use PhpParser\Node as PhpParserNode;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
@@ -39,6 +40,8 @@ final class InClassMethodNodeProcessor
     public static function process(InClassMethodNode $node, Scope $scope): array
     {
         $items = [];
+        $sourceNode = SourceResolver::resolve($scope);
+
         // Always re-parse the file to get original stmts.
         // PHPStan v2's CleaningVisitor strips expressions from method/closure bodies,
         // so the AST from getOriginalNode() may be incomplete.
@@ -63,27 +66,27 @@ final class InClassMethodNodeProcessor
 
             foreach ($dependencies as $dep) {
                 if ($dep instanceof PhpParserNode\Expr\ClassConstFetch) {
-                    array_push($items, ...ConstFetchProcessor::process($dep, $scope));
+                    array_push($items, ...ConstFetchProcessor::process($dep, $scope, $sourceNode));
                 } elseif ($dep instanceof PhpParserNode\Expr\New_) {
-                    array_push($items, ...InstantiationProcessor::process($dep, $scope));
+                    array_push($items, ...InstantiationProcessor::process($dep, $scope, $sourceNode));
                 } elseif ($dep instanceof PhpParserNode\Expr\StaticCall) {
-                    array_push($items, ...StaticCallProcessor::process($dep, $scope));
+                    array_push($items, ...StaticCallProcessor::process($dep, $scope, $sourceNode));
                 } elseif ($dep instanceof PhpParserNode\Stmt\Catch_) {
-                    array_push($items, ...CatchProcessor::process($dep, $scope));
+                    array_push($items, ...CatchProcessor::process($dep, $scope, $sourceNode));
                 } elseif ($dep instanceof PhpParserNode\Expr\Instanceof_) {
-                    array_push($items, ...InstanceofProcessor::process($dep, $scope));
+                    array_push($items, ...InstanceofProcessor::process($dep, $scope, $sourceNode));
                 } elseif ($dep instanceof PhpParserNode\Expr\FuncCall) {
-                    array_push($items, ...FunctionCallProcessor::process($dep, $scope));
+                    array_push($items, ...FunctionCallProcessor::process($dep, $scope, $sourceNode));
                 } elseif ($dep instanceof PhpParserNode\Expr\NullsafeMethodCall) {
-                    array_push($items, ...MethodCallProcessor::process($dep, $scope));
+                    array_push($items, ...MethodCallProcessor::process($dep, $scope, $sourceNode));
                 } elseif ($dep instanceof PhpParserNode\Expr\MethodCall) {
-                    array_push($items, ...MethodCallProcessor::process($dep, $scope));
+                    array_push($items, ...MethodCallProcessor::process($dep, $scope, $sourceNode));
                 } elseif ($dep instanceof PhpParserNode\Expr\NullsafePropertyFetch) {
-                    array_push($items, ...PropertyAccessProcessor::process($dep, $scope));
+                    array_push($items, ...PropertyAccessProcessor::process($dep, $scope, $sourceNode));
                 } elseif ($dep instanceof PhpParserNode\Expr\PropertyFetch) {
-                    array_push($items, ...PropertyAccessProcessor::process($dep, $scope));
+                    array_push($items, ...PropertyAccessProcessor::process($dep, $scope, $sourceNode));
                 } elseif ($dep instanceof PhpParserNode\Expr\StaticPropertyFetch) {
-                    array_push($items, ...StaticPropertyAccessProcessor::process($dep, $scope));
+                    array_push($items, ...StaticPropertyAccessProcessor::process($dep, $scope, $sourceNode));
                 }
             }
         }

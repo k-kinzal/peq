@@ -6,6 +6,7 @@ namespace App\Analyzer\PhpStanAnalyzer\Processor;
 
 use App\Analyzer\Graph\Edge\StaticPropertyAccessEdge;
 use App\Analyzer\Graph\FileMeta;
+use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\Node\MethodNode;
 use App\Analyzer\Graph\Node\PropertyNode;
@@ -20,10 +21,10 @@ final class StaticPropertyAccessProcessor
     /**
      * @return list<StaticPropertyAccessEdge>
      */
-    public static function process(StaticPropertyFetch $node, Scope $scope): array
+    public static function process(StaticPropertyFetch $node, Scope $scope, ?Node $sourceNode = null): array
     {
         $items = [];
-        $sourceNode = SourceResolver::resolve($scope);
+        $sourceNode ??= SourceResolver::resolve($scope);
 
         if ($node->class instanceof PhpParserNode\Name && $node->name instanceof PhpParserNode\VarLikeIdentifier) {
             $className = $scope->resolveName($node->class);
