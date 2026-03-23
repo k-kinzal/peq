@@ -6,7 +6,6 @@ namespace App\Reporter\Traversal;
 
 use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\Graph;
-use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId;
 use App\Reporter\Traversal;
 
@@ -19,14 +18,6 @@ use App\Reporter\Traversal;
  */
 final class DependsTraversal implements Traversal
 {
-    /** @var \SplStack<NodeId<Node>> */
-    private \SplStack $stack;
-
-    public function __construct()
-    {
-        $this->stack = new \SplStack();
-    }
-
     public function isTraversableEdge(EdgeKind $kind): bool
     {
         return $kind === EdgeKind::UsedBy || $kind === EdgeKind::DeclaredIn;
@@ -37,24 +28,17 @@ final class DependsTraversal implements Traversal
      */
     public function traverse(Graph $graph, NodeId $symbol, callable $callback): void
     {
-        $this->stack = new \SplStack();
+        /** @var array<string, true> */
+        $pathSet = [];
 
-        $traverseRecursive = function (NodeId $nodeId, int $depth) use ($graph, $callback, &$traverseRecursive) {
+        $traverseRecursive = function (NodeId $nodeId, int $depth) use ($graph, $callback, &$traverseRecursive, &$pathSet) {
             $node = $graph->node($nodeId);
             if ($node === null) {
                 return;
             }
 
-            $isRecursive = false;
-
-            /** @var NodeId<Node> $visitedId */
-            foreach ($this->stack as $visitedId) {
-                if ($visitedId->toString() === $nodeId->toString()) {
-                    $isRecursive = true;
-
-                    break;
-                }
-            }
+            $key = $nodeId->toString();
+            $isRecursive = isset($pathSet[$key]);
 
             if ($isRecursive) {
                 $callback($node, $depth);
@@ -62,7 +46,7 @@ final class DependsTraversal implements Traversal
                 return;
             }
 
-            $this->stack->push($nodeId);
+            $pathSet[$key] = true;
 
             $shouldContinue = $callback($node, $depth);
             if ($shouldContinue) {
@@ -81,7 +65,7 @@ final class DependsTraversal implements Traversal
                 }
             }
 
-            $this->stack->pop();
+            unset($pathSet[$key]);
         };
 
         $traverseRecursive($symbol, 0);
