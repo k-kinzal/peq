@@ -98,4 +98,14 @@ final class LineRendererTest extends TestCase
 
         self::assertSame('└── App\Unknown (unresolved)', $line);
     }
+
+    #[Test]
+    public function testRenderDuplicateNode(): void
+    {
+        $renderer = new LineRenderer();
+        $node = new ClassNode(new ClassNodeId('App', 'MyClass'));
+        $line = $renderer->render($node, 1, [], true, false, true);
+
+        self::assertSame('└── App\MyClass (*)', $line);
+    }
 }

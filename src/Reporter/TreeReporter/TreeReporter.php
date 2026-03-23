@@ -37,6 +37,7 @@ final class TreeReporter implements Reporter
         $continuationFlags = [];
         $parentStack = [];
         $pathStack = [];
+        $expanded = [];
 
         $this->traversal->traverse(
             $graph,
@@ -49,7 +50,8 @@ final class TreeReporter implements Reporter
                 $output,
                 &$continuationFlags,
                 &$parentStack,
-                &$pathStack
+                &$pathStack,
+                &$expanded
             ) {
                 if ($this->options->level !== null && $depth > $this->options->level) {
                     return false;
@@ -62,6 +64,7 @@ final class TreeReporter implements Reporter
                 $nodeKey = $node->id()->toString();
 
                 $isRecursive = in_array($nodeKey, $pathStack, true);
+                $isDuplicate = !$isRecursive && isset($expanded[$nodeKey]);
 
                 $isLastChild = true;
                 if ($depth > 0 && isset($parentStack[$depth - 1])) {
@@ -83,7 +86,7 @@ final class TreeReporter implements Reporter
                     }
                 }
 
-                $line = $this->lineRenderer->render($node, $depth, $continuationFlags, $isLastChild, $isRecursive);
+                $line = $this->lineRenderer->render($node, $depth, $continuationFlags, $isLastChild, $isRecursive, $isDuplicate);
                 $output->writeln($line);
 
                 $continuationFlags[$depth] = !$isLastChild;
@@ -96,11 +99,14 @@ final class TreeReporter implements Reporter
 
                 if (
                     $isRecursive
+                    || $isDuplicate
                     || $node->kind() === NodeKind::Builtin
                     || $node->kind() === NodeKind::Unknown
                 ) {
                     return false;
                 }
+
+                $expanded[$nodeKey] = true;
 
                 return true;
             }

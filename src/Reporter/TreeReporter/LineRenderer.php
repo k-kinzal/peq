@@ -37,13 +37,15 @@ final class LineRenderer
      * - Unresolved reference: ├── UnknownClass (unresolved)
      * - Builtin at deep level: │   │   └── strlen (builtin)
      * - Mixed recursive and continuation: │   ├── Helper::process (recursive)
+     * - Duplicate (already expanded elsewhere): │   └── SharedDep (*)
      */
     public function render(
         Node $node,
         int $depth,
         array $continuationFlags,
         bool $isLastChild,
-        bool $isRecursive
+        bool $isRecursive,
+        bool $isDuplicate = false,
     ): string {
         if ($depth === 0) {
             return $node->id()->toString();
@@ -61,6 +63,8 @@ final class LineRenderer
 
         if ($isRecursive) {
             $line .= ' (recursive)';
+        } elseif ($isDuplicate) {
+            $line .= ' (*)';
         } elseif ($node->kind() === NodeKind::Builtin) {
             $line .= ' (builtin)';
         } elseif ($node->kind() === NodeKind::Unknown) {
