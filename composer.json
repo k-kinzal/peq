@@ -40,7 +40,8 @@
         "phpstan/phpstan-deprecation-rules": "^2.0",
         "phpstan/phpstan-phpunit": "^2.0",
         "dg/bypass-finals": "^1.9",
-        "giorgiosironi/eris": "^1.0"
+        "giorgiosironi/eris": "^1.0",
+        "phpbench/phpbench": "^1.2"
     },
     "scripts": {
         "post-install-cmd": [
@@ -60,6 +61,7 @@
         "test:unit": "phpunit --testsuite unit",
         "test:integration": "phpunit --testsuite integration",
         "test:contract": "phpunit --testsuite contract",
+        "bench": "phpbench run --report=aggregate",
         "compile": "box compile"
     },
     "extra": {
