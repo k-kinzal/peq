@@ -2,5 +2,20 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "constraints": {
+    "php": ">=8.1"
+  },
+  "packageRules": [
+    {
+      "description": "Symfony 8+ requires PHP >=8.4, incompatible with our PHP 8.1 minimum",
+      "matchPackagePatterns": ["^symfony/"],
+      "allowedVersions": "<8.0.0"
+    },
+    {
+      "description": "PHPUnit 13+ requires PHP >=8.4.1, incompatible with our PHP 8.1 minimum",
+      "matchPackageNames": ["phpunit/phpunit"],
+      "allowedVersions": "<13.0.0"
+    }
   ]
 }
