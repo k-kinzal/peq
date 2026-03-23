@@ -29,6 +29,8 @@ final class InClassMethodNodeProcessor
 
     private static ?NodeFinder $nodeFinder = null;
 
+    private static ?NodeTraverser $traverser = null;
+
     /**
      * @return array<Edge|Node>
      */
@@ -117,11 +119,13 @@ final class InClassMethodNodeProcessor
                 return null;
             }
 
-            $traverser = new NodeTraverser();
-            $traverser->addVisitor(new NameResolver());
+            if (self::$traverser === null) {
+                self::$traverser = new NodeTraverser();
+                self::$traverser->addVisitor(new NameResolver());
+            }
 
             /** @var PhpParserNode\Stmt[] $ast */
-            $ast = $traverser->traverse($ast);
+            $ast = self::$traverser->traverse($ast);
             self::$astCache[$filePath] = $ast;
 
             return $ast;
