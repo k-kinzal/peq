@@ -107,6 +107,40 @@ final class InputConfigReaderTest extends TestCase
     }
 
     #[Test]
+    public function testReadReverseOptionSetsDirectionToUsedBy(): void
+    {
+        $definition = new InputDefinition([
+            new InputOption('reverse', 'R', InputOption::VALUE_NONE),
+            new InputOption('direction', 'D', InputOption::VALUE_REQUIRED, '', 'uses'),
+        ]);
+
+        $input = new ArrayInput([
+            '--reverse' => true,
+        ], $definition);
+
+        $reader = new InputConfigReader($input);
+        $config = $reader->read();
+
+        self::assertSame('used-by', $config['direction']);
+    }
+
+    #[Test]
+    public function testReadWithoutReverseDoesNotChangeDirection(): void
+    {
+        $definition = new InputDefinition([
+            new InputOption('reverse', 'R', InputOption::VALUE_NONE),
+            new InputOption('direction', 'D', InputOption::VALUE_REQUIRED, '', 'uses'),
+        ]);
+
+        $input = new ArrayInput([], $definition);
+
+        $reader = new InputConfigReader($input);
+        $config = $reader->read();
+
+        self::assertSame('uses', $config['direction']);
+    }
+
+    #[Test]
     public function testReadValidatesLevel(): void
     {
         $definition = new InputDefinition([

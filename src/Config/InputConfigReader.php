@@ -55,6 +55,10 @@ final class InputConfigReader implements ConfigReader
             $config['level'] = $level;
         }
 
+        if (isset($config['reverse']) && $config['reverse'] === true) {
+            $config['direction'] = 'used-by';
+        }
+
         if (isset($config['debug-depth']) || isset($config['debug-seed'])) {
             if (!isset($config['debug']) || !is_array($config['debug'])) {
                 $config['debug'] = [];
