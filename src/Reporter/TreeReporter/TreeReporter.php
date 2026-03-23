@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Reporter\TreeReporter;
 
-use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId;
@@ -72,10 +71,7 @@ final class TreeReporter implements Reporter
                     $siblings = [];
                     $edges = $graph->edges($parentNode->id());
                     foreach ($edges as $edge) {
-                        if (
-                            $edge->kind() !== EdgeKind::UsedBy
-                            && $edge->kind() !== EdgeKind::DeclaredIn
-                        ) {
+                        if ($this->traversal->isTraversableEdge($edge->kind())) {
                             $siblings[] = $edge->to()->toString();
                         }
                     }

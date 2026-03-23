@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Reporter;
 
+use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId;
@@ -26,4 +27,9 @@ interface Traversal
      *                                                         Return true to continue traversal, false to stop.
      */
     public function traverse(Graph $graph, NodeId $symbol, callable $callback): void;
+
+    /**
+     * Returns whether an edge of the given kind is followed during traversal.
+     */
+    public function isTraversableEdge(EdgeKind $kind): bool;
 }

@@ -27,6 +27,11 @@ final class DependsTraversal implements Traversal
         $this->stack = new \SplStack();
     }
 
+    public function isTraversableEdge(EdgeKind $kind): bool
+    {
+        return $kind === EdgeKind::UsedBy || $kind === EdgeKind::DeclaredIn;
+    }
+
     /**
      * {@inheritdoc}
      */
