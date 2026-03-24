@@ -27,7 +27,12 @@ final class InspectAction
         $config = $input->config;
 
         $analyzer = match ($config->type) {
-            AnalyzerType::PhpStan => new PhpStanAnalyzer(new ContainerFactory(), new PhpFileCollector()),
+            AnalyzerType::PhpStan => new PhpStanAnalyzer(
+                new ContainerFactory(),
+                new PhpFileCollector(),
+                $config->includes,
+                $config->excludes,
+            ),
             AnalyzerType::Debug => DebugAnalyzer::create($config),
         };
         $graph = $analyzer->analyze($config->basePath);

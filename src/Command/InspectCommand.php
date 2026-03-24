@@ -62,7 +62,6 @@ final class InspectCommand extends Command
             'D',
             InputOption::VALUE_REQUIRED,
             'Dependency direction: uses|used-by (default: uses)',
-            'uses',
         )->addOption(
             'level',
             'L',
@@ -90,7 +89,6 @@ final class InspectCommand extends Command
             null,
             InputOption::VALUE_REQUIRED,
             'Analyzer type (phpstan|debug)',
-            'phpstan',
         )->addOption(
             'debug-depth',
             null,
@@ -116,7 +114,6 @@ final class InspectCommand extends Command
             'path',
             InputArgument::OPTIONAL,
             'Base directory to analyze (default: current working dir)',
-            getcwd(),
         );
     }
 
@@ -151,8 +148,8 @@ final class InspectCommand extends Command
 
         $loader = new ConfigLoader([
             new DefaultConfigReader(),
-            new EnvConfigReader(),
             new YamlConfigLoader($path),
+            new EnvConfigReader(),
             new InputConfigReader($input),
         ]);
         $config = $loader->load();

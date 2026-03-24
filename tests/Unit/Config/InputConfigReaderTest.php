@@ -19,17 +19,16 @@ use Symfony\Component\Console\Input\InputOption;
 final class InputConfigReaderTest extends TestCase
 {
     #[Test]
-    public function testReadMergesOptionsAndArguments(): void
+    public function testReadReturnsOnlyExplicitlyProvidedValues(): void
     {
         $definition = new InputDefinition([
             new InputArgument('target', InputArgument::OPTIONAL),
             new InputArgument('path', InputArgument::OPTIONAL),
-            new InputOption('direction', null, InputOption::VALUE_REQUIRED),
-            new InputOption('level', null, InputOption::VALUE_REQUIRED),
+            new InputOption('direction', 'D', InputOption::VALUE_REQUIRED),
+            new InputOption('level', 'L', InputOption::VALUE_REQUIRED),
         ]);
 
         $input = new ArrayInput([
-            'target' => 'App\Foo',
             'path' => '/project/path',
             '--direction' => 'used-by',
             '--level' => 5,
@@ -40,8 +39,28 @@ final class InputConfigReaderTest extends TestCase
 
         self::assertSame('used-by', $config['direction']);
         self::assertSame(5, $config['level']);
-        self::assertSame('App\Foo', $config['target']);
         self::assertSame('/project/path', $config['basePath']);
+        self::assertArrayNotHasKey('target', $config);
+    }
+
+    #[Test]
+    public function testReadOmitsUnspecifiedOptions(): void
+    {
+        $definition = new InputDefinition([
+            new InputArgument('target', InputArgument::OPTIONAL),
+            new InputArgument('path', InputArgument::OPTIONAL),
+            new InputOption('direction', 'D', InputOption::VALUE_REQUIRED),
+            new InputOption('type', null, InputOption::VALUE_REQUIRED),
+            new InputOption('include', 'I', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED),
+            new InputOption('exclude', 'E', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED),
+        ]);
+
+        $input = new ArrayInput([], $definition);
+
+        $reader = new InputConfigReader($input);
+        $config = $reader->read();
+
+        self::assertSame([], $config);
     }
 
     #[Test]
@@ -59,12 +78,14 @@ final class InputConfigReaderTest extends TestCase
         $config = $reader->read();
 
         self::assertSame('/some/path', $config['basePath']);
+        self::assertArrayNotHasKey('path', $config);
     }
 
     #[Test]
     public function testReadMapsIncludeAndExcludeToPluralForm(): void
     {
         $definition = new InputDefinition([
+            new InputArgument('path', InputArgument::OPTIONAL),
             new InputOption('include', 'I', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED),
             new InputOption('exclude', 'E', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED),
         ]);
@@ -78,7 +99,6 @@ final class InputConfigReaderTest extends TestCase
         $config = $reader->read();
 
         self::assertSame(['src/**'], $config['includes']);
-        self::assertSame(['src/**'], $config['includes']);
         self::assertSame(['vendor/**'], $config['excludes']);
     }
 
@@ -86,6 +106,7 @@ final class InputConfigReaderTest extends TestCase
     public function testReadParsesDebugOptions(): void
     {
         $definition = new InputDefinition([
+            new InputArgument('path', InputArgument::OPTIONAL),
             new InputOption('debug-depth', null, InputOption::VALUE_REQUIRED),
             new InputOption('debug-seed', null, InputOption::VALUE_REQUIRED),
         ]);
@@ -110,8 +131,9 @@ final class InputConfigReaderTest extends TestCase
     public function testReadReverseOptionSetsDirectionToUsedBy(): void
     {
         $definition = new InputDefinition([
+            new InputArgument('path', InputArgument::OPTIONAL),
             new InputOption('reverse', 'R', InputOption::VALUE_NONE),
-            new InputOption('direction', 'D', InputOption::VALUE_REQUIRED, '', 'uses'),
+            new InputOption('direction', 'D', InputOption::VALUE_REQUIRED),
         ]);
 
         $input = new ArrayInput([
@@ -125,11 +147,12 @@ final class InputConfigReaderTest extends TestCase
     }
 
     #[Test]
-    public function testReadWithoutReverseDoesNotChangeDirection(): void
+    public function testReadWithoutReverseDoesNotEmitDirection(): void
     {
         $definition = new InputDefinition([
+            new InputArgument('path', InputArgument::OPTIONAL),
             new InputOption('reverse', 'R', InputOption::VALUE_NONE),
-            new InputOption('direction', 'D', InputOption::VALUE_REQUIRED, '', 'uses'),
+            new InputOption('direction', 'D', InputOption::VALUE_REQUIRED),
         ]);
 
         $input = new ArrayInput([], $definition);
@@ -137,14 +160,15 @@ final class InputConfigReaderTest extends TestCase
         $reader = new InputConfigReader($input);
         $config = $reader->read();
 
-        self::assertSame('uses', $config['direction']);
+        self::assertArrayNotHasKey('direction', $config);
     }
 
     #[Test]
     public function testReadValidatesLevel(): void
     {
         $definition = new InputDefinition([
-            new InputOption('level', null, InputOption::VALUE_REQUIRED),
+            new InputArgument('path', InputArgument::OPTIONAL),
+            new InputOption('level', 'L', InputOption::VALUE_REQUIRED),
         ]);
 
         $input = new ArrayInput([
@@ -157,13 +181,23 @@ final class InputConfigReaderTest extends TestCase
         $this->expectExceptionMessage('Invalid level: invalid. Level must be a positive integer.');
 
         $reader->read();
+    }
 
-        $inputValid = new ArrayInput([
+    #[Test]
+    public function testReadParsesValidLevel(): void
+    {
+        $definition = new InputDefinition([
+            new InputArgument('path', InputArgument::OPTIONAL),
+            new InputOption('level', 'L', InputOption::VALUE_REQUIRED),
+        ]);
+
+        $input = new ArrayInput([
             '--level' => '5',
         ], $definition);
-        $readerValid = new InputConfigReader($inputValid);
-        $configValid = $readerValid->read();
 
-        self::assertSame(5, $configValid['level']);
+        $reader = new InputConfigReader($input);
+        $config = $reader->read();
+
+        self::assertSame(5, $config['level']);
     }
 }

@@ -14,16 +14,22 @@ use PHPStan\Analyser\Analyser as PhpStanAnalyser;
 
 final class PhpStanAnalyzer implements Analyzer
 {
+    /**
+     * @param string[] $includes File path patterns to include in analysis
+     * @param string[] $excludes File path patterns to exclude from analysis
+     */
     public function __construct(
         private readonly ContainerFactory $containerFactory,
         private readonly PhpFileCollector $fileCollector,
+        private readonly array $includes = [],
+        private readonly array $excludes = [],
     ) {}
 
     public function analyze(string $path): Graph
     {
         $realPath = realpath($path);
         $absolutePath = $realPath !== false ? $realPath : $path;
-        $files = $this->fileCollector->collect([$absolutePath]);
+        $files = $this->fileCollector->collect([$absolutePath], $this->includes, $this->excludes);
 
         if ($files === []) {
             return new Graph();

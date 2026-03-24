@@ -25,7 +25,7 @@ final class EnvConfigReaderTest extends TestCase
 
         self::assertSame('/env/path', $config['basePath']);
         self::assertSame('used-by', $config['direction']);
-        self::assertSame('10', $config['level']);
+        self::assertSame(10, $config['level']);
 
         putenv('PEQ_BASE_PATH');
         putenv('PEQ_DIRECTION');
@@ -79,5 +79,31 @@ final class EnvConfigReaderTest extends TestCase
 
         putenv('PEQ_DEBUG_DEPTH');
         putenv('PEQ_DEBUG_SEED');
+    }
+
+    #[Test]
+    public function testReadHandlesExcludesCorrectly(): void
+    {
+        putenv('PEQ_EXCLUDES=vendor,tests,.git');
+
+        $reader = new EnvConfigReader('PEQ_');
+        $config = $reader->read();
+
+        self::assertSame(['vendor', 'tests', '.git'], $config['excludes']);
+
+        putenv('PEQ_EXCLUDES');
+    }
+
+    #[Test]
+    public function testReadHandlesIncludesCorrectly(): void
+    {
+        putenv('PEQ_INCLUDES=src,lib');
+
+        $reader = new EnvConfigReader('PEQ_');
+        $config = $reader->read();
+
+        self::assertSame(['src', 'lib'], $config['includes']);
+
+        putenv('PEQ_INCLUDES');
     }
 }

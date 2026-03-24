@@ -9,10 +9,10 @@ use Symfony\Component\Console\Input\InputInterface;
 /**
  * Reads configuration from CLI command input.
  *
- * This reader extracts configuration values from the Symfony Console InputInterface,
- * merging both command arguments and options. It provides the highest priority in the
- * configuration cascade, allowing users to override all other configuration sources
- * (defaults, YAML files, environment variables) directly from the command line.
+ * This reader extracts only explicitly-provided configuration values from the
+ * Symfony Console InputInterface. Options and arguments that were not specified
+ * by the user are omitted, ensuring that CLI defaults do not override values
+ * from lower-priority configuration sources (YAML files, environment variables).
  */
 final class InputConfigReader implements ConfigReader
 {
@@ -28,24 +28,23 @@ final class InputConfigReader implements ConfigReader
      */
     public function read(): array
     {
-        $options = $this->input->getOptions();
-        $options = array_filter($options, fn ($v, $k) => is_string($k), ARRAY_FILTER_USE_BOTH);
-        $arguments = $this->input->getArguments();
-        $arguments = array_filter($arguments, fn ($v, $k) => is_string($k), ARRAY_FILTER_USE_BOTH);
+        $config = [];
 
-        $config = array_merge($options, $arguments);
+        $path = $this->input->getArgument('path');
+        if (is_string($path)) {
+            $config['basePath'] = $path;
+        }
 
-        if (isset($config['path'])) {
-            $config['basePath'] = $config['path'];
+        if ($this->hasParameter('--direction', '-D')) {
+            $config['direction'] = $this->input->getOption('direction');
         }
-        if (isset($config['include'])) {
-            $config['includes'] = $config['include'];
+
+        if ($this->hasParameter('--reverse', '-R')) {
+            $config['direction'] = 'used-by';
         }
-        if (isset($config['exclude'])) {
-            $config['excludes'] = $config['exclude'];
-        }
-        if (isset($config['level'])) {
-            $levelValue = $config['level'];
+
+        if ($this->hasParameter('--level', '-L')) {
+            $levelValue = $this->input->getOption('level');
             $level = filter_var($levelValue, FILTER_VALIDATE_INT);
             if ($level === false || $level <= 0) {
                 $displayValue = is_scalar($levelValue) ? (string) $levelValue : get_debug_type($levelValue);
@@ -55,22 +54,28 @@ final class InputConfigReader implements ConfigReader
             $config['level'] = $level;
         }
 
-        if (isset($config['reverse']) && $config['reverse'] === true) {
-            $config['direction'] = 'used-by';
+        if ($this->hasParameter('--include', '-I')) {
+            $config['includes'] = $this->input->getOption('include');
         }
 
-        if (isset($config['debug-depth']) || isset($config['debug-seed'])) {
-            if (!isset($config['debug']) || !is_array($config['debug'])) {
-                $config['debug'] = [];
-            }
-            if (isset($config['debug-depth'])) {
-                $depth = filter_var($config['debug-depth'], FILTER_VALIDATE_INT);
+        if ($this->hasParameter('--exclude', '-E')) {
+            $config['excludes'] = $this->input->getOption('exclude');
+        }
+
+        if ($this->hasParameter('--type')) {
+            $config['type'] = $this->input->getOption('type');
+        }
+
+        if ($this->hasParameter('--debug-depth') || $this->hasParameter('--debug-seed')) {
+            $config['debug'] = [];
+            if ($this->hasParameter('--debug-depth')) {
+                $depth = filter_var($this->input->getOption('debug-depth'), FILTER_VALIDATE_INT);
                 if ($depth !== false) {
                     $config['debug']['depth'] = $depth;
                 }
             }
-            if (isset($config['debug-seed'])) {
-                $seed = filter_var($config['debug-seed'], FILTER_VALIDATE_INT);
+            if ($this->hasParameter('--debug-seed')) {
+                $seed = filter_var($this->input->getOption('debug-seed'), FILTER_VALIDATE_INT);
                 if ($seed !== false) {
                     $config['debug']['seed'] = $seed;
                 }
@@ -78,5 +83,10 @@ final class InputConfigReader implements ConfigReader
         }
 
         return $config;
+    }
+
+    private function hasParameter(string ...$names): bool
+    {
+        return $this->input->hasParameterOption($names);
     }
 }

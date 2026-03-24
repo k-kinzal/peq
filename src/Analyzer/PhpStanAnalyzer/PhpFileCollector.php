@@ -14,9 +14,13 @@ final class PhpFileCollector
     /**
      * Collects PHP files from the specified paths.
      *
+     * Patterns are matched against relative paths within the scanned directories.
+     * For example, 'src' matches files under a 'src/' directory, and 'vendor'
+     * excludes the 'vendor/' directory and its contents.
+     *
      * @param string[] $paths    List of file or directory paths to scan
-     * @param string[] $includes List of glob patterns to include
-     * @param string[] $excludes List of glob patterns to exclude
+     * @param string[] $includes List of path patterns to include (matched via Finder::path)
+     * @param string[] $excludes List of path patterns to exclude (matched via Finder::notPath + Finder::exclude)
      *
      * @return string[] List of absolute paths to collected PHP files
      */
@@ -45,11 +49,11 @@ final class PhpFileCollector
             ;
 
             if ($includes !== []) {
-                $finder->name($includes);
+                $finder->path($includes);
             }
 
             if ($excludes !== []) {
-                $finder->notName($excludes);
+                $finder->notPath($excludes);
                 $finder->exclude($excludes);
             }
 
