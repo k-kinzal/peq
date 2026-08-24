@@ -6,10 +6,11 @@ namespace Tests\Contract\Analyzer;
 
 use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\Graph;
-use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
-use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
+use Generator;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -20,13 +21,13 @@ use PHPUnit\Framework\TestCase;
  * pattern regardless of the surrounding control-flow context.
  *
  * 9 patterns (5 original + 4 new) x 9+ contexts.
- */
+ */#[CoversClass(PhpStanAnalyzer::class)]
+#[Large]
 final class UsageEdgeContractTest extends TestCase
 {
-    // ------------------------------------------------------------------
-    // Instantiation: new Dep()
-    // ------------------------------------------------------------------
-
+    /**
+     * Checks that instantiation contract.
+     */
     #[DataProvider('provideInstantiationContexts')]
     #[Test]
     public function testInstantiationContract(string $label, string $methodBody): void
@@ -42,9 +43,9 @@ final class UsageEdgeContractTest extends TestCase
     }
 
     /**
-     * @return \Generator<string, array{string, string}>
+     * @return Generator<string, array{string, string}>
      */
-    public static function provideInstantiationContexts(): \Generator
+    public static function provideInstantiationContexts(): Generator
     {
         yield 'direct' => ['direct', '$x = new Dep();'];
 
@@ -65,10 +66,9 @@ final class UsageEdgeContractTest extends TestCase
         yield 'in_closure' => ['in_closure', '$f = function() { $x = new Dep(); };'];
     }
 
-    // ------------------------------------------------------------------
-    // Static call: Dep::staticMethod()
-    // ------------------------------------------------------------------
-
+    /**
+     * Checks that static call contract.
+     */
     #[DataProvider('provideStaticCallContexts')]
     #[Test]
     public function testStaticCallContract(string $label, string $methodBody): void
@@ -84,9 +84,9 @@ final class UsageEdgeContractTest extends TestCase
     }
 
     /**
-     * @return \Generator<string, array{string, string}>
+     * @return Generator<string, array{string, string}>
      */
-    public static function provideStaticCallContexts(): \Generator
+    public static function provideStaticCallContexts(): Generator
     {
         yield 'direct' => ['direct', '$x = Dep::staticMethod();'];
 
@@ -107,10 +107,9 @@ final class UsageEdgeContractTest extends TestCase
         yield 'in_closure' => ['in_closure', '$f = function() { $x = Dep::staticMethod(); };'];
     }
 
-    // ------------------------------------------------------------------
-    // Const fetch: Dep::SOME_CONST
-    // ------------------------------------------------------------------
-
+    /**
+     * Checks that const fetch contract.
+     */
     #[DataProvider('provideConstFetchContexts')]
     #[Test]
     public function testConstFetchContract(string $label, string $methodBody): void
@@ -126,9 +125,9 @@ final class UsageEdgeContractTest extends TestCase
     }
 
     /**
-     * @return \Generator<string, array{string, string}>
+     * @return Generator<string, array{string, string}>
      */
-    public static function provideConstFetchContexts(): \Generator
+    public static function provideConstFetchContexts(): Generator
     {
         yield 'direct' => ['direct', '$x = Dep::SOME_CONST;'];
 
@@ -149,10 +148,9 @@ final class UsageEdgeContractTest extends TestCase
         yield 'in_closure' => ['in_closure', '$f = function() { $x = Dep::SOME_CONST; };'];
     }
 
-    // ------------------------------------------------------------------
-    // Instanceof: $x instanceof Dep
-    // ------------------------------------------------------------------
-
+    /**
+     * Checks that instanceof contract.
+     */
     #[DataProvider('provideInstanceofContexts')]
     #[Test]
     public function testInstanceofContract(string $label, string $methodBody): void
@@ -168,9 +166,9 @@ final class UsageEdgeContractTest extends TestCase
     }
 
     /**
-     * @return \Generator<string, array{string, string}>
+     * @return Generator<string, array{string, string}>
      */
-    public static function provideInstanceofContexts(): \Generator
+    public static function provideInstanceofContexts(): Generator
     {
         yield 'direct' => ['direct', '$x = $y instanceof Dep;'];
 
@@ -191,10 +189,9 @@ final class UsageEdgeContractTest extends TestCase
         yield 'in_closure' => ['in_closure', '$f = function() use ($y) { $x = $y instanceof Dep; };'];
     }
 
-    // ------------------------------------------------------------------
-    // Catch: catch (Dep $e)
-    // ------------------------------------------------------------------
-
+    /**
+     * Checks that catch contract.
+     */
     #[DataProvider('provideCatchContexts')]
     #[Test]
     public function testCatchContract(string $label, string $methodBody): void
@@ -210,9 +207,9 @@ final class UsageEdgeContractTest extends TestCase
     }
 
     /**
-     * @return \Generator<string, array{string, string}>
+     * @return Generator<string, array{string, string}>
      */
-    public static function provideCatchContexts(): \Generator
+    public static function provideCatchContexts(): Generator
     {
         yield 'direct' => ['direct', 'try { throw new \Exception(); } catch (Dep $e) {}'];
 
@@ -233,10 +230,9 @@ final class UsageEdgeContractTest extends TestCase
         yield 'in_closure' => ['in_closure', '$f = function() { try { throw new \Exception(); } catch (Dep $e) {} };'];
     }
 
-    // ------------------------------------------------------------------
-    // Function call: dep_func()
-    // ------------------------------------------------------------------
-
+    /**
+     * Checks that function call contract.
+     */
     #[DataProvider('provideFunctionCallContexts')]
     #[Test]
     public function testFunctionCallContract(string $label, string $methodBody): void
@@ -252,9 +248,9 @@ final class UsageEdgeContractTest extends TestCase
     }
 
     /**
-     * @return \Generator<string, array{string, string}>
+     * @return Generator<string, array{string, string}>
      */
-    public static function provideFunctionCallContexts(): \Generator
+    public static function provideFunctionCallContexts(): Generator
     {
         yield 'direct' => ['direct', 'dep_func();'];
 
@@ -275,10 +271,9 @@ final class UsageEdgeContractTest extends TestCase
         yield 'in_closure' => ['in_closure', '$f = function() { dep_func(); };'];
     }
 
-    // ------------------------------------------------------------------
-    // Method call: $this->helperMethod()
-    // ------------------------------------------------------------------
-
+    /**
+     * Checks that method call contract.
+     */
     #[DataProvider('provideMethodCallContexts')]
     #[Test]
     public function testMethodCallContract(string $label, string $methodBody): void
@@ -294,9 +289,9 @@ final class UsageEdgeContractTest extends TestCase
     }
 
     /**
-     * @return \Generator<string, array{string, string}>
+     * @return Generator<string, array{string, string}>
      */
-    public static function provideMethodCallContexts(): \Generator
+    public static function provideMethodCallContexts(): Generator
     {
         yield 'direct' => ['direct', '$this->helperMethod();'];
 
@@ -319,10 +314,9 @@ final class UsageEdgeContractTest extends TestCase
         yield 'nullsafe' => ['nullsafe', '$this?->helperMethod();'];
     }
 
-    // ------------------------------------------------------------------
-    // Property access: $this->targetProp
-    // ------------------------------------------------------------------
-
+    /**
+     * Checks that property access contract.
+     */
     #[DataProvider('providePropertyAccessContexts')]
     #[Test]
     public function testPropertyAccessContract(string $label, string $methodBody): void
@@ -338,9 +332,9 @@ final class UsageEdgeContractTest extends TestCase
     }
 
     /**
-     * @return \Generator<string, array{string, string}>
+     * @return Generator<string, array{string, string}>
      */
-    public static function providePropertyAccessContexts(): \Generator
+    public static function providePropertyAccessContexts(): Generator
     {
         yield 'direct' => ['direct', '$x = $this->targetProp;'];
 
@@ -363,10 +357,9 @@ final class UsageEdgeContractTest extends TestCase
         yield 'nullsafe' => ['nullsafe', '$x = $this?->targetProp;'];
     }
 
-    // ------------------------------------------------------------------
-    // Static property access: Dep::$staticProp
-    // ------------------------------------------------------------------
-
+    /**
+     * Checks that static property access contract.
+     */
     #[DataProvider('provideStaticPropertyAccessContexts')]
     #[Test]
     public function testStaticPropertyAccessContract(string $label, string $methodBody): void
@@ -382,9 +375,9 @@ final class UsageEdgeContractTest extends TestCase
     }
 
     /**
-     * @return \Generator<string, array{string, string}>
+     * @return Generator<string, array{string, string}>
      */
-    public static function provideStaticPropertyAccessContexts(): \Generator
+    public static function provideStaticPropertyAccessContexts(): Generator
     {
         yield 'direct' => ['direct', '$x = Dep::$staticProp;'];
 
@@ -405,10 +398,9 @@ final class UsageEdgeContractTest extends TestCase
         yield 'in_closure' => ['in_closure', '$f = function() { $x = Dep::$staticProp; };'];
     }
 
-    // ------------------------------------------------------------------
-    // Non-detection: $obj->method() (intentional limitation)
-    // ------------------------------------------------------------------
-
+    /**
+     * Checks that method call on arbitrary object is intentionally not detected.
+     */
     #[Test]
     public function testMethodCallOnArbitraryObjectIsIntentionallyNotDetected(): void
     {
@@ -438,6 +430,9 @@ final class UsageEdgeContractTest extends TestCase
         );
     }
 
+    /**
+     * Checks that property access on arbitrary object is intentionally not detected.
+     */
     #[Test]
     public function testPropertyAccessOnArbitraryObjectIsIntentionallyNotDetected(): void
     {
@@ -467,18 +462,17 @@ final class UsageEdgeContractTest extends TestCase
         );
     }
 
-    // ------------------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------------------
-
-    private static function analyzeCode(string $phpCode): Graph
+    /**
+     * Returns the analyze code a check needs.
+     */
+    public static function analyzeCode(string $phpCode): Graph
     {
         $tmpDir = sys_get_temp_dir().'/peq_contract_'.uniqid();
         mkdir($tmpDir, 0o777, true);
         file_put_contents($tmpDir.'/Test.php', $phpCode);
 
         try {
-            $analyzer = new PhpStanAnalyzer(new ContainerFactory(), new PhpFileCollector());
+            $analyzer = new PhpStanAnalyzer();
 
             return $analyzer->analyze($tmpDir);
         } finally {
@@ -487,7 +481,10 @@ final class UsageEdgeContractTest extends TestCase
         }
     }
 
-    private static function wrapInMethodBody(string $body): string
+    /**
+     * Returns the wrap in method body a check needs.
+     */
+    public static function wrapInMethodBody(string $body): string
     {
         return <<<PHP
             <?php
@@ -509,7 +506,10 @@ final class UsageEdgeContractTest extends TestCase
             PHP;
     }
 
-    private static function wrapInFunctionCallContext(string $body): string
+    /**
+     * Returns the wrap in function call context a check needs.
+     */
+    public static function wrapInFunctionCallContext(string $body): string
     {
         return <<<PHP
             <?php
@@ -526,7 +526,10 @@ final class UsageEdgeContractTest extends TestCase
             PHP;
     }
 
-    private static function wrapInMethodCallContext(string $body): string
+    /**
+     * Returns the wrap in method call context a check needs.
+     */
+    public static function wrapInMethodCallContext(string $body): string
     {
         return <<<PHP
             <?php
@@ -543,7 +546,10 @@ final class UsageEdgeContractTest extends TestCase
             PHP;
     }
 
-    private static function wrapInPropertyAccessContext(string $body): string
+    /**
+     * Returns the wrap in property access context a check needs.
+     */
+    public static function wrapInPropertyAccessContext(string $body): string
     {
         return <<<PHP
             <?php
@@ -560,7 +566,10 @@ final class UsageEdgeContractTest extends TestCase
             PHP;
     }
 
-    private function assertEdgeExists(
+    /**
+     * Returns the assert edge exists a check needs.
+     */
+    public function assertEdgeExists(
         Graph $graph,
         string $fromSuffix,
         string $toSuffix,
@@ -582,7 +591,10 @@ final class UsageEdgeContractTest extends TestCase
         self::fail($msg."\nNodes: ".implode(', ', array_map(fn ($n) => $n->id()->toString(), $graph->nodes())));
     }
 
-    private function assertEdgeNotExists(
+    /**
+     * Returns the assert edge not exists a check needs.
+     */
+    public function assertEdgeNotExists(
         Graph $graph,
         string $fromSuffix,
         string $toSuffix,

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Analyzer\Graph\NodeId;
 
-use App\Analyzer\Graph\IdentifierAssert;
 use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\NodeId;
+use App\Analyzer\Graph\QualifiedName;
 
 /**
  * Unique identifier for a class node in the dependency graph.
@@ -15,54 +15,46 @@ use App\Analyzer\Graph\NodeId;
  * and class name. This ID uniquely identifies a PHP class within the analyzed codebase.
  *
  * @implements NodeId<ClassNode>
- *
- * @property string $fullQualifiedName Alias for fullQualifiedName()
  */
 final class ClassNodeId implements NodeId
 {
-    use IdentifierAssert;
+    /**
+     * The precomputed string form of this identifier.
+     */
+    private readonly string $stringValue;
 
     /**
      * @param string $namespace The namespace of the class (must be a valid PHP namespace)
      * @param string $className The class name (must be a valid PHP identifier)
      */
-    private readonly string $stringValue;
-
     public function __construct(
         public readonly string $namespace,
         public readonly string $className,
     ) {
         if ($namespace !== '') {
-            self::assertNamespace($namespace);
+            assert(QualifiedName::isNamespace($namespace), 'The namespace must be one PHP would accept');
         }
-        self::assertIdentifier($className);
+        assert(QualifiedName::isIdentifier($className), 'The name must be one PHP would accept for a single symbol');
         $this->stringValue = $namespace === '' ? $className : $namespace.'\\'.$className;
     }
 
-    public function __toString(): string
-    {
-        return $this->toString();
-    }
-
-    public function __get(string $name): mixed
-    {
-        return match ($name) {
-            'fullQualifiedName' => $this->fullQualifiedName(),
-            default => throw new \LogicException("Undefined property: {$name}"),
-        };
-    }
-
     /**
-     * Returns the fully qualified class name.
+     * Builds the identifier from a fully qualified name.
      *
-     * Combines namespace and class name with a backslash separator
-     * (e.g., "App\Domain\User").
+     * @param string $fullName The fully qualified class name, as analysis reported it
      *
-     * @return string The fully qualified class name
+     * @example Building an identifier from a written name
+     *     \App\Analyzer\Graph\NodeId\ClassNodeId::of('App\\Domain\\Invoice')->toString() // => 'App\\Domain\\Invoice'
+     * @example A global class has no namespace
+     *     \App\Analyzer\Graph\NodeId\ClassNodeId::of('Invoice')->namespace // => ''
+     *
+     * @return self The identifier for that class
      */
-    public function fullQualifiedName(): string
+    public static function of(string $fullName): self
     {
-        return $this->stringValue;
+        $name = new QualifiedName($fullName);
+
+        return new self($name->namespace, $name->shortName);
     }
 
     /**

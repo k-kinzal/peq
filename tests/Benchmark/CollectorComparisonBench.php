@@ -4,150 +4,58 @@ declare(strict_types=1);
 
 namespace Tests\Benchmark;
 
-use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
-use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
-use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
 use PhpBench\Attributes\BeforeMethods;
-use PhpBench\Attributes\Groups;
 use PhpBench\Attributes\Iterations;
 use PhpBench\Attributes\Revs;
-use PHPStan\Analyser\Analyser as PhpStanAnalyser;
-use PHPStan\DependencyInjection\Container;
-use PHPStan\DependencyInjection\ContainerFactory as PhpStanContainerFactory;
-use Symfony\Component\Yaml\Yaml;
+use Tests\Fixture\Analyzer\AnalysisSteps;
 
 /**
- * Compares PHPStan analysis cost with/without InClassMethodCollector.
+ * Measures what reading method bodies costs.
  *
- * InClassMethodCollector re-parses every source file per method to recover
- * AST nodes stripped by PHPStan v2's CleaningVisitor. This benchmark
- * isolates its cost by running analysis with DependencyCollector only
- * vs both collectors.
+ * Declarations come straight out of the tree the analysis already built, while the
+ * relations written inside method bodies need the sources to be read again. This
+ * compares assembling a graph from declarations alone with assembling one from both,
+ * which is what says whether that second read is worth its price.
  *
  * @internal
  */
 final class CollectorComparisonBench
 {
-    /** @var string[] */
-    private array $files = [];
+    /**
+     * @var array<string, mixed> What the collectors reported for peq's own sources
+     */
+    private array $collected = [];
 
-    private ?PhpStanAnalyser $analyserBothCollectors = null;
-
-    private ?PhpStanAnalyser $analyserDependencyOnly = null;
-
-    public function setUpBothCollectors(): void
+    /**
+     * Runs the analysis once so that only assembly is measured.
+     *
+     * @throws \PHPStan\DependencyInjection\MissingServiceException If the container holds no analyser
+     */
+    public function setUp(): void
     {
-        $this->files = $this->collectFiles();
-        $container = $this->createContainer([
-            ['class' => DependencyCollector::class, 'tags' => ['phpstan.collector']],
-            ['class' => InClassMethodCollector::class, 'tags' => ['phpstan.collector']],
-        ]);
-
-        /** @phpstan-ignore phpstanApi.classConstant */
-        $this->analyserBothCollectors = $container->getByType(PhpStanAnalyser::class);
-    }
-
-    public function setUpDependencyOnly(): void
-    {
-        $this->files = $this->collectFiles();
-        $container = $this->createContainer([
-            ['class' => DependencyCollector::class, 'tags' => ['phpstan.collector']],
-        ]);
-
-        /** @phpstan-ignore phpstanApi.classConstant */
-        $this->analyserDependencyOnly = $container->getByType(PhpStanAnalyser::class);
+        $files = AnalysisSteps::ownFiles();
+        $this->collected = AnalysisSteps::collect(AnalysisSteps::container($files), $files);
     }
 
     /**
-     * Full analysis with both collectors (baseline).
+     * Measures assembling a graph from declarations alone.
      */
-    #[BeforeMethods('setUpBothCollectors')]
-    #[Revs(1)]
-    #[Iterations(3)]
-    #[Groups(['collectors'])]
-    public function benchAnalyseWithBothCollectors(): void
+    #[BeforeMethods('setUp')]
+    #[Revs(5)]
+    #[Iterations(5)]
+    public function benchDeclarationsOnly(): void
     {
-        /** @phpstan-ignore phpstanApi.class */
-        assert($this->analyserBothCollectors instanceof PhpStanAnalyser);
-
-        /** @phpstan-ignore phpstanApi.method */
-        $this->analyserBothCollectors->analyse($this->files, null, null, false, $this->files);
+        AnalysisSteps::graph($this->collected, methodBodies: false);
     }
 
     /**
-     * Analysis with DependencyCollector only (no file re-parsing).
+     * Measures assembling a graph from declarations and method bodies together.
      */
-    #[BeforeMethods('setUpDependencyOnly')]
-    #[Revs(1)]
-    #[Iterations(3)]
-    #[Groups(['collectors'])]
-    public function benchAnalyseWithDependencyOnly(): void
+    #[BeforeMethods('setUp')]
+    #[Revs(5)]
+    #[Iterations(5)]
+    public function benchDeclarationsAndMethodBodies(): void
     {
-        /** @phpstan-ignore phpstanApi.class */
-        assert($this->analyserDependencyOnly instanceof PhpStanAnalyser);
-
-        /** @phpstan-ignore phpstanApi.method */
-        $this->analyserDependencyOnly->analyse($this->files, null, null, false, $this->files);
-    }
-
-    /**
-     * @return string[]
-     */
-    private function collectFiles(): array
-    {
-        $srcPath = dirname(__DIR__, 2).'/src';
-        $collector = new PhpFileCollector();
-
-        return $collector->collect([$srcPath]);
-    }
-
-    /**
-     * @param list<array{class: class-string, tags: list<string>}> $services
-     */
-    private function createContainer(array $services): Container
-    {
-        $cwd = getcwd();
-        if ($cwd === false) {
-            throw new \RuntimeException('Unable to determine current working directory');
-        }
-        $containerFactory = new PhpStanContainerFactory($cwd);
-
-        $tempDir = sys_get_temp_dir().'/peq-bench-'.uniqid();
-        mkdir($tempDir);
-        $tempConfig = $tempDir.'/phpstan.neon';
-
-        $content = [
-            'services' => $services,
-            'parameters' => [
-                'customRulesetUsed' => true,
-                'level' => 0,
-                'tmpDir' => $tempDir.'/tmp',
-            ],
-            'includes' => [],
-        ];
-
-        file_put_contents($tempConfig, Yaml::dump($content, 4));
-
-        try {
-            return $containerFactory->create($tempDir, [$tempConfig], $this->files);
-        } finally {
-            $this->deleteDirectory($tempDir);
-        }
-    }
-
-    private function deleteDirectory(string $dir): void
-    {
-        if (!file_exists($dir)) {
-            return;
-        }
-        $files = scandir($dir);
-        if ($files === false) {
-            return;
-        }
-        $files = array_diff($files, ['.', '..']);
-        foreach ($files as $file) {
-            (is_dir("{$dir}/{$file}")) ? $this->deleteDirectory("{$dir}/{$file}") : unlink("{$dir}/{$file}");
-        }
-        rmdir($dir);
+        AnalysisSteps::graph($this->collected, methodBodies: true);
     }
 }

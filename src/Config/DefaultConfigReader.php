@@ -16,7 +16,9 @@ namespace App\Config;
 final class DefaultConfigReader implements ConfigReader
 {
     /**
-     * {@inheritdoc}
+     * Reports the baseline configuration every other source overlays.
+     *
+     * @return array<string, mixed> The default settings
      */
     public function read(): array
     {

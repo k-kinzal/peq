@@ -2,6 +2,8 @@ includes:
     - vendor/phpstan/phpstan-symfony/extension.neon
     - vendor/phpstan/phpstan-strict-rules/rules.neon
     - vendor/phpstan/phpstan-deprecation-rules/rules.neon
+    - vendor/k-kinzal/php-ai-toolkit/extension.neon
+    - vendor/k-kinzal/php-ai-toolkit/error-formatter.neon
 
 parameters:
     level: max
@@ -9,11 +11,54 @@ parameters:
         - bin
         - src
         - tests
+    excludePaths:
+        analyse:
+            # Fixtures are scaffolding for the tests that use them: doubles, oracles
+            # and deliberate source samples. They are still type-checked as part of
+            # the tests that consume them, but the rules about how production code
+            # and test classes must be shaped do not apply to them.
+            - tests/Fixture
+        analyseAndScan:
+            - tests/Fixture/Source
     scanFiles:
         - vendor/giorgiosironi/eris/src/Generator/ChooseGenerator.php
+    stubFiles:
+        - phpstan-stubs/php-parser.stub
     checkUninitializedProperties: true
     checkTooWideReturnTypesInProtectedAndPublicMethods: true
     checkImplicitMixed: true
     checkBenevolentUnionTypes: true
     reportUnmatchedIgnoredErrors: true
     treatPhpDocTypesAsCertain: false
+    exceptions:
+        implicitThrows: false
+        check:
+            missingCheckedExceptionInThrows: true
+            tooWideThrowType: true
+        uncheckedExceptionClasses:
+            - LogicException
+            - RuntimeException
+            - Error
+            - Random\RandomException
+            - PHPUnit\Framework\MockObject\Exception
+    customRules:
+        broadCatchAllowedPaths:
+            - 'bin/console'
+    ignoreErrors:
+        # peq exists to read PHP dependency graphs, and the resolved types PHPStan
+        # computes are what make that possible: knowing which class a call lands on
+        # rather than only which method name was written. Those types are only
+        # reachable through PHPStan's own analyser, collector and container classes,
+        # which carry no backward compatibility promise. There is no supported API
+        # that answers the same question, so this is not a suppression of a fixable
+        # error but the recorded cost of the architecture. It is scoped to the one
+        # package that talks to PHPStan; every other layer works on peq's own graph.
+        -
+            identifier: phpstanApi.method
+            path: src/Analyzer/PhpStanAnalyzer/*
+        -
+            identifier: phpstanApi.classConstant
+            path: src/Analyzer/PhpStanAnalyzer/*
+        -
+            identifier: phpstanApi.instanceofAssumption
+            path: src/Analyzer/PhpStanAnalyzer/*

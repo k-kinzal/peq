@@ -24,11 +24,19 @@ use PHPStan\Analyser\Scope;
  * Access on arbitrary objects ($obj->prop) is not resolved because the
  * re-parsed AST context used by InClassMethodNodeProcessor lacks PHPStan's
  * type inference needed to determine the class of arbitrary receivers.
+ *
+ * @visibility parent
  */
 final class PropertyAccessProcessor
 {
     /**
-     * @return list<PropertyAccessEdge>
+     * Records what this declaration or expression brings into the graph.
+     *
+     * @param NullsafePropertyFetch|PropertyFetch $node       The syntax node met during analysis
+     * @param Scope                               $scope      The analyser scope it was written in
+     * @param null|Node                           $sourceNode The symbol it is written inside, resolved from the scope when omitted
+     *
+     * @return list<PropertyAccessEdge> The relations it describes
      */
     public static function process(NullsafePropertyFetch|PropertyFetch $node, Scope $scope, ?Node $sourceNode = null): array
     {
@@ -44,7 +52,7 @@ final class PropertyAccessProcessor
             $className = $scope->getClassReflection()->getName();
             $propertyName = $node->name->toString();
             $targetNode = new PropertyNode(
-                new PropertyNodeId(SourceResolver::getNamespace($className), SourceResolver::getShortName($className), $propertyName),
+                PropertyNodeId::of($className, $propertyName),
                 false,
                 null,
             );

@@ -4,58 +4,153 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Config;
 
+use App\Analyzer\Graph\Direction;
 use App\Config\ConfigException;
 use App\Config\ConfigLoader;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use Tests\Fixture\Config\StubConfigReader;
 
 /**
  * @internal
  */
+#[CoversClass(ConfigLoader::class)]
+#[UsesClass(\App\Config\Config::class)]
+#[UsesClass(\App\Config\DebugAnalyzerConfig::class)]
+#[UsesClass(\App\Config\RawConfig::class)]
+#[Small]
 final class ConfigLoaderTest extends TestCase
 {
-    #[Test]
-    public function testLoadMergesConfigurationInOrder(): void
+    /**
+     * @throws ConfigException
+     */
+    public function testLoadLetsALaterSourceOverruleAnEarlierOne(): void
     {
-        $reader1 = new StubConfigReader([
-            'basePath' => '/path1',
-            'direction' => 'uses',
-            'type' => 'debug',
-            'level' => 3,
-        ]);
+        $config = (new ConfigLoader([
+            new StubConfigReader(['basePath' => '/default', 'direction' => 'uses', 'type' => 'debug']),
+            new StubConfigReader(['basePath' => '/project']),
+        ]))->load();
 
-        $reader2 = new StubConfigReader([
-            'direction' => 'used-by',
-            'includes' => ['src/**'],
-        ]);
-
-        $reader3 = new StubConfigReader([
-            'level' => 10,
-            'excludes' => ['vendor/**'],
-        ]);
-
-        $loader = new ConfigLoader([$reader1, $reader2, $reader3]);
-        $config = $loader->load();
-
-        self::assertSame('/path1', $config->basePath);
-        self::assertSame('used-by', $config->direction);
-        self::assertSame(10, $config->level);
-        self::assertSame(['src/**'], $config->includes);
-        self::assertSame(['vendor/**'], $config->excludes);
+        self::assertSame('/project', $config->basePath);
     }
 
-    #[Test]
-    public function testLoadThrowsExceptionWhenValidationFails(): void
+    /**
+     * @throws ConfigException
+     */
+    public function testLoadKeepsWhatALaterSourceSaysNothingAbout(): void
     {
-        $reader = new StubConfigReader([
-            'basePath' => '',
-            'direction' => 'uses',
-            'type' => 'debug',
-        ]);
+        $config = (new ConfigLoader([
+            new StubConfigReader(['basePath' => '/default', 'direction' => 'used-by', 'type' => 'debug']),
+            new StubConfigReader(['basePath' => '/project']),
+        ]))->load();
 
+        self::assertSame(Direction::UsedBy, $config->direction);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testLoadCombinesAGroupSettingBySetting(): void
+    {
+        $config = (new ConfigLoader([
+            new StubConfigReader(['basePath' => '.', 'direction' => 'uses', 'type' => 'debug', 'debug' => ['depth' => 9, 'seed' => 1]]),
+            new StubConfigReader(['debug' => ['seed' => 42]]),
+        ]))->load();
+
+        self::assertSame(9, $config->debug->depth);
+        self::assertSame(42, $config->debug->seed);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testLoadReplacesAListRatherThanAddingToIt(): void
+    {
+        $config = (new ConfigLoader([
+            new StubConfigReader(['basePath' => '.', 'direction' => 'uses', 'type' => 'debug', 'excludes' => ['vendor', 'build']]),
+            new StubConfigReader(['excludes' => ['vendor']]),
+        ]))->load();
+
+        self::assertSame(['vendor'], $config->excludes);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testLoadRejectsMergedDataThatIsNotAConfiguration(): void
+    {
         $this->expectException(ConfigException::class);
 
-        $loader = new ConfigLoader([$reader]);
-        $loader->load();
+        (new ConfigLoader([new StubConfigReader(['direction' => 'uses'])]))->load();
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testLoadWithNoSourcesRejectsTheEmptyConfiguration(): void
+    {
+        $this->expectException(ConfigException::class);
+
+        (new ConfigLoader([]))->load();
+    }
+
+    /**
+     * @param array<string, mixed> $base
+     * @param array<string, mixed> $overlay
+     * @param array<string, mixed> $expected
+     */
+    #[DataProvider('providerOverlays')]
+    public function testOverlayCombinesWhatTwoSourcesReported(array $base, array $overlay, array $expected): void
+    {
+        self::assertSame($expected, ConfigLoader::overlay($base, $overlay));
+    }
+
+    /**
+     * @return iterable<string, array{array<string, mixed>, array<string, mixed>, array<string, mixed>}>
+     */
+    public static function providerOverlays(): iterable
+    {
+        yield 'a later value wins' => [['level' => 1], ['level' => 2], ['level' => 2]];
+
+        yield 'an unmentioned setting is kept' => [['level' => 1], ['basePath' => '.'], ['level' => 1, 'basePath' => '.']];
+
+        yield 'groups are combined setting by setting' => [
+            ['debug' => ['depth' => 9, 'seed' => 1]],
+            ['debug' => ['seed' => 42]],
+            ['debug' => ['depth' => 9, 'seed' => 42]],
+        ];
+
+        yield 'a list replaces a list' => [['excludes' => ['a', 'b']], ['excludes' => ['c']], ['excludes' => ['c']]];
+
+        yield 'a single value replaces a group' => [['debug' => ['depth' => 9]], ['debug' => 3], ['debug' => 3]];
+
+        yield 'nothing overlaid changes nothing' => [['level' => 1], [], ['level' => 1]];
+    }
+
+    #[DataProvider('providerNamedGroups')]
+    public function testIsNamedGroupRecognisesAGroupOfNamedSettings(mixed $value, bool $expected): void
+    {
+        self::assertSame($expected, ConfigLoader::isNamedGroup($value));
+    }
+
+    /**
+     * @return iterable<string, array{mixed, bool}>
+     */
+    public static function providerNamedGroups(): iterable
+    {
+        yield 'named settings' => [['depth' => 9], true];
+
+        yield 'a list' => [['a', 'b'], false];
+
+        yield 'an empty array' => [[], false];
+
+        yield 'a partly named array' => [['depth' => 9, 0 => 'a'], false];
+
+        yield 'a single value' => ['debug', false];
+
+        yield 'nothing' => [null, false];
     }
 }

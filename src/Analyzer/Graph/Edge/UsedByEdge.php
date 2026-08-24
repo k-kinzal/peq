@@ -6,77 +6,84 @@ namespace App\Analyzer\Graph\Edge;
 
 use App\Analyzer\Graph\Edge;
 use App\Analyzer\Graph\EdgeKind;
-use App\Analyzer\Graph\EdgeTrait;
 use App\Analyzer\Graph\FileMeta;
+use App\Analyzer\Graph\InverseEdge;
 use App\Analyzer\Graph\Node;
-use App\Analyzer\Graph\Node\ClassNode;
-use App\Analyzer\Graph\Node\ConstantNode;
-use App\Analyzer\Graph\Node\FunctionNode;
-use App\Analyzer\Graph\Node\MethodNode;
-use App\Analyzer\Graph\Node\PropertyNode;
+use App\Analyzer\Graph\NodeId;
 
 /**
- * Represents a reverse usage relationship (e.g., function called by method).
+ * The opposite reading of a usage relation: "is used by".
+ *
+ * Where a usage edge says "this method calls that method", this edge says "that
+ * method is called by this one". It is derived from the usage edge it carries and
+ * inverts straight back into it, so no usage kind is lost by making the reverse
+ * direction available.
  */
-final class UsedByEdge implements Edge
+final class UsedByEdge implements InverseEdge
 {
-    use EdgeTrait;
-
     /**
-     * @param Node     $from Source node
-     * @param Node     $to   Target node
-     * @param FileMeta $meta Metadata about where this relationship is defined in source code
+     * @param Edge $usage The usage relation this edge is the opposite reading of
      */
     public function __construct(
-        Node $from,
-        Node $to,
-        FileMeta $meta,
-    ) {
-        $this->fromNode = $from;
-        $this->toNode = $to;
-        $this->meta = $meta;
+        private readonly Edge $usage,
+    ) {}
+
+    /**
+     * Returns the node that is used, which the usage edge points at.
+     *
+     * @return NodeId<Node> The used node identifier
+     */
+    public function from(): NodeId
+    {
+        return $this->usage->to();
     }
 
+    /**
+     * Returns the node that uses it, which the usage edge starts at.
+     *
+     * @return NodeId<Node> The using node identifier
+     */
+    public function to(): NodeId
+    {
+        return $this->usage->from();
+    }
+
+    /**
+     * Returns the kind that marks this edge as a reverse usage relation.
+     *
+     * @return EdgeKind Always EdgeKind::UsedBy
+     */
     public function kind(): EdgeKind
     {
         return EdgeKind::UsedBy;
     }
 
+    /**
+     * Returns where the underlying usage is written in the source code.
+     *
+     * @return FileMeta The location of the usage this edge reverses
+     */
+    public function meta(): FileMeta
+    {
+        return $this->usage->meta();
+    }
+
+    /**
+     * Returns the usage relation this edge was derived from.
+     *
+     * @example The kind of the original relation survives the reverse reading
+     *     $meta = new \App\Analyzer\Graph\FileMeta('/project/src/Invoice.php', 12, 1);
+     *     $caller = new \App\Analyzer\Graph\Node\MethodNode(
+     *         \App\Analyzer\Graph\NodeId\MethodNodeId::of('App\\Domain\\Invoice', 'total'), true, $meta);
+     *     $called = new \App\Analyzer\Graph\Node\MethodNode(
+     *         \App\Analyzer\Graph\NodeId\MethodNodeId::of('App\\Domain\\Money', 'add'), true, $meta);
+     *     $usage = new \App\Analyzer\Graph\Edge\MethodCallEdge($caller, $called, $meta);
+     *     (new \App\Analyzer\Graph\Edge\UsedByEdge($usage))->invert()->kind() // => \App\Analyzer\Graph\EdgeKind::MethodCall
+     *
+     * @return Edge The original usage edge, with its original kind intact
+     */
     public function invert(): Edge
     {
-        $from = $this->fromNode;
-        $to = $this->toNode;
-
-        if ($from instanceof FunctionNode) {
-            assert($to instanceof MethodNode || $to instanceof FunctionNode);
-
-            return new FunctionCallEdge(from: $to, to: $from, meta: $this->meta);
-        }
-
-        if ($from instanceof ConstantNode) {
-            assert($to instanceof MethodNode || $to instanceof FunctionNode);
-
-            return new ConstFetchEdge(from: $to, to: $from, meta: $this->meta);
-        }
-
-        if ($from instanceof ClassNode) {
-            assert($to instanceof MethodNode || $to instanceof FunctionNode);
-
-            return new InstantiationEdge(from: $to, to: $from, meta: $this->meta);
-        }
-
-        if ($from instanceof PropertyNode) {
-            assert($to instanceof MethodNode || $to instanceof FunctionNode);
-
-            return new PropertyAccessEdge(from: $to, to: $from, meta: $this->meta);
-        }
-
-        if ($from instanceof MethodNode) {
-            assert($to instanceof MethodNode || $to instanceof FunctionNode);
-
-            return new MethodCallEdge(from: $to, to: $from, meta: $this->meta);
-        }
-
-        throw new \LogicException('Cannot invert UsedByEdge: unknown node combination.');
+        return $this->usage;
     }
 }

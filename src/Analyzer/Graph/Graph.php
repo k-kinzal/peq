@@ -5,17 +5,15 @@ declare(strict_types=1);
 namespace App\Analyzer\Graph;
 
 use App\Analyzer\Graph\Node\UnknownNode;
-use App\Analyzer\Graph\NodeId\UnknownNodeId;
-
-use function App\array_flatten;
 
 /**
  * Represents a dependency graph of PHP code elements.
  *
  * The graph stores nodes (representing PHP code elements like classes, methods, etc.)
  * and edges (representing relationships between those elements). It uses an adjacency
- * list structure for efficient edge lookups and automatically creates bidirectional
- * edges with inverted edge kinds.
+ * list structure for efficient edge lookups and automatically records every edge in
+ * both directions, so that reading the graph towards a symbol costs the same as
+ * reading it away from one.
  */
 final class Graph
 {
@@ -35,37 +33,36 @@ final class Graph
     private array $edgeSet = [];
 
     /**
-     * Adds a single node to the graph.
+     * Records a node in the graph.
      *
-     * If a node with the same ID already exists and is not Unknown, an exception is thrown.
-     * Unknown nodes can be replaced by concrete node types.
+     * Recording is idempotent, because an identifier names one symbol however many
+     * times analysis meets it. Referencing an unseen symbol creates an unresolved
+     * placeholder, and that placeholder is replaced when the real node arrives. A
+     * node that is already concrete is kept: a second description of the same
+     * symbol describes the same symbol.
      *
-     * @param Node $node The node to add to the graph
-     *
-     * @throws \InvalidArgumentException If a non-Unknown node with the same ID already exists
+     * @param Node $node The node to record
      */
     public function addNode(Node $node): void
     {
         $nodeKey = $node->id()->toString();
-        if (isset($this->nodes[$nodeKey]) && $this->nodes[$nodeKey]->kind() !== NodeKind::Unknown) {
-            throw new \InvalidArgumentException('Node already exists.');
+        $recorded = $this->nodes[$nodeKey] ?? null;
+        if ($recorded !== null && $recorded->kind() !== NodeKind::Unknown) {
+            return;
         }
+
         $this->nodes[$nodeKey] = $node;
-        assert(
-            $this->nodes[$nodeKey] === $node,
-            'Contract violated: node not retrievable after addNode'
-        );
         if (!isset($this->adjacency[$nodeKey])) {
             $this->adjacency[$nodeKey] = [];
         }
     }
 
     /**
-     * Adds multiple nodes to the graph.
+     * Records several nodes in the graph.
      *
-     * @param Node[] $nodes Array of nodes to add
+     * @param iterable<Node> $nodes The nodes to record
      */
-    public function addNodes(array $nodes): void
+    public function addNodes(iterable $nodes): void
     {
         foreach ($nodes as $node) {
             $this->addNode($node);
@@ -73,37 +70,38 @@ final class Graph
     }
 
     /**
-     * Adds a single edge to the graph.
+     * Records an edge in the graph together with its opposite reading.
      *
-     * Automatically creates Unknown nodes for any referenced nodes that don't exist yet.
-     * Also creates a bidirectional edge in the opposite direction with an inverted edge kind.
+     * Endpoints that have not been seen yet are recorded as unresolved placeholders,
+     * so an edge is never left dangling. Recording is idempotent per direction and
+     * kind, and the inverse edge is derived from the edge itself, so no relation
+     * kind is lost by making the reverse direction available.
      *
-     * @param Edge $edge The edge to add to the graph
+     * @example Recording a relation makes it readable from both of its ends
+     *     $meta = new \App\Analyzer\Graph\FileMeta('/project/src/Invoice.php', 12, 1);
+     *     $caller = new \App\Analyzer\Graph\Node\MethodNode(
+     *         \App\Analyzer\Graph\NodeId\MethodNodeId::of('App\\Domain\\Invoice', 'total'), true, $meta);
+     *     $called = new \App\Analyzer\Graph\Node\MethodNode(
+     *         \App\Analyzer\Graph\NodeId\MethodNodeId::of('App\\Domain\\Money', 'add'), true, $meta);
+     *     $graph = new \App\Analyzer\Graph\Graph();
+     *     $graph->addEdge(new \App\Analyzer\Graph\Edge\MethodCallEdge($caller, $called, $meta));
+     *     $graph->edge($called->id(), $caller->id())?->kind() // => \App\Analyzer\Graph\EdgeKind::UsedBy
+     *
+     * @param Edge $edge The edge to record
      */
     public function addEdge(Edge $edge): void
     {
         $fromKey = $edge->from()->toString();
         $toKey = $edge->to()->toString();
-        $kind = $edge->kind();
 
         if (!isset($this->nodes[$fromKey])) {
-            $unknownId = $edge->from() instanceof UnknownNodeId
-                ? $edge->from()
-                : new UnknownNodeId($fromKey);
-            $this->nodes[$fromKey] = new UnknownNode(
-                id: $unknownId,
-            );
+            $this->addNode(UnknownNode::standingInFor($edge->from()));
         }
         if (!isset($this->nodes[$toKey])) {
-            $unknownId = $edge->to() instanceof UnknownNodeId
-                ? $edge->to()
-                : new UnknownNodeId($toKey);
-            $this->nodes[$toKey] = new UnknownNode(
-                id: $unknownId,
-            );
+            $this->addNode(UnknownNode::standingInFor($edge->to()));
         }
 
-        $edgeKey = $fromKey."\0".$kind->value."\0".$toKey;
+        $edgeKey = $fromKey."\0".$edge->kind()->value."\0".$toKey;
         if (isset($this->edgeSet[$edgeKey])) {
             return;
         }
@@ -112,29 +110,19 @@ final class Graph
         $this->adjacency[$fromKey][] = $edge;
 
         $inverse = $edge->invert();
-        $inverseKind = $inverse->kind();
-        $inverseToKey = $inverse->to()->toString();
-        $inverseKey = $toKey."\0".$inverseKind->value."\0".$inverseToKey;
+        $inverseKey = $toKey."\0".$inverse->kind()->value."\0".$inverse->to()->toString();
         if (!isset($this->edgeSet[$inverseKey])) {
             $this->edgeSet[$inverseKey] = true;
             $this->adjacency[$toKey][] = $inverse;
         }
-        assert(
-            $this->edge($edge->from(), $edge->to(), $kind) !== null,
-            'Contract violated: forward edge must exist after addEdge'
-        );
-        assert(
-            $this->edge($edge->to(), $edge->from(), $inverse->kind()) !== null,
-            'Contract violated: inverse edge must exist after addEdge'
-        );
     }
 
     /**
-     * Adds multiple edges to the graph.
+     * Records several edges in the graph.
      *
-     * @param Edge[] $edges Array of edges to add
+     * @param iterable<Edge> $edges The edges to record
      */
-    public function addEdges(array $edges): void
+    public function addEdges(iterable $edges): void
     {
         foreach ($edges as $edge) {
             $this->addEdge($edge);
@@ -142,11 +130,11 @@ final class Graph
     }
 
     /**
-     * Retrieves a node by its ID.
+     * Retrieves a node by its identifier.
      *
      * @param NodeId<Node> $id The identifier of the node to retrieve
      *
-     * @return null|Node The node if found, null otherwise
+     * @return null|Node The node if recorded, null otherwise
      */
     public function node(NodeId $id): ?Node
     {
@@ -154,9 +142,34 @@ final class Graph
     }
 
     /**
-     * Retrieves all nodes in the graph.
+     * Finds the node a written symbol name refers to.
      *
-     * @return Node[] Array of all nodes
+     * Nodes are keyed by the string form of their identifier, which is the form a
+     * symbol is written in on the command line, so a name resolves in one lookup
+     * rather than a scan of the graph. A name that matches nothing resolves to null
+     * rather than to the closest thing found.
+     *
+     * @param string $name The fully qualified symbol name, as written
+     *
+     * @example A symbol that was recorded is found by the name it is written as
+     *     $graph = new \App\Analyzer\Graph\Graph();
+     *     $graph->addNode(new \App\Analyzer\Graph\Node\ClassNode(
+     *         \App\Analyzer\Graph\NodeId\ClassNodeId::of('App\\Domain\\Invoice'), true));
+     *     $graph->nodeNamed('App\\Domain\\Invoice')?->kind() // => \App\Analyzer\Graph\NodeKind::Klass
+     * @example A name the graph does not hold resolves to nothing
+     *     (new \App\Analyzer\Graph\Graph())->nodeNamed('App\\Domain\\Invoice') // => null
+     *
+     * @return null|Node The node with that name, or null when the graph holds none
+     */
+    public function nodeNamed(string $name): ?Node
+    {
+        return $this->nodes[$name] ?? null;
+    }
+
+    /**
+     * Retrieves every node recorded in the graph.
+     *
+     * @return list<Node> All recorded nodes
      */
     public function nodes(): array
     {
@@ -164,13 +177,13 @@ final class Graph
     }
 
     /**
-     * Retrieves an edge between two nodes, optionally filtered by kind.
+     * Retrieves an edge between two nodes, optionally restricted to one kind.
      *
      * @param NodeId<Node>  $from Source node identifier
      * @param NodeId<Node>  $to   Target node identifier
-     * @param null|EdgeKind $kind Optional edge kind filter; null returns the first match
+     * @param null|EdgeKind $kind Kind to restrict the search to; null matches any kind
      *
-     * @return null|Edge The edge if found, null otherwise
+     * @return null|Edge The first matching edge, or null when there is none
      */
     public function edge(NodeId $from, NodeId $to, ?EdgeKind $kind = null): ?Edge
     {
@@ -187,11 +200,11 @@ final class Graph
     }
 
     /**
-     * Retrieves all edges originating from a specific node.
+     * Retrieves every edge starting at a node, in both directions of reading.
      *
      * @param NodeId<Node> $from Source node identifier
      *
-     * @return Edge[] Array of edges from the specified node
+     * @return list<Edge> The edges recorded for that node
      */
     public function edges(NodeId $from): array
     {
@@ -199,34 +212,42 @@ final class Graph
     }
 
     /**
-     * Merges this graph with another graph, returning a new merged graph.
+     * Combines this graph with another one into a new graph.
      *
-     * Creates a new graph containing all nodes and edges from both graphs.
-     * Existing Unknown nodes can be replaced by concrete types from the other graph.
+     * Only authored edges are carried over: the opposite readings are derived
+     * again by the new graph, so a merge cannot accumulate stale inverses.
      *
-     * @param Graph $other The graph to merge with this one
+     * @param Graph $other The graph to combine with this one
      *
-     * @return Graph A new graph containing nodes and edges from both graphs
+     * @return Graph A new graph holding the nodes and edges of both
      */
     public function merge(Graph $other): Graph
     {
         $merged = new Graph();
-        $nodes = array_merge(
-            $this->nodes(),
-            $other->nodes()
-        );
-        $merged->addNodes($nodes);
-
-        $edges = array_merge(
-            array_flatten($this->adjacency),
-            array_flatten($other->adjacency),
-        );
-        $merged->addEdges(
-            array_filter($edges, function (Edge $edge) {
-                return $edge->kind() !== EdgeKind::UsedBy && $edge->kind() !== EdgeKind::DeclaredIn;
-            })
-        );
+        $merged->addNodes($this->nodes());
+        $merged->addNodes($other->nodes());
+        $merged->addEdges($this->authoredEdges());
+        $merged->addEdges($other->authoredEdges());
 
         return $merged;
+    }
+
+    /**
+     * Returns every edge that source code actually writes, without derived inverses.
+     *
+     * @return list<Edge> The authored edges of this graph
+     */
+    public function authoredEdges(): array
+    {
+        $authored = [];
+        foreach ($this->adjacency as $edges) {
+            foreach ($edges as $edge) {
+                if (!$edge instanceof InverseEdge) {
+                    $authored[] = $edge;
+                }
+            }
+        }
+
+        return $authored;
     }
 }

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Analyzer\Graph\NodeId;
 
-use App\Analyzer\Graph\IdentifierAssert;
 use App\Analyzer\Graph\Node\TraitNode;
 use App\Analyzer\Graph\NodeId;
+use App\Analyzer\Graph\QualifiedName;
 
 /**
  * Unique identifier for a trait node in the dependency graph.
@@ -16,54 +16,41 @@ use App\Analyzer\Graph\NodeId;
  * the analyzed codebase.
  *
  * @implements NodeId<TraitNode>
- *
- * @property string $fullQualifiedName Alias for fullQualifiedName()
  */
 final class TraitNodeId implements NodeId
 {
-    use IdentifierAssert;
+    /**
+     * The precomputed string form of this identifier.
+     */
+    private readonly string $stringValue;
 
     /**
      * @param string $namespace The namespace of the trait (must be a valid PHP namespace)
      * @param string $traitName The trait name (must be a valid PHP identifier)
      */
-    private readonly string $stringValue;
-
     public function __construct(
         public readonly string $namespace,
         public readonly string $traitName,
     ) {
         if ($namespace !== '') {
-            self::assertNamespace($namespace);
+            assert(QualifiedName::isNamespace($namespace), 'The namespace must be one PHP would accept');
         }
-        self::assertIdentifier($traitName);
+        assert(QualifiedName::isIdentifier($traitName), 'The name must be one PHP would accept for a single symbol');
         $this->stringValue = $namespace === '' ? $traitName : $namespace.'\\'.$traitName;
     }
 
-    public function __toString(): string
-    {
-        return $this->toString();
-    }
-
-    public function __get(string $name): mixed
-    {
-        return match ($name) {
-            'fullQualifiedName' => $this->fullQualifiedName(),
-            default => throw new \LogicException("Undefined property: {$name}"),
-        };
-    }
-
     /**
-     * Returns the fully qualified trait name.
+     * Builds the identifier from a fully qualified name.
      *
-     * Combines namespace and trait name with a backslash separator
-     * (e.g., "App\Traits\Timestampable").
+     * @param string $fullName The fully qualified trait name, as analysis reported it
      *
-     * @return string The fully qualified trait name
+     * @return self The identifier for that trait
      */
-    public function fullQualifiedName(): string
+    public static function of(string $fullName): self
     {
-        return $this->stringValue;
+        $name = new QualifiedName($fullName);
+
+        return new self($name->namespace, $name->shortName);
     }
 
     /**

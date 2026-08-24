@@ -14,4 +14,4 @@ use Exception;
  * of configuration values fails. It provides a consistent error handling
  * mechanism for all configuration-related errors.
  */
-final class ConfigException extends \Exception {}
+final class ConfigException extends Exception {}

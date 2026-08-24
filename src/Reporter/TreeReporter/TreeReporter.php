@@ -7,106 +7,50 @@ namespace App\Reporter\TreeReporter;
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId;
-use App\Analyzer\Graph\NodeKind;
 use App\Reporter\Reporter;
 use App\Reporter\Traversal;
-use App\Reporter\Traversal\DependencyTraversal;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Reports analysis results as a text-based tree structure.
  *
- * This reporter visualizes the dependency graph as a hierarchical tree, similar to the
- * Unix `tree` command. It uses a traversal strategy to visit nodes and a line renderer
- * to format the output. It supports depth limiting and handles cyclic dependencies.
+ * This reporter visualizes the dependency graph the way the Unix `tree` command
+ * visualizes a directory: one line per node, with box-drawing characters showing
+ * which branches continue below. It owns the traversal it was given and the line
+ * format, and delegates the bookkeeping a tree needs — how deep the walk is, which
+ * node is the last of its siblings, which nodes were already expanded — to a
+ * cursor created for the duration of one report.
  */
 final class TreeReporter implements Reporter
 {
+    /**
+     * @param TreeReporterOptions $options      How much of the tree to print
+     * @param Traversal           $traversal    The strategy deciding which relations the tree follows
+     * @param LineRenderer        $lineRenderer The format of a single line
+     */
     public function __construct(
         private readonly TreeReporterOptions $options,
-        private readonly Traversal $traversal = new DependencyTraversal(),
+        private readonly Traversal $traversal,
         private readonly LineRenderer $lineRenderer = new LineRenderer(),
     ) {}
 
     /**
-     * {@inheritdoc}
+     * Writes the dependency tree rooted at the given symbol.
+     *
+     * @param Graph           $graph  The dependency graph to report on
+     * @param NodeId<Node>    $symbol The symbol the tree is rooted at
+     * @param OutputInterface $output Where the tree is written
      */
     public function report(Graph $graph, NodeId $symbol, OutputInterface $output): void
     {
-        $continuationFlags = [];
-        $parentStack = [];
-        $pathStack = [];
-        $expanded = [];
-
-        $this->traversal->traverse(
-            $graph,
-            $symbol,
-            function (
-                Node $node,
-                int $depth
-            ) use (
-                $graph,
-                $output,
-                &$continuationFlags,
-                &$parentStack,
-                &$pathStack,
-                &$expanded
-            ) {
-                if ($this->options->level !== null && $depth > $this->options->level) {
-                    return false;
-                }
-
-                while (count($pathStack) > $depth) {
-                    array_pop($pathStack);
-                }
-
-                $nodeKey = $node->id()->toString();
-
-                $isRecursive = in_array($nodeKey, $pathStack, true);
-                $isDuplicate = !$isRecursive && isset($expanded[$nodeKey]);
-
-                $isLastChild = true;
-                if ($depth > 0 && isset($parentStack[$depth - 1])) {
-                    $parentNode = $parentStack[$depth - 1];
-                    $siblings = [];
-                    $edges = $graph->edges($parentNode->id());
-                    foreach ($edges as $edge) {
-                        if ($this->traversal->isTraversableEdge($edge->kind())) {
-                            $siblings[] = $edge->to()->toString();
-                        }
-                    }
-
-                    $siblings = array_unique($siblings);
-                    if ($siblings !== []) {
-                        $lastSiblingId = end($siblings);
-                        $isLastChild = ($nodeKey === $lastSiblingId);
-                    }
-                }
-
-                $line = $this->lineRenderer->render($node, $depth, $continuationFlags, $isLastChild, $isRecursive, $isDuplicate);
-                $output->writeln($line);
-
-                $continuationFlags[$depth] = !$isLastChild;
-
-                $parentStack[$depth] = $node;
-
-                if (!$isRecursive) {
-                    $pathStack[] = $nodeKey;
-                }
-
-                if (
-                    $isRecursive
-                    || $isDuplicate
-                    || $node->kind() === NodeKind::Builtin
-                    || $node->kind() === NodeKind::Unknown
-                ) {
-                    return false;
-                }
-
-                $expanded[$nodeKey] = true;
-
-                return true;
-            }
+        $cursor = new TreeCursor(
+            graph: $graph,
+            traversal: $this->traversal,
+            lineRenderer: $this->lineRenderer,
+            output: $output,
+            level: $this->options->level,
         );
+
+        $this->traversal->traverse($graph, $symbol, $cursor->visit(...));
     }
 }

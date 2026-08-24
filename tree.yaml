@@ -1,0 +1,114 @@
+paths:
+  - '.'
+
+exclude:
+  - '.claude'
+  - '.clinerules'
+  - '.codex'
+  - '.cursor'
+  - '.deptrac.cache'
+  - '.entire'
+  - '.gemini'
+  - '.git'
+  - '.idea'
+  - '.phpunit.cache'
+  - '.qodo'
+  - 'build'
+  - 'dist'
+  - 'node_modules'
+  - 'vendor'
+  - 'vendor-bin'
+
+rules:
+  - path: '**'
+    deny_dirs: ['scripts', 'Scripts']
+
+  - path: 'src'
+    max_dirs: 9
+    max_depth: 3
+
+  - path: 'src/**'
+    forbid_empty: true
+    allow: ['*.php']
+    deny:
+      - '*Helper.php'
+      - '*Helpers.php'
+      - '*Manager.php'
+      - '*Util.php'
+      - '*Utils.php'
+      - '*Utility.php'
+      - '*Utilities.php'
+      - '*Service.php'
+      - '*Services.php'
+      - '*Data.php'
+      - '*Info.php'
+      - '*Common.php'
+      - '*Shared.php'
+      - '*Wrapper.php'
+    file_case: pascal
+    dir_case: pascal
+    max_files: 25
+    max_dirs: 20
+
+  - path: 'src/*'
+    max_total_files: 250
+
+  - path: 'bin'
+    max_files: 1
+    max_dirs: 1
+
+  - path: 'config'
+    allow: ['*.php']
+    max_files: 5
+    max_dirs: 1
+
+  - path: 'tests'
+    allow: []
+    allow_dirs: ['Benchmark', 'Contract', 'Fixture', 'Integration', 'Unit']
+    max_depth: 5
+
+  - path: 'tests/Unit/**'
+    forbid_empty: true
+    allow: ['*Test.php']
+    file_case: pascal
+    dir_case: pascal
+    max_files: 25
+    max_dirs: 20
+
+  - path: 'tests/Contract/**'
+    forbid_empty: true
+    allow: ['*ContractTest.php']
+    file_case: pascal
+    dir_case: pascal
+    max_files: 25
+    max_dirs: 20
+
+  - path: 'tests/Integration/**'
+    forbid_empty: true
+    allow: ['*Test.php']
+    file_case: pascal
+    dir_case: pascal
+    max_files: 25
+    max_dirs: 20
+
+  - path: 'tests/Benchmark/**'
+    forbid_empty: true
+    allow: ['*Bench.php']
+    file_case: pascal
+    dir_case: pascal
+    max_files: 25
+    max_dirs: 20
+
+  - path: 'tests/Fixture/**'
+    forbid_empty: true
+    allow: ['*.php']
+    file_case: pascal
+    dir_case: pascal
+    max_files: 25
+    max_dirs: 20
+
+report:
+  reporter: ai
+  order_by:
+    - path
+    - rule

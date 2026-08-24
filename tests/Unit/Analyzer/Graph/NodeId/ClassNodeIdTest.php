@@ -5,63 +5,47 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\Graph\NodeId;
 
 use App\Analyzer\Graph\NodeId\ClassNodeId;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(ClassNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[Small]
 final class ClassNodeIdTest extends TestCase
 {
-    #[Test]
-    public function testConstruct(): void
+    public function testToStringJoinsTheParts(): void
     {
-        $id = new ClassNodeId('App\Service', 'MyClass');
-
-        self::assertSame('App\Service', $id->namespace);
-        self::assertSame('MyClass', $id->className);
+        self::assertSame('App\Domain\Invoice', (new ClassNodeId('App\Domain', 'Invoice'))->toString());
     }
 
-    #[Test]
-    public function testFullQualifiedName(): void
+    public function testToStringOmitsTheSeparatorWithoutANamespace(): void
     {
-        $id = new ClassNodeId('App\Service', 'MyClass');
-
-        self::assertSame('App\Service\MyClass', $id->fullQualifiedName());
+        self::assertSame('Invoice', (new ClassNodeId('', 'Invoice'))->toString());
     }
 
-    #[Test]
-    public function testToString(): void
+    public function testOfSplitsAFullyQualifiedName(): void
     {
-        $id = new ClassNodeId('App\Service', 'MyClass');
+        $id = ClassNodeId::of('App\Domain\Invoice');
 
-        self::assertSame('App\Service\MyClass', $id->toString());
-        self::assertSame('App\Service\MyClass', (string) $id);
+        self::assertSame('App\Domain', $id->namespace);
+        self::assertSame('Invoice', $id->className);
     }
 
-    #[Test]
-    public function testMagicGetReturnsFullQualifiedName(): void
+    public function testOfBuildsTheSameIdentifierAsTheConstructor(): void
     {
-        $id = new ClassNodeId('App', 'MyClass');
-        self::assertSame('App\MyClass', $id->fullQualifiedName);
+        self::assertSame(
+            (new ClassNodeId('App\Domain', 'Invoice'))->toString(),
+            ClassNodeId::of('App\Domain\Invoice')->toString(),
+        );
     }
 
-    #[Test]
-    public function testMagicGetThrowsExceptionForUndefinedProperty(): void
+    public function testOfLeavesTheNamespaceEmptyForAGlobalName(): void
     {
-        $id = new ClassNodeId('App', 'MyClass');
-        $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('Undefined property: undefined');
-
-        /** @phpstan-ignore property.notFound */
-        $unused = $id->undefined;
-    }
-
-    #[Test]
-    public function testMagicGet(): void
-    {
-        $id = new ClassNodeId('App', 'Test');
-
-        self::assertSame('App\Test', $id->fullQualifiedName);
+        self::assertSame('', ClassNodeId::of('Invoice')->namespace);
     }
 }

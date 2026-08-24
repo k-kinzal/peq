@@ -5,59 +5,48 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\Graph;
 
 use App\Analyzer\Graph\FileMeta;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(FileMeta::class)]
+#[Small]
 final class FileMetaTest extends TestCase
 {
-    #[Test]
-    public function testConstructorSetsProperties(): void
+    public function testPathIsKeptAsItWasGiven(): void
     {
-        $fileMeta = new FileMeta('/path/to/MyClass.php', 10, 5);
-
-        self::assertSame('/path/to/MyClass.php', $fileMeta->path);
-        self::assertSame(10, $fileMeta->line);
-        self::assertSame(5, $fileMeta->column);
+        self::assertSame('/project/src/Domain/Invoice.php', (new FileMeta('/project/src/Domain/Invoice.php', 10, 5))->path);
     }
 
-    #[Test]
-    public function testConstructorExtractsFilename(): void
+    public function testLineAndColumnAreKeptAsTheyWereGiven(): void
     {
-        $fileMeta = new FileMeta('/path/to/MyClass.php', 10, 5);
+        $meta = new FileMeta('/project/src/Domain/Invoice.php', 10, 5);
 
-        self::assertSame('MyClass.php', $fileMeta->name);
+        self::assertSame(10, $meta->line);
+        self::assertSame(5, $meta->column);
     }
 
-    #[Test]
-    public function testConstructorExtractsFilenameWithoutDirectory(): void
+    #[DataProvider('providerPathsAndTheirFileNames')]
+    public function testNameIsTheLastSegmentOfThePath(string $path, string $expected): void
     {
-        $fileMeta = new FileMeta('MyClass.php', 10, 5);
-
-        self::assertSame('MyClass.php', $fileMeta->name);
+        self::assertSame($expected, (new FileMeta($path, 1, 1))->name);
     }
 
-    #[Test]
-    public function testConstructorExtractsFilenameFromNestedPath(): void
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function providerPathsAndTheirFileNames(): iterable
     {
-        $fileMeta = new FileMeta('/very/deep/path/to/MyClass.php', 42, 15);
+        yield 'an absolute path' => ['/project/src/Domain/Invoice.php', 'Invoice.php'];
 
-        self::assertSame('MyClass.php', $fileMeta->name);
-    }
+        yield 'a relative path' => ['src/Domain/Invoice.php', 'Invoice.php'];
 
-    #[Test]
-    public function testConstructorAssertsLineIsPositive(): void
-    {
-        $this->expectException(\AssertionError::class);
-        new FileMeta('/path/to/file.php', 0, 1);
-    }
+        yield 'a bare file name' => ['Invoice.php', 'Invoice.php'];
 
-    #[Test]
-    public function testConstructorAssertsColumnIsPositive(): void
-    {
-        $this->expectException(\AssertionError::class);
-        new FileMeta('/path/to/file.php', 1, 0);
+        yield 'a path with no extension' => ['/project/bin/console', 'console'];
     }
 }

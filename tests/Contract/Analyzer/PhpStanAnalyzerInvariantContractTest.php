@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Tests\Contract\Analyzer;
 
 use App\Analyzer\Graph\Graph;
-use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
-use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
+use Generator;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Tests\Contract\Graph\GraphInvariantAssertions;
+use Tests\Fixture\Graph\GraphInvariants;
 
 /**
  * @internal
@@ -19,27 +20,29 @@ use Tests\Contract\Graph\GraphInvariantAssertions;
  * Contract tests verifying that the PhpStanAnalyzer produces graphs satisfying
  * all structural invariants (bidirectionality, endpoint existence, node uniqueness,
  * no edge duplicates) across a variety of PHP code patterns
- */
+ */#[CoversClass(PhpStanAnalyzer::class)]
+#[Large]
 final class PhpStanAnalyzerInvariantContractTest extends TestCase
 {
-    use GraphInvariantAssertions;
-
+    /**
+     * Checks that graph invariants.
+     */
     #[DataProvider('provideCodeVariants')]
     #[Test]
     public function testGraphInvariants(string $label, string $phpCode): void
     {
         $graph = self::analyzeCode($phpCode);
 
-        self::assertBidirectional($graph);
-        self::assertEndpointsExist($graph);
-        self::assertNodeUniqueness($graph);
-        self::assertNoEdgeDuplicates($graph);
+        GraphInvariants::assertBidirectional($graph);
+        GraphInvariants::assertEndpointsExist($graph);
+        GraphInvariants::assertNodeUniqueness($graph);
+        GraphInvariants::assertNoEdgeDuplicates($graph);
     }
 
     /**
-     * @return \Generator<string, array{string, string}>
+     * @return Generator<string, array{string, string}>
      */
-    public static function provideCodeVariants(): \Generator
+    public static function provideCodeVariants(): Generator
     {
         yield 'simple class with one method and one instantiation' => [
             'simple',
@@ -177,14 +180,17 @@ final class PhpStanAnalyzerInvariantContractTest extends TestCase
         ];
     }
 
-    private static function analyzeCode(string $phpCode): Graph
+    /**
+     * Returns the analyze code a check needs.
+     */
+    public static function analyzeCode(string $phpCode): Graph
     {
         $tmpDir = sys_get_temp_dir().'/peq_contract_'.uniqid();
         mkdir($tmpDir, 0o777, true);
         file_put_contents($tmpDir.'/Test.php', $phpCode);
 
         try {
-            $analyzer = new PhpStanAnalyzer(new ContainerFactory(), new PhpFileCollector());
+            $analyzer = new PhpStanAnalyzer();
 
             return $analyzer->analyze($tmpDir);
         } finally {

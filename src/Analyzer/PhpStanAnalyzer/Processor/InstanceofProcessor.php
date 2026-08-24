@@ -11,15 +11,30 @@ use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\Node\MethodNode;
 use App\Analyzer\Graph\NodeId\ClassNodeId;
+use App\Analyzer\Graph\QualifiedName;
 use App\Analyzer\PhpStanAnalyzer\SourceResolver;
 use PhpParser\Node as PhpParserNode;
 use PhpParser\Node\Expr\Instanceof_;
 use PHPStan\Analyser\Scope;
 
+/**
+ * Records a type named in an instanceof test.
+ *
+ * Testing against a class is a dependency on it: the test stops compiling the moment
+ * the class is renamed, exactly like a call would.
+ *
+ * @visibility parent
+ */
 final class InstanceofProcessor
 {
     /**
-     * @return array<InstanceofEdge>
+     * Records what this declaration or expression brings into the graph.
+     *
+     * @param Instanceof_ $node       The syntax node met during analysis
+     * @param Scope       $scope      The analyser scope it was written in
+     * @param null|Node   $sourceNode The symbol it is written inside, resolved from the scope when omitted
+     *
+     * @return list<InstanceofEdge> The relations it describes
      */
     public static function process(Instanceof_ $node, Scope $scope, ?Node $sourceNode = null): array
     {
@@ -28,9 +43,9 @@ final class InstanceofProcessor
 
         if ($node->class instanceof PhpParserNode\Name) {
             $className = $scope->resolveName($node->class);
-            if (!SourceResolver::isBuiltin($className)) {
+            if (!(new QualifiedName($className))->isBuiltinType()) {
                 $targetNode = new ClassNode(
-                    new ClassNodeId(SourceResolver::getNamespace($className), SourceResolver::getShortName($className)),
+                    ClassNodeId::of($className),
                     false,
                     null
                 );

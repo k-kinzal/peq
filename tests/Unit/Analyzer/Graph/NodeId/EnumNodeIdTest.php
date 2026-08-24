@@ -5,45 +5,47 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\Graph\NodeId;
 
 use App\Analyzer\Graph\NodeId\EnumNodeId;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(EnumNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[Small]
 final class EnumNodeIdTest extends TestCase
 {
-    #[Test]
-    public function testConstruct(): void
+    public function testToStringJoinsTheParts(): void
     {
-        $id = new EnumNodeId('App\Service', 'MyEnum');
-
-        self::assertSame('App\Service', $id->namespace);
-        self::assertSame('MyEnum', $id->enumName);
+        self::assertSame('App\Domain\InvoiceState', (new EnumNodeId('App\Domain', 'InvoiceState'))->toString());
     }
 
-    #[Test]
-    public function testFullQualifiedName(): void
+    public function testToStringOmitsTheSeparatorWithoutANamespace(): void
     {
-        $id = new EnumNodeId('App\Service', 'MyEnum');
-
-        self::assertSame('App\Service\MyEnum', $id->fullQualifiedName());
+        self::assertSame('InvoiceState', (new EnumNodeId('', 'InvoiceState'))->toString());
     }
 
-    #[Test]
-    public function testToString(): void
+    public function testOfSplitsAFullyQualifiedName(): void
     {
-        $id = new EnumNodeId('App\Service', 'MyEnum');
+        $id = EnumNodeId::of('App\Domain\InvoiceState');
 
-        self::assertSame('App\Service\MyEnum', $id->toString());
-        self::assertSame('App\Service\MyEnum', (string) $id);
+        self::assertSame('App\Domain', $id->namespace);
+        self::assertSame('InvoiceState', $id->enumName);
     }
 
-    #[Test]
-    public function testMagicGet(): void
+    public function testOfBuildsTheSameIdentifierAsTheConstructor(): void
     {
-        $id = new EnumNodeId('App', 'Test');
+        self::assertSame(
+            (new EnumNodeId('App\Domain', 'InvoiceState'))->toString(),
+            EnumNodeId::of('App\Domain\InvoiceState')->toString(),
+        );
+    }
 
-        self::assertSame('App\Test', $id->fullQualifiedName);
+    public function testOfLeavesTheNamespaceEmptyForAGlobalName(): void
+    {
+        self::assertSame('', EnumNodeId::of('InvoiceState')->namespace);
     }
 }

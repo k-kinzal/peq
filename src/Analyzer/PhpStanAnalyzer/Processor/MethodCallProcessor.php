@@ -23,11 +23,19 @@ use PHPStan\Analyser\Scope;
  * Calls on arbitrary objects ($obj->method()) are not resolved because the
  * re-parsed AST context used by InClassMethodNodeProcessor lacks PHPStan's
  * type inference needed to determine the class of arbitrary receivers.
+ *
+ * @visibility parent
  */
 final class MethodCallProcessor
 {
     /**
-     * @return list<MethodCallEdge>
+     * Records what this declaration or expression brings into the graph.
+     *
+     * @param MethodCall|NullsafeMethodCall $node       The syntax node met during analysis
+     * @param Scope                         $scope      The analyser scope it was written in
+     * @param null|Node                     $sourceNode The symbol it is written inside, resolved from the scope when omitted
+     *
+     * @return list<MethodCallEdge> The relations it describes
      */
     public static function process(MethodCall|NullsafeMethodCall $node, Scope $scope, ?Node $sourceNode = null): array
     {
@@ -43,7 +51,7 @@ final class MethodCallProcessor
             $className = $scope->getClassReflection()->getName();
             $methodName = $node->name->toString();
             $targetNode = new MethodNode(
-                new MethodNodeId(SourceResolver::getNamespace($className), SourceResolver::getShortName($className), $methodName),
+                MethodNodeId::of($className, $methodName),
                 false,
                 null,
             );

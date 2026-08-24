@@ -27,11 +27,6 @@ final class UnknownNodeId implements NodeId
         assert($name !== '');
     }
 
-    public function __toString(): string
-    {
-        return $this->toString();
-    }
-
     /**
      * Returns the string representation of this identifier.
      *

@@ -11,15 +11,30 @@ use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\Node\MethodNode;
 use App\Analyzer\Graph\Node\PropertyNode;
 use App\Analyzer\Graph\NodeId\PropertyNodeId;
+use App\Analyzer\Graph\QualifiedName;
 use App\Analyzer\PhpStanAnalyzer\SourceResolver;
 use PhpParser\Node as PhpParserNode;
 use PhpParser\Node\Expr\StaticPropertyFetch;
 use PHPStan\Analyser\Scope;
 
+/**
+ * Records a static property being read or written.
+ *
+ * As with a static call, the owning class is named at the access site, so the
+ * relation is resolvable from the written name alone.
+ *
+ * @visibility parent
+ */
 final class StaticPropertyAccessProcessor
 {
     /**
-     * @return list<StaticPropertyAccessEdge>
+     * Records what this declaration or expression brings into the graph.
+     *
+     * @param StaticPropertyFetch $node       The syntax node met during analysis
+     * @param Scope               $scope      The analyser scope it was written in
+     * @param null|Node           $sourceNode The symbol it is written inside, resolved from the scope when omitted
+     *
+     * @return list<StaticPropertyAccessEdge> The relations it describes
      */
     public static function process(StaticPropertyFetch $node, Scope $scope, ?Node $sourceNode = null): array
     {
@@ -28,10 +43,10 @@ final class StaticPropertyAccessProcessor
 
         if ($node->class instanceof PhpParserNode\Name && $node->name instanceof PhpParserNode\VarLikeIdentifier) {
             $className = $scope->resolveName($node->class);
-            if (!SourceResolver::isBuiltin($className)) {
+            if (!(new QualifiedName($className))->isBuiltinType()) {
                 $propertyName = $node->name->toString();
                 $targetNode = new PropertyNode(
-                    new PropertyNodeId(SourceResolver::getNamespace($className), SourceResolver::getShortName($className), $propertyName),
+                    PropertyNodeId::of($className, $propertyName),
                     false,
                     null,
                 );

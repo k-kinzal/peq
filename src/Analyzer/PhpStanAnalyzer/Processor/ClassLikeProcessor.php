@@ -24,107 +24,109 @@ use PhpParser\Node\Stmt\Interface_;
 use PhpParser\Node\Stmt\Trait_;
 use PHPStan\Analyser\Scope;
 
+/**
+ * Records a class-like declaration and what it is built from.
+ *
+ * A class, interface, trait or enum brings its own node into the graph together with
+ * what it extends, implements and uses, and the attributes written on it. These are
+ * the relations that make an inheritance chain walkable in both directions.
+ *
+ * @visibility parent
+ */
 final class ClassLikeProcessor
 {
     /**
-     * @return array<AttributeEdge|ClassNode|DeclarationExtendsEdge|DeclarationImplementsEdge|DeclarationTraitUseEdge|EnumNode|GraphInterfaceNode|TraitNode>
+     * Records the declaration and everything it takes on.
+     *
+     * An anonymous class has no name to key a node by, so nothing is recorded for it.
+     *
+     * @param ClassLike $node  The syntax node met during analysis
+     * @param Scope     $scope The analyser scope it was written in
+     *
+     * @return list<AttributeEdge|ClassNode|DeclarationExtendsEdge|DeclarationImplementsEdge|DeclarationTraitUseEdge|EnumNode|GraphInterfaceNode|TraitNode> The relations it describes
      */
     public static function process(ClassLike $node, Scope $scope): array
     {
-        if (!isset($node->namespacedName)) {
+        if ($node->namespacedName === null) {
             return [];
         }
 
-        $items = [];
-        $className = $node->namespacedName->toString();
-        $namespace = self::getNamespace($className);
-        $shortName = self::getShortName($className);
         $meta = new FileMeta($scope->getFile(), $node->getStartLine(), 1);
-
-        $classNode = null;
-
-        if ($node instanceof Class_) {
-            $classNode = new ClassNode(new ClassNodeId($namespace, $shortName), true, $meta);
-        } elseif ($node instanceof Interface_) {
-            $classNode = new GraphInterfaceNode(new InterfaceNodeId($namespace, $shortName), true, $meta);
-        } elseif ($node instanceof Trait_) {
-            $classNode = new TraitNode(new TraitNodeId($namespace, $shortName), true, $meta);
-        } elseif ($node instanceof Enum_) {
-            $classNode = new EnumNode(new EnumNodeId($namespace, $shortName), true, $meta);
-        }
-
-        if ($classNode === null) {
+        $declared = self::declaredNode($node, $node->namespacedName->toString(), $meta);
+        if ($declared === null) {
             return [];
         }
 
-        $items[] = $classNode;
+        return [
+            $declared,
+            ...AttributeProcessor::process($node->attrGroups, $declared, $scope),
+            ...self::inheritance($node, $declared, $meta),
+        ];
+    }
 
-        // Attributes
-        foreach ($node->attrGroups as $attrGroup) {
-            foreach ($attrGroup->attrs as $attr) {
-                $attrName = $scope->resolveName($attr->name);
-                $attrNode = new ClassNode(new ClassNodeId(self::getNamespace($attrName), self::getShortName($attrName)), false, null);
-                $items[] = new AttributeEdge($classNode, $attrNode, $meta);
+    /**
+     * Builds the node for the declaration itself.
+     *
+     * @param ClassLike $node      The syntax node met during analysis
+     * @param string    $className The fully qualified name it declares
+     * @param FileMeta  $meta      Where the declaration is written
+     *
+     * @return null|ClassNode|EnumNode|GraphInterfaceNode|TraitNode The declared node, or null for a kind with no node
+     */
+    public static function declaredNode(ClassLike $node, string $className, FileMeta $meta): ClassNode|EnumNode|GraphInterfaceNode|TraitNode|null
+    {
+        return match (true) {
+            $node instanceof Class_ => new ClassNode(ClassNodeId::of($className), true, $meta),
+            $node instanceof Interface_ => new GraphInterfaceNode(InterfaceNodeId::of($className), true, $meta),
+            $node instanceof Trait_ => new TraitNode(TraitNodeId::of($className), true, $meta),
+            $node instanceof Enum_ => new EnumNode(EnumNodeId::of($className), true, $meta),
+            default => null,
+        };
+    }
+
+    /**
+     * Records what a declaration extends, implements and uses.
+     *
+     * Which of those a declaration may have is decided by its kind, and PHP's own
+     * rules are what the branches here say: only a class extends a class, only an
+     * interface extends several, an enum implements but never extends, and every
+     * class-like except an interface may use a trait — an enum included, which the
+     * previous shape of this code asserted against.
+     *
+     * @param ClassLike                                       $node     The syntax node met during analysis
+     * @param ClassNode|EnumNode|GraphInterfaceNode|TraitNode $declared The node of the declaration itself
+     * @param FileMeta                                        $meta     Where the declaration is written
+     *
+     * @return list<DeclarationExtendsEdge|DeclarationImplementsEdge|DeclarationTraitUseEdge> The inheritance relations
+     */
+    public static function inheritance(ClassLike $node, ClassNode|EnumNode|GraphInterfaceNode|TraitNode $declared, FileMeta $meta): array
+    {
+        $items = [];
+
+        if ($node instanceof Class_ && $node->extends !== null && $declared instanceof ClassNode) {
+            $items[] = new DeclarationExtendsEdge($declared, new ClassNode(ClassNodeId::of($node->extends->toString()), false, null), $meta);
+        }
+
+        if ($node instanceof Interface_ && $declared instanceof GraphInterfaceNode) {
+            foreach ($node->extends as $parent) {
+                $items[] = new DeclarationExtendsEdge($declared, new GraphInterfaceNode(InterfaceNodeId::of($parent->toString()), false, null), $meta);
             }
         }
 
-        // Extends
-        if ($node instanceof Class_ && $node->extends !== null) {
-            $parentName = $node->extends->toString();
-            $parentNode = new ClassNode(new ClassNodeId(self::getNamespace($parentName), self::getShortName($parentName)), false, null);
-            assert($classNode instanceof ClassNode);
-            $items[] = new DeclarationExtendsEdge($classNode, $parentNode, $meta);
-        }
-
-        if ($node instanceof Interface_) {
-            foreach ($node->extends as $extends) {
-                $parentName = $extends->toString();
-                $parentNode = new ClassNode(new ClassNodeId(self::getNamespace($parentName), self::getShortName($parentName)), false, null);
-                assert($classNode instanceof GraphInterfaceNode);
-                $items[] = new DeclarationExtendsEdge($classNode, $parentNode, $meta);
+        if (($node instanceof Class_ || $node instanceof Enum_) && ($declared instanceof ClassNode || $declared instanceof EnumNode)) {
+            foreach ($node->implements as $contract) {
+                $items[] = new DeclarationImplementsEdge($declared, new GraphInterfaceNode(InterfaceNodeId::of($contract->toString()), false, null), $meta);
             }
         }
 
-        // Implements
-        if ($node instanceof Class_ || $node instanceof Enum_) {
-            foreach ($node->implements as $implement) {
-                $interfaceName = $implement->toString();
-                $interfaceNode = new GraphInterfaceNode(new InterfaceNodeId(self::getNamespace($interfaceName), self::getShortName($interfaceName)), false, null);
-                assert($classNode instanceof ClassNode || $classNode instanceof EnumNode);
-                $items[] = new DeclarationImplementsEdge($classNode, $interfaceNode, $meta);
-            }
-        }
-
-        // Trait Uses
-        foreach ($node->getTraitUses() as $traitUse) {
-            foreach ($traitUse->traits as $trait) {
-                $traitName = $trait->toString();
-                $traitNode = new TraitNode(new TraitNodeId(self::getNamespace($traitName), self::getShortName($traitName)), false, null);
-                assert($classNode instanceof ClassNode || $classNode instanceof TraitNode);
-                $items[] = new DeclarationTraitUseEdge($classNode, $traitNode, $meta);
+        if (!$declared instanceof GraphInterfaceNode) {
+            foreach ($node->getTraitUses() as $traitUse) {
+                foreach ($traitUse->traits as $trait) {
+                    $items[] = new DeclarationTraitUseEdge($declared, new TraitNode(TraitNodeId::of($trait->toString()), false, null), $meta);
+                }
             }
         }
 
         return $items;
-    }
-
-    private static function getNamespace(string $name): string
-    {
-        $lastSlash = strrpos($name, '\\');
-        if ($lastSlash === false) {
-            return '';
-        }
-
-        return substr($name, 0, $lastSlash);
-    }
-
-    private static function getShortName(string $name): string
-    {
-        $lastSlash = strrpos($name, '\\');
-        if ($lastSlash === false) {
-            return $name;
-        }
-
-        return substr($name, $lastSlash + 1);
     }
 }

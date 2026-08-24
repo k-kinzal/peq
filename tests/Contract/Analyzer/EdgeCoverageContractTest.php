@@ -29,8 +29,11 @@ use PhpParser\Node\Stmt\Interface_;
 use PhpParser\Node\Stmt\Property;
 use PhpParser\Node\Stmt\Trait_;
 use PhpParser\Node\UnionType;
+use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\Medium;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Tests\Fixture\Analyzer\PhpParserGrammar;
 
 /**
  * @internal
@@ -42,7 +45,8 @@ use PHPUnit\Framework\TestCase;
  * - An explicit mapping to the EdgeKind(s) it should produce
  * - A corresponding contract test covering each mapped EdgeKind, OR
  * - An entry in the known-gap list with justification
- */
+ */#[CoversNothing]
+#[Medium]
 final class EdgeCoverageContractTest extends TestCase
 {
     /**
@@ -207,15 +211,13 @@ final class EdgeCoverageContractTest extends TestCase
         'declaration-enum-case',
     ];
 
+    /**
+     * Checks that every dependency producing node has edge kind mapping.
+     */
     #[Test]
     public function testEveryDependencyProducingNodeHasEdgeKindMapping(): void
     {
-        /** @var array<class-string, string> $raw */
-        $raw = (new \ReflectionClassConstant(
-            GrammarCoverageContractTest::class,
-            'DEPENDENCY_PRODUCING',
-        ))->getValue();
-        $dependencyProducing = array_keys($raw);
+        $dependencyProducing = array_keys(PhpParserGrammar::dependencyProducing());
 
         $mapped = array_keys(self::NODE_TO_EDGE_KINDS);
 
@@ -236,6 +238,9 @@ final class EdgeCoverageContractTest extends TestCase
         );
     }
 
+    /**
+     * Checks that every mapped edge kind is covered or gapped.
+     */
     #[Test]
     public function testEveryMappedEdgeKindIsCoveredOrGapped(): void
     {
@@ -264,6 +269,9 @@ final class EdgeCoverageContractTest extends TestCase
         }
     }
 
+    /**
+     * Checks that no stale gaps.
+     */
     #[Test]
     public function testNoStaleGaps(): void
     {
@@ -279,6 +287,9 @@ final class EdgeCoverageContractTest extends TestCase
         );
     }
 
+    /**
+     * Checks that tested edge kind classes exist.
+     */
     #[Test]
     public function testTestedEdgeKindClassesExist(): void
     {
@@ -288,14 +299,17 @@ final class EdgeCoverageContractTest extends TestCase
                 sprintf('TESTED_EDGE_KINDS["%s"] references non-existent class: %s', $kindValue, $testClass),
             );
 
-            $rc = new \ReflectionClass($testClass);
-            self::assertTrue(
-                $rc->isSubclassOf(TestCase::class),
-                sprintf('TESTED_EDGE_KINDS["%s"] references %s which is not a TestCase', $kindValue, $testClass),
+            self::assertStringEndsWith(
+                'ContractTest',
+                $testClass,
+                sprintf('TESTED_EDGE_KINDS["%s"] references %s, which is not a contract test', $kindValue, $testClass),
             );
         }
     }
 
+    /**
+     * Checks that node to edge kinds only contains valid edge kinds.
+     */
     #[Test]
     public function testNodeToEdgeKindsOnlyContainsValidEdgeKinds(): void
     {
@@ -316,6 +330,9 @@ final class EdgeCoverageContractTest extends TestCase
         }
     }
 
+    /**
+     * Checks that every forward edge kind is reachable from some node.
+     */
     #[Test]
     public function testEveryForwardEdgeKindIsReachableFromSomeNode(): void
     {
@@ -343,6 +360,9 @@ final class EdgeCoverageContractTest extends TestCase
         }
     }
 
+    /**
+     * Checks that receiver limitations refer to tested edge kinds.
+     */
     #[Test]
     public function testReceiverLimitationsReferToTestedEdgeKinds(): void
     {

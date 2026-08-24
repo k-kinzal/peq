@@ -10,10 +10,10 @@ use Symfony\Component\Yaml\Yaml;
 /**
  * Reads configuration from a YAML file.
  *
- * This reader loads configuration data from a YAML file (typically .peq.yaml)
- * using Symfony's YAML parser. If the file doesn't exist, it returns an empty
- * array, allowing the application to continue with other configuration sources.
- * YAML parsing errors are wrapped in ConfigException for consistent error handling.
+ * The file is optional: a project that configures peq entirely from the command line
+ * or the environment needs none, and an empty one is a file whose contents have not
+ * been decided yet. A file that exists and holds something other than named settings
+ * is a different matter — that is a mistake worth reporting rather than ignoring.
  */
 final class YamlConfigLoader implements ConfigReader
 {
@@ -25,7 +25,11 @@ final class YamlConfigLoader implements ConfigReader
     ) {}
 
     /**
-     * {@inheritdoc}
+     * Reports the configuration the YAML file carries.
+     *
+     * @return array<string, mixed> The settings the file holds
+     *
+     * @throws ConfigException If the file cannot be read, cannot be parsed, or does not hold named settings
      */
     public function read(): array
     {
@@ -33,32 +37,80 @@ final class YamlConfigLoader implements ConfigReader
             return [];
         }
 
-        $contents = @file_get_contents($this->path);
+        $parsed = $this->parse($this->contents());
+        if ($parsed === null) {
+            return [];
+        }
+
+        $settings = [];
+        foreach ($parsed as $name => $value) {
+            if (!is_string($name)) {
+                throw new ConfigException(sprintf(
+                    'Invalid configuration format in "%s": every setting must be named, got the key %s',
+                    $this->path,
+                    RawConfig::describe($name),
+                ));
+            }
+            $settings[$name] = $value;
+        }
+
+        return $settings;
+    }
+
+    /**
+     * Reads the file from disk.
+     *
+     * @return string What the file holds
+     *
+     * @throws ConfigException If the file cannot be opened or read
+     */
+    public function contents(): string
+    {
+        if (!is_readable($this->path)) {
+            throw new ConfigException(sprintf('Failed to read configuration file: %s', $this->path));
+        }
+
+        $contents = file_get_contents($this->path);
         if ($contents === false) {
             throw new ConfigException(sprintf('Failed to read configuration file: %s', $this->path));
         }
 
+        return $contents;
+    }
+
+    /**
+     * Parses the file contents into the settings they describe.
+     *
+     * @param string $contents What the file holds
+     *
+     * @return null|array<mixed> The parsed settings, or null when the file is empty
+     *
+     * @throws ConfigException If the contents cannot be parsed, or describe something other than settings
+     */
+    public function parse(string $contents): ?array
+    {
         try {
-            $config = Yaml::parse($contents);
-        } catch (ParseException $e) {
+            $parsed = Yaml::parse($contents);
+        } catch (ParseException $failure) {
             throw new ConfigException(
-                sprintf('Failed to parse YAML configuration file "%s": %s', $this->path, $e->getMessage()),
-                $e->getCode(),
-                $e
+                sprintf('Failed to parse YAML configuration file "%s": %s', $this->path, $failure->getMessage()),
+                $failure->getCode(),
+                $failure,
             );
         }
 
-        if (!is_array($config)) {
-            throw new ConfigException(
-                sprintf(
-                    'Invalid configuration format in "%s": Expected array, got %s',
-                    $this->path,
-                    get_debug_type($config)
-                )
-            );
+        if ($parsed === null) {
+            return null;
         }
 
-        /** @var array<string, mixed> $config */
-        return $config;
+        if (!is_array($parsed)) {
+            throw new ConfigException(sprintf(
+                'Invalid configuration format in "%s": Expected array, got %s',
+                $this->path,
+                get_debug_type($parsed),
+            ));
+        }
+
+        return $parsed;
     }
 }

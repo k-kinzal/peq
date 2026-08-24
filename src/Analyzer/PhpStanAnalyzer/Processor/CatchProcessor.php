@@ -15,10 +15,25 @@ use App\Analyzer\PhpStanAnalyzer\SourceResolver;
 use PhpParser\Node\Stmt\Catch_;
 use PHPStan\Analyser\Scope;
 
+/**
+ * Records the exception types a catch clause names.
+ *
+ * A `catch` names the classes and interfaces a piece of code is prepared to handle,
+ * which is a real dependency on them: renaming one of those exception types breaks
+ * the handler.
+ *
+ * @visibility parent
+ */
 final class CatchProcessor
 {
     /**
-     * @return array<CatchEdge>
+     * Records what this declaration or expression brings into the graph.
+     *
+     * @param Catch_    $node       The syntax node met during analysis
+     * @param Scope     $scope      The analyser scope it was written in
+     * @param null|Node $sourceNode The symbol it is written inside, resolved from the scope when omitted
+     *
+     * @return list<CatchEdge> The relations it describes
      */
     public static function process(Catch_ $node, Scope $scope, ?Node $sourceNode = null): array
     {
@@ -26,9 +41,9 @@ final class CatchProcessor
         $sourceNode ??= SourceResolver::resolve($scope);
 
         foreach ($node->types as $type) {
-            $className = $type->toString(); // Catch types are Names
+            $className = $type->toString();
             $targetNode = new ClassNode(
-                new ClassNodeId(SourceResolver::getNamespace($className), SourceResolver::getShortName($className)),
+                ClassNodeId::of($className),
                 false,
                 null
             );

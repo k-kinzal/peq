@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Analyzer\Graph\NodeId;
 
-use App\Analyzer\Graph\IdentifierAssert;
 use App\Analyzer\Graph\Node\ConstantNode;
 use App\Analyzer\Graph\NodeId;
+use App\Analyzer\Graph\QualifiedName;
 
 /**
  * Unique identifier for a constant node in the dependency graph.
@@ -16,58 +16,46 @@ use App\Analyzer\Graph\NodeId;
  * within the analyzed codebase.
  *
  * @implements NodeId<ConstantNode>
- *
- * @property string $fullQualifiedName Alias for fullQualifiedName()
  */
 final class ConstantNodeId implements NodeId
 {
-    use IdentifierAssert;
+    /**
+     * The precomputed string form of this identifier.
+     */
+    private readonly string $stringValue;
 
     /**
      * @param string $namespace    The namespace of the class containing the constant (must be a valid PHP namespace)
      * @param string $className    The class name containing the constant (must be a valid PHP identifier)
      * @param string $constantName The constant name (must be a valid PHP identifier)
      */
-    private readonly string $stringValue;
-
     public function __construct(
         public readonly string $namespace,
         public readonly string $className,
         public readonly string $constantName,
     ) {
         if ($namespace !== '') {
-            self::assertNamespace($namespace);
+            assert(QualifiedName::isNamespace($namespace), 'The namespace must be one PHP would accept');
         }
-        self::assertIdentifier($className);
-        self::assertIdentifier($constantName);
+        assert(QualifiedName::isIdentifier($className), 'The name must be one PHP would accept for a single symbol');
+        assert(QualifiedName::isIdentifier($constantName), 'The name must be one PHP would accept for a single symbol');
         $prefix = $namespace === '' ? $className : $namespace.'\\'.$className;
         $this->stringValue = $prefix.'::'.$constantName;
     }
 
-    public function __toString(): string
-    {
-        return $this->toString();
-    }
-
-    public function __get(string $name): mixed
-    {
-        return match ($name) {
-            'fullQualifiedName' => $this->fullQualifiedName(),
-            default => throw new \LogicException("Undefined property: {$name}"),
-        };
-    }
-
     /**
-     * Returns the fully qualified constant name.
+     * Builds the identifier from the fully qualified name of the declaring class.
      *
-     * Combines namespace, class name, and constant name with appropriate separators
-     * (e.g., "App\Domain\User::STATUS_ACTIVE").
+     * @param string $ownerName    The fully qualified class name, as analysis reported it
+     * @param string $constantName The name of the constant
      *
-     * @return string The fully qualified constant name
+     * @return self The identifier for that constant
      */
-    public function fullQualifiedName(): string
+    public static function of(string $ownerName, string $constantName): self
     {
-        return $this->stringValue;
+        $owner = new QualifiedName($ownerName);
+
+        return new self($owner->namespace, $owner->shortName, $constantName);
     }
 
     /**

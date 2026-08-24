@@ -6,187 +6,109 @@ namespace App\Analyzer\PhpStanAnalyzer\Processor;
 
 use App\Analyzer\Graph\Edge;
 use App\Analyzer\Graph\Node;
+use App\Analyzer\PhpStanAnalyzer\ReparsedSource;
 use App\Analyzer\PhpStanAnalyzer\SourceResolver;
 use PhpParser\Node as PhpParserNode;
-use PhpParser\Node\Stmt\Class_;
-use PhpParser\Node\Stmt\ClassMethod;
-use PhpParser\Node\Stmt\Enum_;
-use PhpParser\Node\Stmt\Interface_;
-use PhpParser\Node\Stmt\Trait_;
 use PhpParser\NodeFinder;
-use PhpParser\NodeTraverser;
-use PhpParser\NodeVisitor\NameResolver;
-use PhpParser\Parser;
-use PhpParser\ParserFactory;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\InClassMethodNode;
 
+/**
+ * Records everything the body of a method reaches out to.
+ *
+ * The body is read from the file rather than from the tree PHPStan supplies, because
+ * that tree has had expressions cleaned out of it. Each expression found is handed to
+ * the processor that knows how to turn it into nodes and edges.
+ *
+ * @visibility parent
+ */
 final class InClassMethodNodeProcessor
 {
-    /** @var array<string, false|PhpParserNode\Stmt[]> */
-    private static array $astCache = [];
-
-    private static ?Parser $parser = null;
-
-    private static ?NodeFinder $nodeFinder = null;
-
-    private static ?NodeTraverser $traverser = null;
-
-    private static ?\Closure $findPredicate = null;
-
     /**
-     * @return array<Edge|Node>
+     * Records the relations written inside one method body.
+     *
+     * @param InClassMethodNode $node   The method the analyser is standing in
+     * @param Scope             $scope  The analyser scope of that method
+     * @param ReparsedSource    $source The file contents read as written
+     *
+     * @return list<Edge|Node> The nodes and relations the body describes
      */
-    public static function process(InClassMethodNode $node, Scope $scope): array
+    public static function process(InClassMethodNode $node, Scope $scope, ReparsedSource $source): array
     {
-        $items = [];
+        $classReflection = $scope->getClassReflection();
+        if ($classReflection === null) {
+            return [];
+        }
+
+        $body = $source->methodBody(
+            $scope->getFile(),
+            $classReflection->getName(),
+            $node->getOriginalNode()->name->toString(),
+        );
+        if ($body === null) {
+            return [];
+        }
+
         $sourceNode = SourceResolver::resolve($scope);
-
-        // Always re-parse the file to get original stmts.
-        // PHPStan v2's CleaningVisitor strips expressions from method/closure bodies,
-        // so the AST from getOriginalNode() may be incomplete.
-        $stmts = self::getOriginalStmts($node, $scope);
-
-        if ($stmts !== null) {
-            $finder = self::$nodeFinder ??= new NodeFinder();
-            $predicate = self::$findPredicate ??= static function (PhpParserNode $n): bool {
-                return $n instanceof PhpParserNode\Expr\ClassConstFetch
-                    || $n instanceof PhpParserNode\Expr\New_
-                    || $n instanceof PhpParserNode\Expr\StaticCall
-                    || $n instanceof PhpParserNode\Stmt\Catch_
-                    || $n instanceof PhpParserNode\Expr\Instanceof_
-                    || $n instanceof PhpParserNode\Expr\FuncCall
-                    || $n instanceof PhpParserNode\Expr\MethodCall
-                    || $n instanceof PhpParserNode\Expr\NullsafeMethodCall
-                    || $n instanceof PhpParserNode\Expr\PropertyFetch
-                    || $n instanceof PhpParserNode\Expr\NullsafePropertyFetch
-                    || $n instanceof PhpParserNode\Expr\StaticPropertyFetch;
-            };
-            $dependencies = $finder->find($stmts, $predicate);
-
-            foreach ($dependencies as $dep) {
-                if ($dep instanceof PhpParserNode\Expr\ClassConstFetch) {
-                    array_push($items, ...ConstFetchProcessor::process($dep, $scope, $sourceNode));
-                } elseif ($dep instanceof PhpParserNode\Expr\New_) {
-                    array_push($items, ...InstantiationProcessor::process($dep, $scope, $sourceNode));
-                } elseif ($dep instanceof PhpParserNode\Expr\StaticCall) {
-                    array_push($items, ...StaticCallProcessor::process($dep, $scope, $sourceNode));
-                } elseif ($dep instanceof PhpParserNode\Stmt\Catch_) {
-                    array_push($items, ...CatchProcessor::process($dep, $scope, $sourceNode));
-                } elseif ($dep instanceof PhpParserNode\Expr\Instanceof_) {
-                    array_push($items, ...InstanceofProcessor::process($dep, $scope, $sourceNode));
-                } elseif ($dep instanceof PhpParserNode\Expr\FuncCall) {
-                    array_push($items, ...FunctionCallProcessor::process($dep, $scope, $sourceNode));
-                } elseif ($dep instanceof PhpParserNode\Expr\NullsafeMethodCall) {
-                    array_push($items, ...MethodCallProcessor::process($dep, $scope, $sourceNode));
-                } elseif ($dep instanceof PhpParserNode\Expr\MethodCall) {
-                    array_push($items, ...MethodCallProcessor::process($dep, $scope, $sourceNode));
-                } elseif ($dep instanceof PhpParserNode\Expr\NullsafePropertyFetch) {
-                    array_push($items, ...PropertyAccessProcessor::process($dep, $scope, $sourceNode));
-                } elseif ($dep instanceof PhpParserNode\Expr\PropertyFetch) {
-                    array_push($items, ...PropertyAccessProcessor::process($dep, $scope, $sourceNode));
-                } elseif ($dep instanceof PhpParserNode\Expr\StaticPropertyFetch) {
-                    array_push($items, ...StaticPropertyAccessProcessor::process($dep, $scope, $sourceNode));
-                }
-            }
+        $items = [];
+        foreach ((new NodeFinder())->find($body, self::handles(...)) as $usage) {
+            array_push($items, ...self::dispatch($usage, $scope, $sourceNode));
         }
 
         return $items;
     }
 
     /**
-     * Returns the parsed and name-resolved AST for the given file, using a cache
-     * to avoid re-parsing the same file for every method it contains.
+     * Reports whether an expression is one this processor records a relation for.
      *
-     * @return null|PhpParserNode\Stmt[]
+     * This mirrors the arms of dispatch(): searching for exactly the expressions that
+     * have a processor is what keeps the whole tree from being materialised. The two
+     * are read together — a kind listed here but not there costs one wasted call, and
+     * one listed there but not here is simply never reached.
+     *
+     * @param PhpParserNode $node A node met while walking the method body
+     *
+     * @return bool True when dispatch() has an arm for it
      */
-    private static function getParsedAst(string $filePath): ?array
+    public static function handles(PhpParserNode $node): bool
     {
-        if (array_key_exists($filePath, self::$astCache)) {
-            $cached = self::$astCache[$filePath];
-
-            return $cached === false ? null : $cached;
-        }
-
-        $fileContent = file_get_contents($filePath);
-        if ($fileContent === false) {
-            self::$astCache[$filePath] = false;
-
-            return null;
-        }
-
-        $parser = self::$parser ??= (new ParserFactory())->createForHostVersion();
-
-        try {
-            $ast = $parser->parse($fileContent);
-            if ($ast === null) {
-                self::$astCache[$filePath] = false;
-
-                return null;
-            }
-
-            if (self::$traverser === null) {
-                self::$traverser = new NodeTraverser();
-                self::$traverser->addVisitor(new NameResolver());
-            }
-
-            /** @var PhpParserNode\Stmt[] $ast */
-            $ast = self::$traverser->traverse($ast);
-            self::$astCache[$filePath] = $ast;
-
-            return $ast;
-        } catch (\Throwable) {
-            self::$astCache[$filePath] = false;
-
-            return null;
-        }
+        return $node instanceof PhpParserNode\Expr\ClassConstFetch
+            || $node instanceof PhpParserNode\Expr\New_
+            || $node instanceof PhpParserNode\Expr\StaticCall
+            || $node instanceof PhpParserNode\Stmt\Catch_
+            || $node instanceof PhpParserNode\Expr\Instanceof_
+            || $node instanceof PhpParserNode\Expr\FuncCall
+            || $node instanceof PhpParserNode\Expr\MethodCall
+            || $node instanceof PhpParserNode\Expr\NullsafeMethodCall
+            || $node instanceof PhpParserNode\Expr\PropertyFetch
+            || $node instanceof PhpParserNode\Expr\NullsafePropertyFetch
+            || $node instanceof PhpParserNode\Expr\StaticPropertyFetch;
     }
 
     /**
-     * Recovers the full method body AST by looking up the cached parsed file.
+     * Hands one expression to the processor that records its relation.
      *
-     * DO NOT restore the stmts shortcut (checking $methodNode->stmts first).
-     * PHPStan v2's CleaningVisitor can PARTIALLY strip expressions, leaving
-     * stmts non-null but missing MethodCall, PropertyFetch, FuncCall nodes.
-     * Always re-parsing guarantees the full original AST is available.
+     * @param PhpParserNode $node   The expression met in the method body
+     * @param Scope         $scope  The analyser scope of the method
+     * @param Node          $source The method the expression is written inside
      *
-     * @return null|PhpParserNode\Stmt[]
+     * @return list<Edge|Node> What that processor reported, or nothing for an expression with no arm
      */
-    private static function getOriginalStmts(InClassMethodNode $node, Scope $scope): ?array
+    public static function dispatch(PhpParserNode $node, Scope $scope, Node $source): array
     {
-        $ast = self::getParsedAst($scope->getFile());
-        if ($ast === null) {
-            return null;
-        }
-
-        $methodNode = $node->getOriginalNode();
-        $nodeFinder = self::$nodeFinder ??= new NodeFinder();
-        $classReflection = $scope->getClassReflection();
-        if ($classReflection === null) {
-            return null;
-        }
-
-        $className = $classReflection->getName();
-        $classNode = $nodeFinder->findFirst($ast, function (PhpParserNode $n) use ($className) {
-            if (($n instanceof Class_ || $n instanceof Interface_ || $n instanceof Trait_ || $n instanceof Enum_)
-                && isset($n->namespacedName)) {
-                return $n->namespacedName->toString() === $className;
-            }
-
-            return false;
-        });
-
-        if ($classNode instanceof Class_ || $classNode instanceof Trait_ || $classNode instanceof Enum_) {
-            $methodName = $methodNode->name->toString();
-            $foundMethod = $nodeFinder->findFirst($classNode->stmts, function (PhpParserNode $n) use ($methodName) {
-                return $n instanceof ClassMethod && $n->name->toString() === $methodName;
-            });
-
-            if ($foundMethod instanceof ClassMethod) {
-                return $foundMethod->stmts;
-            }
-        }
-
-        return null;
+        return match (true) {
+            $node instanceof PhpParserNode\Expr\ClassConstFetch => ConstFetchProcessor::process($node, $scope, $source),
+            $node instanceof PhpParserNode\Expr\New_ => InstantiationProcessor::process($node, $scope, $source),
+            $node instanceof PhpParserNode\Expr\StaticCall => StaticCallProcessor::process($node, $scope, $source),
+            $node instanceof PhpParserNode\Stmt\Catch_ => CatchProcessor::process($node, $scope, $source),
+            $node instanceof PhpParserNode\Expr\Instanceof_ => InstanceofProcessor::process($node, $scope, $source),
+            $node instanceof PhpParserNode\Expr\FuncCall => FunctionCallProcessor::process($node, $scope, $source),
+            $node instanceof PhpParserNode\Expr\NullsafeMethodCall => MethodCallProcessor::process($node, $scope, $source),
+            $node instanceof PhpParserNode\Expr\MethodCall => MethodCallProcessor::process($node, $scope, $source),
+            $node instanceof PhpParserNode\Expr\NullsafePropertyFetch => PropertyAccessProcessor::process($node, $scope, $source),
+            $node instanceof PhpParserNode\Expr\PropertyFetch => PropertyAccessProcessor::process($node, $scope, $source),
+            $node instanceof PhpParserNode\Expr\StaticPropertyFetch => StaticPropertyAccessProcessor::process($node, $scope, $source),
+            default => [],
+        };
     }
 }

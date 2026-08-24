@@ -5,16 +5,23 @@ declare(strict_types=1);
 namespace App\Action\Inspect;
 
 use App\Analyzer\Graph\Graph;
+use App\Analyzer\Graph\Node;
 
 /**
- * Data transfer object for the output of the InspectAction.
+ * What an inspection produced.
+ *
+ * The symbol is the node the requested name resolved to, not the name itself: the
+ * inspection has already established that the graph holds it, so nothing downstream
+ * has to repeat the lookup or handle its absence.
  */
 final class InspectActionOutput
 {
     /**
-     * @param Graph $graph the graph resulting from the inspection
+     * @param Graph $graph  The dependency graph built for the configured path
+     * @param Node  $symbol The node the requested symbol name resolved to
      */
     public function __construct(
         public readonly Graph $graph,
+        public readonly Node $symbol,
     ) {}
 }

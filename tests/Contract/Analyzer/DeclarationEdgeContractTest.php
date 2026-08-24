@@ -6,10 +6,11 @@ namespace Tests\Contract\Analyzer;
 
 use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\Graph;
-use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
-use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
+use Generator;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -18,13 +19,13 @@ use PHPUnit\Framework\TestCase;
  *
  * Contract tests verifying that the analyzer correctly detects declaration-level
  * dependency edges (extends, implements, trait use, attributes, and type declarations)
- */
+ */#[CoversClass(PhpStanAnalyzer::class)]
+#[Large]
 final class DeclarationEdgeContractTest extends TestCase
 {
-    // ---------------------------------------------------------------
-    // Extends
-    // ---------------------------------------------------------------
-
+    /**
+     * Checks that extends contract.
+     */
     #[Test]
     public function testExtendsContract(): void
     {
@@ -48,10 +49,9 @@ final class DeclarationEdgeContractTest extends TestCase
         );
     }
 
-    // ---------------------------------------------------------------
-    // Implements
-    // ---------------------------------------------------------------
-
+    /**
+     * Checks that implements contract.
+     */
     #[Test]
     public function testImplementsContract(): void
     {
@@ -75,10 +75,9 @@ final class DeclarationEdgeContractTest extends TestCase
         );
     }
 
-    // ---------------------------------------------------------------
-    // Trait use
-    // ---------------------------------------------------------------
-
+    /**
+     * Checks that trait use contract.
+     */
     #[Test]
     public function testTraitUseContract(): void
     {
@@ -104,10 +103,9 @@ final class DeclarationEdgeContractTest extends TestCase
         );
     }
 
-    // ---------------------------------------------------------------
-    // Attribute — multiple targets
-    // ---------------------------------------------------------------
-
+    /**
+     * Checks that attribute contract.
+     */
     #[DataProvider('provideAttributeTargetVariations')]
     #[Test]
     public function testAttributeContract(string $label, string $code, string $fromSuffix): void
@@ -123,9 +121,9 @@ final class DeclarationEdgeContractTest extends TestCase
     }
 
     /**
-     * @return \Generator<string, array{string, string, string}>
+     * @return Generator<string, array{string, string, string}>
      */
-    public static function provideAttributeTargetVariations(): \Generator
+    public static function provideAttributeTargetVariations(): Generator
     {
         yield 'class' => [
             'class',
@@ -215,10 +213,9 @@ final class DeclarationEdgeContractTest extends TestCase
         ];
     }
 
-    // ---------------------------------------------------------------
-    // Parameter type — with variations
-    // ---------------------------------------------------------------
-
+    /**
+     * Checks that parameter type contract.
+     */
     #[DataProvider('provideParameterTypeVariations')]
     #[Test]
     public function testParameterTypeContract(string $label, string $code): void
@@ -234,9 +231,9 @@ final class DeclarationEdgeContractTest extends TestCase
     }
 
     /**
-     * @return \Generator<string, array{string, string}>
+     * @return Generator<string, array{string, string}>
      */
-    public static function provideParameterTypeVariations(): \Generator
+    public static function provideParameterTypeVariations(): Generator
     {
         yield 'simple' => ['simple', self::makeParameterTypeCode('Dep')];
 
@@ -247,10 +244,9 @@ final class DeclarationEdgeContractTest extends TestCase
         yield 'intersection' => ['intersection', self::makeParameterTypeCode('Dep&\Stringable')];
     }
 
-    // ---------------------------------------------------------------
-    // Return type — with variations
-    // ---------------------------------------------------------------
-
+    /**
+     * Checks that return type contract.
+     */
     #[DataProvider('provideReturnTypeVariations')]
     #[Test]
     public function testReturnTypeContract(string $label, string $code): void
@@ -266,9 +262,9 @@ final class DeclarationEdgeContractTest extends TestCase
     }
 
     /**
-     * @return \Generator<string, array{string, string}>
+     * @return Generator<string, array{string, string}>
      */
-    public static function provideReturnTypeVariations(): \Generator
+    public static function provideReturnTypeVariations(): Generator
     {
         yield 'simple' => ['simple', self::makeReturnTypeCode('Dep')];
 
@@ -279,10 +275,9 @@ final class DeclarationEdgeContractTest extends TestCase
         yield 'intersection' => ['intersection', self::makeReturnTypeCode('Dep&\Stringable')];
     }
 
-    // ---------------------------------------------------------------
-    // Property type — with variations
-    // ---------------------------------------------------------------
-
+    /**
+     * Checks that property type contract.
+     */
     #[DataProvider('providePropertyTypeVariations')]
     #[Test]
     public function testPropertyTypeContract(string $label, string $code): void
@@ -298,9 +293,9 @@ final class DeclarationEdgeContractTest extends TestCase
     }
 
     /**
-     * @return \Generator<string, array{string, string}>
+     * @return Generator<string, array{string, string}>
      */
-    public static function providePropertyTypeVariations(): \Generator
+    public static function providePropertyTypeVariations(): Generator
     {
         yield 'simple' => ['simple', self::makePropertyTypeCode('Dep')];
 
@@ -311,7 +306,10 @@ final class DeclarationEdgeContractTest extends TestCase
         yield 'intersection' => ['intersection', self::makePropertyTypeCode('Dep&\Stringable')];
     }
 
-    private static function makeParameterTypeCode(string $typeHint): string
+    /**
+     * Returns the make parameter type code a check needs.
+     */
+    public static function makeParameterTypeCode(string $typeHint): string
     {
         return <<<PHP
             <?php
@@ -328,7 +326,10 @@ final class DeclarationEdgeContractTest extends TestCase
             PHP;
     }
 
-    private static function makeReturnTypeCode(string $typeHint): string
+    /**
+     * Returns the make return type code a check needs.
+     */
+    public static function makeReturnTypeCode(string $typeHint): string
     {
         return <<<PHP
             <?php
@@ -345,7 +346,10 @@ final class DeclarationEdgeContractTest extends TestCase
             PHP;
     }
 
-    private static function makePropertyTypeCode(string $typeHint): string
+    /**
+     * Returns the make property type code a check needs.
+     */
+    public static function makePropertyTypeCode(string $typeHint): string
     {
         return <<<PHP
             <?php
@@ -362,18 +366,17 @@ final class DeclarationEdgeContractTest extends TestCase
             PHP;
     }
 
-    // ---------------------------------------------------------------
-    // Helpers
-    // ---------------------------------------------------------------
-
-    private static function analyzeCode(string $phpCode): Graph
+    /**
+     * Returns the analyze code a check needs.
+     */
+    public static function analyzeCode(string $phpCode): Graph
     {
         $tmpDir = sys_get_temp_dir().'/peq_contract_'.uniqid();
         mkdir($tmpDir, 0o777, true);
         file_put_contents($tmpDir.'/Test.php', $phpCode);
 
         try {
-            $analyzer = new PhpStanAnalyzer(new ContainerFactory(), new PhpFileCollector());
+            $analyzer = new PhpStanAnalyzer();
 
             return $analyzer->analyze($tmpDir);
         } finally {
@@ -382,7 +385,10 @@ final class DeclarationEdgeContractTest extends TestCase
         }
     }
 
-    private function assertEdgeExists(
+    /**
+     * Returns the assert edge exists a check needs.
+     */
+    public function assertEdgeExists(
         Graph $graph,
         string $fromSuffix,
         string $toSuffix,

@@ -4,108 +4,107 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Reporter\TreeReporter;
 
-use App\Analyzer\Graph\Node\BuiltinNode;
-use App\Analyzer\Graph\Node\ClassNode;
-use App\Analyzer\Graph\Node\UnknownNode;
-use App\Analyzer\Graph\NodeId\BuiltinNodeId;
-use App\Analyzer\Graph\NodeId\ClassNodeId;
-use App\Analyzer\Graph\NodeId\UnknownNodeId;
+use App\Analyzer\Graph\Node;
 use App\Reporter\TreeReporter\LineRenderer;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use Tests\Fixture\Graph\SampleNodes;
 
 /**
  * @internal
  */
+#[CoversClass(LineRenderer::class)]
+#[UsesClass(\App\Analyzer\Graph\NodeId\BuiltinNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\NodeId\ClassNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\NodeId\UnknownNodeId::class)]
+#[UsesClass(Node\BuiltinNode::class)]
+#[UsesClass(Node\ClassNode::class)]
+#[UsesClass(Node\UnknownNode::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[Small]
 final class LineRendererTest extends TestCase
 {
-    #[Test]
-    public function testRenderRootNode(): void
+    public function testRenderWritesTheRootWithoutAnyPrefix(): void
     {
-        $renderer = new LineRenderer();
-        $node = new ClassNode(new ClassNodeId('App', 'MyClass'));
-        $line = $renderer->render($node, 0, [], true, false);
-
-        self::assertSame('App\MyClass', $line);
+        self::assertSame(
+            'App\Domain\Invoice',
+            (new LineRenderer())->render(SampleNodes::invoice(), 0, [], true, false),
+        );
     }
 
-    #[Test]
-    public function testRenderFirstLevelNotLastChild(): void
+    public function testRenderJoinsALastChildWithACorner(): void
     {
-        $renderer = new LineRenderer();
-        $node = new ClassNode(new ClassNodeId('App', 'MyClass'));
-        $line = $renderer->render($node, 1, [0 => true], false, false);
-
-        self::assertSame('├── App\MyClass', $line);
+        self::assertSame(
+            '└── App\Domain\Invoice',
+            (new LineRenderer())->render(SampleNodes::invoice(), 1, [], true, false),
+        );
     }
 
-    #[Test]
-    public function testRenderFirstLevelLastChild(): void
+    public function testRenderJoinsAChildThatHasSiblingsBelowItWithATee(): void
     {
-        $renderer = new LineRenderer();
-        $node = new ClassNode(new ClassNodeId('App', 'MyClass'));
-        $line = $renderer->render($node, 1, [0 => true], true, false);
-
-        self::assertSame('└── App\MyClass', $line);
+        self::assertSame(
+            '├── App\Domain\Invoice',
+            (new LineRenderer())->render(SampleNodes::invoice(), 1, [], false, false),
+        );
     }
 
-    #[Test]
-    public function testRenderNestedLevelWithContinuation(): void
+    public function testRenderContinuesTheBranchesThatAreStillOpenAbove(): void
     {
-        $renderer = new LineRenderer();
-        $node = new ClassNode(new ClassNodeId('App', 'MyClass'));
-        $line = $renderer->render($node, 2, [1 => true], true, false);
-
-        self::assertSame('│   └── App\MyClass', $line);
+        self::assertSame(
+            '│   └── App\Domain\Invoice',
+            (new LineRenderer())->render(SampleNodes::invoice(), 2, [1 => true], true, false),
+        );
     }
 
-    #[Test]
-    public function testRenderNestedLevelWithoutContinuation(): void
+    public function testRenderIndentsPastABranchThatHasClosed(): void
     {
-        $renderer = new LineRenderer();
-        $node = new ClassNode(new ClassNodeId('App', 'MyClass'));
-        $line = $renderer->render($node, 2, [1 => false], true, false);
-
-        self::assertSame('    └── App\MyClass', $line);
+        self::assertSame(
+            '    └── App\Domain\Invoice',
+            (new LineRenderer())->render(SampleNodes::invoice(), 2, [1 => false], true, false),
+        );
     }
 
-    #[Test]
-    public function testRenderRecursiveNode(): void
+    public function testRenderIndentsPastABranchNothingIsKnownAbout(): void
     {
-        $renderer = new LineRenderer();
-        $node = new ClassNode(new ClassNodeId('App', 'MyClass'));
-        $line = $renderer->render($node, 1, [], true, true);
-
-        self::assertSame('└── App\MyClass (recursive)', $line);
+        self::assertSame(
+            '    └── App\Domain\Invoice',
+            (new LineRenderer())->render(SampleNodes::invoice(), 2, [], true, false),
+        );
     }
 
-    #[Test]
-    public function testRenderBuiltinNode(): void
+    /**
+     * @param non-empty-string $expected
+     */
+    #[DataProvider('providerNodesAndTheirSuffixes')]
+    public function testRenderNamesWhyABranchStops(Node $node, bool $isRecursive, bool $isDuplicate, string $expected): void
     {
-        $renderer = new LineRenderer();
-        $node = new BuiltinNode(new BuiltinNodeId('Builtin', 'string'));
-        $line = $renderer->render($node, 1, [], true, false);
-
-        self::assertSame('└── Builtin\string (builtin)', $line);
+        self::assertStringEndsWith($expected, (new LineRenderer())->render($node, 1, [], true, $isRecursive, $isDuplicate));
     }
 
-    #[Test]
-    public function testRenderUnknownNode(): void
+    /**
+     * @return iterable<string, array{Node, bool, bool, non-empty-string}>
+     */
+    public static function providerNodesAndTheirSuffixes(): iterable
     {
-        $renderer = new LineRenderer();
-        $node = new UnknownNode(new UnknownNodeId('App\Unknown'));
-        $line = $renderer->render($node, 1, [], true, false);
+        yield 'a symbol closing a cycle' => [SampleNodes::invoice(), true, false, '(recursive)'];
 
-        self::assertSame('└── App\Unknown (unresolved)', $line);
+        yield 'a symbol expanded elsewhere' => [SampleNodes::invoice(), false, true, '(*)'];
+
+        yield 'a builtin type' => [SampleNodes::builtin(), false, false, '(builtin)'];
+
+        yield 'an unresolved symbol' => [SampleNodes::unresolved(), false, false, '(unresolved)'];
+
+        yield 'an ordinary symbol' => [SampleNodes::invoice(), false, false, 'App\Domain\Invoice'];
     }
 
-    #[Test]
-    public function testRenderDuplicateNode(): void
+    public function testRenderPrefersTheCycleMarkOverEveryOther(): void
     {
-        $renderer = new LineRenderer();
-        $node = new ClassNode(new ClassNodeId('App', 'MyClass'));
-        $line = $renderer->render($node, 1, [], true, false, true);
-
-        self::assertSame('└── App\MyClass (*)', $line);
+        self::assertStringEndsWith(
+            '(recursive)',
+            (new LineRenderer())->render(SampleNodes::unresolved(), 1, [], true, true, true),
+        );
     }
 }

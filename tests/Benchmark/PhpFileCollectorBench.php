@@ -11,34 +11,49 @@ use PhpBench\Attributes\Revs;
 use PhpBench\Attributes\Warmup;
 
 /**
+ * Measures selecting the files an analysis covers.
+ *
+ * Filtering costs a directory walk of its own, so the two measurements together say
+ * what narrowing an analysis with patterns actually buys.
+ *
  * @internal
  */
 final class PhpFileCollectorBench
 {
-    private string $srcPath = '';
+    /**
+     * The source tree the measurements walk.
+     */
+    private string $sourcePath = '';
 
+    /**
+     * Names the source tree to walk.
+     */
     public function setUp(): void
     {
-        $this->srcPath = dirname(__DIR__, 2).'/src';
+        $this->sourcePath = dirname(__DIR__, 2).'/src';
     }
 
+    /**
+     * Measures selecting every PHP file of the tree.
+     */
     #[BeforeMethods('setUp')]
     #[Revs(5)]
     #[Iterations(3)]
     #[Warmup(1)]
     public function benchCollect(): void
     {
-        $collector = new PhpFileCollector();
-        $collector->collect([$this->srcPath]);
+        (new PhpFileCollector())->collect([$this->sourcePath]);
     }
 
+    /**
+     * Measures selecting the files of the tree with exclude patterns applied.
+     */
     #[BeforeMethods('setUp')]
     #[Revs(5)]
     #[Iterations(3)]
     #[Warmup(1)]
     public function benchCollectWithExcludes(): void
     {
-        $collector = new PhpFileCollector();
-        $collector->collect([$this->srcPath], [], ['*Test.php', '*Fixture*']);
+        (new PhpFileCollector())->collect([$this->sourcePath], [], ['Graph', 'Processor']);
     }
 }

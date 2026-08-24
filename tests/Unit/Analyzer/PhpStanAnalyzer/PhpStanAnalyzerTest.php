@@ -5,125 +5,132 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\PhpStanAnalyzer;
 
 use App\Analyzer\Graph\EdgeKind;
-use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
-use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
+use App\Analyzer\Graph\NodeKind;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Medium;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 /**
  * @internal
  */
+#[CoversClass(PhpStanAnalyzer::class)]
+#[Medium]
 final class PhpStanAnalyzerTest extends TestCase
 {
-    public function testAnalyze(): void
+    public function testAnalyzeReadsTheSymbolsDeclaredUnderThePath(): void
     {
-        $analyzer = new PhpStanAnalyzer(
-            new ContainerFactory(),
-            new PhpFileCollector(),
-        );
+        $graph = (new PhpStanAnalyzer())
+            ->analyze(dirname(__DIR__, 3).'/Fixture/Sample')
+        ;
 
-        $graph = $analyzer->analyze(__DIR__.'/Fixture');
-
-        $nodes = $graph->nodes();
-        self::assertNotEmpty($nodes);
-
-        // Check for TestClass node
-        $classNode = null;
-        foreach ($nodes as $node) {
-            if ($node->id()->toString() === 'Tests\Unit\Analyzer\PhpStanAnalyzer\Fixture\TestClass') {
-                $classNode = $node;
-
-                break;
-            }
-        }
-        self::assertNotNull($classNode);
-
-        // Check edges
-        $edges = $graph->edges($classNode->id());
-        // We expect:
-        // - Instantiation (new self) -> but self resolves to class, so it's InstantiationEdge
-        // - ConstFetch (self::CONSTANT)
-        // - StaticCall (static::staticMethod)
-        // But wait, the edges are FROM the method, not the class.
-        // The source of the edges is the method `method`.
-
-        // Let's find the method node
-        $methodNode = null;
-        foreach ($nodes as $node) {
-            if ($node->id()->toString() === 'Tests\Unit\Analyzer\PhpStanAnalyzer\Fixture\TestClass::method') {
-                $methodNode = $node;
-
-                break;
-            }
-        }
-        self::assertNotNull($methodNode);
-
-        $methodEdges = $graph->edges($methodNode->id());
-        self::assertNotEmpty($methodEdges);
-
-        $edgeKinds = array_map(fn ($e) => $e->kind(), $methodEdges);
-
-        self::assertContains(EdgeKind::Instantiation, $edgeKinds);
-        self::assertContains(EdgeKind::ConstFetch, $edgeKinds);
-        self::assertContains(EdgeKind::StaticCall, $edgeKinds);
+        self::assertNotNull($graph->nodeNamed('Tests\Fixture\Sample\ComplexClass'));
     }
 
-    public function testAnalyzeComplexFixture(): void
+    #[DataProvider('providerSymbolsTheSampleDeclares')]
+    public function testAnalyzeRecordsEverySymbolTheSourcesDeclare(string $name, NodeKind $kind): void
     {
-        $analyzer = new PhpStanAnalyzer(
-            new ContainerFactory(),
-            new PhpFileCollector()
-        );
+        $graph = (new PhpStanAnalyzer())
+            ->analyze(dirname(__DIR__, 3).'/Fixture/Sample')
+        ;
 
-        $graph = $analyzer->analyze(__DIR__.'/Fixture/ComplexFixture.php');
-        $nodes = $graph->nodes();
+        self::assertSame($kind, $graph->nodeNamed($name)?->kind());
+    }
 
-        // Helper to find node by ID suffix
-        $findNode = function (string $suffix) use ($nodes) {
-            foreach ($nodes as $node) {
-                if (str_ends_with($node->id()->toString(), $suffix)) {
-                    return $node;
-                }
-            }
+    /**
+     * @return iterable<string, array{string, NodeKind}>
+     */
+    public static function providerSymbolsTheSampleDeclares(): iterable
+    {
+        yield 'a class' => ['Tests\Fixture\Sample\ComplexClass', NodeKind::Klass];
 
-            return null;
-        };
+        yield 'an interface' => ['Tests\Fixture\Sample\MyInterface', NodeKind::Interface];
 
-        $ids = array_map(fn ($n) => $n->id()->toString(), $nodes);
-        $idsList = implode(', ', $ids);
+        yield 'a trait' => ['Tests\Fixture\Sample\MyTrait', NodeKind::Trait];
 
-        // Assert Nodes exist
-        self::assertNotNull($findNode('ComplexClass'), 'ComplexClass node missing. Available: '.$idsList);
-        self::assertNotNull($findNode('MyInterface'), 'MyInterface node missing. Available: '.$idsList);
-        self::assertNotNull($findNode('MyTrait'), 'MyTrait node missing. Available: '.$idsList);
-        self::assertNotNull($findNode('MyEnum'), 'MyEnum node missing. Available: '.$idsList);
-        self::assertNotNull($findNode('MyAttribute'), 'MyAttribute node missing. Available: '.$idsList);
-        self::assertNotNull($findNode('ComplexClass::MY_CONST'), 'Constant node missing. Available: '.$idsList);
-        self::assertNotNull($findNode('ComplexClass::myProp'), 'Property node missing. Available: '.$idsList);
-        self::assertNotNull($findNode('ComplexClass::promotedProp'), 'Promoted Property node missing. Available: '.$idsList);
-        self::assertNotNull($findNode('ComplexClass::complexMethod'), 'Method node missing. Available: '.$idsList);
-        self::assertNotNull($findNode('MyEnum::A'), 'EnumCase node missing. Available: '.$idsList);
+        yield 'a method' => ['Tests\Fixture\Sample\ComplexClass::complexMethod', NodeKind::Method];
 
-        // Assert Edges
-        $classNode = $findNode('ComplexClass');
-        $edges = $graph->edges($classNode->id());
-        $edgeKinds = array_map(fn ($e) => $e->kind(), $edges);
+        yield 'an enum' => ['Tests\Fixture\Sample\MyEnum', NodeKind::Enum];
 
-        self::assertContains(EdgeKind::DeclarationImplements, $edgeKinds);
-        self::assertContains(EdgeKind::DeclarationTraitUse, $edgeKinds);
-        self::assertContains(EdgeKind::Attribute, $edgeKinds);
-        self::assertContains(EdgeKind::DeclarationConstant, $edgeKinds);
-        self::assertContains(EdgeKind::DeclarationProperty, $edgeKinds);
-        self::assertContains(EdgeKind::DeclarationMethod, $edgeKinds);
+        yield 'an enum case' => ['Tests\Fixture\Sample\MyEnum::A', NodeKind::EnumCase];
+    }
 
-        $methodNode = $findNode('ComplexClass::complexMethod');
-        $methodEdges = $graph->edges($methodNode->id());
-        $methodEdgeKinds = array_map(fn ($e) => $e->kind(), $methodEdges);
+    /**
+     * @throws RuntimeException
+     */
+    public function testAnalyzeRecordsWhatASignatureCommitsTo(): void
+    {
+        $graph = (new PhpStanAnalyzer())
+            ->analyze(dirname(__DIR__, 3).'/Fixture/Sample')
+        ;
 
-        self::assertContains(EdgeKind::Attribute, $methodEdgeKinds);
-        self::assertContains(EdgeKind::DeclarationTypeParameter, $methodEdgeKinds);
-        self::assertContains(EdgeKind::Instanceof, $methodEdgeKinds);
-        self::assertContains(EdgeKind::Catch, $methodEdgeKinds);
-        self::assertContains(EdgeKind::Instantiation, $methodEdgeKinds);
+        self::assertNotNull($graph->edge(
+            $graph->nodeNamed('Tests\Fixture\Sample\ComplexClass')?->id() ?? throw new RuntimeException('missing class'),
+            $graph->nodeNamed('Tests\Fixture\Sample\ComplexClass::complexMethod')?->id() ?? throw new RuntimeException('missing method'),
+            EdgeKind::DeclarationMethod,
+        ));
+    }
+
+    /**
+     * @throws RuntimeException
+     */
+    public function testAnalyzeMakesEveryRelationReadableInBothDirections(): void
+    {
+        $graph = (new PhpStanAnalyzer())
+            ->analyze(dirname(__DIR__, 3).'/Fixture/Sample')
+        ;
+        $method = $graph->nodeNamed('Tests\Fixture\Sample\ComplexClass::complexMethod')?->id() ?? throw new RuntimeException('missing method');
+
+        self::assertSame(EdgeKind::DeclaredIn, $graph->edges($method)[0]->kind());
+    }
+
+    public function testAnalyzeAcceptsASingleFileAsWellAsADirectory(): void
+    {
+        $graph = (new PhpStanAnalyzer())
+            ->analyze(dirname(__DIR__, 3).'/Fixture/Sample/AnalysedSample.php')
+        ;
+
+        self::assertNotNull($graph->nodeNamed('Tests\Fixture\Sample\AnalysedSample'));
+    }
+
+    public function testAnalyzeProducesAnEmptyGraphForAPathWithNoSources(): void
+    {
+        $graph = (new PhpStanAnalyzer())
+            ->analyze(__DIR__.'/nonexistent')
+        ;
+
+        self::assertSame([], $graph->nodes());
+    }
+
+    public function testAnalyzeLeavesOutWhatTheExcludePatternsFilter(): void
+    {
+        $graph = (new PhpStanAnalyzer([], ['Sample']))
+            ->analyze(dirname(__DIR__, 3).'/Fixture')
+        ;
+
+        self::assertNull($graph->nodeNamed('Tests\Fixture\Sample\ComplexClass'));
+    }
+
+    public function testAnalyzeReportsASymbolItReadAsResolved(): void
+    {
+        $graph = (new PhpStanAnalyzer())->analyze(dirname(__DIR__, 3).'/Fixture/Source/MethodBody.php');
+
+        self::assertTrue($graph->nodeNamed('Tests\Fixture\Source\MethodBodyClass')?->resolved());
+    }
+
+    public function testAnalyzeReportsASymbolItOnlySawReferencedAsUnresolved(): void
+    {
+        $graph = (new PhpStanAnalyzer())->analyze(dirname(__DIR__, 3).'/Fixture/Source/MethodBody.php');
+
+        self::assertFalse($graph->nodeNamed('stdClass')?->resolved());
+    }
+
+    public function testAnalyzeRecordsWhereADeclaredSymbolIsWritten(): void
+    {
+        $graph = (new PhpStanAnalyzer())->analyze(dirname(__DIR__, 3).'/Fixture/Source/MethodBody.php');
+
+        self::assertStringEndsWith('MethodBody.php', $graph->nodeNamed('Tests\Fixture\Source\MethodBodyClass')?->meta()->path ?? '');
     }
 }

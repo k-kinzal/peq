@@ -4,126 +4,84 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\PhpStanAnalyzer;
 
+use App\Analyzer\Graph\NodeKind;
+use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
+use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
 use App\Analyzer\PhpStanAnalyzer\SourceResolver;
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
+use Override;
+use PHPStan\Testing\PHPStanTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Medium;
+use Tests\Fixture\Analyzer\CollectorRun;
 
 /**
  * @internal
  */
-final class SourceResolverTest extends TestCase
+#[CoversClass(SourceResolver::class)]
+#[Medium]
+final class SourceResolverTest extends PHPStanTestCase
 {
-    #[DataProvider('provideBuiltinNames')]
-    #[Test]
-    public function testBuiltinNamesReturnTrue(string $name): void
+    #[Override]
+    public static function getAdditionalConfigFiles(): array
     {
-        self::assertTrue(SourceResolver::isBuiltin($name), sprintf('Expected "%s" to be built-in', $name));
+        return [];
     }
 
-    public static function provideBuiltinNames(): \Generator
+    public function testResolveAttributesARelationInsideAMethodToThatMethod(): void
     {
-        $names = ['self', 'static', 'parent', 'int', 'string', 'float', 'bool', 'array', 'iterable', 'callable', 'void', 'object', 'mixed', 'null', 'false', 'true', 'never'];
-        foreach ($names as $name) {
-            yield $name => [$name];
-        }
+        $collected = CollectorRun::over(
+            new InClassMethodCollector(),
+            dirname(__DIR__, 3).'/Fixture/Source/MethodBody.php',
+            self::getContainer(),
+            self::getParser(),
+        );
+
+        self::assertContains(
+            'Tests\Fixture\Source\MethodBodyClass::testMethod -[instantiation]-> stdClass',
+            CollectorRun::edgeDescriptions($collected),
+        );
     }
 
-    #[DataProvider('provideCaseInsensitiveBuiltins')]
-    #[Test]
-    public function testBuiltinNamesAreCaseInsensitive(string $name): void
+    public function testResolveAttributesARelationInsideAFunctionToThatFunction(): void
     {
-        self::assertTrue(SourceResolver::isBuiltin($name), sprintf('Expected "%s" to be built-in (case-insensitive)', $name));
+        $collected = CollectorRun::over(
+            new DependencyCollector(),
+            dirname(__DIR__, 3).'/Fixture/Source/UsageProcessors.php',
+            self::getContainer(),
+            self::getParser(),
+        );
+
+        self::assertContains('Tests\Fixture\Source\usage_target_func', CollectorRun::nodeNames($collected));
     }
 
-    public static function provideCaseInsensitiveBuiltins(): \Generator
+    public function testResolveNamesTheDeclaringSymbolRatherThanTheFile(): void
     {
-        yield 'Int' => ['Int'];
+        $collected = CollectorRun::over(
+            new InClassMethodCollector(),
+            dirname(__DIR__, 3).'/Fixture/Source/UsageProcessors.php',
+            self::getContainer(),
+            self::getParser(),
+        );
 
-        yield 'STRING' => ['STRING'];
+        $descriptions = CollectorRun::edgeDescriptions($collected);
+        $fromTheMethod = array_values(array_filter(
+            $descriptions,
+            static fn (string $description): bool => str_starts_with($description, 'Tests\Fixture\Source\UsageProcessorFixture::'),
+        ));
 
-        yield 'Self' => ['Self'];
-
-        yield 'MIXED' => ['MIXED'];
-
-        yield 'Bool' => ['Bool'];
-
-        yield 'Never' => ['Never'];
+        self::assertNotEmpty($descriptions);
+        self::assertSame($descriptions, $fromTheMethod);
     }
 
-    #[DataProvider('provideNonBuiltinClassNames')]
-    #[Test]
-    public function testNonBuiltinClassNamesReturnFalse(string $name): void
+    public function testResolveProducesANodeThatReportsItselfAsAnalysed(): void
     {
-        self::assertFalse(SourceResolver::isBuiltin($name), sprintf('Expected "%s" to NOT be built-in', $name));
-    }
+        $collected = CollectorRun::over(
+            new DependencyCollector(),
+            dirname(__DIR__, 3).'/Fixture/Source/ClassDependency.php',
+            self::getContainer(),
+            self::getParser(),
+        );
 
-    public static function provideNonBuiltinClassNames(): \Generator
-    {
-        yield 'MyClass' => ['MyClass'];
-
-        yield 'stdClass' => ['stdClass'];
-
-        yield 'Exception' => ['Exception'];
-
-        yield 'DateTime' => ['DateTime'];
-
-        yield 'Stringable' => ['Stringable'];
-
-        yield 'App\Foo' => ['App\Foo'];
-    }
-
-    #[DataProvider('provideNonBuiltinFunctionNames')]
-    #[Test]
-    public function testNonBuiltinFunctionNamesReturnFalse(string $name): void
-    {
-        // isBuiltin() filters TYPE names, not function names.
-        // Built-in functions like array_map are correctly not filtered.
-        self::assertFalse(SourceResolver::isBuiltin($name), sprintf('Expected "%s" to NOT be built-in', $name));
-    }
-
-    public static function provideNonBuiltinFunctionNames(): \Generator
-    {
-        yield 'array_map' => ['array_map'];
-
-        yield 'strlen' => ['strlen'];
-
-        yield 'var_dump' => ['var_dump'];
-
-        yield 'is_string' => ['is_string'];
-    }
-
-    #[DataProvider('provideEdgeCases')]
-    #[Test]
-    public function testEdgeCases(string $name): void
-    {
-        self::assertFalse(SourceResolver::isBuiltin($name), sprintf('Expected "%s" to NOT be built-in', $name));
-    }
-
-    public static function provideEdgeCases(): \Generator
-    {
-        yield 'empty string' => [''];
-
-        yield 'integer (not int)' => ['integer'];
-
-        yield 'boolean (not bool)' => ['boolean'];
-
-        yield 'double (not float)' => ['double'];
-    }
-
-    #[Test]
-    public function testGetNamespaceExtractsNamespace(): void
-    {
-        self::assertSame('App\Service', SourceResolver::getNamespace('App\Service\MyClass'));
-        self::assertSame('', SourceResolver::getNamespace('MyClass'));
-        self::assertSame('App', SourceResolver::getNamespace('App\Foo'));
-    }
-
-    #[Test]
-    public function testGetShortNameExtractsClassName(): void
-    {
-        self::assertSame('MyClass', SourceResolver::getShortName('App\Service\MyClass'));
-        self::assertSame('MyClass', SourceResolver::getShortName('MyClass'));
-        self::assertSame('Foo', SourceResolver::getShortName('App\Foo'));
+        self::assertSame(NodeKind::Klass, $collected[0]->kind());
     }
 }

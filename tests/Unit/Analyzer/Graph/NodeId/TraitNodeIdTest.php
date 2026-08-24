@@ -5,45 +5,47 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\Graph\NodeId;
 
 use App\Analyzer\Graph\NodeId\TraitNodeId;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(TraitNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[Small]
 final class TraitNodeIdTest extends TestCase
 {
-    #[Test]
-    public function testConstruct(): void
+    public function testToStringJoinsTheParts(): void
     {
-        $id = new TraitNodeId('App\Service', 'MyTrait');
-
-        self::assertSame('App\Service', $id->namespace);
-        self::assertSame('MyTrait', $id->traitName);
+        self::assertSame('App\Domain\Timestamped', (new TraitNodeId('App\Domain', 'Timestamped'))->toString());
     }
 
-    #[Test]
-    public function testFullQualifiedName(): void
+    public function testToStringOmitsTheSeparatorWithoutANamespace(): void
     {
-        $id = new TraitNodeId('App\Service', 'MyTrait');
-
-        self::assertSame('App\Service\MyTrait', $id->fullQualifiedName());
+        self::assertSame('Timestamped', (new TraitNodeId('', 'Timestamped'))->toString());
     }
 
-    #[Test]
-    public function testToString(): void
+    public function testOfSplitsAFullyQualifiedName(): void
     {
-        $id = new TraitNodeId('App\Service', 'MyTrait');
+        $id = TraitNodeId::of('App\Domain\Timestamped');
 
-        self::assertSame('App\Service\MyTrait', $id->toString());
-        self::assertSame('App\Service\MyTrait', (string) $id);
+        self::assertSame('App\Domain', $id->namespace);
+        self::assertSame('Timestamped', $id->traitName);
     }
 
-    #[Test]
-    public function testMagicGet(): void
+    public function testOfBuildsTheSameIdentifierAsTheConstructor(): void
     {
-        $id = new TraitNodeId('App', 'Test');
+        self::assertSame(
+            (new TraitNodeId('App\Domain', 'Timestamped'))->toString(),
+            TraitNodeId::of('App\Domain\Timestamped')->toString(),
+        );
+    }
 
-        self::assertSame('App\Test', $id->fullQualifiedName);
+    public function testOfLeavesTheNamespaceEmptyForAGlobalName(): void
+    {
+        self::assertSame('', TraitNodeId::of('Timestamped')->namespace);
     }
 }

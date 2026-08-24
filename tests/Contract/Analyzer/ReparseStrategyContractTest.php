@@ -6,9 +6,10 @@ namespace Tests\Contract\Analyzer;
 
 use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\Graph;
-use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
-use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
+use App\Analyzer\PhpStanAnalyzer\ReparsedSource;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -19,9 +20,13 @@ use PHPUnit\Framework\TestCase;
  * Verifies correctness, completeness, and idempotency of the approach
  * that re-parses source files to recover method body ASTs stripped by
  * PHPStan v2's CleaningVisitor.
- */
+ */#[CoversClass(ReparsedSource::class)]
+#[Large]
 final class ReparseStrategyContractTest extends TestCase
 {
+    /**
+     * Checks that multi method completeness.
+     */
     #[Test]
     public function testMultiMethodCompleteness(): void
     {
@@ -54,6 +59,9 @@ final class ReparseStrategyContractTest extends TestCase
         self::assertEdgeExists($graph, 'Multi::gamma', 'DepC::VAL', EdgeKind::ConstFetch);
     }
 
+    /**
+     * Checks that closure body coverage.
+     */
     #[Test]
     public function testClosureBodyCoverage(): void
     {
@@ -78,6 +86,9 @@ final class ReparseStrategyContractTest extends TestCase
         self::assertEdgeExists($graph, 'WithClosure::run', 'Target', EdgeKind::Instantiation);
     }
 
+    /**
+     * Checks that deeply nested structures.
+     */
     #[Test]
     public function testDeeplyNestedStructures(): void
     {
@@ -106,6 +117,9 @@ final class ReparseStrategyContractTest extends TestCase
         self::assertEdgeExists($graph, 'DeepNest::run', 'Nested', EdgeKind::Instantiation);
     }
 
+    /**
+     * Checks that mixed dependency kinds in single method.
+     */
     #[Test]
     public function testMixedDependencyKindsInSingleMethod(): void
     {
@@ -137,6 +151,9 @@ final class ReparseStrategyContractTest extends TestCase
         self::assertEdgeExists($graph, 'Consumer::work', 'Svc', EdgeKind::Instanceof);
     }
 
+    /**
+     * Checks that determinism.
+     */
     #[Test]
     public function testDeterminism(): void
     {
@@ -166,6 +183,9 @@ final class ReparseStrategyContractTest extends TestCase
         self::assertSame($edges1, $edges2, 'Two analyses of the same code must produce identical edge sets');
     }
 
+    /**
+     * Checks that method call via this is detected.
+     */
     #[Test]
     public function testMethodCallViaThisIsDetected(): void
     {
@@ -187,6 +207,9 @@ final class ReparseStrategyContractTest extends TestCase
         self::assertEdgeExists($graph, 'SelfCaller::entry', 'SelfCaller::helper', EdgeKind::MethodCall);
     }
 
+    /**
+     * Checks that property access via this is detected.
+     */
     #[Test]
     public function testPropertyAccessViaThisIsDetected(): void
     {
@@ -208,6 +231,9 @@ final class ReparseStrategyContractTest extends TestCase
         self::assertEdgeExists($graph, 'PropReader::read', 'PropReader::value', EdgeKind::PropertyAccess);
     }
 
+    /**
+     * Checks that static property access is detected.
+     */
     #[Test]
     public function testStaticPropertyAccessIsDetected(): void
     {
@@ -232,6 +258,9 @@ final class ReparseStrategyContractTest extends TestCase
         self::assertEdgeExists($graph, 'StaticReader::read', 'Registry::count', EdgeKind::StaticPropertyAccess);
     }
 
+    /**
+     * Checks that all usage edge kinds detected in single method.
+     */
     #[Test]
     public function testAllUsageEdgeKindsDetectedInSingleMethod(): void
     {
@@ -278,18 +307,17 @@ final class ReparseStrategyContractTest extends TestCase
         self::assertEdgeExists($graph, 'AllUsages::entry', 'Dep::counter', EdgeKind::StaticPropertyAccess);
     }
 
-    // ------------------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------------------
-
-    private static function analyzeCode(string $phpCode): Graph
+    /**
+     * Returns the analyze code a check needs.
+     */
+    public static function analyzeCode(string $phpCode): Graph
     {
         $tmpDir = sys_get_temp_dir().'/peq_reparse_'.uniqid();
         mkdir($tmpDir, 0o777, true);
         file_put_contents($tmpDir.'/Test.php', $phpCode);
 
         try {
-            $analyzer = new PhpStanAnalyzer(new ContainerFactory(), new PhpFileCollector());
+            $analyzer = new PhpStanAnalyzer();
 
             return $analyzer->analyze($tmpDir);
         } finally {
@@ -298,7 +326,10 @@ final class ReparseStrategyContractTest extends TestCase
         }
     }
 
-    private function assertEdgeExists(
+    /**
+     * Returns the assert edge exists a check needs.
+     */
+    public function assertEdgeExists(
         Graph $graph,
         string $fromSuffix,
         string $toSuffix,
@@ -325,7 +356,7 @@ final class ReparseStrategyContractTest extends TestCase
     /**
      * @return list<string>
      */
-    private static function collectEdgeSignatures(Graph $graph): array
+    public static function collectEdgeSignatures(Graph $graph): array
     {
         $signatures = [];
         foreach ($graph->nodes() as $node) {

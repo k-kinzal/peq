@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Analyzer\Graph\NodeId;
 
-use App\Analyzer\Graph\IdentifierAssert;
 use App\Analyzer\Graph\Node\MethodNode;
 use App\Analyzer\Graph\NodeId;
+use App\Analyzer\Graph\QualifiedName;
 
 /**
  * Unique identifier for a method node in the dependency graph.
@@ -16,58 +16,49 @@ use App\Analyzer\Graph\NodeId;
  * within the analyzed codebase.
  *
  * @implements NodeId<MethodNode>
- *
- * @property string $fullQualifiedName Alias for fullQualifiedName()
  */
 final class MethodNodeId implements NodeId
 {
-    use IdentifierAssert;
+    /**
+     * The precomputed string form of this identifier.
+     */
+    private readonly string $stringValue;
 
     /**
      * @param string $namespace  The namespace of the class containing the method (must be a valid PHP namespace)
      * @param string $className  The class name containing the method (must be a valid PHP identifier)
      * @param string $methodName The method name (must be a valid PHP identifier)
      */
-    private readonly string $stringValue;
-
     public function __construct(
         public readonly string $namespace,
         public readonly string $className,
         public readonly string $methodName,
     ) {
         if ($namespace !== '') {
-            self::assertNamespace($namespace);
+            assert(QualifiedName::isNamespace($namespace), 'The namespace must be one PHP would accept');
         }
-        self::assertIdentifier($className);
-        self::assertIdentifier($methodName);
+        assert(QualifiedName::isIdentifier($className), 'The name must be one PHP would accept for a single symbol');
+        assert(QualifiedName::isIdentifier($methodName), 'The name must be one PHP would accept for a single symbol');
         $prefix = $namespace === '' ? $className : $namespace.'\\'.$className;
         $this->stringValue = $prefix.'::'.$methodName;
     }
 
-    public function __toString(): string
-    {
-        return $this->toString();
-    }
-
-    public function __get(string $name): mixed
-    {
-        return match ($name) {
-            'fullQualifiedName' => $this->fullQualifiedName(),
-            default => throw new \LogicException("Undefined property: {$name}"),
-        };
-    }
-
     /**
-     * Returns the fully qualified method name.
+     * Builds the identifier from the fully qualified name of the declaring class.
      *
-     * Combines namespace, class name, and method name with appropriate separators
-     * (e.g., "App\Domain\User::getName").
+     * @param string $ownerName  The fully qualified class name, as analysis reported it
+     * @param string $methodName The name of the method
      *
-     * @return string The fully qualified method name
+     * @example A method is named apart from the class that declares it
+     *     \App\Analyzer\Graph\NodeId\MethodNodeId::of('App\\Domain\\Invoice', 'total')->toString() // => 'App\\Domain\\Invoice::total'
+     *
+     * @return self The identifier for that method
      */
-    public function fullQualifiedName(): string
+    public static function of(string $ownerName, string $methodName): self
     {
-        return $this->stringValue;
+        $owner = new QualifiedName($ownerName);
+
+        return new self($owner->namespace, $owner->shortName, $methodName);
     }
 
     /**

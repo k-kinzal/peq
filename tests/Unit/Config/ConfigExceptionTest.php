@@ -5,22 +5,46 @@ declare(strict_types=1);
 namespace Tests\Unit\Config;
 
 use App\Config\ConfigException;
-use PHPUnit\Framework\Attributes\Test;
+use App\Config\RawConfig;
+use Exception;
+use LogicException;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 /**
  * @internal
  */
+#[CoversClass(ConfigException::class)]
+#[UsesClass(RawConfig::class)]
+#[Small]
 final class ConfigExceptionTest extends TestCase
 {
-    #[Test]
-    public function testConstructWithAllParameters(): void
+    /**
+     * @throws ConfigException
+     */
+    public function testAConfigurationErrorNamesTheSettingItIsAbout(): void
     {
-        $previous = new \Exception('Previous exception');
-        $exception = new ConfigException('Test message', 123, $previous);
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Invalid configuration "level"');
 
-        self::assertSame('Test message', $exception->getMessage());
-        self::assertSame(123, $exception->getCode());
-        self::assertSame($previous, $exception->getPrevious());
+        (new RawConfig(['level' => 'deep']))->optionalInt('level');
+    }
+
+    public function testAConfigurationErrorMustBeHandledRatherThanEscaping(): void
+    {
+        $families = (class_parents(new ConfigException('unusable')) === false ? [] : class_parents(new ConfigException('unusable')));
+
+        self::assertNotContains(RuntimeException::class, $families);
+        self::assertNotContains(LogicException::class, $families);
+    }
+
+    public function testAConfigurationErrorCarriesTheFailureItCameFrom(): void
+    {
+        $cause = new Exception('the file could not be parsed');
+
+        self::assertSame($cause, (new ConfigException('unusable', 0, $cause))->getPrevious());
     }
 }

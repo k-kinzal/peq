@@ -4,56 +4,40 @@ declare(strict_types=1);
 
 namespace App\Config;
 
-use Symfony\Component\Validator\Constraints as Assert;
-use Symfony\Component\Validator\Validation;
-
 /**
- * Configuration for the debug analyzer.
+ * Settings for the synthetic graph the debug analyzer produces.
+ *
+ * Both settings have a meaningful default, so these settings always exist: the
+ * debug analyzer is never left without them and no caller has to handle their
+ * absence.
  */
 final class DebugAnalyzerConfig
 {
+    /**
+     * @param int      $depth How many levels deep the generated graph goes
+     * @param null|int $seed  Seed making the generated graph reproducible, or null for a fresh one
+     */
     public function __construct(
         public readonly int $depth = 5,
         public readonly ?int $seed = null,
     ) {
-        assert($this->depth > 0);
+        assert($this->depth > 0, 'A generated graph depth must be a positive number of levels');
     }
 
     /**
-     * Creates a DebugAnalyzerConfig from an array.
+     * Reads the settings out of configuration data as a source reported it.
      *
-     * @param array<string, mixed> $array Configuration data
+     * @param RawConfig $raw The nested "debug" group of the merged configuration
      *
-     * @throws ConfigException If validation fails
+     * @return self The settings, with defaults for whatever the source left unset
+     *
+     * @throws ConfigException If a setting is present but cannot be read as its type
      */
-    public static function fromArray(array $array): self
+    public static function fromRaw(RawConfig $raw): self
     {
-        $constraint = new Assert\Collection(
-            fields: [
-                'depth' => [
-                    new Assert\Type('int'),
-                    new Assert\GreaterThan(0),
-                ],
-                'seed' => new Assert\Optional([
-                    new Assert\Type('int'),
-                ]),
-            ],
-            allowExtraFields: true,
-        );
-
-        $validator = Validation::createValidator();
-        $violations = $validator->validate($array, $constraint);
-        if (count($violations) > 0) {
-            throw new ConfigException((string) $violations->get(0)->getMessage());
-        }
-
-        /**
-         * @var array{depth: int, seed?: int} $array
-         */
-
         return new self(
-            depth: $array['depth'],
-            seed: $array['seed'] ?? null,
+            depth: $raw->has('depth') ? $raw->requiredPositiveInt('depth') : 5,
+            seed: $raw->optionalInt('seed'),
         );
     }
 }

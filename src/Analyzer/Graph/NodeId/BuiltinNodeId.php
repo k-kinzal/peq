@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Analyzer\Graph\NodeId;
 
-use App\Analyzer\Graph\IdentifierAssert;
 use App\Analyzer\Graph\Node\BuiltinNode;
 use App\Analyzer\Graph\NodeId;
+use App\Analyzer\Graph\QualifiedName;
 
 /**
  * Unique identifier for a builtin type node in the dependency graph.
@@ -15,51 +15,41 @@ use App\Analyzer\Graph\NodeId;
  * This ID uniquely identifies a PHP builtin type within the analyzed codebase.
  *
  * @implements NodeId<BuiltinNode>
- *
- * @property string $fullQualifiedName Alias for fullQualifiedName()
  */
 final class BuiltinNodeId implements NodeId
 {
-    use IdentifierAssert;
+    /**
+     * The precomputed string form of this identifier.
+     */
+    private readonly string $stringValue;
 
     /**
      * @param string $namespace The namespace of the builtin type (must be a valid PHP namespace)
      * @param string $name      The builtin type name (must be a valid PHP identifier)
      */
-    private readonly string $stringValue;
-
     public function __construct(
         public readonly string $namespace,
         public readonly string $name,
     ) {
-        self::assertNamespace($namespace);
-        self::assertIdentifier($name);
+        if ($namespace !== '') {
+            assert(QualifiedName::isNamespace($namespace), 'The namespace must be one PHP would accept');
+        }
+        assert(QualifiedName::isIdentifier($name), 'The name must be one PHP would accept for a single symbol');
         $this->stringValue = $namespace === '' ? $name : $namespace.'\\'.$name;
     }
 
-    public function __toString(): string
-    {
-        return $this->toString();
-    }
-
-    public function __get(string $name): mixed
-    {
-        return match ($name) {
-            'fullQualifiedName' => $this->fullQualifiedName(),
-            default => throw new \LogicException("Undefined property: {$name}"),
-        };
-    }
-
     /**
-     * Returns the fully qualified builtin type name.
+     * Builds the identifier from a fully qualified name.
      *
-     * Combines namespace and builtin type name with a backslash separator.
+     * @param string $fullName The fully qualified builtin type name, as analysis reported it
      *
-     * @return string The fully qualified builtin type name
+     * @return self The identifier for that builtin type
      */
-    public function fullQualifiedName(): string
+    public static function of(string $fullName): self
     {
-        return $this->stringValue;
+        $name = new QualifiedName($fullName);
+
+        return new self($name->namespace, $name->shortName);
     }
 
     /**

@@ -1,14 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.3/phpunit.xsd"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
-         backupGlobals="false"
          colors="true"
-         executionOrder="random"
-         processIsolation="false"
-         stopOnFailure="false"
          cacheDirectory=".phpunit.cache"
-         backupStaticProperties="false">
+         executionOrder="depends,random"
+         backupGlobals="false"
+         backupStaticProperties="false"
+         processIsolation="false"
+         requireCoverageMetadata="true"
+         beStrictAboutCoverageMetadata="true"
+         beStrictAboutChangesToGlobalState="true"
+         beStrictAboutOutputDuringTests="true"
+         failOnAllIssues="true"
+         failOnEmptyTestSuite="true"
+         failOnRisky="true"
+         failOnWarning="true"
+         enforceTimeLimit="true"
+         timeoutForSmallTests="1"
+         timeoutForMediumTests="10"
+         timeoutForLargeTests="60">
 
   <testsuites>
     <testsuite name="unit">
@@ -20,11 +31,29 @@
     <testsuite name="contract">
       <directory>tests/Contract</directory>
     </testsuite>
+    <testsuite name="doctest">
+      <file>vendor/k-kinzal/php-ai-toolkit/src/Doctest/DoctestSuite.php</file>
+    </testsuite>
   </testsuites>
 
-  <source>
+  <extensions>
+    <bootstrap class="PhpAiToolkit\PhpUnit\TestReporter\AiTestReporterExtension"/>
+    <bootstrap class="PhpAiToolkit\Doctest\DoctestExtension">
+      <parameter name="directories" value="src"/>
+    </bootstrap>
+  </extensions>
+
+  <source restrictNotices="true"
+          restrictWarnings="true"
+          ignoreSuppressionOfDeprecations="true"
+          ignoreSuppressionOfPhpDeprecations="true"
+          ignoreSuppressionOfErrors="true"
+          ignoreSuppressionOfNotices="true"
+          ignoreSuppressionOfPhpNotices="true"
+          ignoreSuppressionOfWarnings="true"
+          ignoreSuppressionOfPhpWarnings="true">
     <include>
-      <directory suffix=".php">src/</directory>
+      <directory suffix=".php">src</directory>
     </include>
   </source>
 

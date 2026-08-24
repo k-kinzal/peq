@@ -5,77 +5,64 @@ declare(strict_types=1);
 namespace App\Analyzer\DebugAnalyzer;
 
 use App\Analyzer\Analyzer;
-use App\Analyzer\DebugAnalyzer\Provider\AtomicProvider;
-use App\Analyzer\DebugAnalyzer\Provider\ComponentProvider;
-use App\Analyzer\DebugAnalyzer\Provider\GraphGenerator;
-use App\Analyzer\DebugAnalyzer\Provider\GraphProvider;
-use App\Analyzer\DebugAnalyzer\Provider\PrimitivesProvider;
+use App\Analyzer\DebugAnalyzer\Generator\ClassLikeGraphGenerator;
+use App\Analyzer\DebugAnalyzer\Generator\GraphGenerator;
+use App\Analyzer\DebugAnalyzer\Generator\LeafGraphGenerator;
+use App\Analyzer\DebugAnalyzer\Generator\MemberGraphGenerator;
+use App\Analyzer\DebugAnalyzer\Generator\NameGenerator;
+use App\Analyzer\DebugAnalyzer\Generator\NodeGenerator;
+use App\Analyzer\DebugAnalyzer\Generator\NodeIdGenerator;
 use App\Analyzer\Graph\Graph;
-use App\Config\Config;
-use Faker;
+use Faker\Factory;
 
 /**
- * Debug analyzer that generates fake dependency graphs for testing and debugging purposes.
+ * An analyzer that invents a dependency graph instead of reading one.
  *
- * This analyzer uses the Faker library with custom providers to generate realistic-looking
- * but fake PHP code structure graphs. It's useful for testing the graph visualization and
- * analysis features without needing real PHP code to parse.
+ * It answers the question "does the rest of the pipeline handle a graph of this
+ * shape" without a codebase to point at, which is what makes traversal, depth
+ * bounds and tree output exercisable on demand. The path it is given is ignored:
+ * nothing is parsed.
+ *
+ * The graph is drawn from a seedable random source, so passing a seed makes the
+ * same graph come out every time — which is what turns a reproduction of a
+ * reporting bug into something that can be attached to a report.
  */
 final class DebugAnalyzer implements Analyzer
 {
     /**
-     * @param null|int $seed  Random seed for reproducible fake data generation
-     * @param int      $depth Maximum depth of the generated graph
+     * @param null|int $seed  Seed making the generated graph reproducible, or null for a fresh one
+     * @param int      $depth How many levels of symbols the generated graph goes down
      */
     public function __construct(
         private readonly ?int $seed = null,
         private readonly int $depth = 5,
-    ) {}
-
-    /**
-     * Generates a fake dependency graph using Faker providers.
-     *
-     * This method creates a Faker generator instance with custom providers
-     * that can generate graph structures with nodes and edges representing
-     * PHP code elements and their relationships.
-     *
-     * @param string $path Ignored in this implementation (fake data doesn't need a real path)
-     *
-     * @return Graph A randomly generated dependency graph
-     */
-    public function analyze(string $path): Graph
-    {
-        /** @var GraphGenerator $faker */
-        $faker = Faker\Factory::create();
-        if ($this->seed !== null) {
-            $faker->seed($this->seed);
-        }
-        $faker->addProvider(new PrimitivesProvider($faker));
-        $faker->addProvider(new AtomicProvider($faker));
-        $faker->addProvider(new ComponentProvider($faker));
-        $faker->addProvider(new GraphProvider($faker));
-
-        return $faker->graph($this->depth);
+    ) {
+        assert($this->depth > 0, 'A generated graph depth must be a positive number of levels');
     }
 
     /**
-     * Creates a DebugAnalyzer instance from the given configuration.
+     * Generates a dependency graph.
      *
-     * @param Config $config The application configuration
+     * @param string $path Ignored: this analyzer reads no sources
      *
-     * @return Analyzer A configured DebugAnalyzer instance
-     *
-     * @throws \InvalidArgumentException If the debug configuration is missing
+     * @return Graph A generated dependency graph
      */
-    public static function create(Config $config): Analyzer
+    public function analyze(string $path): Graph
     {
-        if ($config->debug === null) {
-            throw new \InvalidArgumentException('Debug configuration is required for DebugAnalyzer.');
+        $faker = Factory::create();
+        if ($this->seed !== null) {
+            $faker->seed($this->seed);
         }
 
-        return new self(
-            seed: $config->debug->seed,
-            depth: $config->debug->depth,
-        );
+        $ids = new NodeIdGenerator(new NameGenerator($faker), $faker);
+        $nodes = new NodeGenerator($ids, $faker);
+
+        return (new GraphGenerator(
+            classLikes: new ClassLikeGraphGenerator($nodes, $ids, $faker),
+            members: new MemberGraphGenerator($nodes, $ids, $faker),
+            leaves: new LeafGraphGenerator($nodes),
+            ids: $ids,
+            faker: $faker,
+        ))->graph($this->depth);
     }
 }

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Analyzer\Graph\NodeId;
 
-use App\Analyzer\Graph\IdentifierAssert;
 use App\Analyzer\Graph\Node\EnumNode;
 use App\Analyzer\Graph\NodeId;
+use App\Analyzer\Graph\QualifiedName;
 
 /**
  * Unique identifier for an enum node in the dependency graph.
@@ -16,54 +16,41 @@ use App\Analyzer\Graph\NodeId;
  * the analyzed codebase.
  *
  * @implements NodeId<EnumNode>
- *
- * @property string $fullQualifiedName Alias for fullQualifiedName()
  */
 final class EnumNodeId implements NodeId
 {
-    use IdentifierAssert;
+    /**
+     * The precomputed string form of this identifier.
+     */
+    private readonly string $stringValue;
 
     /**
      * @param string $namespace The namespace of the enum (must be a valid PHP namespace)
      * @param string $enumName  The enum name (must be a valid PHP identifier)
      */
-    private readonly string $stringValue;
-
     public function __construct(
         public readonly string $namespace,
         public readonly string $enumName,
     ) {
         if ($namespace !== '') {
-            self::assertNamespace($namespace);
+            assert(QualifiedName::isNamespace($namespace), 'The namespace must be one PHP would accept');
         }
-        self::assertIdentifier($enumName);
+        assert(QualifiedName::isIdentifier($enumName), 'The name must be one PHP would accept for a single symbol');
         $this->stringValue = $namespace === '' ? $enumName : $namespace.'\\'.$enumName;
     }
 
-    public function __toString(): string
-    {
-        return $this->toString();
-    }
-
-    public function __get(string $name): mixed
-    {
-        return match ($name) {
-            'fullQualifiedName' => $this->fullQualifiedName(),
-            default => throw new \LogicException("Undefined property: {$name}"),
-        };
-    }
-
     /**
-     * Returns the fully qualified enum name.
+     * Builds the identifier from a fully qualified name.
      *
-     * Combines namespace and enum name with a backslash separator
-     * (e.g., "App\Enums\Status").
+     * @param string $fullName The fully qualified enum name, as analysis reported it
      *
-     * @return string The fully qualified enum name
+     * @return self The identifier for that enum
      */
-    public function fullQualifiedName(): string
+    public static function of(string $fullName): self
     {
-        return $this->stringValue;
+        $name = new QualifiedName($fullName);
+
+        return new self($name->namespace, $name->shortName);
     }
 
     /**

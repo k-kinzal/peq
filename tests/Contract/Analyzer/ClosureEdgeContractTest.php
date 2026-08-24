@@ -6,9 +6,9 @@ namespace Tests\Contract\Analyzer;
 
 use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\Graph;
-use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
-use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -18,9 +18,13 @@ use PHPUnit\Framework\TestCase;
  * Contract: when DependencyCollector defers to InClassMethodCollector for
  * closure content inside class methods, each usage expression produces
  * exactly one edge — not zero (lost) and not two (duplicated)
- */
+ */#[CoversClass(PhpStanAnalyzer::class)]
+#[Large]
 final class ClosureEdgeContractTest extends TestCase
 {
+    /**
+     * Checks that closure instantiation produces exactly one edge.
+     */
     #[Test]
     public function testClosureInstantiationProducesExactlyOneEdge(): void
     {
@@ -45,6 +49,9 @@ final class ClosureEdgeContractTest extends TestCase
         self::assertEdgeCount($graph, 'Subject::run', 'Dep', EdgeKind::Instantiation, 1);
     }
 
+    /**
+     * Checks that closure static call produces exactly one edge.
+     */
     #[Test]
     public function testClosureStaticCallProducesExactlyOneEdge(): void
     {
@@ -71,6 +78,9 @@ final class ClosureEdgeContractTest extends TestCase
         self::assertEdgeCount($graph, 'Subject::run', 'Dep::make', EdgeKind::StaticCall, 1);
     }
 
+    /**
+     * Checks that nested closure produces exactly one edge.
+     */
     #[Test]
     public function testNestedClosureProducesExactlyOneEdge(): void
     {
@@ -97,18 +107,17 @@ final class ClosureEdgeContractTest extends TestCase
         self::assertEdgeCount($graph, 'Subject::run', 'Dep', EdgeKind::Instantiation, 1);
     }
 
-    // ------------------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------------------
-
-    private static function analyzeCode(string $phpCode): Graph
+    /**
+     * Returns the analyze code a check needs.
+     */
+    public static function analyzeCode(string $phpCode): Graph
     {
         $tmpDir = sys_get_temp_dir().'/peq_closure_'.uniqid();
         mkdir($tmpDir, 0o777, true);
         file_put_contents($tmpDir.'/Test.php', $phpCode);
 
         try {
-            $analyzer = new PhpStanAnalyzer(new ContainerFactory(), new PhpFileCollector());
+            $analyzer = new PhpStanAnalyzer();
 
             return $analyzer->analyze($tmpDir);
         } finally {
@@ -117,7 +126,10 @@ final class ClosureEdgeContractTest extends TestCase
         }
     }
 
-    private static function assertEdgeCount(
+    /**
+     * Returns the assert edge count a check needs.
+     */
+    public static function assertEdgeCount(
         Graph $graph,
         string $fromSuffix,
         string $toSuffix,

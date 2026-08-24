@@ -7,80 +7,73 @@ namespace App\Config;
 /**
  * Reads configuration from environment variables.
  *
- * This reader extracts configuration values from environment variables with a
- * specific prefix (default: 'PEQ_'). Variable names are converted from SCREAMING_SNAKE_CASE
- * to camelCase to match the Config class property names. This allows configuration
- * to be provided via environment variables in CI/CD pipelines or containerized environments.
+ * Variables carrying the configured prefix (default `PEQ_`) are reported as
+ * configuration settings, with `SCREAMING_SNAKE_CASE` names mapped to the setting
+ * names the application uses and `PEQ_DEBUG_*` variables reported inside the debug
+ * group. Lists use the comma-separated form an environment variable can carry:
+ * `PEQ_EXCLUDES=vendor,tests`.
  *
- * Array values (includes, excludes) use comma-separated format: PEQ_EXCLUDES=vendor,tests
- * Integer values (level) are automatically converted from strings.
+ * Numbers are reported as the text the environment holds. Deciding whether that
+ * text is a valid level or depth is not this reader's job — it belongs to the one
+ * place that knows what each setting has to be, so that the same value is judged
+ * the same way whichever source supplied it.
  */
 final class EnvConfigReader implements ConfigReader
 {
-    private const ARRAY_KEYS = ['includes', 'excludes'];
-
-    private const INT_KEYS = ['level'];
+    /**
+     * Settings whose environment form is a comma-separated list.
+     */
+    private const LIST_KEYS = ['includes', 'excludes'];
 
     /**
-     * @param string $prefix The prefix for environment variables to read (e.g., 'PEQ_')
+     * Name prefix marking a variable as belonging to the debug group.
+     */
+    private const DEBUG_PREFIX = 'debug_';
+
+    /**
+     * @param string $prefix The prefix marking an environment variable as configuration
      */
     public function __construct(
-        private readonly string $prefix = 'PEQ_'
+        private readonly string $prefix = 'PEQ_',
     ) {}
 
     /**
-     * {@inheritdoc}
+     * Reports the configuration the environment carries.
+     *
+     * @return array<string, mixed> The settings found, as the environment spells them
      */
     public function read(): array
     {
         $config = [];
+        $debug = [];
+
         foreach (getenv() as $name => $value) {
             if (!str_starts_with($name, $this->prefix)) {
                 continue;
             }
 
-            $name = substr($name, strlen($this->prefix));
-            $name = strtolower($name);
+            $key = strtolower(substr($name, strlen($this->prefix)));
+            if ($key === '') {
+                continue;
+            }
 
-            if (str_starts_with($name, 'debug_')) {
-                $subKey = substr($name, 6);
-                if (!isset($config['debug']) || !is_array($config['debug'])) {
-                    $config['debug'] = [];
-                }
-                $config['debug'][$subKey] = $this->castValue($subKey, $value);
+            if (str_starts_with($key, self::DEBUG_PREFIX)) {
+                $debug[substr($key, strlen(self::DEBUG_PREFIX))] = $value;
 
                 continue;
             }
 
-            $name = preg_replace_callback('/_([a-z])/', function ($matches) {
-                return strtoupper($matches[1]);
-            }, $name);
+            $setting = lcfirst(str_replace(' ', '', ucwords(str_replace('_', ' ', $key))));
 
-            if (!is_string($name)) {
-                continue;
-            }
+            $config[$setting] = in_array($setting, self::LIST_KEYS, true)
+                ? ($value === '' ? [] : array_map('trim', explode(',', $value)))
+                : $value;
+        }
 
-            $config[$name] = $this->castValue($name, $value);
+        if ($debug !== []) {
+            $config['debug'] = $debug;
         }
 
         return $config;
-    }
-
-    /**
-     * @return int|list<string>|string
-     */
-    private function castValue(string $key, string $value): array|int|string
-    {
-        if (in_array($key, self::ARRAY_KEYS, true)) {
-            return $value !== '' ? array_map('trim', explode(',', $value)) : [];
-        }
-
-        if (in_array($key, self::INT_KEYS, true)) {
-            $int = filter_var($value, FILTER_VALIDATE_INT);
-
-            return $int !== false ? $int : $value;
-        }
-
-        return $value;
     }
 }

@@ -13,6 +13,8 @@ use PhpParser\Node\IntersectionType;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\UnionType;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Medium;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -28,13 +30,17 @@ use PHPUnit\Framework\TestCase;
  *
  * This grounds the case analysis in DeclarationEdgeContractTest's DataProviders,
  * proving that TypeResolver handles arbitrary type compositions correctly.
- */
+ */#[CoversClass(TypeResolver::class)]
+#[Medium]
 final class TypeResolverContractTest extends TestCase
 {
     use TestTrait;
 
     private const BUILTINS = ['int', 'string', 'float', 'bool', 'null', 'void', 'never', 'mixed', 'array', 'object', 'callable', 'iterable', 'self', 'parent', 'static'];
 
+    /**
+     * Checks that all returned values are name instances.
+     */
     #[Test]
     public function testAllReturnedValuesAreNameInstances(): void
     {
@@ -43,22 +49,16 @@ final class TypeResolverContractTest extends TestCase
                 $type = self::buildTypeTree($seed);
                 $result = TypeResolver::resolveNames($type);
 
-                foreach ($result as $i => $item) {
-                    self::assertInstanceOf(
-                        Name::class,
-                        $item,
-                        sprintf(
-                            'Item at index %d is %s, expected Name (seed=%d)',
-                            $i,
-                            get_debug_type($item),
-                            $seed,
-                        ),
-                    );
-                }
+                $written = array_map(static fn (Name $name): string => $name->toString(), $result);
+
+                self::assertSame($written, array_values(array_filter($written, static fn (string $name): bool => $name !== '')));
             })
         ;
     }
 
+    /**
+     * Checks that returned count matches name leaf count.
+     */
     #[Test]
     public function testReturnedCountMatchesNameLeafCount(): void
     {
@@ -86,7 +86,7 @@ final class TypeResolverContractTest extends TestCase
     /**
      * Deterministically builds a random PHP type tree from a seed.
      */
-    private static function buildTypeTree(int $seed): ?Node
+    public static function buildTypeTree(int $seed): ?Node
     {
         mt_srand($seed);
         $counter = 0;
@@ -101,7 +101,7 @@ final class TypeResolverContractTest extends TestCase
      * 0 = null, 1 = Identifier, 2 = Name, 3 = FullyQualified Name,
      * 4 = NullableType, 5 = UnionType, 6 = IntersectionType
      */
-    private static function buildTypeNode(int &$counter, int $maxDepth): ?Node
+    public static function buildTypeNode(int &$counter, int $maxDepth): ?Node
     {
         if ($maxDepth <= 0) {
             return self::buildLeafOrNull($counter);
@@ -122,7 +122,7 @@ final class TypeResolverContractTest extends TestCase
     /**
      * At max depth, produce only a leaf (Name, Identifier) or null.
      */
-    private static function buildLeafOrNull(int &$counter): ?Node
+    public static function buildLeafOrNull(int &$counter): ?Node
     {
         return match (mt_rand(0, 2)) {
             0 => null,
@@ -136,7 +136,7 @@ final class TypeResolverContractTest extends TestCase
      * Produces a Name or Identifier leaf (never null, never composite).
      * Suitable for NullableType wrapping and IntersectionType members.
      */
-    private static function buildLeafNode(int &$counter): Identifier|Name
+    public static function buildLeafNode(int &$counter): Identifier|Name
     {
         return mt_rand(0, 1) === 0
             ? new Identifier(self::pickBuiltin())
@@ -147,7 +147,7 @@ final class TypeResolverContractTest extends TestCase
      * Builds a UnionType with 2-4 members.
      * Members can be Name, Identifier, or IntersectionType (DNF).
      */
-    private static function buildUnionType(int &$counter, int $maxDepth): UnionType
+    public static function buildUnionType(int &$counter, int $maxDepth): UnionType
     {
         $count = mt_rand(2, 4);
         $types = [];
@@ -161,7 +161,7 @@ final class TypeResolverContractTest extends TestCase
     /**
      * A union member: Name, Identifier, or IntersectionType.
      */
-    private static function buildUnionMember(int &$counter, int $maxDepth): Identifier|IntersectionType|Name
+    public static function buildUnionMember(int &$counter, int $maxDepth): Identifier|IntersectionType|Name
     {
         if ($maxDepth <= 0) {
             return self::buildLeafNode($counter);
@@ -178,7 +178,7 @@ final class TypeResolverContractTest extends TestCase
     /**
      * Builds an IntersectionType with 2-3 members (Name or Identifier only).
      */
-    private static function buildIntersectionType(int &$counter): IntersectionType
+    public static function buildIntersectionType(int &$counter): IntersectionType
     {
         $count = mt_rand(2, 3);
         $types = [];
@@ -189,7 +189,10 @@ final class TypeResolverContractTest extends TestCase
         return new IntersectionType($types);
     }
 
-    private static function makeName(int &$counter): Name
+    /**
+     * Returns the make name a check needs.
+     */
+    public static function makeName(int &$counter): Name
     {
         ++$counter;
 
@@ -199,14 +202,17 @@ final class TypeResolverContractTest extends TestCase
     /**
      * @return list<string>
      */
-    private static function makeNameParts(int &$counter): array
+    public static function makeNameParts(int &$counter): array
     {
         ++$counter;
 
         return ['Generated', 'Type'.$counter];
     }
 
-    private static function pickBuiltin(): string
+    /**
+     * Returns the pick builtin a check needs.
+     */
+    public static function pickBuiltin(): string
     {
         return self::BUILTINS[mt_rand(0, count(self::BUILTINS) - 1)];
     }
@@ -215,7 +221,7 @@ final class TypeResolverContractTest extends TestCase
      * Independent oracle: recursively counts Name leaf nodes in a type tree.
      * This is intentionally independent of TypeResolver's implementation.
      */
-    private static function countNameLeaves(?Node $type): int
+    public static function countNameLeaves(?Node $type): int
     {
         if ($type === null) {
             return 0;
@@ -238,7 +244,6 @@ final class TypeResolverContractTest extends TestCase
             return $count;
         }
 
-        // Identifier and anything else
         return 0;
     }
 }
