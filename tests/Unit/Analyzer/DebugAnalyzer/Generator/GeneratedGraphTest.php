@@ -6,7 +6,7 @@ namespace Tests\Unit\Analyzer\DebugAnalyzer\Generator;
 
 use App\Analyzer\DebugAnalyzer\Generator\GeneratedGraph;
 use App\Analyzer\Graph\Edge;
-use App\Analyzer\Graph\Edge\DeclarationMethodEdge;
+use App\Analyzer\Graph\Edge\Declaration\MethodEdge;
 use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\Node\MethodNode;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -21,8 +21,8 @@ use Tests\Fixture\Graph\SampleNodes;
  */
 #[CoversClass(GeneratedGraph::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
-#[UsesClass(DeclarationMethodEdge::class)]
-#[UsesClass(Edge\DeclaredInEdge::class)]
+#[UsesClass(MethodEdge::class)]
+#[UsesClass(Edge\Inverse\DeclaredInEdge::class)]
 #[UsesClass(\App\Analyzer\Graph\FileMeta::class)]
 #[UsesClass(\App\Analyzer\Graph\Graph::class)]
 #[UsesClass(\App\Analyzer\Graph\NodeId\ClassNodeId::class)]
@@ -54,7 +54,7 @@ final class GeneratedGraphTest extends TestCase
     {
         $result = GeneratedGraph::rootedAt(SampleNodes::invoice())->relatedTo(
             GeneratedGraph::rootedAt(SampleNodes::total()),
-            static fn (ClassNode $owner, MethodNode $method): Edge => new DeclarationMethodEdge($owner, $method, SampleEdges::meta()),
+            static fn (ClassNode $owner, MethodNode $method): Edge => new MethodEdge($owner, $method, SampleEdges::meta()),
         );
 
         self::assertCount(1, $result->graph->authoredEdges());
@@ -65,7 +65,7 @@ final class GeneratedGraphTest extends TestCase
         $root = SampleNodes::invoice();
         $result = GeneratedGraph::rootedAt($root)->relatedTo(
             GeneratedGraph::rootedAt(SampleNodes::total()),
-            static fn (ClassNode $owner, MethodNode $method): Edge => new DeclarationMethodEdge($owner, $method, SampleEdges::meta()),
+            static fn (ClassNode $owner, MethodNode $method): Edge => new MethodEdge($owner, $method, SampleEdges::meta()),
         );
 
         self::assertSame($root, $result->root);
@@ -75,7 +75,7 @@ final class GeneratedGraphTest extends TestCase
     {
         $result = GeneratedGraph::rootedAt(SampleNodes::invoice())->relatedTo(
             GeneratedGraph::rootedAt(SampleNodes::total()),
-            static fn (ClassNode $owner, MethodNode $method): Edge => new DeclarationMethodEdge($owner, $method, SampleEdges::meta()),
+            static fn (ClassNode $owner, MethodNode $method): Edge => new MethodEdge($owner, $method, SampleEdges::meta()),
         );
 
         self::assertNotNull($result->graph->nodeNamed('App\Domain\Invoice'));
@@ -87,7 +87,7 @@ final class GeneratedGraphTest extends TestCase
         $start = GeneratedGraph::rootedAt(SampleNodes::invoice());
         $start->relatedTo(
             GeneratedGraph::rootedAt(SampleNodes::total()),
-            static fn (ClassNode $owner, MethodNode $method): Edge => new DeclarationMethodEdge($owner, $method, SampleEdges::meta()),
+            static fn (ClassNode $owner, MethodNode $method): Edge => new MethodEdge($owner, $method, SampleEdges::meta()),
         );
 
         self::assertCount(1, $start->graph->nodes());
@@ -97,7 +97,7 @@ final class GeneratedGraphTest extends TestCase
     {
         $result = GeneratedGraph::rootedAt(SampleNodes::invoice())->relatedTo(
             GeneratedGraph::rootedAt(SampleNodes::total()),
-            static fn (ClassNode $owner, MethodNode $method): Edge => new DeclarationMethodEdge($owner, $method, SampleEdges::meta()),
+            static fn (ClassNode $owner, MethodNode $method): Edge => new MethodEdge($owner, $method, SampleEdges::meta()),
         );
 
         self::assertSame(

@@ -31,8 +31,8 @@ final class ContainerFactoryTest extends TestCase
     {
         $container = (new ContainerFactory())->create([dirname(__DIR__, 3).'/Fixture/Sample/AnalysedSample.php']);
         $registered = array_map(
-            static fn (mixed $collector): string => is_object($collector) ? $collector::class : '',
-            array_values($container->getServicesByTag('phpstan.collector')),
+            static fn (object $collector): string => $collector::class,
+            array_values(array_filter($container->getServicesByTag('phpstan.collector'), 'is_object')),
         );
 
         self::assertContains(DependencyCollector::class, $registered);

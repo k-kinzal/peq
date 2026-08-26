@@ -17,6 +17,25 @@ use Tests\Fixture\Analyzer\CollectorRun;
  * @internal
  */
 #[CoversClass(DependencyCollector::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Declaration\AttributeProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Declaration\ClassConstProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Declaration\ClassLikeProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Declaration\EnumCaseProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Declaration\FunctionLikeProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Declaration\PromotedPropertyProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Declaration\PropertyProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\CatchProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\ConstFetchProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\FunctionCallProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\InstanceofProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\InstantiationProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\MethodCallProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\PropertyAccessProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\StaticCallProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\StaticPropertyAccessProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\TypeResolver::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\TypeReference::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\SourceResolver::class)]
 #[Medium]
 final class DependencyCollectorTest extends PHPStanTestCase
 {

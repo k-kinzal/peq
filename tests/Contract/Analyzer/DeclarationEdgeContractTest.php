@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Contract\Analyzer;
 
 use App\Analyzer\Graph\EdgeKind;
-use App\Analyzer\Graph\Graph;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use Generator;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -13,19 +12,16 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Tests\Fixture\Analyzer\AnalysedSnippet;
+use Tests\Fixture\Graph\GraphRelations;
 
 /**
  * @internal
- *
- * Contract tests verifying that the analyzer correctly detects declaration-level
- * dependency edges (extends, implements, trait use, attributes, and type declarations)
- */#[CoversClass(PhpStanAnalyzer::class)]
+ */
+#[CoversClass(PhpStanAnalyzer::class)]
 #[Large]
 final class DeclarationEdgeContractTest extends TestCase
 {
-    /**
-     * Checks that extends contract.
-     */
     #[Test]
     public function testExtendsContract(): void
     {
@@ -39,8 +35,8 @@ final class DeclarationEdgeContractTest extends TestCase
             class Subject extends Dep {}
             PHP;
 
-        $graph = self::analyzeCode($code);
-        self::assertEdgeExists(
+        $graph = AnalysedSnippet::graph($code);
+        GraphRelations::assertRelationExists(
             $graph,
             'Subject',
             'Dep',
@@ -49,9 +45,6 @@ final class DeclarationEdgeContractTest extends TestCase
         );
     }
 
-    /**
-     * Checks that implements contract.
-     */
     #[Test]
     public function testImplementsContract(): void
     {
@@ -65,8 +58,8 @@ final class DeclarationEdgeContractTest extends TestCase
             class Subject implements DepInterface {}
             PHP;
 
-        $graph = self::analyzeCode($code);
-        self::assertEdgeExists(
+        $graph = AnalysedSnippet::graph($code);
+        GraphRelations::assertRelationExists(
             $graph,
             'Subject',
             'DepInterface',
@@ -75,9 +68,6 @@ final class DeclarationEdgeContractTest extends TestCase
         );
     }
 
-    /**
-     * Checks that trait use contract.
-     */
     #[Test]
     public function testTraitUseContract(): void
     {
@@ -93,8 +83,8 @@ final class DeclarationEdgeContractTest extends TestCase
             }
             PHP;
 
-        $graph = self::analyzeCode($code);
-        self::assertEdgeExists(
+        $graph = AnalysedSnippet::graph($code);
+        GraphRelations::assertRelationExists(
             $graph,
             'Subject',
             'DepTrait',
@@ -103,15 +93,12 @@ final class DeclarationEdgeContractTest extends TestCase
         );
     }
 
-    /**
-     * Checks that attribute contract.
-     */
-    #[DataProvider('provideAttributeTargetVariations')]
+    #[DataProvider('providerAttributeTargetVariations')]
     #[Test]
     public function testAttributeContract(string $label, string $code, string $fromSuffix): void
     {
-        $graph = self::analyzeCode($code);
-        self::assertEdgeExists(
+        $graph = AnalysedSnippet::graph($code);
+        GraphRelations::assertRelationExists(
             $graph,
             $fromSuffix,
             'DepAttr',
@@ -123,7 +110,7 @@ final class DeclarationEdgeContractTest extends TestCase
     /**
      * @return Generator<string, array{string, string, string}>
      */
-    public static function provideAttributeTargetVariations(): Generator
+    public static function providerAttributeTargetVariations(): Generator
     {
         yield 'class' => [
             'class',
@@ -213,15 +200,12 @@ final class DeclarationEdgeContractTest extends TestCase
         ];
     }
 
-    /**
-     * Checks that parameter type contract.
-     */
-    #[DataProvider('provideParameterTypeVariations')]
+    #[DataProvider('providerParameterTypeVariations')]
     #[Test]
     public function testParameterTypeContract(string $label, string $code): void
     {
-        $graph = self::analyzeCode($code);
-        self::assertEdgeExists(
+        $graph = AnalysedSnippet::graph($code);
+        GraphRelations::assertRelationExists(
             $graph,
             'Subject::testMethod',
             'Dep',
@@ -233,26 +217,23 @@ final class DeclarationEdgeContractTest extends TestCase
     /**
      * @return Generator<string, array{string, string}>
      */
-    public static function provideParameterTypeVariations(): Generator
+    public static function providerParameterTypeVariations(): Generator
     {
-        yield 'simple' => ['simple', self::makeParameterTypeCode('Dep')];
+        yield 'simple' => ['simple', AnalysedSnippet::asParameterType('Dep')];
 
-        yield 'nullable' => ['nullable', self::makeParameterTypeCode('?Dep')];
+        yield 'nullable' => ['nullable', AnalysedSnippet::asParameterType('?Dep')];
 
-        yield 'union' => ['union', self::makeParameterTypeCode('Dep|null')];
+        yield 'union' => ['union', AnalysedSnippet::asParameterType('Dep|null')];
 
-        yield 'intersection' => ['intersection', self::makeParameterTypeCode('Dep&\Stringable')];
+        yield 'intersection' => ['intersection', AnalysedSnippet::asParameterType('Dep&\Stringable')];
     }
 
-    /**
-     * Checks that return type contract.
-     */
-    #[DataProvider('provideReturnTypeVariations')]
+    #[DataProvider('providerReturnTypeVariations')]
     #[Test]
     public function testReturnTypeContract(string $label, string $code): void
     {
-        $graph = self::analyzeCode($code);
-        self::assertEdgeExists(
+        $graph = AnalysedSnippet::graph($code);
+        GraphRelations::assertRelationExists(
             $graph,
             'Subject::testMethod',
             'Dep',
@@ -264,26 +245,23 @@ final class DeclarationEdgeContractTest extends TestCase
     /**
      * @return Generator<string, array{string, string}>
      */
-    public static function provideReturnTypeVariations(): Generator
+    public static function providerReturnTypeVariations(): Generator
     {
-        yield 'simple' => ['simple', self::makeReturnTypeCode('Dep')];
+        yield 'simple' => ['simple', AnalysedSnippet::asReturnType('Dep')];
 
-        yield 'nullable' => ['nullable', self::makeReturnTypeCode('?Dep')];
+        yield 'nullable' => ['nullable', AnalysedSnippet::asReturnType('?Dep')];
 
-        yield 'union' => ['union', self::makeReturnTypeCode('Dep|null')];
+        yield 'union' => ['union', AnalysedSnippet::asReturnType('Dep|null')];
 
-        yield 'intersection' => ['intersection', self::makeReturnTypeCode('Dep&\Stringable')];
+        yield 'intersection' => ['intersection', AnalysedSnippet::asReturnType('Dep&\Stringable')];
     }
 
-    /**
-     * Checks that property type contract.
-     */
-    #[DataProvider('providePropertyTypeVariations')]
+    #[DataProvider('providerPropertyTypeVariations')]
     #[Test]
     public function testPropertyTypeContract(string $label, string $code): void
     {
-        $graph = self::analyzeCode($code);
-        self::assertEdgeExists(
+        $graph = AnalysedSnippet::graph($code);
+        GraphRelations::assertRelationExists(
             $graph,
             'Subject::prop',
             'Dep',
@@ -295,125 +273,14 @@ final class DeclarationEdgeContractTest extends TestCase
     /**
      * @return Generator<string, array{string, string}>
      */
-    public static function providePropertyTypeVariations(): Generator
+    public static function providerPropertyTypeVariations(): Generator
     {
-        yield 'simple' => ['simple', self::makePropertyTypeCode('Dep')];
+        yield 'simple' => ['simple', AnalysedSnippet::asPropertyType('Dep')];
 
-        yield 'nullable' => ['nullable', self::makePropertyTypeCode('?Dep')];
+        yield 'nullable' => ['nullable', AnalysedSnippet::asPropertyType('?Dep')];
 
-        yield 'union' => ['union', self::makePropertyTypeCode('Dep|null')];
+        yield 'union' => ['union', AnalysedSnippet::asPropertyType('Dep|null')];
 
-        yield 'intersection' => ['intersection', self::makePropertyTypeCode('Dep&\Stringable')];
-    }
-
-    /**
-     * Returns the make parameter type code a check needs.
-     */
-    public static function makeParameterTypeCode(string $typeHint): string
-    {
-        return <<<PHP
-            <?php
-            declare(strict_types=1);
-            namespace Tests\\Contract\\Analyzer\\Generated;
-
-            class Dep implements \\Stringable {
-                public function __toString(): string { return ''; }
-            }
-
-            class Subject {
-                public function testMethod({$typeHint} \$x): void {}
-            }
-            PHP;
-    }
-
-    /**
-     * Returns the make return type code a check needs.
-     */
-    public static function makeReturnTypeCode(string $typeHint): string
-    {
-        return <<<PHP
-            <?php
-            declare(strict_types=1);
-            namespace Tests\\Contract\\Analyzer\\Generated;
-
-            class Dep implements \\Stringable {
-                public function __toString(): string { return ''; }
-            }
-
-            class Subject {
-                public function testMethod(): {$typeHint} { return new Dep(); }
-            }
-            PHP;
-    }
-
-    /**
-     * Returns the make property type code a check needs.
-     */
-    public static function makePropertyTypeCode(string $typeHint): string
-    {
-        return <<<PHP
-            <?php
-            declare(strict_types=1);
-            namespace Tests\\Contract\\Analyzer\\Generated;
-
-            class Dep implements \\Stringable {
-                public function __toString(): string { return ''; }
-            }
-
-            class Subject {
-                public {$typeHint} \$prop;
-            }
-            PHP;
-    }
-
-    /**
-     * Returns the analyze code a check needs.
-     */
-    public static function analyzeCode(string $phpCode): Graph
-    {
-        $tmpDir = sys_get_temp_dir().'/peq_contract_'.uniqid();
-        mkdir($tmpDir, 0o777, true);
-        file_put_contents($tmpDir.'/Test.php', $phpCode);
-
-        try {
-            $analyzer = new PhpStanAnalyzer();
-
-            return $analyzer->analyze($tmpDir);
-        } finally {
-            @unlink($tmpDir.'/Test.php');
-            @rmdir($tmpDir);
-        }
-    }
-
-    /**
-     * Returns the assert edge exists a check needs.
-     */
-    public function assertEdgeExists(
-        Graph $graph,
-        string $fromSuffix,
-        string $toSuffix,
-        EdgeKind $kind,
-        string $msg,
-    ): void {
-        foreach ($graph->nodes() as $node) {
-            if (!str_ends_with($node->id()->toString(), $fromSuffix)) {
-                continue;
-            }
-
-            foreach ($graph->edges($node->id()) as $edge) {
-                if ($edge->kind() === $kind && str_ends_with($edge->to()->toString(), $toSuffix)) {
-                    $this->addToAssertionCount(1);
-
-                    return;
-                }
-            }
-        }
-
-        self::fail(
-            $msg."\nNodes: ".implode(', ', array_map(
-                fn ($n) => $n->id()->toString(),
-                $graph->nodes(),
-            )),
-        );
+        yield 'intersection' => ['intersection', AnalysedSnippet::asPropertyType('Dep&\Stringable')];
     }
 }

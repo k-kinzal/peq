@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Analyzer\DebugAnalyzer\Generator;
 
 use App\Analyzer\Graph\Edge;
-use App\Analyzer\Graph\Edge\DeclarationConstantEdge;
-use App\Analyzer\Graph\Edge\DeclarationEnumCaseEdge;
-use App\Analyzer\Graph\Edge\DeclarationExtendsEdge;
-use App\Analyzer\Graph\Edge\DeclarationImplementsEdge;
-use App\Analyzer\Graph\Edge\DeclarationMethodEdge;
-use App\Analyzer\Graph\Edge\DeclarationPropertyEdge;
-use App\Analyzer\Graph\Edge\DeclarationTraitUseEdge;
+use App\Analyzer\Graph\Edge\Declaration\ConstantEdge;
+use App\Analyzer\Graph\Edge\Declaration\EnumCaseEdge;
+use App\Analyzer\Graph\Edge\Declaration\ExtendsEdge;
+use App\Analyzer\Graph\Edge\Declaration\ImplementsEdge;
+use App\Analyzer\Graph\Edge\Declaration\MethodEdge;
+use App\Analyzer\Graph\Edge\Declaration\PropertyEdge;
+use App\Analyzer\Graph\Edge\Declaration\TraitUseEdge;
 use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\Node\ConstantNode;
 use App\Analyzer\Graph\Node\EnumCaseNode;
@@ -83,19 +83,19 @@ final class ClassLikeGraphGenerator
         for ($remaining = $this->memberCount(); $remaining > 0; --$remaining) {
             $result = $result->relatedTo(
                 $symbols->methodGraph(null, $depth - 1),
-                fn (ClassNode $owner, MethodNode $method): Edge => new DeclarationMethodEdge($owner, $method, $this->ids->fileMeta()),
+                fn (ClassNode $owner, MethodNode $method): Edge => new MethodEdge($owner, $method, $this->ids->fileMeta()),
             );
         }
         for ($remaining = $this->memberCount(); $remaining > 0; --$remaining) {
             $result = $result->relatedTo(
                 $symbols->propertyGraph(null, $depth - 1),
-                fn (ClassNode $owner, PropertyNode $property): Edge => new DeclarationPropertyEdge($owner, $property, $this->ids->fileMeta()),
+                fn (ClassNode $owner, PropertyNode $property): Edge => new PropertyEdge($owner, $property, $this->ids->fileMeta()),
             );
         }
         for ($remaining = $this->memberCount(); $remaining > 0; --$remaining) {
             $result = $result->relatedTo(
                 $symbols->constantGraph(),
-                fn (ClassNode $owner, ConstantNode $constant): Edge => new DeclarationConstantEdge($owner, $constant, $this->ids->fileMeta()),
+                fn (ClassNode $owner, ConstantNode $constant): Edge => new ConstantEdge($owner, $constant, $this->ids->fileMeta()),
             );
         }
 
@@ -116,19 +116,19 @@ final class ClassLikeGraphGenerator
         if ($this->faker->boolean()) {
             $result = $result->relatedTo(
                 $symbols->classGraph(null, $depth - 1),
-                fn (ClassNode $child, ClassNode $parent): Edge => new DeclarationExtendsEdge($child, $parent, $this->ids->fileMeta()),
+                fn (ClassNode $child, ClassNode $parent): Edge => new ExtendsEdge($child, $parent, $this->ids->fileMeta()),
             );
         }
         for ($remaining = $this->memberCount(); $remaining > 0; --$remaining) {
             $result = $result->relatedTo(
                 $symbols->interfaceGraph(null, $depth - 1),
-                fn (ClassNode $owner, GraphInterfaceNode $contract): Edge => new DeclarationImplementsEdge($owner, $contract, $this->ids->fileMeta()),
+                fn (ClassNode $owner, GraphInterfaceNode $contract): Edge => new ImplementsEdge($owner, $contract, $this->ids->fileMeta()),
             );
         }
         for ($remaining = $this->memberCount(); $remaining > 0; --$remaining) {
             $result = $result->relatedTo(
                 $symbols->traitGraph(null, $depth - 1),
-                fn (ClassNode $owner, TraitNode $trait): Edge => new DeclarationTraitUseEdge($owner, $trait, $this->ids->fileMeta()),
+                fn (ClassNode $owner, TraitNode $trait): Edge => new TraitUseEdge($owner, $trait, $this->ids->fileMeta()),
             );
         }
 
@@ -154,19 +154,19 @@ final class ClassLikeGraphGenerator
         for ($remaining = $this->memberCount(); $remaining > 0; --$remaining) {
             $result = $result->relatedTo(
                 $symbols->methodGraph(null, $depth - 1),
-                fn (GraphInterfaceNode $owner, MethodNode $method): Edge => new DeclarationMethodEdge($owner, $method, $this->ids->fileMeta()),
+                fn (GraphInterfaceNode $owner, MethodNode $method): Edge => new MethodEdge($owner, $method, $this->ids->fileMeta()),
             );
         }
         for ($remaining = $this->memberCount(); $remaining > 0; --$remaining) {
             $result = $result->relatedTo(
                 $symbols->constantGraph(),
-                fn (GraphInterfaceNode $owner, ConstantNode $constant): Edge => new DeclarationConstantEdge($owner, $constant, $this->ids->fileMeta()),
+                fn (GraphInterfaceNode $owner, ConstantNode $constant): Edge => new ConstantEdge($owner, $constant, $this->ids->fileMeta()),
             );
         }
         if ($this->faker->boolean()) {
             $result = $result->relatedTo(
                 $symbols->interfaceGraph(null, $depth - 1),
-                fn (GraphInterfaceNode $child, GraphInterfaceNode $parent): Edge => new DeclarationExtendsEdge($child, $parent, $this->ids->fileMeta()),
+                fn (GraphInterfaceNode $child, GraphInterfaceNode $parent): Edge => new ExtendsEdge($child, $parent, $this->ids->fileMeta()),
             );
         }
 
@@ -192,13 +192,13 @@ final class ClassLikeGraphGenerator
         for ($remaining = $this->memberCount(); $remaining > 0; --$remaining) {
             $result = $result->relatedTo(
                 $symbols->methodGraph(null, $depth - 1),
-                fn (TraitNode $owner, MethodNode $method): Edge => new DeclarationMethodEdge($owner, $method, $this->ids->fileMeta()),
+                fn (TraitNode $owner, MethodNode $method): Edge => new MethodEdge($owner, $method, $this->ids->fileMeta()),
             );
         }
         for ($remaining = $this->memberCount(); $remaining > 0; --$remaining) {
             $result = $result->relatedTo(
                 $symbols->propertyGraph(null, $depth - 1),
-                fn (TraitNode $owner, PropertyNode $property): Edge => new DeclarationPropertyEdge($owner, $property, $this->ids->fileMeta()),
+                fn (TraitNode $owner, PropertyNode $property): Edge => new PropertyEdge($owner, $property, $this->ids->fileMeta()),
             );
         }
 
@@ -224,7 +224,7 @@ final class ClassLikeGraphGenerator
         for ($remaining = $this->memberCount(); $remaining > 0; --$remaining) {
             $result = $result->relatedTo(
                 $symbols->enumCaseGraph(),
-                fn (EnumNode $owner, EnumCaseNode $case): Edge => new DeclarationEnumCaseEdge($owner, $case, $this->ids->fileMeta()),
+                fn (EnumNode $owner, EnumCaseNode $case): Edge => new EnumCaseEdge($owner, $case, $this->ids->fileMeta()),
             );
         }
 

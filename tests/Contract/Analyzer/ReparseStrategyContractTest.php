@@ -5,28 +5,21 @@ declare(strict_types=1);
 namespace Tests\Contract\Analyzer;
 
 use App\Analyzer\Graph\EdgeKind;
-use App\Analyzer\Graph\Graph;
-use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use App\Analyzer\PhpStanAnalyzer\ReparsedSource;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Tests\Fixture\Analyzer\AnalysedSnippet;
+use Tests\Fixture\Graph\GraphRelations;
 
 /**
  * @internal
- *
- * Contract tests for InClassMethodNodeProcessor's re-parse strategy.
- * Verifies correctness, completeness, and idempotency of the approach
- * that re-parses source files to recover method body ASTs stripped by
- * PHPStan v2's CleaningVisitor.
- */#[CoversClass(ReparsedSource::class)]
+ */
+#[CoversClass(ReparsedSource::class)]
 #[Large]
 final class ReparseStrategyContractTest extends TestCase
 {
-    /**
-     * Checks that multi method completeness.
-     */
     #[Test]
     public function testMultiMethodCompleteness(): void
     {
@@ -52,16 +45,13 @@ final class ReparseStrategyContractTest extends TestCase
             }
             PHP;
 
-        $graph = self::analyzeCode($code);
+        $graph = AnalysedSnippet::graph($code);
 
-        self::assertEdgeExists($graph, 'Multi::alpha', 'DepA', EdgeKind::Instantiation);
-        self::assertEdgeExists($graph, 'Multi::beta', 'DepB', EdgeKind::Instantiation);
-        self::assertEdgeExists($graph, 'Multi::gamma', 'DepC::VAL', EdgeKind::ConstFetch);
+        GraphRelations::assertRelationExists($graph, 'Multi::alpha', 'DepA', EdgeKind::Instantiation);
+        GraphRelations::assertRelationExists($graph, 'Multi::beta', 'DepB', EdgeKind::Instantiation);
+        GraphRelations::assertRelationExists($graph, 'Multi::gamma', 'DepC::VAL', EdgeKind::ConstFetch);
     }
 
-    /**
-     * Checks that closure body coverage.
-     */
     #[Test]
     public function testClosureBodyCoverage(): void
     {
@@ -81,14 +71,11 @@ final class ReparseStrategyContractTest extends TestCase
             }
             PHP;
 
-        $graph = self::analyzeCode($code);
+        $graph = AnalysedSnippet::graph($code);
 
-        self::assertEdgeExists($graph, 'WithClosure::run', 'Target', EdgeKind::Instantiation);
+        GraphRelations::assertRelationExists($graph, 'WithClosure::run', 'Target', EdgeKind::Instantiation);
     }
 
-    /**
-     * Checks that deeply nested structures.
-     */
     #[Test]
     public function testDeeplyNestedStructures(): void
     {
@@ -112,14 +99,11 @@ final class ReparseStrategyContractTest extends TestCase
             }
             PHP;
 
-        $graph = self::analyzeCode($code);
+        $graph = AnalysedSnippet::graph($code);
 
-        self::assertEdgeExists($graph, 'DeepNest::run', 'Nested', EdgeKind::Instantiation);
+        GraphRelations::assertRelationExists($graph, 'DeepNest::run', 'Nested', EdgeKind::Instantiation);
     }
 
-    /**
-     * Checks that mixed dependency kinds in single method.
-     */
     #[Test]
     public function testMixedDependencyKindsInSingleMethod(): void
     {
@@ -143,17 +127,14 @@ final class ReparseStrategyContractTest extends TestCase
             }
             PHP;
 
-        $graph = self::analyzeCode($code);
+        $graph = AnalysedSnippet::graph($code);
 
-        self::assertEdgeExists($graph, 'Consumer::work', 'Svc', EdgeKind::Instantiation);
-        self::assertEdgeExists($graph, 'Consumer::work', 'Svc::create', EdgeKind::StaticCall);
-        self::assertEdgeExists($graph, 'Consumer::work', 'Svc::FLAG', EdgeKind::ConstFetch);
-        self::assertEdgeExists($graph, 'Consumer::work', 'Svc', EdgeKind::Instanceof);
+        GraphRelations::assertRelationExists($graph, 'Consumer::work', 'Svc', EdgeKind::Instantiation);
+        GraphRelations::assertRelationExists($graph, 'Consumer::work', 'Svc::create', EdgeKind::StaticCall);
+        GraphRelations::assertRelationExists($graph, 'Consumer::work', 'Svc::FLAG', EdgeKind::ConstFetch);
+        GraphRelations::assertRelationExists($graph, 'Consumer::work', 'Svc', EdgeKind::Instanceof);
     }
 
-    /**
-     * Checks that determinism.
-     */
     #[Test]
     public function testDeterminism(): void
     {
@@ -171,11 +152,11 @@ final class ReparseStrategyContractTest extends TestCase
             }
             PHP;
 
-        $graph1 = self::analyzeCode($code);
-        $graph2 = self::analyzeCode($code);
+        $graph1 = AnalysedSnippet::graph($code);
+        $graph2 = AnalysedSnippet::graph($code);
 
-        $edges1 = self::collectEdgeSignatures($graph1);
-        $edges2 = self::collectEdgeSignatures($graph2);
+        $edges1 = GraphRelations::signatures($graph1);
+        $edges2 = GraphRelations::signatures($graph2);
 
         sort($edges1);
         sort($edges2);
@@ -183,9 +164,6 @@ final class ReparseStrategyContractTest extends TestCase
         self::assertSame($edges1, $edges2, 'Two analyses of the same code must produce identical edge sets');
     }
 
-    /**
-     * Checks that method call via this is detected.
-     */
     #[Test]
     public function testMethodCallViaThisIsDetected(): void
     {
@@ -202,14 +180,11 @@ final class ReparseStrategyContractTest extends TestCase
             }
             PHP;
 
-        $graph = self::analyzeCode($code);
+        $graph = AnalysedSnippet::graph($code);
 
-        self::assertEdgeExists($graph, 'SelfCaller::entry', 'SelfCaller::helper', EdgeKind::MethodCall);
+        GraphRelations::assertRelationExists($graph, 'SelfCaller::entry', 'SelfCaller::helper', EdgeKind::MethodCall);
     }
 
-    /**
-     * Checks that property access via this is detected.
-     */
     #[Test]
     public function testPropertyAccessViaThisIsDetected(): void
     {
@@ -226,14 +201,11 @@ final class ReparseStrategyContractTest extends TestCase
             }
             PHP;
 
-        $graph = self::analyzeCode($code);
+        $graph = AnalysedSnippet::graph($code);
 
-        self::assertEdgeExists($graph, 'PropReader::read', 'PropReader::value', EdgeKind::PropertyAccess);
+        GraphRelations::assertRelationExists($graph, 'PropReader::read', 'PropReader::value', EdgeKind::PropertyAccess);
     }
 
-    /**
-     * Checks that static property access is detected.
-     */
     #[Test]
     public function testStaticPropertyAccessIsDetected(): void
     {
@@ -253,14 +225,11 @@ final class ReparseStrategyContractTest extends TestCase
             }
             PHP;
 
-        $graph = self::analyzeCode($code);
+        $graph = AnalysedSnippet::graph($code);
 
-        self::assertEdgeExists($graph, 'StaticReader::read', 'Registry::count', EdgeKind::StaticPropertyAccess);
+        GraphRelations::assertRelationExists($graph, 'StaticReader::read', 'Registry::count', EdgeKind::StaticPropertyAccess);
     }
 
-    /**
-     * Checks that all usage edge kinds detected in single method.
-     */
     #[Test]
     public function testAllUsageEdgeKindsDetectedInSingleMethod(): void
     {
@@ -294,77 +263,16 @@ final class ReparseStrategyContractTest extends TestCase
             }
             PHP;
 
-        $graph = self::analyzeCode($code);
+        $graph = AnalysedSnippet::graph($code);
 
-        self::assertEdgeExists($graph, 'AllUsages::entry', 'Dep', EdgeKind::Instantiation);
-        self::assertEdgeExists($graph, 'AllUsages::entry', 'Dep::create', EdgeKind::StaticCall);
-        self::assertEdgeExists($graph, 'AllUsages::entry', 'Dep::FLAG', EdgeKind::ConstFetch);
-        self::assertEdgeExists($graph, 'AllUsages::entry', 'Dep', EdgeKind::Instanceof);
-        self::assertEdgeExists($graph, 'AllUsages::entry', 'Dep', EdgeKind::Catch);
-        self::assertEdgeExists($graph, 'AllUsages::entry', 'reparse_helper', EdgeKind::FunctionCall);
-        self::assertEdgeExists($graph, 'AllUsages::entry', 'AllUsages::helper', EdgeKind::MethodCall);
-        self::assertEdgeExists($graph, 'AllUsages::entry', 'AllUsages::value', EdgeKind::PropertyAccess);
-        self::assertEdgeExists($graph, 'AllUsages::entry', 'Dep::counter', EdgeKind::StaticPropertyAccess);
-    }
-
-    /**
-     * Returns the analyze code a check needs.
-     */
-    public static function analyzeCode(string $phpCode): Graph
-    {
-        $tmpDir = sys_get_temp_dir().'/peq_reparse_'.uniqid();
-        mkdir($tmpDir, 0o777, true);
-        file_put_contents($tmpDir.'/Test.php', $phpCode);
-
-        try {
-            $analyzer = new PhpStanAnalyzer();
-
-            return $analyzer->analyze($tmpDir);
-        } finally {
-            @unlink($tmpDir.'/Test.php');
-            @rmdir($tmpDir);
-        }
-    }
-
-    /**
-     * Returns the assert edge exists a check needs.
-     */
-    public function assertEdgeExists(
-        Graph $graph,
-        string $fromSuffix,
-        string $toSuffix,
-        EdgeKind $kind,
-    ): void {
-        foreach ($graph->nodes() as $node) {
-            if (!str_ends_with($node->id()->toString(), $fromSuffix)) {
-                continue;
-            }
-            foreach ($graph->edges($node->id()) as $edge) {
-                if ($edge->kind() === $kind && str_ends_with($edge->to()->toString(), $toSuffix)) {
-                    $this->addToAssertionCount(1);
-
-                    return;
-                }
-            }
-        }
-        self::fail(
-            "Edge not found: {$fromSuffix} --[{$kind->value}]--> {$toSuffix}"
-            ."\nNodes: ".implode(', ', array_map(fn ($n) => $n->id()->toString(), $graph->nodes())),
-        );
-    }
-
-    /**
-     * @return list<string>
-     */
-    public static function collectEdgeSignatures(Graph $graph): array
-    {
-        $signatures = [];
-        foreach ($graph->nodes() as $node) {
-            foreach ($graph->edges($node->id()) as $edge) {
-                $signatures[] = $edge->from()->toString().'--['.$edge->kind()->value.']-->'.$edge->to()->toString();
-            }
-        }
-
-        return $signatures;
+        GraphRelations::assertRelationExists($graph, 'AllUsages::entry', 'Dep', EdgeKind::Instantiation);
+        GraphRelations::assertRelationExists($graph, 'AllUsages::entry', 'Dep::create', EdgeKind::StaticCall);
+        GraphRelations::assertRelationExists($graph, 'AllUsages::entry', 'Dep::FLAG', EdgeKind::ConstFetch);
+        GraphRelations::assertRelationExists($graph, 'AllUsages::entry', 'Dep', EdgeKind::Instanceof);
+        GraphRelations::assertRelationExists($graph, 'AllUsages::entry', 'Dep', EdgeKind::Catch);
+        GraphRelations::assertRelationExists($graph, 'AllUsages::entry', 'reparse_helper', EdgeKind::FunctionCall);
+        GraphRelations::assertRelationExists($graph, 'AllUsages::entry', 'AllUsages::helper', EdgeKind::MethodCall);
+        GraphRelations::assertRelationExists($graph, 'AllUsages::entry', 'AllUsages::value', EdgeKind::PropertyAccess);
+        GraphRelations::assertRelationExists($graph, 'AllUsages::entry', 'Dep::counter', EdgeKind::StaticPropertyAccess);
     }
 }

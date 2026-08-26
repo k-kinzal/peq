@@ -31,7 +31,6 @@
         "brianium/paratest": "^6.11 || ^7",
         "deptrac/deptrac": "^3.0 || ^4.0",
         "friendsofphp/php-cs-fixer": "^3.0",
-        "giorgiosironi/eris": "^1.0",
         "infection/infection": "^0.27 || ^0.28 || ^0.29 || ^0.30 || ^0.31 || ^0.32 || ^0.33 || ^0.34 || ^0.35",
         "k-kinzal/php-ai-toolkit": "dev-main",
         "mikey179/vfsstream": "^1.6",
@@ -77,20 +76,14 @@
         }
     },
     "scripts": {
-        "post-install-cmd": [
-            "@composer bin box require --dev humbug/box"
-        ],
-        "post-update-cmd": [
-            "@composer bin box require --dev humbug/box"
-        ],
         "bench": "phpbench run --report=aggregate",
         "compat": "phpcs",
         "compile": "box compile",
         "deptrac": "deptrac analyse --config-file=deptrac.yaml",
-        "doc-gen": "doc-gen --exclude='tests/Fixture/*' --coverage=build/coverage-xml",
-        "doc-gen:diff": "@doc-gen --diff=main --serve",
-        "doc-gen:fresh": "@doc-gen --no-cache",
-        "doc-gen:serve": "@doc-gen --serve",
+        "docgen": "docgen --exclude='tests/Fixture/*' --coverage=build/coverage-xml",
+        "docgen:diff": "@docgen --diff=main --serve",
+        "docgen:fresh": "@docgen --no-cache",
+        "docgen:serve": "@docgen --serve",
         "doctest": "phpunit --testsuite doctest",
         "format": "php-cs-fixer fix --allow-risky=yes",
         "format:check": "php-cs-fixer fix --dry-run --diff --allow-risky=yes",
@@ -100,17 +93,23 @@
             "@compat",
             "@loc-guard",
             "@tree-guard",
-            "@scope-guard",
             "@deptrac"
         ],
         "loc-guard": "loc-guard --config=loc.yaml",
-        "phpstan": "phpstan analyse --memory-limit=1G",
-        "scope-guard": "scope-guard --config=scope.yaml",
+        "phpstan": "phpstan analyse bin src tests --memory-limit=512M",
+        "post-install-cmd": [
+            "@composer bin box require --dev humbug/box"
+        ],
+        "post-update-cmd": [
+            "@composer bin box require --dev humbug/box"
+        ],
         "test": "paratest --processes=auto",
         "test:contract": "phpunit --testsuite contract",
         "test:integration": "phpunit --testsuite integration",
-        "test:serial": "@php -d memory_limit=1G vendor/bin/phpunit --configuration phpunit.xml.dist",
+        "test:serial": "@php -d memory_limit=2G vendor/bin/phpunit --configuration phpunit.xml.dist",
         "test:unit": "phpunit --testsuite unit",
+        "test:unit:10": "phpunit --configuration phpunit10.xml.dist --testsuite unit",
+        "test:unit:11": "phpunit --configuration phpunit11.xml.dist --testsuite unit",
         "tree-guard": "tree-guard --config=tree.yaml"
     }
 }

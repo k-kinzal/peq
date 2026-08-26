@@ -35,7 +35,7 @@ final class GraphModel
     /**
      * Returns every class in the graph model that stands for a symbol.
      *
-     * @return list<class-string<Node>> The node classes, in file name order
+     * @return list<class-string<Node>> The node classes, in name order
      */
     public static function nodeClasses(): array
     {
@@ -111,15 +111,20 @@ final class GraphModel
      */
     public static function classesIn(string $directory, string $namespace, string $contract): array
     {
-        $files = glob(dirname(__DIR__, 3).'/src/Analyzer/Graph/'.$directory.'/*.php');
-        $classes = [];
+        $root = dirname(__DIR__, 3).'/src/Analyzer/Graph/'.$directory;
+        $direct = glob($root.'/*.php');
+        $grouped = glob($root.'/*/*.php');
+        $files = array_merge($direct === false ? [] : $direct, $grouped === false ? [] : $grouped);
 
-        foreach ($files === false ? [] : $files as $file) {
-            $class = $namespace.basename($file, '.php');
+        $classes = [];
+        foreach ($files as $file) {
+            $relative = substr($file, strlen($root) + 1, -4);
+            $class = $namespace.str_replace('/', '\\', $relative);
             if (class_exists($class) && is_subclass_of($class, $contract)) {
                 $classes[] = $class;
             }
         }
+        sort($classes);
 
         return $classes;
     }

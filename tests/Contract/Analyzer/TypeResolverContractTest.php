@@ -5,245 +5,35 @@ declare(strict_types=1);
 namespace Tests\Contract\Analyzer;
 
 use App\Analyzer\PhpStanAnalyzer\Processor\TypeResolver;
-use Eris\Generator;
-use Eris\TestTrait;
-use PhpParser\Node;
-use PhpParser\Node\Identifier;
-use PhpParser\Node\IntersectionType;
 use PhpParser\Node\Name;
-use PhpParser\Node\NullableType;
-use PhpParser\Node\UnionType;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
 use PHPUnit\Framework\Attributes\Medium;
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Tests\Fixture\Analyzer\GeneratedTypeTrees;
 
 /**
  * @internal
- *
- * Property-based contract test for TypeResolver::resolveNames().
- *
- * Generates random PHP type trees (respecting PHP's type grammar constraints)
- * and verifies two properties:
- * 1. All returned values are Name instances
- * 2. The count of returned Names matches the count of Name leaf nodes in the tree
- *
- * This grounds the case analysis in DeclarationEdgeContractTest's DataProviders,
- * proving that TypeResolver handles arbitrary type compositions correctly.
- */#[CoversClass(TypeResolver::class)]
+ */
+#[CoversClass(TypeResolver::class)]
 #[Medium]
 final class TypeResolverContractTest extends TestCase
 {
-    use TestTrait;
-
-    private const BUILTINS = ['int', 'string', 'float', 'bool', 'null', 'void', 'never', 'mixed', 'array', 'object', 'callable', 'iterable', 'self', 'parent', 'static'];
-
-    /**
-     * Checks that all returned values are name instances.
-     */
-    #[Test]
-    public function testAllReturnedValuesAreNameInstances(): void
+    #[DataProviderExternal(GeneratedTypeTrees::class, 'seeds')]
+    public function testResolveNamesReportsOnlyNamesThatWereWritten(int $seed): void
     {
-        $this->forAll(Generator\choose(1, 10000))
-            ->then(function (int $seed): void {
-                $type = self::buildTypeTree($seed);
-                $result = TypeResolver::resolveNames($type);
+        $resolved = TypeResolver::resolveNames(GeneratedTypeTrees::buildTypeTree($seed));
 
-                $written = array_map(static fn (Name $name): string => $name->toString(), $result);
+        $written = array_map(static fn (Name $name): string => $name->toString(), $resolved);
 
-                self::assertSame($written, array_values(array_filter($written, static fn (string $name): bool => $name !== '')));
-            })
-        ;
+        self::assertSame($written, array_values(array_filter($written, static fn (string $name): bool => $name !== '')));
     }
 
-    /**
-     * Checks that returned count matches name leaf count.
-     */
-    #[Test]
-    public function testReturnedCountMatchesNameLeafCount(): void
+    #[DataProviderExternal(GeneratedTypeTrees::class, 'seeds')]
+    public function testResolveNamesReportsOneNameForEachOneTheTypeWrites(int $seed): void
     {
-        $this->forAll(Generator\choose(1, 10000))
-            ->then(function (int $seed): void {
-                $type = self::buildTypeTree($seed);
-                $result = TypeResolver::resolveNames($type);
-                $expected = self::countNameLeaves($type);
+        $type = GeneratedTypeTrees::buildTypeTree($seed);
 
-                self::assertCount(
-                    $expected,
-                    $result,
-                    sprintf(
-                        'Expected %d Name nodes but got %d (seed=%d, type=%s)',
-                        $expected,
-                        count($result),
-                        $seed,
-                        $type === null ? 'null' : get_debug_type($type),
-                    ),
-                );
-            })
-        ;
-    }
-
-    /**
-     * Deterministically builds a random PHP type tree from a seed.
-     */
-    public static function buildTypeTree(int $seed): ?Node
-    {
-        mt_srand($seed);
-        $counter = 0;
-
-        return self::buildTypeNode($counter, maxDepth: 4);
-    }
-
-    /**
-     * Recursively generates a type node respecting PHP's type grammar.
-     *
-     * Choices at each level:
-     * 0 = null, 1 = Identifier, 2 = Name, 3 = FullyQualified Name,
-     * 4 = NullableType, 5 = UnionType, 6 = IntersectionType
-     */
-    public static function buildTypeNode(int &$counter, int $maxDepth): ?Node
-    {
-        if ($maxDepth <= 0) {
-            return self::buildLeafOrNull($counter);
-        }
-
-        return match (mt_rand(0, 6)) {
-            0 => null,
-            1 => new Identifier(self::pickBuiltin()),
-            2 => self::makeName($counter),
-            3 => new Name\FullyQualified(self::makeNameParts($counter)),
-            4 => new NullableType(self::buildLeafNode($counter)),
-            5 => self::buildUnionType($counter, $maxDepth - 1),
-            6 => self::buildIntersectionType($counter),
-            default => null,
-        };
-    }
-
-    /**
-     * At max depth, produce only a leaf (Name, Identifier) or null.
-     */
-    public static function buildLeafOrNull(int &$counter): ?Node
-    {
-        return match (mt_rand(0, 2)) {
-            0 => null,
-            1 => new Identifier(self::pickBuiltin()),
-            2 => self::makeName($counter),
-            default => null,
-        };
-    }
-
-    /**
-     * Produces a Name or Identifier leaf (never null, never composite).
-     * Suitable for NullableType wrapping and IntersectionType members.
-     */
-    public static function buildLeafNode(int &$counter): Identifier|Name
-    {
-        return mt_rand(0, 1) === 0
-            ? new Identifier(self::pickBuiltin())
-            : self::makeName($counter);
-    }
-
-    /**
-     * Builds a UnionType with 2-4 members.
-     * Members can be Name, Identifier, or IntersectionType (DNF).
-     */
-    public static function buildUnionType(int &$counter, int $maxDepth): UnionType
-    {
-        $count = mt_rand(2, 4);
-        $types = [];
-        for ($i = 0; $i < $count; ++$i) {
-            $types[] = self::buildUnionMember($counter, $maxDepth);
-        }
-
-        return new UnionType($types);
-    }
-
-    /**
-     * A union member: Name, Identifier, or IntersectionType.
-     */
-    public static function buildUnionMember(int &$counter, int $maxDepth): Identifier|IntersectionType|Name
-    {
-        if ($maxDepth <= 0) {
-            return self::buildLeafNode($counter);
-        }
-
-        return match (mt_rand(0, 2)) {
-            0 => new Identifier(self::pickBuiltin()),
-            1 => self::makeName($counter),
-            2 => self::buildIntersectionType($counter),
-            default => self::buildLeafNode($counter),
-        };
-    }
-
-    /**
-     * Builds an IntersectionType with 2-3 members (Name or Identifier only).
-     */
-    public static function buildIntersectionType(int &$counter): IntersectionType
-    {
-        $count = mt_rand(2, 3);
-        $types = [];
-        for ($i = 0; $i < $count; ++$i) {
-            $types[] = self::buildLeafNode($counter);
-        }
-
-        return new IntersectionType($types);
-    }
-
-    /**
-     * Returns the make name a check needs.
-     */
-    public static function makeName(int &$counter): Name
-    {
-        ++$counter;
-
-        return new Name('Generated\Type'.$counter);
-    }
-
-    /**
-     * @return list<string>
-     */
-    public static function makeNameParts(int &$counter): array
-    {
-        ++$counter;
-
-        return ['Generated', 'Type'.$counter];
-    }
-
-    /**
-     * Returns the pick builtin a check needs.
-     */
-    public static function pickBuiltin(): string
-    {
-        return self::BUILTINS[mt_rand(0, count(self::BUILTINS) - 1)];
-    }
-
-    /**
-     * Independent oracle: recursively counts Name leaf nodes in a type tree.
-     * This is intentionally independent of TypeResolver's implementation.
-     */
-    public static function countNameLeaves(?Node $type): int
-    {
-        if ($type === null) {
-            return 0;
-        }
-
-        if ($type instanceof Name) {
-            return 1;
-        }
-
-        if ($type instanceof NullableType) {
-            return self::countNameLeaves($type->type);
-        }
-
-        if ($type instanceof UnionType || $type instanceof IntersectionType) {
-            $count = 0;
-            foreach ($type->types as $inner) {
-                $count += self::countNameLeaves($inner);
-            }
-
-            return $count;
-        }
-
-        return 0;
+        self::assertCount(GeneratedTypeTrees::countNameLeaves($type), TypeResolver::resolveNames($type));
     }
 }

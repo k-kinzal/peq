@@ -18,10 +18,10 @@ use Tests\Fixture\Graph\SampleEdges;
  * @internal
  */
 #[CoversClass(\App\Analyzer\Graph\AuthoredEdge::class)]
-#[CoversClass(Edge\DeclarationMethodEdge::class)]
-#[CoversClass(Edge\DeclaredInEdge::class)]
-#[CoversClass(Edge\MethodCallEdge::class)]
-#[CoversClass(Edge\UsedByEdge::class)]
+#[CoversClass(Edge\Declaration\MethodEdge::class)]
+#[CoversClass(Edge\Inverse\DeclaredInEdge::class)]
+#[CoversClass(Edge\Usage\MethodCallEdge::class)]
+#[CoversClass(Edge\Inverse\UsedByEdge::class)]
 #[UsesClass(\App\Analyzer\Graph\EdgeKind::class)]
 #[UsesClass(\App\Analyzer\Graph\NodeId\ClassNodeId::class)]
 #[UsesClass(\App\Analyzer\Graph\NodeId\MethodNodeId::class)]

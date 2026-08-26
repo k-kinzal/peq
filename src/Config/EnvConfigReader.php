@@ -17,6 +17,8 @@ namespace App\Config;
  * text is a valid level or depth is not this reader's job — it belongs to the one
  * place that knows what each setting has to be, so that the same value is judged
  * the same way whichever source supplied it.
+ *
+ * @phpstan-import-type ConfigFields from ConfigReader
  */
 final class EnvConfigReader implements ConfigReader
 {
@@ -40,7 +42,7 @@ final class EnvConfigReader implements ConfigReader
     /**
      * Reports the configuration the environment carries.
      *
-     * @return array<string, mixed> The settings found, as the environment spells them
+     * @return ConfigFields The settings found, as the environment spells them
      */
     public function read(): array
     {

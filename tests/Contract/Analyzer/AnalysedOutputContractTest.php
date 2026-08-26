@@ -13,21 +13,12 @@ use Tests\Fixture\Analyzer\AnalysedFixture;
 
 /**
  * @internal
- *
- * Pins the complete graph peq builds from each sample source.
- *
- * Checking that one relation is present says nothing about a relation that should
- * not be there, or about one that quietly stopped being recorded. These checks state
- * the whole answer, so any change to what the processors record has to be a change
- * someone made on purpose.
  */
 #[CoversClass(PhpStanAnalyzer::class)]
 #[Large]
 final class AnalysedOutputContractTest extends TestCase
 {
     /**
-     * Checks that the analysis finds exactly the symbols the source declares.
-     *
      * @param string       $fixture  The sample source to analyse
      * @param list<string> $expected Every symbol it declares
      */
@@ -38,8 +29,6 @@ final class AnalysedOutputContractTest extends TestCase
     }
 
     /**
-     * Names the symbols every sample source declares.
-     *
      * @return iterable<string, array{string, list<string>}> One case per sample
      */
     public static function providerSymbolsOfEverySample(): iterable
@@ -114,8 +103,6 @@ final class AnalysedOutputContractTest extends TestCase
     }
 
     /**
-     * Checks that the analysis writes exactly the relations the source writes.
-     *
      * @param string       $fixture  The sample source to analyse
      * @param list<string> $expected Every relation it writes
      */
@@ -126,8 +113,6 @@ final class AnalysedOutputContractTest extends TestCase
     }
 
     /**
-     * Names the relations every sample source writes.
-     *
      * @return iterable<string, array{string, list<string>}> One case per sample
      */
     public static function providerRelationsOfEverySample(): iterable

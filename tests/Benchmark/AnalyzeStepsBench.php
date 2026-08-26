@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Benchmark;
 
+use App\Analyzer\AnalysisFailedException;
+use App\Analyzer\PhpStanAnalyzer\CollectorReport;
 use PhpBench\Attributes\BeforeMethods;
 use PhpBench\Attributes\Groups;
 use PhpBench\Attributes\Iterations;
@@ -33,9 +35,9 @@ final class AnalyzeStepsBench
     private ?Container $container = null;
 
     /**
-     * @var array<string, mixed> What the collectors reported, once the analysis has run
+     * What the collectors reported, once the analysis has run.
      */
-    private array $collected = [];
+    private ?CollectorReport $report = null;
 
     /**
      * Selects the files every later step works on.
@@ -57,12 +59,14 @@ final class AnalyzeStepsBench
     /**
      * Runs the analysis so that only graph assembly is left to measure.
      *
-     * @throws \PHPStan\DependencyInjection\MissingServiceException If the container holds no analyser
+     * @throws AnalysisFailedException If the container holds no analyser
      */
     public function setUpCollectedData(): void
     {
         $this->setUpContainer();
-        $this->collected = $this->container === null ? [] : AnalysisSteps::collect($this->container, $this->files);
+        $this->report = $this->container === null
+            ? new CollectorReport([])
+            : AnalysisSteps::collect($this->container, $this->files);
     }
 
     /**
@@ -91,7 +95,7 @@ final class AnalyzeStepsBench
     /**
      * Measures the analysis itself, with the container already built.
      *
-     * @throws \PHPStan\DependencyInjection\MissingServiceException If the container holds no analyser
+     * @throws AnalysisFailedException If the container holds no analyser
      */
     #[BeforeMethods('setUpContainer')]
     #[Revs(1)]
@@ -113,6 +117,6 @@ final class AnalyzeStepsBench
     #[Groups(['steps'])]
     public function benchBuildGraph(): void
     {
-        AnalysisSteps::graph($this->collected);
+        AnalysisSteps::graph($this->report ?? new CollectorReport([]));
     }
 }

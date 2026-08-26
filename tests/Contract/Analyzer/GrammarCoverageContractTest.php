@@ -4,91 +4,51 @@ declare(strict_types=1);
 
 namespace Tests\Contract\Analyzer;
 
-use PhpParser\Node;
 use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
 use PHPUnit\Framework\Attributes\Medium;
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Tests\Fixture\Analyzer\PhpParserGrammar;
 
 /**
  * @internal
- */#[CoversNothing]
+ */
+#[CoversNothing]
 #[Medium]
 final class GrammarCoverageContractTest extends TestCase
 {
-    /**
-     * Checks that all php parser node types are classified.
-     */
-    #[Test]
-    public function testAllPhpParserNodeTypesAreClassified(): void
+    public function testEverySyntaxTheParserProducesIsClassified(): void
     {
-        $discovered = PhpParserGrammar::nodeTypes();
-        $dependencyProducing = array_keys(PhpParserGrammar::dependencyProducing());
-        $notDependencyProducing = PhpParserGrammar::notDependencyProducing();
-        $classified = array_merge($dependencyProducing, $notDependencyProducing);
+        $classified = array_merge(array_keys(PhpParserGrammar::dependencyProducing()), PhpParserGrammar::notDependencyProducing());
+        $unclassified = array_diff(PhpParserGrammar::nodeTypes(), $classified);
 
-        $unclassified = array_diff($discovered, $classified);
-        $extra = array_diff($classified, $discovered);
-
-        self::assertSame(
-            [],
-            array_values($unclassified),
-            'The following PhpParser node types are not classified in either DEPENDENCY_PRODUCING or NOT_DEPENDENCY_PRODUCING: '
-            .implode(', ', $unclassified),
-        );
-
-        self::assertSame(
-            [],
-            array_values($extra),
-            'The following classified types were not discovered as concrete PhpParser node types: '
-            .implode(', ', $extra),
-        );
+        self::assertSame([], array_values($unclassified), 'Syntax the parser produces that is classified neither way: '.implode(', ', $unclassified));
     }
 
-    /**
-     * Checks that dependency producing classes exist.
-     */
-    #[Test]
-    public function testDependencyProducingClassesExist(): void
+    public function testEveryClassifiedSyntaxIsOneTheParserProduces(): void
     {
-        foreach (array_keys(PhpParserGrammar::dependencyProducing()) as $fqcn) {
-            self::assertTrue(
-                class_exists($fqcn),
-                "DEPENDENCY_PRODUCING class does not exist: {$fqcn}",
-            );
-        }
+        $classified = array_merge(array_keys(PhpParserGrammar::dependencyProducing()), PhpParserGrammar::notDependencyProducing());
+        $extra = array_diff($classified, PhpParserGrammar::nodeTypes());
+
+        self::assertSame([], array_values($extra), 'Classified syntax the parser does not produce: '.implode(', ', $extra));
     }
 
-    /**
-     * Checks that not dependency producing classes exist.
-     */
-    #[Test]
-    public function testNotDependencyProducingClassesExist(): void
+    #[DataProviderExternal(PhpParserGrammar::class, 'dependencyProducingClasses')]
+    public function testEverySyntaxRelationsAreReadFromExists(string $fqcn): void
     {
-        foreach (PhpParserGrammar::notDependencyProducing() as $fqcn) {
-            self::assertTrue(
-                class_exists($fqcn),
-                "NOT_DEPENDENCY_PRODUCING class does not exist: {$fqcn}",
-            );
-        }
+        self::assertTrue(class_exists($fqcn), sprintf('The syntax "%s" is classified as producing relations but does not exist.', $fqcn));
     }
 
-    /**
-     * Checks that no overlap between classifications.
-     */
-    #[Test]
-    public function testNoOverlapBetweenClassifications(): void
+    #[DataProviderExternal(PhpParserGrammar::class, 'notDependencyProducingClasses')]
+    public function testEverySyntaxNothingIsReadFromExists(string $fqcn): void
     {
-        $dependencyProducing = array_keys(PhpParserGrammar::dependencyProducing());
-        $notDependencyProducing = PhpParserGrammar::notDependencyProducing();
-        $overlap = array_intersect($dependencyProducing, $notDependencyProducing);
+        self::assertTrue(class_exists($fqcn), sprintf('The syntax "%s" is classified as producing no relations but does not exist.', $fqcn));
+    }
 
-        self::assertSame(
-            [],
-            array_values($overlap),
-            'The following types appear in both DEPENDENCY_PRODUCING and NOT_DEPENDENCY_PRODUCING: '
-            .implode(', ', $overlap),
-        );
+    public function testNoSyntaxIsClassifiedBothWays(): void
+    {
+        $overlap = array_intersect(array_keys(PhpParserGrammar::dependencyProducing()), PhpParserGrammar::notDependencyProducing());
+
+        self::assertSame([], array_values($overlap), 'Syntax classified both as producing relations and as producing none: '.implode(', ', $overlap));
     }
 }

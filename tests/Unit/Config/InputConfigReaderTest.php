@@ -8,6 +8,7 @@ use App\Config\InputConfigReader;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 use Tests\Fixture\Config\ConsoleInput;
 
 /**
@@ -112,5 +113,52 @@ final class InputConfigReaderTest extends TestCase
     public function testReadReportsALevelExactlyAsItWasTypedRatherThanJudgingIt(): void
     {
         self::assertSame('nonsense', (new InputConfigReader(ConsoleInput::of(['--level' => 'nonsense'])))->read()['level'] ?? null);
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testOptionReadsWhatTheUserTypedForOneOption(): void
+    {
+        $reader = new InputConfigReader(ConsoleInput::of(['--direction' => 'used-by']));
+
+        self::assertSame('used-by', $reader->option('direction'));
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testOptionReadsARepeatedOptionAsAListOfValues(): void
+    {
+        $reader = new InputConfigReader(ConsoleInput::of(['--exclude' => ['vendor', 'build']]));
+
+        self::assertSame(['vendor', 'build'], $reader->option('exclude'));
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testOptionReadsAnOptionTheUserLeftOutAsNothing(): void
+    {
+        self::assertNull((new InputConfigReader(ConsoleInput::of([])))->option('direction'));
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReportedReadsAValueAnOptionCanCarry(): void
+    {
+        self::assertSame('uses', (new InputConfigReader(ConsoleInput::of([])))->reported('direction', 'uses'));
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReportedRejectsAValueNoSettingCanBe(): void
+    {
+        $this->expectException(\App\Config\ConfigException::class);
+        $this->expectExceptionMessageMatches('/expected a setting/');
+
+        (new InputConfigReader(ConsoleInput::of([])))->reported('direction', new stdClass());
     }
 }

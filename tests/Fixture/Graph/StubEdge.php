@@ -6,7 +6,7 @@ namespace Tests\Fixture\Graph;
 
 use App\Analyzer\Graph\AuthoredEdge;
 use App\Analyzer\Graph\Edge;
-use App\Analyzer\Graph\Edge\UsedByEdge;
+use App\Analyzer\Graph\Edge\Inverse\UsedByEdge;
 use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node;

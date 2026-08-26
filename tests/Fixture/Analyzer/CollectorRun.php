@@ -13,7 +13,10 @@ use PHPStan\Analyser\ScopeContext;
 use PHPStan\Analyser\ScopeFactory;
 use PHPStan\Collectors\Collector;
 use PHPStan\DependencyInjection\Container;
+use PHPStan\DependencyInjection\MissingServiceException;
 use PHPStan\Parser\Parser;
+use PHPStan\Parser\ParserErrorsException;
+use RuntimeException;
 
 /**
  * Runs one collector over one file and reports what it collected.
@@ -35,32 +38,44 @@ final class CollectorRun
      * @param Parser                          $parser    The PHPStan parser of the test case
      *
      * @return list<Edge|Node> Everything the collector reported, in the order it reported it
+     *
+     * @throws RuntimeException If the container or the file cannot support a run at all
      */
     public static function over(Collector $collector, string $file, Container $container, Parser $parser): array
     {
         $collected = [];
         $nodeType = $collector->getNodeType();
 
-        $container->getByType(NodeScopeResolver::class)->processNodes(
-            $parser->parseFile($file),
-            $container->getByType(ScopeFactory::class)->create(ScopeContext::create($file)),
-            static function (PhpParserNode $node, Scope $scope) use ($collector, $nodeType, &$collected): void {
-                if (!$node instanceof $nodeType) {
-                    return;
-                }
+        $visit = static function (PhpParserNode $node, Scope $scope) use ($collector, $nodeType, &$collected): void {
+            if (!$node instanceof $nodeType) {
+                return;
+            }
 
-                $reported = $collector->processNode($node, $scope);
-                if (!is_array($reported)) {
-                    return;
-                }
+            $reported = $collector->processNode($node, $scope);
+            if (!is_array($reported)) {
+                return;
+            }
 
-                foreach ($reported as $item) {
-                    if ($item instanceof Node || $item instanceof Edge) {
-                        $collected[] = $item;
-                    }
+            foreach ($reported as $item) {
+                if ($item instanceof Node || $item instanceof Edge) {
+                    $collected[] = $item;
                 }
-            },
-        );
+            }
+        };
+
+        try {
+            $container->getByType(NodeScopeResolver::class)->processNodes(
+                $parser->parseFile($file),
+                $container->getByType(ScopeFactory::class)->create(ScopeContext::create($file)),
+                $visit,
+            );
+        } catch (MissingServiceException|ParserErrorsException $failure) {
+            throw new RuntimeException(
+                sprintf('Cannot run a collector over "%s": %s', $file, $failure->getMessage()),
+                0,
+                $failure,
+            );
+        }
 
         return $collected;
     }

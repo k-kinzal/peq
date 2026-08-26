@@ -16,7 +16,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\WrittenTypes;
+use Tests\Fixture\Analyzer\TypeReferences;
 
 /**
  * @internal
@@ -33,7 +33,7 @@ final class TypeResolverTest extends TestCase
     /**
      * @param list<string> $expected
      */
-    #[DataProvider('providerWrittenTypesAndTheNamesTheyMention')]
+    #[DataProvider('providerTypeReferencesAndTheNamesTheyMention')]
     public function testResolveNamesReadsEveryNameAWrittenTypeMentions(?Node $type, array $expected): void
     {
         self::assertSame($expected, array_map(static fn (Name $name): string => $name->toString(), TypeResolver::resolveNames($type)));
@@ -42,7 +42,7 @@ final class TypeResolverTest extends TestCase
     /**
      * @return iterable<string, array{null|Node, list<string>}>
      */
-    public static function providerWrittenTypesAndTheNamesTheyMention(): iterable
+    public static function providerTypeReferencesAndTheNamesTheyMention(): iterable
     {
         yield 'no type at all' => [null, []];
 
@@ -70,14 +70,14 @@ final class TypeResolverTest extends TestCase
 
     public function testReferencesLeavesOutNamesPhpResolvesItself(): void
     {
-        $references = TypeResolver::references(WrittenTypes::at(4, new Identifier('int')), '/project/src/Invoice.php');
+        $references = TypeResolver::references(TypeReferences::at(4, new Identifier('int')), '/project/src/Invoice.php');
 
         self::assertSame([], $references);
     }
 
     public function testReferencesReportsTheClassLikeAWrittenTypeNames(): void
     {
-        $references = TypeResolver::references(WrittenTypes::at(4, new Name('App\Domain\Money')), '/project/src/Invoice.php');
+        $references = TypeResolver::references(TypeReferences::at(4, new Name('App\Domain\Money')), '/project/src/Invoice.php');
 
         self::assertCount(1, $references);
         self::assertSame('App\Domain\Money', $references[0]->node->id()->toString());
@@ -85,14 +85,14 @@ final class TypeResolverTest extends TestCase
 
     public function testReferencesReportsWhereEachNameIsWritten(): void
     {
-        $references = TypeResolver::references(WrittenTypes::at(4, new Name('App\Domain\Money')), '/project/src/Invoice.php');
+        $references = TypeResolver::references(TypeReferences::at(4, new Name('App\Domain\Money')), '/project/src/Invoice.php');
 
         self::assertSame('/project/src/Invoice.php', $references[0]->meta->path);
     }
 
     public function testReferencesReportsOneEntryPerNameOfAUnion(): void
     {
-        $union = new UnionType([WrittenTypes::at(4, new Name('App\Domain\Money')), WrittenTypes::at(4, new Name('App\Domain\Invoice')), WrittenTypes::at(4, new Identifier('null'))]);
+        $union = new UnionType([TypeReferences::at(4, new Name('App\Domain\Money')), TypeReferences::at(4, new Name('App\Domain\Invoice')), TypeReferences::at(4, new Identifier('null'))]);
 
         self::assertCount(2, TypeResolver::references($union, '/project/src/Invoice.php'));
     }

@@ -10,6 +10,7 @@ use App\Analyzer\Graph\Graph;
 use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
 use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
 use PHPStan\Analyser\Analyser as PhpStanAnalyser;
+use PHPStan\DependencyInjection\Container;
 use PHPStan\DependencyInjection\MissingServiceException;
 
 /**
@@ -63,8 +64,28 @@ final class PhpStanAnalyzer implements Analyzer
             return new Graph();
         }
 
-        $container = $this->containerFactory->create($files);
+        $report = $this->collect($this->containerFactory->create($files), $files);
 
+        return $this->graphBuilder->build($report->symbols());
+    }
+
+    /**
+     * Runs the analysis and reads back what peq's collectors reported.
+     *
+     * Running PHPStan in process is what gives peq the resolved types a dependency
+     * graph needs, and this is the only place that does it: the container, the
+     * analyser and the shape of its result are PHPStan's own vocabulary, and every
+     * other part of peq works on the symbols this hands back.
+     *
+     * @param Container    $container The container the analysis runs in
+     * @param list<string> $files     The files to analyse
+     *
+     * @return CollectorReport What the collectors reported
+     *
+     * @throws AnalysisFailedException If the container was built without an analyser
+     */
+    public function collect(Container $container, array $files): CollectorReport
+    {
         try {
             $analyser = $container->getByType(PhpStanAnalyser::class);
         } catch (MissingServiceException $missing) {
@@ -75,11 +96,9 @@ final class PhpStanAnalyzer implements Analyzer
             );
         }
 
-        $result = $analyser->analyse($files, null, null, false, $files);
-
-        return $this->graphBuilder->build($result->getCollectedData(), [
-            DependencyCollector::class,
-            InClassMethodCollector::class,
-        ]);
+        return CollectorReport::of(
+            $analyser->analyse($files, null, null, false, $files)->getCollectedData(),
+            [DependencyCollector::class, InClassMethodCollector::class],
+        );
     }
 }

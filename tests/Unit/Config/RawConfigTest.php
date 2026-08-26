@@ -7,6 +7,7 @@ namespace Tests\Unit\Config;
 use App\Analyzer\Graph\Direction;
 use App\Config\AnalyzerKind;
 use App\Config\ConfigException;
+use App\Config\ConfigReader;
 use App\Config\RawConfig;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -15,6 +16,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
+ *
+ * @phpstan-import-type ConfigField from ConfigReader
  */
 #[CoversClass(RawConfig::class)]
 #[Small]
@@ -271,14 +274,17 @@ final class RawConfigTest extends TestCase
         (new RawConfig(['debug' => ['depth']]))->nested('debug');
     }
 
+    /**
+     * @param null|ConfigField $value
+     */
     #[DataProvider('providerRejectedValuesAndTheirDescriptions')]
-    public function testDescribeNamesWhatWasFoundWithoutDumpingIt(mixed $value, string $expected): void
+    public function testDescribeNamesWhatWasFoundWithoutDumpingIt(array|bool|float|int|string|null $value, string $expected): void
     {
         self::assertSame($expected, RawConfig::describe($value));
     }
 
     /**
-     * @return iterable<string, array{mixed, string}>
+     * @return iterable<string, array{null|ConfigField, string}>
      */
     public static function providerRejectedValuesAndTheirDescriptions(): iterable
     {

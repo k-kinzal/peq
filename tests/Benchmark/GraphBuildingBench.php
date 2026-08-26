@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Benchmark;
 
+use App\Analyzer\AnalysisFailedException;
+use App\Analyzer\PhpStanAnalyzer\CollectorReport;
 use PhpBench\Attributes\BeforeMethods;
 use PhpBench\Attributes\Iterations;
 use PhpBench\Attributes\Revs;
@@ -21,19 +23,19 @@ use Tests\Fixture\Analyzer\AnalysisSteps;
 final class GraphBuildingBench
 {
     /**
-     * @var array<string, mixed> What the collectors reported for peq's own sources
+     * What the collectors reported for peq's own sources.
      */
-    private array $collected = [];
+    private ?CollectorReport $report = null;
 
     /**
      * Runs the analysis once so that only assembly is measured.
      *
-     * @throws \PHPStan\DependencyInjection\MissingServiceException If the container holds no analyser
+     * @throws AnalysisFailedException If the container holds no analyser
      */
     public function setUp(): void
     {
         $files = AnalysisSteps::ownFiles();
-        $this->collected = AnalysisSteps::collect(AnalysisSteps::container($files), $files);
+        $this->report = AnalysisSteps::collect(AnalysisSteps::container($files), $files);
     }
 
     /**
@@ -44,6 +46,6 @@ final class GraphBuildingBench
     #[Iterations(5)]
     public function benchBuildGraph(): void
     {
-        AnalysisSteps::graph($this->collected);
+        AnalysisSteps::graph($this->report ?? new CollectorReport([]));
     }
 }

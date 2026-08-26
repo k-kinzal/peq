@@ -15,6 +15,7 @@ use App\Analyzer\DebugAnalyzer\Generator\NodeIdGenerator;
 use App\Analyzer\Graph\Node;
 use Faker\Factory;
 use Faker\Generator;
+use InvalidArgumentException;
 
 /**
  * The generator stack, wired up over a seeded random source.
@@ -107,20 +108,35 @@ final class SeededGenerators
      *
      * The operations differ in arity — the three that relate to nothing further take
      * no depth — so a test that wants to exercise all of them uniformly asks here.
+     * Naming them one by one is what makes an operation added to the contract, or
+     * renamed in it, fail to compile here rather than fail at run time.
      *
      * @param string $operation The name of the operation on the recursion contract
      * @param int    $depth     How many further levels of symbols to generate
      * @param int    $seed      The seed making the draws reproducible
      *
      * @return GeneratedGraph<Node> What that operation generated
+     *
+     * @throws InvalidArgumentException If the contract has no operation of that name
      */
     public static function symbolGraph(string $operation, int $depth = 2, int $seed = 42): GeneratedGraph
     {
         $generator = self::graphs($seed);
 
-        return in_array($operation, ['constantGraph', 'enumCaseGraph', 'builtinGraph'], true)
-            ? $generator->{$operation}(null)
-            : $generator->{$operation}(null, $depth);
+        return match ($operation) {
+            'classGraph' => $generator->classGraph(null, $depth),
+            'interfaceGraph' => $generator->interfaceGraph(null, $depth),
+            'traitGraph' => $generator->traitGraph(null, $depth),
+            'enumGraph' => $generator->enumGraph(null, $depth),
+            'methodGraph' => $generator->methodGraph(null, $depth),
+            'functionGraph' => $generator->functionGraph(null, $depth),
+            'propertyGraph' => $generator->propertyGraph(null, $depth),
+            'typeGraph' => $generator->typeGraph(null, $depth),
+            'constantGraph' => $generator->constantGraph(),
+            'enumCaseGraph' => $generator->enumCaseGraph(),
+            'builtinGraph' => $generator->builtinGraph(),
+            default => throw new InvalidArgumentException(sprintf('The recursion contract has no operation named "%s".', $operation)),
+        };
     }
 
     /**

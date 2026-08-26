@@ -225,7 +225,7 @@ final class PhpParserGrammar
      * Every node type is expected to appear in exactly one of the two lists, which is
      * what turns "we never looked at this syntax" into a failing check.
      *
-     * @return array<class-string, string> The node classes, mapped to why they are left out
+     * @return list<class-string> The node classes peq records nothing for
      */
     public static function notDependencyProducing(): array
     {
@@ -415,11 +415,38 @@ final class PhpParserGrammar
             }
 
             $reflection = new ReflectionClass($name);
-            if (!$reflection->isAbstract() && $reflection->implementsInterface(Node::class)) {
-                $types[] = $name;
+            if ($reflection->isAbstract() || !$reflection->implementsInterface(Node::class)) {
+                continue;
             }
+
+            /** @var class-string<Node> $name */
+            $types[] = $name;
         }
 
         return $types;
+    }
+
+    /**
+     * Names each kind of syntax peq reads relations out of.
+     *
+     * @return iterable<string, array{class-string}> One case per syntax kind
+     */
+    public static function dependencyProducingClasses(): iterable
+    {
+        foreach (array_keys(self::dependencyProducing()) as $fqcn) {
+            yield $fqcn => [$fqcn];
+        }
+    }
+
+    /**
+     * Names each kind of syntax peq deliberately reads nothing out of.
+     *
+     * @return iterable<string, array{class-string}> One case per syntax kind
+     */
+    public static function notDependencyProducingClasses(): iterable
+    {
+        foreach (self::notDependencyProducing() as $fqcn) {
+            yield $fqcn => [$fqcn];
+        }
     }
 }

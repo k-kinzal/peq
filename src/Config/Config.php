@@ -15,6 +15,8 @@ use App\Analyzer\Graph\Direction;
  * closed type the graph classifies its edges with, the analyzer is a closed kind, and
  * the debug settings always exist rather than existing only when the debug analyzer
  * happens to be selected.
+ *
+ * @phpstan-import-type ConfigFields from ConfigReader
  */
 final class Config
 {
@@ -48,7 +50,7 @@ final class Config
      * option — arrives here typed, and a value that cannot honestly be read as its
      * type is reported as a configuration error naming the field.
      *
-     * @param array<string, mixed> $array The merged configuration data
+     * @param ConfigFields $array The merged configuration data
      *
      * @return self The configuration
      *

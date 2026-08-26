@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\DebugAnalyzer\Generator;
 
+use App\Analyzer\Graph\Edge;
 use App\Analyzer\Graph\NodeKind;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use Tests\Fixture\Analyzer\DrawnSymbolGraphs;
 use Tests\Fixture\Analyzer\SeededGenerators;
 use Tests\Fixture\Graph\GraphInvariants;
 
@@ -17,33 +20,33 @@ use Tests\Fixture\Graph\GraphInvariants;
  * @internal
  */
 #[CoversClass(\App\Analyzer\DebugAnalyzer\Generator\GraphGenerator::class)]
-#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\ClassLikeGraphGenerator::class)]
-#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\GeneratedGraph::class)]
-#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\LeafGraphGenerator::class)]
-#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\MemberGraphGenerator::class)]
-#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\NameGenerator::class)]
-#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\NodeGenerator::class)]
-#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\NodeIdGenerator::class)]
+#[CoversClass(\App\Analyzer\DebugAnalyzer\Generator\ClassLikeGraphGenerator::class)]
+#[CoversClass(\App\Analyzer\DebugAnalyzer\Generator\GeneratedGraph::class)]
+#[CoversClass(\App\Analyzer\DebugAnalyzer\Generator\LeafGraphGenerator::class)]
+#[CoversClass(\App\Analyzer\DebugAnalyzer\Generator\MemberGraphGenerator::class)]
+#[CoversClass(\App\Analyzer\DebugAnalyzer\Generator\NameGenerator::class)]
+#[CoversClass(\App\Analyzer\DebugAnalyzer\Generator\NodeGenerator::class)]
+#[CoversClass(\App\Analyzer\DebugAnalyzer\Generator\NodeIdGenerator::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\ConstFetchEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\DeclarationConstantEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\DeclarationEnumCaseEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\DeclarationExtendsEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\DeclarationImplementsEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\DeclarationMethodEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\DeclarationPropertyEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\DeclarationTraitUseEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\DeclarationTypeParameterEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\DeclarationTypePropertyEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\DeclarationTypeReturnEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\DeclaredInEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\FunctionCallEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\InstantiationEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\MethodCallEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\PropertyAccessEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\StaticCallEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\StaticPropertyAccessEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\UsedByEdge::class)]
+#[UsesClass(Edge\Usage\ConstFetchEdge::class)]
+#[UsesClass(Edge\Declaration\ConstantEdge::class)]
+#[UsesClass(Edge\Declaration\EnumCaseEdge::class)]
+#[UsesClass(Edge\Declaration\ExtendsEdge::class)]
+#[UsesClass(Edge\Declaration\ImplementsEdge::class)]
+#[UsesClass(Edge\Declaration\MethodEdge::class)]
+#[UsesClass(Edge\Declaration\PropertyEdge::class)]
+#[UsesClass(Edge\Declaration\TraitUseEdge::class)]
+#[UsesClass(Edge\Declaration\TypeParameterEdge::class)]
+#[UsesClass(Edge\Declaration\TypePropertyEdge::class)]
+#[UsesClass(Edge\Declaration\TypeReturnEdge::class)]
+#[UsesClass(Edge\Inverse\DeclaredInEdge::class)]
+#[UsesClass(Edge\Usage\FunctionCallEdge::class)]
+#[UsesClass(Edge\Usage\InstantiationEdge::class)]
+#[UsesClass(Edge\Usage\MethodCallEdge::class)]
+#[UsesClass(Edge\Usage\PropertyAccessEdge::class)]
+#[UsesClass(Edge\Usage\StaticCallEdge::class)]
+#[UsesClass(Edge\Usage\StaticPropertyAccessEdge::class)]
+#[UsesClass(Edge\Inverse\UsedByEdge::class)]
 #[UsesClass(\App\Analyzer\Graph\FileMeta::class)]
 #[UsesClass(\App\Analyzer\Graph\Graph::class)]
 #[UsesClass(\App\Analyzer\Graph\NodeId\BuiltinNodeId::class)]
@@ -192,5 +195,23 @@ final class SymbolGraphGeneratorTest extends TestCase
         yield 'an enum case' => ['enumCaseGraph', NodeKind::EnumCase];
 
         yield 'a builtin type' => ['builtinGraph', NodeKind::Builtin];
+    }
+
+    /**
+     * @param list<string> $relations
+     */
+    #[DataProviderExternal(DrawnSymbolGraphs::class, 'atSeed42')]
+    public function testEveryOperationDrawsTheSameGraphForTheSameSeed(string $operation, string $root, array $relations): void
+    {
+        $generated = SeededGenerators::symbolGraph($operation, 2, 42);
+
+        $written = array_map(
+            static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(),
+            $generated->graph->authoredEdges(),
+        );
+        sort($written);
+
+        self::assertSame($root, $generated->root->id()->toString());
+        self::assertSame($relations, $written);
     }
 }

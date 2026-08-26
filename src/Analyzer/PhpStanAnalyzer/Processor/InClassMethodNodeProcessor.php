@@ -6,6 +6,15 @@ namespace App\Analyzer\PhpStanAnalyzer\Processor;
 
 use App\Analyzer\Graph\Edge;
 use App\Analyzer\Graph\Node;
+use App\Analyzer\PhpStanAnalyzer\Processor\Usage\CatchProcessor;
+use App\Analyzer\PhpStanAnalyzer\Processor\Usage\ConstFetchProcessor;
+use App\Analyzer\PhpStanAnalyzer\Processor\Usage\FunctionCallProcessor;
+use App\Analyzer\PhpStanAnalyzer\Processor\Usage\InstanceofProcessor;
+use App\Analyzer\PhpStanAnalyzer\Processor\Usage\InstantiationProcessor;
+use App\Analyzer\PhpStanAnalyzer\Processor\Usage\MethodCallProcessor;
+use App\Analyzer\PhpStanAnalyzer\Processor\Usage\PropertyAccessProcessor;
+use App\Analyzer\PhpStanAnalyzer\Processor\Usage\StaticCallProcessor;
+use App\Analyzer\PhpStanAnalyzer\Processor\Usage\StaticPropertyAccessProcessor;
 use App\Analyzer\PhpStanAnalyzer\ReparsedSource;
 use App\Analyzer\PhpStanAnalyzer\SourceResolver;
 use PhpParser\Node as PhpParserNode;

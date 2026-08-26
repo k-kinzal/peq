@@ -46,17 +46,17 @@ final class InClassMethodCollector implements Collector
     /**
      * Reports what the method body reaches out to.
      *
-     * @param \PhpParser\Node $node  The node the analyser reached
-     * @param Scope           $scope The analyser scope it was reached in
+     * The analyser only ever hands over the node type getNodeType() names, which is
+     * what the parameter is documented as: checking it again here would be checking
+     * PHPStan rather than the source being analysed.
+     *
+     * @param InClassMethodNode $node  The method the analyser reached
+     * @param Scope             $scope The analyser scope it was reached in
      *
      * @return null|list<Edge|Node> The relations found, or null when there are none
      */
     public function processNode(\PhpParser\Node $node, Scope $scope): ?array
     {
-        if (!$node instanceof InClassMethodNode) {
-            return null;
-        }
-
         $items = InClassMethodNodeProcessor::process($node, $scope, $this->source);
 
         return $items === [] ? null : $items;

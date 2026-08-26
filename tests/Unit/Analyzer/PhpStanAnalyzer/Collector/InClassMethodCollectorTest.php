@@ -17,6 +17,19 @@ use Tests\Fixture\Analyzer\CollectorRun;
  * @internal
  */
 #[CoversClass(InClassMethodCollector::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\InClassMethodNodeProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\CatchProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\ConstFetchProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\FunctionCallProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\InstanceofProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\InstantiationProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\MethodCallProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\PropertyAccessProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\StaticCallProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\StaticPropertyAccessProcessor::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\TypeResolver::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\TypeReference::class)]
+#[CoversClass(\App\Analyzer\PhpStanAnalyzer\SourceResolver::class)]
 #[Medium]
 final class InClassMethodCollectorTest extends PHPStanTestCase
 {

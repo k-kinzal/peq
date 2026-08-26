@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\Graph;
 
 use App\Analyzer\Graph\Edge;
-use App\Analyzer\Graph\Edge\DeclaredInEdge;
-use App\Analyzer\Graph\Edge\UsedByEdge;
+use App\Analyzer\Graph\Edge\Inverse\DeclaredInEdge;
+use App\Analyzer\Graph\Edge\Inverse\UsedByEdge;
 use App\Analyzer\Graph\InverseEdge;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -21,8 +21,8 @@ use Tests\Fixture\Graph\SampleEdges;
 #[CoversClass(DeclaredInEdge::class)]
 #[CoversClass(UsedByEdge::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
-#[UsesClass(Edge\DeclarationMethodEdge::class)]
-#[UsesClass(Edge\MethodCallEdge::class)]
+#[UsesClass(Edge\Declaration\MethodEdge::class)]
+#[UsesClass(Edge\Usage\MethodCallEdge::class)]
 #[UsesClass(\App\Analyzer\Graph\NodeId\ClassNodeId::class)]
 #[UsesClass(\App\Analyzer\Graph\NodeId\MethodNodeId::class)]
 #[UsesClass(\App\Analyzer\Graph\Node\ClassNode::class)]

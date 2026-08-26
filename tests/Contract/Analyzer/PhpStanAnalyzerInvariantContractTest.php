@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Contract\Analyzer;
 
-use App\Analyzer\Graph\Graph;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use Generator;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -12,26 +11,21 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Tests\Fixture\Analyzer\AnalysedSnippet;
 use Tests\Fixture\Graph\GraphInvariants;
 
 /**
  * @internal
- *
- * Contract tests verifying that the PhpStanAnalyzer produces graphs satisfying
- * all structural invariants (bidirectionality, endpoint existence, node uniqueness,
- * no edge duplicates) across a variety of PHP code patterns
- */#[CoversClass(PhpStanAnalyzer::class)]
+ */
+#[CoversClass(PhpStanAnalyzer::class)]
 #[Large]
 final class PhpStanAnalyzerInvariantContractTest extends TestCase
 {
-    /**
-     * Checks that graph invariants.
-     */
-    #[DataProvider('provideCodeVariants')]
+    #[DataProvider('providerCodeVariants')]
     #[Test]
     public function testGraphInvariants(string $label, string $phpCode): void
     {
-        $graph = self::analyzeCode($phpCode);
+        $graph = AnalysedSnippet::graph($phpCode);
 
         GraphInvariants::assertBidirectional($graph);
         GraphInvariants::assertEndpointsExist($graph);
@@ -42,7 +36,7 @@ final class PhpStanAnalyzerInvariantContractTest extends TestCase
     /**
      * @return Generator<string, array{string, string}>
      */
-    public static function provideCodeVariants(): Generator
+    public static function providerCodeVariants(): Generator
     {
         yield 'simple class with one method and one instantiation' => [
             'simple',
@@ -178,24 +172,5 @@ final class PhpStanAnalyzerInvariantContractTest extends TestCase
                 }
                 PHP,
         ];
-    }
-
-    /**
-     * Returns the analyze code a check needs.
-     */
-    public static function analyzeCode(string $phpCode): Graph
-    {
-        $tmpDir = sys_get_temp_dir().'/peq_contract_'.uniqid();
-        mkdir($tmpDir, 0o777, true);
-        file_put_contents($tmpDir.'/Test.php', $phpCode);
-
-        try {
-            $analyzer = new PhpStanAnalyzer();
-
-            return $analyzer->analyze($tmpDir);
-        } finally {
-            @unlink($tmpDir.'/Test.php');
-            @rmdir($tmpDir);
-        }
     }
 }

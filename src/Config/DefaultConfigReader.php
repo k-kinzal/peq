@@ -12,13 +12,15 @@ namespace App\Config;
  * values from other configuration sources (YAML files, environment variables, CLI args)
  * when merged by the ConfigLoader. It should typically be registered first in the
  * ConfigLoader's reader chain to establish a foundation of sensible defaults.
+ *
+ * @phpstan-import-type ConfigFields from ConfigReader
  */
 final class DefaultConfigReader implements ConfigReader
 {
     /**
      * Reports the baseline configuration every other source overlays.
      *
-     * @return array<string, mixed> The default settings
+     * @return ConfigFields The default settings
      */
     public function read(): array
     {

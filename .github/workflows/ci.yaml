@@ -1,3 +1,4 @@
+# The workflow name is what the README status badge renders as its label.
 name: CI
 
 on:
@@ -24,7 +25,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.1', '8.2', '8.3', '8.4', '8.5']
+        include:
+          # Each supported minor resolves its own dependency graph, and PHPUnit's
+          # schema differs per major, so every leg selects the lock file and the
+          # configuration that belong to it.
+          - php: '8.1'
+            test-script: 'test:unit:10'
+            phpunit-config: phpunit10.xml.dist
+          - php: '8.2'
+            test-script: 'test:unit:11'
+            phpunit-config: phpunit11.xml.dist
+          - php: '8.3'
+            test-script: 'test:unit'
+            phpunit-config: phpunit.xml.dist
+          - php: '8.4'
+            test-script: 'test:unit'
+            phpunit-config: phpunit.xml.dist
+          - php: '8.5'
+            test-script: 'test:unit'
+            phpunit-config: phpunit.xml.dist
     steps:
       - name: Check out the repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -34,32 +53,33 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           extensions: mbstring, pcntl
-          ini-values: zend.assertions=1, memory_limit=1G
+          ini-values: zend.assertions=1, memory_limit=2G
           coverage: none
 
-      - name: Select the matching lock file
+      - name: Select the lock file of this PHP minor
         run: cp "composer.lock.php-${{ matrix.php }}" composer.lock
-
-      - name: Validate the manifest against that lock file
-        run: composer validate --strict --no-check-publish
 
       - name: Install dependencies
         uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
         with:
           dependency-versions: locked
           composer-options: --prefer-dist
+          require-lock-file: 'true'
+
+      - name: Check installed platform requirements
+        run: composer check-platform-reqs
 
       - name: Run the unit tests
-        run: composer test:unit
+        run: composer ${{ matrix.test-script }}
 
       - name: Run the contract tests
-        run: composer test:contract
+        run: vendor/bin/phpunit --configuration ${{ matrix.phpunit-config }} --testsuite contract
 
       - name: Run the integration tests
-        run: composer test:integration
+        run: vendor/bin/phpunit --configuration ${{ matrix.phpunit-config }} --testsuite integration
 
       - name: Run the documented examples
-        run: composer doctest
+        run: vendor/bin/phpunit --configuration ${{ matrix.phpunit-config }} --testsuite doctest
 
   tests-parallel:
     name: Tests through the parallel runner
@@ -74,10 +94,10 @@ jobs:
         with:
           php-version: '8.5'
           extensions: mbstring, pcntl
-          ini-values: zend.assertions=1, memory_limit=1G
+          ini-values: zend.assertions=1, memory_limit=2G
           coverage: none
 
-      - name: Select the matching lock file
+      - name: Select the lock file of this PHP minor
         run: cp composer.lock.php-8.5 composer.lock
 
       - name: Install dependencies
@@ -85,8 +105,12 @@ jobs:
         with:
           dependency-versions: locked
           composer-options: --prefer-dist
+          require-lock-file: 'true'
 
-      - name: Run the whole suite across processes
+      - name: Check installed platform requirements
+        run: composer check-platform-reqs
+
+      - name: Run the suite under the parallel runner
         run: composer test
 
   lint:
@@ -106,47 +130,53 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           extensions: mbstring, pcntl
-          ini-values: memory_limit=1G
+          ini-values: memory_limit=2G
           coverage: none
 
-      - name: Select the matching lock file
+      - name: Select the lock file of this PHP minor
         run: cp "composer.lock.php-${{ matrix.php }}" composer.lock
+
+      - name: Validate the Composer manifest against the lock file
+        run: composer validate --strict --no-check-publish
 
       - name: Install dependencies
         uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
         with:
           dependency-versions: locked
           composer-options: --prefer-dist
+          require-lock-file: 'true'
 
-      - name: Check the coding standard
+      - name: Check installed platform requirements
+        run: composer check-platform-reqs
+
+      - name: Check the formatting
         run: composer format:check
 
-      - name: Run the static analysis
+      - name: Analyse with PHPStan
         run: composer phpstan
 
-      - name: Check the PHP version floor
+      - name: Check compatibility with the PHP floor
         run: composer compat
 
       - name: Check the source metrics
         run: composer loc-guard
 
-      - name: Check the project structure
+      - name: Check the directory structure
         run: composer tree-guard
 
-      - name: Check the namespace visibility
-        run: composer scope-guard
-
-      - name: Check the architecture boundaries
+      - name: Check the architecture layers
         run: composer deptrac
 
   mutation:
     name: Mutation testing
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Check out the repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # Scoring a pull request means diffing it against its base branch,
+          # which needs more than the single commit a shallow clone provides.
           fetch-depth: 0
 
       - name: Set up PHP
@@ -154,10 +184,12 @@ jobs:
         with:
           php-version: '8.5'
           extensions: mbstring, pcntl
-          ini-values: zend.assertions=1, memory_limit=2G
+          ini-values: zend.assertions=1, memory_limit=4G
+          # Infection needs a coverage driver. pcov is several times faster than
+          # Xdebug and Infection collects nothing Xdebug alone can provide.
           coverage: pcov
 
-      - name: Select the matching lock file
+      - name: Select the lock file of this PHP minor
         run: cp composer.lock.php-8.5 composer.lock
 
       - name: Install dependencies
@@ -165,33 +197,49 @@ jobs:
         with:
           dependency-versions: locked
           composer-options: --prefer-dist
+          require-lock-file: 'true'
 
-      - name: Produce the coverage report Infection scores against
-        run: |
-          php -d memory_limit=2G vendor/bin/phpunit \
-            --no-extensions --testsuite unit \
-            --coverage-xml build/infection-coverage/coverage-xml \
-            --log-junit build/infection-coverage/junit.xml
+      - name: Check installed platform requirements
+        run: composer check-platform-reqs
 
-      - name: Score the lines this pull request changes
+      # The unit suite only, because that is the suite whose coverage metadata is
+      # complete; infection.json5 explains why the gate is scored against it. The
+      # run carries no --do-not-fail-on-risky: the suite is green with coverage on,
+      # and keeping it that way is what makes the metadata worth trusting.
+      - name: Generate coverage for mutation testing
+        run: >-
+          php -d memory_limit=2G vendor/bin/phpunit
+          --no-extensions
+          --testsuite unit
+          --coverage-xml build/infection-coverage/coverage-xml
+          --log-junit build/infection-coverage/junit.xml
+
+      - name: Mutation testing on changed lines
         if: github.event_name == 'pull_request'
-        env:
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          git fetch --no-tags --depth=1 origin "$BASE_REF"
-          php -d memory_limit=2G vendor/bin/infection \
-            --configuration=infection.json5 --threads=max \
-            --coverage=build/infection-coverage --skip-initial-tests \
-            --git-diff-lines --git-diff-base="origin/$BASE_REF" \
-            --ignore-msi-with-no-mutations \
-            --min-msi=69 --min-covered-msi=69
+        run: >-
+          php -d memory_limit=4G vendor/bin/infection
+          --configuration=infection.json5
+          --threads=max
+          --coverage=build/infection-coverage
+          --skip-initial-tests
+          --git-diff-lines
+          --git-diff-base="origin/${GITHUB_BASE_REF}"
+          --ignore-msi-with-no-mutations
+          --min-msi=85
+          --min-covered-msi=85
+          --no-progress
+          --logger-github
 
-      - name: Score the whole source tree
+      - name: Mutation testing on the whole source tree
         if: github.event_name != 'pull_request'
-        run: |
-          php -d memory_limit=2G vendor/bin/infection \
-            --configuration=infection.json5 --threads=max \
-            --coverage=build/infection-coverage --skip-initial-tests
+        run: >-
+          php -d memory_limit=4G vendor/bin/infection
+          --configuration=infection.json5
+          --threads=max
+          --coverage=build/infection-coverage
+          --skip-initial-tests
+          --no-progress
+          --logger-github
 
       - name: Keep the escaped mutants for inspection
         if: always()
@@ -215,10 +263,10 @@ jobs:
         with:
           php-version: '8.4'
           extensions: mbstring, pcntl
-          ini-values: phar.readonly=0, memory_limit=1G
+          ini-values: phar.readonly=0, memory_limit=2G
           coverage: none
 
-      - name: Select the matching lock file
+      - name: Select the lock file of this PHP minor
         run: cp composer.lock.php-8.4 composer.lock
 
       - name: Install dependencies
@@ -226,6 +274,7 @@ jobs:
         with:
           dependency-versions: locked
           composer-options: --prefer-dist
+          require-lock-file: 'true'
 
       - name: Compile the PHAR
         run: composer compile

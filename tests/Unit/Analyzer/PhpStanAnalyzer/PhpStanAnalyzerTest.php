@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\PhpStanAnalyzer;
 
+use App\Analyzer\AnalysisFailedException;
 use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\NodeKind;
+use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -132,5 +134,18 @@ final class PhpStanAnalyzerTest extends TestCase
         $graph = (new PhpStanAnalyzer())->analyze(dirname(__DIR__, 3).'/Fixture/Source/MethodBody.php');
 
         self::assertStringEndsWith('MethodBody.php', $graph->nodeNamed('Tests\Fixture\Source\MethodBodyClass')?->meta()->path ?? '');
+    }
+
+    /**
+     * @throws AnalysisFailedException
+     */
+    public function testCollectReadsWhatPeqsCollectorsReportedForTheFiles(): void
+    {
+        $files = [dirname(__DIR__, 3).'/Fixture/Sample/AnalysedSample.php'];
+        $container = (new ContainerFactory())->create($files);
+
+        $report = (new PhpStanAnalyzer())->collect($container, $files);
+
+        self::assertNotEmpty($report->symbols());
     }
 }

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\Graph;
 
-use App\Analyzer\Graph\Edge\MethodCallEdge;
-use App\Analyzer\Graph\Edge\StaticCallEdge;
+use App\Analyzer\Graph\Edge\Usage\MethodCallEdge;
+use App\Analyzer\Graph\Edge\Usage\StaticCallEdge;
 use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node\ClassNode;
@@ -25,11 +25,11 @@ use Tests\Fixture\Graph\SampleEdges;
  */
 #[CoversClass(Graph::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\DeclarationMethodEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\DeclaredInEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Declaration\MethodEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Inverse\DeclaredInEdge::class)]
 #[UsesClass(MethodCallEdge::class)]
 #[UsesClass(StaticCallEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\UsedByEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Inverse\UsedByEdge::class)]
 #[UsesClass(\App\Analyzer\Graph\FileMeta::class)]
 #[UsesClass(ClassNodeId::class)]
 #[UsesClass(MethodNodeId::class)]

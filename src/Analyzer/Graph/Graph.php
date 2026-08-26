@@ -84,7 +84,7 @@ final class Graph
      *     $called = new \App\Analyzer\Graph\Node\MethodNode(
      *         \App\Analyzer\Graph\NodeId\MethodNodeId::of('App\\Domain\\Money', 'add'), true, $meta);
      *     $graph = new \App\Analyzer\Graph\Graph();
-     *     $graph->addEdge(new \App\Analyzer\Graph\Edge\MethodCallEdge($caller, $called, $meta));
+     *     $graph->addEdge(new \App\Analyzer\Graph\Edge\Usage\MethodCallEdge($caller, $called, $meta));
      *     $graph->edge($called->id(), $caller->id())?->kind() // => \App\Analyzer\Graph\EdgeKind::UsedBy
      *
      * @param Edge $edge The edge to record

@@ -13,6 +13,10 @@ namespace App\Config;
  * The overlay reaches individual settings rather than whole groups, so passing
  * `--debug-seed` on the command line does not discard a `debug.depth` written in
  * the configuration file.
+ *
+ * @phpstan-import-type ConfigField from ConfigReader
+ * @phpstan-import-type ConfigFields from ConfigReader
+ * @phpstan-import-type ConfigGroup from ConfigReader
  */
 final class ConfigLoader
 {
@@ -49,17 +53,17 @@ final class ConfigLoader
      * is one value: a source that reports `excludes` replaces the whole list rather
      * than adding to it, so a narrower configuration can always be narrower.
      *
-     * @param array<string, mixed> $base    What earlier sources reported
-     * @param array<string, mixed> $overlay What this source reported
+     * @param ConfigFields $base    What earlier sources reported
+     * @param ConfigFields $overlay What this source reported
      *
-     * @return array<string, mixed> The combined data
+     * @return ConfigFields The combined data
      */
     public static function overlay(array $base, array $overlay): array
     {
         foreach ($overlay as $key => $value) {
             $existing = $base[$key] ?? null;
             if (self::isNamedGroup($existing) && self::isNamedGroup($value)) {
-                $base[$key] = self::overlay($existing, $value);
+                $base[$key] = self::overlayGroup($existing, $value);
 
                 continue;
             }
@@ -70,15 +74,32 @@ final class ConfigLoader
     }
 
     /**
+     * Overlays one group of named settings on top of another.
+     *
+     * A group holds single settings and lists of them, never further groups, so a
+     * setting reported by the later source replaces the one below it and the rest of
+     * the group is kept.
+     *
+     * @param ConfigGroup $base    What earlier sources reported for the group
+     * @param ConfigGroup $overlay What this source reported for it
+     *
+     * @return ConfigGroup The combined group
+     */
+    public static function overlayGroup(array $base, array $overlay): array
+    {
+        return array_merge($base, $overlay);
+    }
+
+    /**
      * Reports whether a value is a group of named settings rather than a single value.
      *
-     * @param mixed $value The value to classify
+     * @param null|ConfigField $value The value to classify
      *
      * @return bool True when the value is a non-empty array with only string keys
      *
-     * @phpstan-assert-if-true array<string, mixed> $value
+     * @phpstan-assert-if-true ConfigGroup $value
      */
-    public static function isNamedGroup(mixed $value): bool
+    public static function isNamedGroup(array|bool|float|int|string|null $value): bool
     {
         if (!is_array($value) || $value === []) {
             return false;

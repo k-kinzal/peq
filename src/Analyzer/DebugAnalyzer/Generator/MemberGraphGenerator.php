@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace App\Analyzer\DebugAnalyzer\Generator;
 
 use App\Analyzer\Graph\Edge;
-use App\Analyzer\Graph\Edge\ConstFetchEdge;
-use App\Analyzer\Graph\Edge\DeclarationTypeParameterEdge;
-use App\Analyzer\Graph\Edge\DeclarationTypePropertyEdge;
-use App\Analyzer\Graph\Edge\DeclarationTypeReturnEdge;
-use App\Analyzer\Graph\Edge\FunctionCallEdge;
-use App\Analyzer\Graph\Edge\InstantiationEdge;
-use App\Analyzer\Graph\Edge\MethodCallEdge;
-use App\Analyzer\Graph\Edge\PropertyAccessEdge;
-use App\Analyzer\Graph\Edge\StaticCallEdge;
-use App\Analyzer\Graph\Edge\StaticPropertyAccessEdge;
+use App\Analyzer\Graph\Edge\Declaration\TypeParameterEdge;
+use App\Analyzer\Graph\Edge\Declaration\TypePropertyEdge;
+use App\Analyzer\Graph\Edge\Declaration\TypeReturnEdge;
+use App\Analyzer\Graph\Edge\Usage\ConstFetchEdge;
+use App\Analyzer\Graph\Edge\Usage\FunctionCallEdge;
+use App\Analyzer\Graph\Edge\Usage\InstantiationEdge;
+use App\Analyzer\Graph\Edge\Usage\MethodCallEdge;
+use App\Analyzer\Graph\Edge\Usage\PropertyAccessEdge;
+use App\Analyzer\Graph\Edge\Usage\StaticCallEdge;
+use App\Analyzer\Graph\Edge\Usage\StaticPropertyAccessEdge;
 use App\Analyzer\Graph\Node\BuiltinNode;
 use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\Node\ConstantNode;
@@ -118,7 +118,7 @@ final class MemberGraphGenerator
 
         return $result->relatedTo(
             $symbols->typeGraph(null, $depth - 1),
-            fn (PropertyNode $property, BuiltinNode|ClassNode|EnumNode|GraphInterfaceNode $type): Edge => new DeclarationTypePropertyEdge($property, $type, $this->ids->fileMeta()),
+            fn (PropertyNode $property, BuiltinNode|ClassNode|EnumNode|GraphInterfaceNode $type): Edge => new TypePropertyEdge($property, $type, $this->ids->fileMeta()),
         );
     }
 
@@ -137,13 +137,13 @@ final class MemberGraphGenerator
     {
         $result = $result->relatedTo(
             $symbols->typeGraph(null, $depth - 1),
-            fn (FunctionNode|MethodNode $callable, BuiltinNode|ClassNode|EnumNode|GraphInterfaceNode $type): Edge => new DeclarationTypeReturnEdge($callable, $type, $this->ids->fileMeta()),
+            fn (FunctionNode|MethodNode $callable, BuiltinNode|ClassNode|EnumNode|GraphInterfaceNode $type): Edge => new TypeReturnEdge($callable, $type, $this->ids->fileMeta()),
         );
 
         for ($remaining = $this->faker->numberBetween(0, 5); $remaining > 0; --$remaining) {
             $result = $result->relatedTo(
                 $symbols->typeGraph(null, $depth - 1),
-                fn (FunctionNode|MethodNode $callable, BuiltinNode|ClassNode|EnumNode|GraphInterfaceNode $type): Edge => new DeclarationTypeParameterEdge($callable, $type, $this->ids->fileMeta()),
+                fn (FunctionNode|MethodNode $callable, BuiltinNode|ClassNode|EnumNode|GraphInterfaceNode $type): Edge => new TypeParameterEdge($callable, $type, $this->ids->fileMeta()),
             );
         }
 

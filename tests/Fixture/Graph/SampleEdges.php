@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Fixture\Graph;
 
-use App\Analyzer\Graph\Edge\DeclarationMethodEdge;
-use App\Analyzer\Graph\Edge\MethodCallEdge;
+use App\Analyzer\Graph\Edge\Declaration\MethodEdge;
+use App\Analyzer\Graph\Edge\Usage\MethodCallEdge;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\Node\MethodNode;
@@ -40,13 +40,13 @@ final class SampleEdges
     /**
      * A class declaring one method.
      *
-     * @return DeclarationMethodEdge The relation `App\Domain\Invoice` -> `App\Domain\Invoice::total`
+     * @return MethodEdge The relation `App\Domain\Invoice` -> `App\Domain\Invoice::total`
      */
-    public static function methodDeclaration(): DeclarationMethodEdge
+    public static function methodDeclaration(): MethodEdge
     {
         $meta = self::meta();
 
-        return new DeclarationMethodEdge(
+        return new MethodEdge(
             new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true, $meta),
             new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true, $meta),
             $meta,

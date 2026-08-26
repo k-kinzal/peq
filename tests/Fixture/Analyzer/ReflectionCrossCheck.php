@@ -43,10 +43,6 @@ use UnitEnum;
  */
 final class ReflectionCrossCheck
 {
-    // ──────────────────────────────────────────────
-    //  Public assertion entry points
-    // ──────────────────────────────────────────────
-
     /**
      * Soundness: every verifiable edge peq found is confirmed by Reflection.
      */
@@ -129,10 +125,6 @@ final class ReflectionCrossCheck
         );
     }
 
-    // ──────────────────────────────────────────────
-    //  Soundness engine
-    // ──────────────────────────────────────────────
-
     /**
      * @return array{verified: int, skipped: int, failures: list<string>}
      */
@@ -166,8 +158,17 @@ final class ReflectionCrossCheck
     }
 
     /**
-     * true=verified, null=skipped, string=failure message.
-     * Runtime type uses bool instead of true for PHP 8.1 compatibility.
+     * Checks one relation peq recorded against what Reflection reports.
+     *
+     * Every kind of relation is named here, including the ones Reflection cannot
+     * confirm: what a method body reaches is not visible to it, and saying so arm by
+     * arm is what makes a relation kind added to the graph model turn up here rather
+     * than quietly reading as unverifiable.
+     *
+     * @param Edge $edge The relation peq recorded
+     *
+     * @return null|bool|string True when Reflection confirms it, a message when it
+     *                          contradicts it, and null when Reflection cannot say
      */
     public static function verifySoundEdge(Edge $edge): bool|string|null
     {
@@ -186,10 +187,33 @@ final class ReflectionCrossCheck
             EdgeKind::DeclarationTypeParameter => self::verifySoundTypeParameter($fromFqn, $toFqn),
             EdgeKind::DeclarationTypeReturn => self::verifySoundTypeReturn($fromFqn, $toFqn),
             EdgeKind::DeclarationTypeProperty => self::verifySoundTypeProperty($fromFqn, $toFqn),
-            default => null,
+            EdgeKind::FunctionCall,
+            EdgeKind::MethodCall,
+            EdgeKind::StaticCall,
+            EdgeKind::Instantiation,
+            EdgeKind::PropertyAccess,
+            EdgeKind::StaticPropertyAccess,
+            EdgeKind::ConstFetch,
+            EdgeKind::Instanceof,
+            EdgeKind::Catch,
+            EdgeKind::UsedBy,
+            EdgeKind::DeclaredIn => null,
         };
     }
 
+    /**
+     * Checks a relation peq recorded as inheritance against Reflection.
+     *
+     * An interface extending an interface is written `extends`, and that is the kind
+     * peq records; Reflection has no parent for it and reports the same relation
+     * through getInterfaceNames(), so the oracle asks it there.
+     *
+     * @param string $fromFqn The name the relation starts at
+     * @param string $toFqn   The name the relation points at
+     *
+     * @return null|bool|string True when Reflection confirms it, a message when it
+     *                          contradicts it, and null when Reflection cannot say
+     */
     public static function verifySoundExtends(string $fromFqn, string $toFqn): bool|string|null
     {
         $refl = self::safeReflectClass($fromFqn);
@@ -197,10 +221,6 @@ final class ReflectionCrossCheck
             return null;
         }
 
-        // peq names a relation the way source writes it, and an interface extending
-        // an interface is written `extends`. Reflection has no parent for it and
-        // reports the same relation through getInterfaceNames(), so the oracle asks
-        // it there rather than calling peq's reading of the keyword unsound.
         if ($refl->isInterface()) {
             $parents = self::getDirectInterfaces($refl);
 
@@ -220,6 +240,15 @@ final class ReflectionCrossCheck
         return true;
     }
 
+    /**
+     * Checks a relation peq recorded as an implemented interface.
+     *
+     * @param string $fromFqn The name the relation starts at
+     * @param string $toFqn   The name the relation points at
+     *
+     * @return null|bool|string True when Reflection confirms it, a message when it
+     *                          contradicts it, and null when Reflection cannot say
+     */
     public static function verifySoundImplements(string $fromFqn, string $toFqn): bool|string|null
     {
         $refl = self::safeReflectClass($fromFqn);
@@ -235,6 +264,15 @@ final class ReflectionCrossCheck
         return true;
     }
 
+    /**
+     * Checks a relation peq recorded as a trait being used.
+     *
+     * @param string $fromFqn The name the relation starts at
+     * @param string $toFqn   The name the relation points at
+     *
+     * @return null|bool|string True when Reflection confirms it, a message when it
+     *                          contradicts it, and null when Reflection cannot say
+     */
     public static function verifySoundTraitUse(string $fromFqn, string $toFqn): bool|string|null
     {
         $refl = self::safeReflectClass($fromFqn);
@@ -278,6 +316,15 @@ final class ReflectionCrossCheck
         return true;
     }
 
+    /**
+     * Checks a relation peq recorded as an enum case being declared.
+     *
+     * @param string $fromFqn The name the relation starts at
+     * @param string $toFqn   The name the relation points at
+     *
+     * @return null|bool|string True when Reflection confirms it, a message when it
+     *                          contradicts it, and null when Reflection cannot say
+     */
     public static function verifySoundEnumCase(string $fromFqn, string $toFqn): bool|string|null
     {
         $classFqn = self::parseClassFqn($fromFqn);
@@ -293,7 +340,12 @@ final class ReflectionCrossCheck
 
         /** @var class-string<UnitEnum> $enumClass */
         $enumClass = $classRefl->getName();
-        $refl = new ReflectionEnum($enumClass);
+
+        try {
+            $refl = new ReflectionEnum($enumClass);
+        } catch (ReflectionException) {
+            return null;
+        }
 
         if (!$refl->hasCase($caseName)) {
             return "SOUND: {$fromFqn} -[declaration-enum-case]-> {$toFqn} but case '{$caseName}' not found";
@@ -302,6 +354,15 @@ final class ReflectionCrossCheck
         return true;
     }
 
+    /**
+     * Checks a relation peq recorded as an attribute being written.
+     *
+     * @param string $fromFqn The name the relation starts at
+     * @param string $toFqn   The name the relation points at
+     *
+     * @return null|bool|string True when Reflection confirms it, a message when it
+     *                          contradicts it, and null when Reflection cannot say
+     */
     public static function verifySoundAttribute(string $fromFqn, string $toFqn): bool|string|null
     {
         $attributes = self::getAttributeNames($fromFqn);
@@ -316,6 +377,15 @@ final class ReflectionCrossCheck
         return true;
     }
 
+    /**
+     * Checks a relation peq recorded as a parameter type.
+     *
+     * @param string $fromFqn The name the relation starts at
+     * @param string $toFqn   The name the relation points at
+     *
+     * @return null|bool|string True when Reflection confirms it, a message when it
+     *                          contradicts it, and null when Reflection cannot say
+     */
     public static function verifySoundTypeParameter(string $fromFqn, string $toFqn): bool|string|null
     {
         $reflMethod = self::safeReflectMethod($fromFqn);
@@ -335,6 +405,15 @@ final class ReflectionCrossCheck
         return true;
     }
 
+    /**
+     * Checks a relation peq recorded as a return type.
+     *
+     * @param string $fromFqn The name the relation starts at
+     * @param string $toFqn   The name the relation points at
+     *
+     * @return null|bool|string True when Reflection confirms it, a message when it
+     *                          contradicts it, and null when Reflection cannot say
+     */
     public static function verifySoundTypeReturn(string $fromFqn, string $toFqn): bool|string|null
     {
         $reflMethod = self::safeReflectMethod($fromFqn);
@@ -350,6 +429,15 @@ final class ReflectionCrossCheck
         return true;
     }
 
+    /**
+     * Checks a relation peq recorded as a property type.
+     *
+     * @param string $fromFqn The name the relation starts at
+     * @param string $toFqn   The name the relation points at
+     *
+     * @return null|bool|string True when Reflection confirms it, a message when it
+     *                          contradicts it, and null when Reflection cannot say
+     */
     public static function verifySoundTypeProperty(string $fromFqn, string $toFqn): bool|string|null
     {
         $memberName = self::parseMember($fromFqn);
@@ -359,11 +447,17 @@ final class ReflectionCrossCheck
         }
 
         $refl = self::safeReflectClass($classFqn);
-        if ($refl === null || !$refl->hasProperty($memberName)) {
+        if ($refl === null) {
             return null;
         }
 
-        $types = self::resolveReflectionTypes($refl->getProperty($memberName)->getType());
+        try {
+            $property = $refl->getProperty($memberName);
+        } catch (ReflectionException) {
+            return null;
+        }
+
+        $types = self::resolveReflectionTypes($property->getType());
         if (!in_array($toFqn, $types, true)) {
             return "SOUND: {$fromFqn} -[type-property]-> {$toFqn} but not in property types: [".implode(', ', $types).']';
         }
@@ -371,26 +465,20 @@ final class ReflectionCrossCheck
         return true;
     }
 
-    // ──────────────────────────────────────────────
-    //  Known divergences
-    //
-    //  Central registry of all known divergences between peq and Reflection.
-    //  When adding or removing divergences, this method is the ONLY place to change.
-    // ──────────────────────────────────────────────
-
     /**
-     * Determines whether an expected edge is a known divergence that peq intentionally does not model.
+     * Reports why a relation Reflection sees is one peq is not expected to record.
      *
-     * During completeness checks, Reflection may report relationships that peq's
-     * graph does not contain. This method returns a reason string for known
-     * divergences (which are skipped), or null if the edge should be verified.
+     * The completeness check asks Reflection what should exist and peq what does;
+     * where the two models genuinely differ, the difference is named here and
+     * nowhere else, so that a missing relation is either a known difference or a
+     * defect and never an open question.
      *
-     * @param ReflectionClass<object> $context Reflection of the class-like entity being checked
-     * @param string                  $from    Source FQN of the expected edge
-     * @param EdgeKind                $kind    Edge kind
-     * @param string                  $to      Target FQN of the expected edge
+     * @param ReflectionClass<object> $context The symbol whose relations are checked
+     * @param string                  $from    The name the relation starts at
+     * @param EdgeKind                $kind    The kind of relation
+     * @param string                  $to      The name the relation points at
      *
-     * @return null|string null = should be verified, string = skip reason
+     * @return null|string The reason it is not expected, or null when peq must have it
      */
     public static function knownDivergence(
         ReflectionClass $context,
@@ -398,73 +486,102 @@ final class ReflectionCrossCheck
         EdgeKind $kind,
         string $to,
     ): ?string {
-        // ── Category 1: Trait members ──
-        // PHPStan processes trait methods/properties in the context of each using
-        // class. $scope->getClassReflection() returns the using class, so declaration
-        // edges are emitted from the using class, not from the trait node itself.
-        // This is an architectural consequence of PHPStan and mirrors PHP's runtime
-        // behavior where trait members are copied into each using class.
-        if ($context->isTrait() && in_array($kind, [
+        return self::traitMemberDivergence($context, $kind)
+            ?? self::enumBuiltinDivergence($context, $kind, $to)
+            ?? self::relativeTypeDivergence($context, $kind, $to);
+    }
+
+    /**
+     * Reports the members a trait declares, which peq records against its users.
+     *
+     * PHPStan analyses a trait's members in the context of each class that uses it,
+     * so the scope a collector sees names the using class. peq therefore records the
+     * declaration against the user rather than against the trait, which mirrors what
+     * PHP itself does with trait members at runtime.
+     *
+     * @param ReflectionClass<object> $context The symbol whose relations are checked
+     * @param EdgeKind                $kind    The kind of relation
+     *
+     * @return null|string The reason it is not expected, or null when peq must have it
+     */
+    public static function traitMemberDivergence(ReflectionClass $context, EdgeKind $kind): ?string
+    {
+        $inlined = [
             EdgeKind::DeclarationMethod,
             EdgeKind::DeclarationProperty,
             EdgeKind::DeclarationTypeParameter,
             EdgeKind::DeclarationTypeReturn,
             EdgeKind::DeclarationTypeProperty,
             EdgeKind::Attribute,
-        ], true)) {
-            return 'trait-members: PHPStan inlines trait members into using classes';
+        ];
+
+        return $context->isTrait() && in_array($kind, $inlined, true)
+            ? 'trait-members: PHPStan inlines trait members into using classes'
+            : null;
+    }
+
+    /**
+     * Reports the members the engine generates for an enum, which no source declares.
+     *
+     * `cases()`, `from()` and `tryFrom()`, and the `name` and `value` properties, are
+     * written by the PHP engine rather than by anyone's code, so static analysis has
+     * nothing to read them from.
+     *
+     * @param ReflectionClass<object> $context The symbol whose relations are checked
+     * @param EdgeKind                $kind    The kind of relation
+     * @param string                  $to      The name the relation points at
+     *
+     * @return null|string The reason it is not expected, or null when peq must have it
+     */
+    public static function enumBuiltinDivergence(ReflectionClass $context, EdgeKind $kind, string $to): ?string
+    {
+        if (!$context->isEnum()) {
+            return null;
         }
 
-        // ── Category 2: Enum built-in members ──
-        // The PHP engine auto-generates cases(), from(), tryFrom() methods and
-        // name, value properties for enums. These have no source-code declaration,
-        // so peq's static analysis does not detect them.
-        if ($context->isEnum()) {
-            $member = self::parseMember($to);
-            if ($kind === EdgeKind::DeclarationMethod
-                && in_array($member, ['cases', 'from', 'tryFrom'], true)
-            ) {
-                return 'enum-builtins: auto-generated enum method';
-            }
-            if ($kind === EdgeKind::DeclarationProperty
-                && in_array($member, ['name', 'value'], true)
-            ) {
-                return 'enum-builtins: auto-generated enum property';
-            }
+        $member = self::parseMember($to);
+        if ($kind === EdgeKind::DeclarationMethod && in_array($member, ['cases', 'from', 'tryFrom'], true)) {
+            return 'enum-builtins: auto-generated enum method';
         }
 
-        // ── Category 3: self/static/parent type references ──
-        // peq treats self/static/parent as builtins via SourceResolver::isBuiltin(),
-        // on par with int/string, and does not emit type edges for them.
-        // - self:   self-referential; always satisfied, irrelevant for blast radius
-        // - static: late static binding; does not refer to a concrete class
-        // - parent: already captured by DeclarationExtends edges
-        //
-        // Reflection resolves 'self' to the concrete class name (getName() returns
-        // e.g. "App\Config\Config"), while 'static' remains the literal "static".
-        // Both are intentional exclusions in peq.
-        if (in_array($kind, [
+        return $kind === EdgeKind::DeclarationProperty && in_array($member, ['name', 'value'], true)
+            ? 'enum-builtins: auto-generated enum property'
+            : null;
+    }
+
+    /**
+     * Reports the type positions naming `self`, `static` or `parent`.
+     *
+     * peq treats them as builtins, on a par with int and string, because none of them
+     * names a dependency: `self` is the declaring symbol itself, `static` is decided
+     * at the call site, and `parent` is already recorded as inheritance. Reflection
+     * resolves `self` to the declaring class name and leaves the other two as written.
+     *
+     * @param ReflectionClass<object> $context The symbol whose relations are checked
+     * @param EdgeKind                $kind    The kind of relation
+     * @param string                  $to      The name the relation points at
+     *
+     * @return null|string The reason it is not expected, or null when peq must have it
+     */
+    public static function relativeTypeDivergence(ReflectionClass $context, EdgeKind $kind, string $to): ?string
+    {
+        $typePositions = [
             EdgeKind::DeclarationTypeReturn,
             EdgeKind::DeclarationTypeParameter,
             EdgeKind::DeclarationTypeProperty,
-        ], true)) {
-            // 'self' resolved to the declaring class name by Reflection,
-            // or left as literal 'self' depending on PHP version
-            if ($to === $context->getName() || strtolower($to) === 'self') {
-                return 'self-type: self resolves to declaring class (self-referential)';
-            }
-            // 'static'/'parent' remain as literal type names
-            if (in_array(strtolower($to), ['static', 'parent'], true)) {
-                return 'self-type: static/parent is a language construct, not a class dependency';
-            }
+        ];
+        if (!in_array($kind, $typePositions, true)) {
+            return null;
         }
 
-        return null;
-    }
+        if ($to === $context->getName() || strtolower($to) === 'self') {
+            return 'self-type: self resolves to declaring class (self-referential)';
+        }
 
-    // ──────────────────────────────────────────────
-    //  Completeness engine
-    // ──────────────────────────────────────────────
+        return in_array(strtolower($to), ['static', 'parent'], true)
+            ? 'self-type: static/parent is a language construct, not a class dependency'
+            : null;
+    }
 
     /**
      * @return array{verified: int, skipped: int, failures: list<string>}
@@ -509,123 +626,201 @@ final class ReflectionCrossCheck
     }
 
     /**
-     * Derives ALL expected edges from Reflection for a single class-like entity.
+     * Derives every relation Reflection reports for one class-like symbol.
      *
-     * This method is intentionally filter-free. All filtering of known divergences
-     * is handled centrally by knownDivergence().
+     * The list is deliberately unfiltered: everything Reflection can see is stated
+     * here, and knownDivergence() is the one place that decides what peq is not
+     * expected to have recorded.
      *
-     * @param ReflectionClass<object> $refl
+     * @param ReflectionClass<object> $refl The reflection of the symbol
+     * @param string                  $fqn  The name peq knows the symbol by
      *
-     * @return list<array{0: string, 1: EdgeKind, 2: string}>
+     * @return list<array{0: string, 1: EdgeKind, 2: string}> The relations it reports
      */
     public static function expectedEdgesFromReflection(ReflectionClass $refl, string $fqn): array
     {
+        return [
+            ...self::expectedInheritance($refl, $fqn),
+            ...self::expectedMethods($refl, $fqn),
+            ...self::expectedProperties($refl, $fqn),
+            ...self::expectedConstants($refl, $fqn),
+            ...self::expectedAttributes($refl->getAttributes(), $fqn),
+        ];
+    }
+
+    /**
+     * Derives what a symbol inherits: its parent, its interfaces and its traits.
+     *
+     * An interface listing another interface is written `extends`, and that is the
+     * kind peq records for it; only a class or an enum implements one.
+     *
+     * @param ReflectionClass<object> $refl The reflection of the symbol
+     * @param string                  $fqn  The name peq knows the symbol by
+     *
+     * @return list<array{0: string, 1: EdgeKind, 2: string}> The inheritance relations
+     */
+    public static function expectedInheritance(ReflectionClass $refl, string $fqn): array
+    {
         $expected = [];
 
-        // Extends
         $parent = $refl->getParentClass();
         if ($parent !== false) {
             $expected[] = [$fqn, EdgeKind::DeclarationExtends, $parent->getName()];
         }
 
-        // Implements (direct only)
         foreach (self::getDirectInterfaces($refl) as $ifName) {
-            // An interface listing another interface is written `extends`, and that
-            // is the kind peq records for it; only a class or enum implements one.
             $expected[] = [$fqn, $refl->isInterface() ? EdgeKind::DeclarationExtends : EdgeKind::DeclarationImplements, $ifName];
         }
 
-        // Trait use
         foreach ($refl->getTraitNames() as $traitName) {
             $expected[] = [$fqn, EdgeKind::DeclarationTraitUse, $traitName];
         }
 
-        // Methods declared in this class
+        return $expected;
+    }
+
+    /**
+     * Derives the methods a symbol declares, with their signatures and attributes.
+     *
+     * A method a symbol inherits is declared by whatever declared it, so only the
+     * ones whose declaring class is this symbol are its own.
+     *
+     * @param ReflectionClass<object> $refl The reflection of the symbol
+     * @param string                  $fqn  The name peq knows the symbol by
+     *
+     * @return list<array{0: string, 1: EdgeKind, 2: string}> The method relations
+     */
+    public static function expectedMethods(ReflectionClass $refl, string $fqn): array
+    {
+        $expected = [];
         foreach ($refl->getMethods() as $method) {
             if ($method->getDeclaringClass()->getName() !== $refl->getName()) {
                 continue;
             }
+
             $methodFqn = $fqn.'::'.$method->getName();
             $expected[] = [$fqn, EdgeKind::DeclarationMethod, $methodFqn];
 
-            // Type edges for this method's parameters
             foreach ($method->getParameters() as $param) {
                 foreach (self::resolveReflectionTypes($param->getType()) as $typeFqn) {
                     $expected[] = [$methodFqn, EdgeKind::DeclarationTypeParameter, $typeFqn];
                 }
             }
 
-            // Type edge for return type
             foreach (self::resolveReflectionTypes($method->getReturnType()) as $typeFqn) {
                 $expected[] = [$methodFqn, EdgeKind::DeclarationTypeReturn, $typeFqn];
             }
 
-            // Attributes on method
-            foreach ($method->getAttributes() as $attr) {
-                $expected[] = [$methodFqn, EdgeKind::Attribute, $attr->getName()];
+            foreach (self::expectedAttributes($method->getAttributes(), $methodFqn) as $attribute) {
+                $expected[] = $attribute;
             }
-        }
-
-        // Properties declared in this class
-        foreach ($refl->getProperties() as $prop) {
-            if ($prop->getDeclaringClass()->getName() !== $refl->getName()) {
-                continue;
-            }
-            $propFqn = $fqn.'::'.$prop->getName();
-            $expected[] = [$fqn, EdgeKind::DeclarationProperty, $propFqn];
-
-            // Type edge for property type
-            foreach (self::resolveReflectionTypes($prop->getType()) as $typeFqn) {
-                $expected[] = [$propFqn, EdgeKind::DeclarationTypeProperty, $typeFqn];
-            }
-
-            // Attributes on property
-            foreach ($prop->getAttributes() as $attr) {
-                $expected[] = [$propFqn, EdgeKind::Attribute, $attr->getName()];
-            }
-        }
-
-        // Constants declared in this class
-        foreach ($refl->getReflectionConstants() as $const) {
-            if ($const->getDeclaringClass()->getName() !== $refl->getName()) {
-                continue;
-            }
-            $constFqn = $fqn.'::'.$const->getName();
-
-            // Enum cases vs regular constants
-            if ($refl->isEnum()) {
-                try {
-                    /** @var class-string<UnitEnum> $enumClassName */
-                    $enumClassName = $refl->getName();
-                    $enumRefl = new ReflectionEnum($enumClassName);
-                    if ($enumRefl->hasCase($const->getName())) {
-                        $expected[] = [$fqn, EdgeKind::DeclarationEnumCase, $constFqn];
-
-                        continue;
-                    }
-                } catch (ReflectionException) {
-                    // fallthrough to regular constant
-                }
-            }
-            $expected[] = [$fqn, EdgeKind::DeclarationConstant, $constFqn];
-
-            // Attributes on constant
-            foreach ($const->getAttributes() as $attr) {
-                $expected[] = [$constFqn, EdgeKind::Attribute, $attr->getName()];
-            }
-        }
-
-        // Attributes on class itself
-        foreach ($refl->getAttributes() as $attr) {
-            $expected[] = [$fqn, EdgeKind::Attribute, $attr->getName()];
         }
 
         return $expected;
     }
 
-    // ──────────────────────────────────────────────
-    //  Reflection helpers
-    // ──────────────────────────────────────────────
+    /**
+     * Derives the properties a symbol declares, with their types and attributes.
+     *
+     * @param ReflectionClass<object> $refl The reflection of the symbol
+     * @param string                  $fqn  The name peq knows the symbol by
+     *
+     * @return list<array{0: string, 1: EdgeKind, 2: string}> The property relations
+     */
+    public static function expectedProperties(ReflectionClass $refl, string $fqn): array
+    {
+        $expected = [];
+        foreach ($refl->getProperties() as $prop) {
+            if ($prop->getDeclaringClass()->getName() !== $refl->getName()) {
+                continue;
+            }
+
+            $propFqn = $fqn.'::'.$prop->getName();
+            $expected[] = [$fqn, EdgeKind::DeclarationProperty, $propFqn];
+
+            foreach (self::resolveReflectionTypes($prop->getType()) as $typeFqn) {
+                $expected[] = [$propFqn, EdgeKind::DeclarationTypeProperty, $typeFqn];
+            }
+
+            foreach (self::expectedAttributes($prop->getAttributes(), $propFqn) as $attribute) {
+                $expected[] = $attribute;
+            }
+        }
+
+        return $expected;
+    }
+
+    /**
+     * Derives the constants a symbol declares, telling enum cases from constants.
+     *
+     * The engine reports both through the same reflection, so an enum is asked
+     * whether the name it declares is one of its cases.
+     *
+     * @param ReflectionClass<object> $refl The reflection of the symbol
+     * @param string                  $fqn  The name peq knows the symbol by
+     *
+     * @return list<array{0: string, 1: EdgeKind, 2: string}> The constant relations
+     */
+    public static function expectedConstants(ReflectionClass $refl, string $fqn): array
+    {
+        $expected = [];
+        foreach ($refl->getReflectionConstants() as $const) {
+            if ($const->getDeclaringClass()->getName() !== $refl->getName()) {
+                continue;
+            }
+
+            $constFqn = $fqn.'::'.$const->getName();
+            $expected[] = [$fqn, self::isEnumCase($refl, $const->getName()) ? EdgeKind::DeclarationEnumCase : EdgeKind::DeclarationConstant, $constFqn];
+
+            foreach (self::expectedAttributes($const->getAttributes(), $constFqn) as $attribute) {
+                $expected[] = $attribute;
+            }
+        }
+
+        return $expected;
+    }
+
+    /**
+     * Reports whether a name a symbol declares is one of its enum cases.
+     *
+     * @param ReflectionClass<object> $refl The reflection of the symbol
+     * @param string                  $name The name it declares
+     *
+     * @return bool True when the symbol is an enum and the name is one of its cases
+     */
+    public static function isEnumCase(ReflectionClass $refl, string $name): bool
+    {
+        if (!$refl->isEnum()) {
+            return false;
+        }
+
+        try {
+            /** @var class-string<UnitEnum> $enumClassName */
+            $enumClassName = $refl->getName();
+
+            return (new ReflectionEnum($enumClassName))->hasCase($name);
+        } catch (ReflectionException) {
+            return false;
+        }
+    }
+
+    /**
+     * Derives the attribute relations of one declaration.
+     *
+     * @param list<ReflectionAttribute<object>> $attributes The attributes written on it
+     * @param string                            $fqn        The name peq knows the declaration by
+     *
+     * @return list<array{0: string, 1: EdgeKind, 2: string}> The attribute relations
+     */
+    public static function expectedAttributes(array $attributes, string $fqn): array
+    {
+        $expected = [];
+        foreach ($attributes as $attribute) {
+            $expected[] = [$fqn, EdgeKind::Attribute, $attribute->getName()];
+        }
+
+        return $expected;
+    }
 
     /**
      * @return null|ReflectionClass<object>
@@ -644,6 +839,17 @@ final class ReflectionCrossCheck
         return new ReflectionClass($fqn);
     }
 
+    /**
+     * Reflects the method a name refers to, or reports that it cannot be reflected.
+     *
+     * A name peq recorded may belong to a symbol outside the analysed sources, which
+     * nothing here can load; that is a question Reflection cannot answer rather than
+     * a disagreement with peq.
+     *
+     * @param string $fqn The name peq knows the method by
+     *
+     * @return null|ReflectionMethod The reflection, or null when there is none to have
+     */
     public static function safeReflectMethod(string $fqn): ?ReflectionMethod
     {
         $classFqn = self::parseClassFqn($fqn);
@@ -683,11 +889,11 @@ final class ReflectionCrossCheck
         }
 
         if ($refl->hasMethod($memberName)) {
-            // A parameter is not a node of its own in peq's graph, so an attribute
-            // written on one is recorded as a dependency of the callable that
-            // declares it. Reflection can see those attributes too, so the oracle
-            // asks it the same question rather than only about the method itself.
-            $method = $refl->getMethod($memberName);
+            try {
+                $method = $refl->getMethod($memberName);
+            } catch (ReflectionException) {
+                return null;
+            }
             $names = array_map(fn (ReflectionAttribute $a) => $a->getName(), $method->getAttributes());
             foreach ($method->getParameters() as $parameter) {
                 foreach ($parameter->getAttributes() as $attribute) {
@@ -698,7 +904,11 @@ final class ReflectionCrossCheck
             return array_values(array_unique($names));
         }
         if ($refl->hasProperty($memberName)) {
-            return array_map(fn (ReflectionAttribute $a) => $a->getName(), $refl->getProperty($memberName)->getAttributes());
+            try {
+                return array_map(fn (ReflectionAttribute $a) => $a->getName(), $refl->getProperty($memberName)->getAttributes());
+            } catch (ReflectionException) {
+                return null;
+            }
         }
         if ($refl->hasConstant($memberName)) {
             $rc = $refl->getReflectionConstant($memberName);
@@ -781,10 +991,6 @@ final class ReflectionCrossCheck
         return [];
     }
 
-    // ──────────────────────────────────────────────
-    //  FQN parsing helpers
-    // ──────────────────────────────────────────────
-
     /**
      * Extracts class FQN from a node ID string.
      * "Ns\Class::member" -> "Ns\Class", "Ns\Class" -> "Ns\Class".
@@ -831,6 +1037,17 @@ final class ReflectionCrossCheck
         return isset($index[$from.'|'.$kind->value.'|'.$to]);
     }
 
+    /**
+     * Reports whether Reflection can say anything about a kind of relation.
+     *
+     * Reflection reads declarations, so it can confirm what a symbol declares and
+     * inherits. What a method body reaches is invisible to it, and a relation of
+     * that kind is neither confirmed nor contradicted here.
+     *
+     * @param EdgeKind $kind The kind of relation
+     *
+     * @return bool True when Reflection is an oracle for that kind
+     */
     public static function isVerifiableEdgeKind(EdgeKind $kind): bool
     {
         return in_array($kind, [

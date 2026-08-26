@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Contract\Analyzer;
 
 use App\Analyzer\Graph\EdgeKind;
-use App\Analyzer\Graph\Graph;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use Generator;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -13,27 +12,22 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Tests\Fixture\Analyzer\AnalysedSnippet;
+use Tests\Fixture\Graph\GraphRelations;
 
 /**
  * @internal
- *
- * Contract tests verifying that usage edges are produced for each expression
- * pattern regardless of the surrounding control-flow context.
- *
- * 9 patterns (5 original + 4 new) x 9+ contexts.
- */#[CoversClass(PhpStanAnalyzer::class)]
+ */
+#[CoversClass(PhpStanAnalyzer::class)]
 #[Large]
 final class UsageEdgeContractTest extends TestCase
 {
-    /**
-     * Checks that instantiation contract.
-     */
-    #[DataProvider('provideInstantiationContexts')]
+    #[DataProvider('providerInstantiationContexts')]
     #[Test]
     public function testInstantiationContract(string $label, string $methodBody): void
     {
-        $graph = self::analyzeCode(self::wrapInMethodBody($methodBody));
-        self::assertEdgeExists(
+        $graph = AnalysedSnippet::graph(AnalysedSnippet::inMethodBody($methodBody));
+        GraphRelations::assertRelationExists(
             $graph,
             'Subject::testMethod',
             'Dep',
@@ -45,7 +39,7 @@ final class UsageEdgeContractTest extends TestCase
     /**
      * @return Generator<string, array{string, string}>
      */
-    public static function provideInstantiationContexts(): Generator
+    public static function providerInstantiationContexts(): Generator
     {
         yield 'direct' => ['direct', '$x = new Dep();'];
 
@@ -66,15 +60,12 @@ final class UsageEdgeContractTest extends TestCase
         yield 'in_closure' => ['in_closure', '$f = function() { $x = new Dep(); };'];
     }
 
-    /**
-     * Checks that static call contract.
-     */
-    #[DataProvider('provideStaticCallContexts')]
+    #[DataProvider('providerStaticCallContexts')]
     #[Test]
     public function testStaticCallContract(string $label, string $methodBody): void
     {
-        $graph = self::analyzeCode(self::wrapInMethodBody($methodBody));
-        self::assertEdgeExists(
+        $graph = AnalysedSnippet::graph(AnalysedSnippet::inMethodBody($methodBody));
+        GraphRelations::assertRelationExists(
             $graph,
             'Subject::testMethod',
             'Dep::staticMethod',
@@ -86,7 +77,7 @@ final class UsageEdgeContractTest extends TestCase
     /**
      * @return Generator<string, array{string, string}>
      */
-    public static function provideStaticCallContexts(): Generator
+    public static function providerStaticCallContexts(): Generator
     {
         yield 'direct' => ['direct', '$x = Dep::staticMethod();'];
 
@@ -107,15 +98,12 @@ final class UsageEdgeContractTest extends TestCase
         yield 'in_closure' => ['in_closure', '$f = function() { $x = Dep::staticMethod(); };'];
     }
 
-    /**
-     * Checks that const fetch contract.
-     */
-    #[DataProvider('provideConstFetchContexts')]
+    #[DataProvider('providerConstFetchContexts')]
     #[Test]
     public function testConstFetchContract(string $label, string $methodBody): void
     {
-        $graph = self::analyzeCode(self::wrapInMethodBody($methodBody));
-        self::assertEdgeExists(
+        $graph = AnalysedSnippet::graph(AnalysedSnippet::inMethodBody($methodBody));
+        GraphRelations::assertRelationExists(
             $graph,
             'Subject::testMethod',
             'Dep::SOME_CONST',
@@ -127,7 +115,7 @@ final class UsageEdgeContractTest extends TestCase
     /**
      * @return Generator<string, array{string, string}>
      */
-    public static function provideConstFetchContexts(): Generator
+    public static function providerConstFetchContexts(): Generator
     {
         yield 'direct' => ['direct', '$x = Dep::SOME_CONST;'];
 
@@ -148,15 +136,12 @@ final class UsageEdgeContractTest extends TestCase
         yield 'in_closure' => ['in_closure', '$f = function() { $x = Dep::SOME_CONST; };'];
     }
 
-    /**
-     * Checks that instanceof contract.
-     */
-    #[DataProvider('provideInstanceofContexts')]
+    #[DataProvider('providerInstanceofContexts')]
     #[Test]
     public function testInstanceofContract(string $label, string $methodBody): void
     {
-        $graph = self::analyzeCode(self::wrapInMethodBody($methodBody));
-        self::assertEdgeExists(
+        $graph = AnalysedSnippet::graph(AnalysedSnippet::inMethodBody($methodBody));
+        GraphRelations::assertRelationExists(
             $graph,
             'Subject::testMethod',
             'Dep',
@@ -168,7 +153,7 @@ final class UsageEdgeContractTest extends TestCase
     /**
      * @return Generator<string, array{string, string}>
      */
-    public static function provideInstanceofContexts(): Generator
+    public static function providerInstanceofContexts(): Generator
     {
         yield 'direct' => ['direct', '$x = $y instanceof Dep;'];
 
@@ -189,15 +174,12 @@ final class UsageEdgeContractTest extends TestCase
         yield 'in_closure' => ['in_closure', '$f = function() use ($y) { $x = $y instanceof Dep; };'];
     }
 
-    /**
-     * Checks that catch contract.
-     */
-    #[DataProvider('provideCatchContexts')]
+    #[DataProvider('providerCatchContexts')]
     #[Test]
     public function testCatchContract(string $label, string $methodBody): void
     {
-        $graph = self::analyzeCode(self::wrapInMethodBody($methodBody));
-        self::assertEdgeExists(
+        $graph = AnalysedSnippet::graph(AnalysedSnippet::inMethodBody($methodBody));
+        GraphRelations::assertRelationExists(
             $graph,
             'Subject::testMethod',
             'Dep',
@@ -209,7 +191,7 @@ final class UsageEdgeContractTest extends TestCase
     /**
      * @return Generator<string, array{string, string}>
      */
-    public static function provideCatchContexts(): Generator
+    public static function providerCatchContexts(): Generator
     {
         yield 'direct' => ['direct', 'try { throw new \Exception(); } catch (Dep $e) {}'];
 
@@ -230,15 +212,12 @@ final class UsageEdgeContractTest extends TestCase
         yield 'in_closure' => ['in_closure', '$f = function() { try { throw new \Exception(); } catch (Dep $e) {} };'];
     }
 
-    /**
-     * Checks that function call contract.
-     */
-    #[DataProvider('provideFunctionCallContexts')]
+    #[DataProvider('providerFunctionCallContexts')]
     #[Test]
     public function testFunctionCallContract(string $label, string $methodBody): void
     {
-        $graph = self::analyzeCode(self::wrapInFunctionCallContext($methodBody));
-        self::assertEdgeExists(
+        $graph = AnalysedSnippet::graph(AnalysedSnippet::inFunctionCallContext($methodBody));
+        GraphRelations::assertRelationExists(
             $graph,
             'Subject::testMethod',
             'dep_func',
@@ -250,7 +229,7 @@ final class UsageEdgeContractTest extends TestCase
     /**
      * @return Generator<string, array{string, string}>
      */
-    public static function provideFunctionCallContexts(): Generator
+    public static function providerFunctionCallContexts(): Generator
     {
         yield 'direct' => ['direct', 'dep_func();'];
 
@@ -271,15 +250,12 @@ final class UsageEdgeContractTest extends TestCase
         yield 'in_closure' => ['in_closure', '$f = function() { dep_func(); };'];
     }
 
-    /**
-     * Checks that method call contract.
-     */
-    #[DataProvider('provideMethodCallContexts')]
+    #[DataProvider('providerMethodCallContexts')]
     #[Test]
     public function testMethodCallContract(string $label, string $methodBody): void
     {
-        $graph = self::analyzeCode(self::wrapInMethodCallContext($methodBody));
-        self::assertEdgeExists(
+        $graph = AnalysedSnippet::graph(AnalysedSnippet::inMethodCallContext($methodBody));
+        GraphRelations::assertRelationExists(
             $graph,
             'Subject::testMethod',
             'Subject::helperMethod',
@@ -291,7 +267,7 @@ final class UsageEdgeContractTest extends TestCase
     /**
      * @return Generator<string, array{string, string}>
      */
-    public static function provideMethodCallContexts(): Generator
+    public static function providerMethodCallContexts(): Generator
     {
         yield 'direct' => ['direct', '$this->helperMethod();'];
 
@@ -314,15 +290,12 @@ final class UsageEdgeContractTest extends TestCase
         yield 'nullsafe' => ['nullsafe', '$this?->helperMethod();'];
     }
 
-    /**
-     * Checks that property access contract.
-     */
-    #[DataProvider('providePropertyAccessContexts')]
+    #[DataProvider('providerPropertyAccessContexts')]
     #[Test]
     public function testPropertyAccessContract(string $label, string $methodBody): void
     {
-        $graph = self::analyzeCode(self::wrapInPropertyAccessContext($methodBody));
-        self::assertEdgeExists(
+        $graph = AnalysedSnippet::graph(AnalysedSnippet::inPropertyAccessContext($methodBody));
+        GraphRelations::assertRelationExists(
             $graph,
             'Subject::testMethod',
             'Subject::targetProp',
@@ -334,7 +307,7 @@ final class UsageEdgeContractTest extends TestCase
     /**
      * @return Generator<string, array{string, string}>
      */
-    public static function providePropertyAccessContexts(): Generator
+    public static function providerPropertyAccessContexts(): Generator
     {
         yield 'direct' => ['direct', '$x = $this->targetProp;'];
 
@@ -357,15 +330,12 @@ final class UsageEdgeContractTest extends TestCase
         yield 'nullsafe' => ['nullsafe', '$x = $this?->targetProp;'];
     }
 
-    /**
-     * Checks that static property access contract.
-     */
-    #[DataProvider('provideStaticPropertyAccessContexts')]
+    #[DataProvider('providerStaticPropertyAccessContexts')]
     #[Test]
     public function testStaticPropertyAccessContract(string $label, string $methodBody): void
     {
-        $graph = self::analyzeCode(self::wrapInMethodBody($methodBody));
-        self::assertEdgeExists(
+        $graph = AnalysedSnippet::graph(AnalysedSnippet::inMethodBody($methodBody));
+        GraphRelations::assertRelationExists(
             $graph,
             'Subject::testMethod',
             'Dep::staticProp',
@@ -377,7 +347,7 @@ final class UsageEdgeContractTest extends TestCase
     /**
      * @return Generator<string, array{string, string}>
      */
-    public static function provideStaticPropertyAccessContexts(): Generator
+    public static function providerStaticPropertyAccessContexts(): Generator
     {
         yield 'direct' => ['direct', '$x = Dep::$staticProp;'];
 
@@ -398,9 +368,6 @@ final class UsageEdgeContractTest extends TestCase
         yield 'in_closure' => ['in_closure', '$f = function() { $x = Dep::$staticProp; };'];
     }
 
-    /**
-     * Checks that method call on arbitrary object is intentionally not detected.
-     */
     #[Test]
     public function testMethodCallOnArbitraryObjectIsIntentionallyNotDetected(): void
     {
@@ -420,8 +387,8 @@ final class UsageEdgeContractTest extends TestCase
             }
             PHP;
 
-        $graph = self::analyzeCode($code);
-        self::assertEdgeNotExists(
+        $graph = AnalysedSnippet::graph($code);
+        GraphRelations::assertRelationMissing(
             $graph,
             'Subject::testMethod',
             'Other::otherMethod',
@@ -430,9 +397,6 @@ final class UsageEdgeContractTest extends TestCase
         );
     }
 
-    /**
-     * Checks that property access on arbitrary object is intentionally not detected.
-     */
     #[Test]
     public function testPropertyAccessOnArbitraryObjectIsIntentionallyNotDetected(): void
     {
@@ -452,165 +416,13 @@ final class UsageEdgeContractTest extends TestCase
             }
             PHP;
 
-        $graph = self::analyzeCode($code);
-        self::assertEdgeNotExists(
+        $graph = AnalysedSnippet::graph($code);
+        GraphRelations::assertRelationMissing(
             $graph,
             'Subject::testMethod',
             'Other::value',
             EdgeKind::PropertyAccess,
             'Intentional: $obj->prop is not detected (requires type inference)',
         );
-    }
-
-    /**
-     * Returns the analyze code a check needs.
-     */
-    public static function analyzeCode(string $phpCode): Graph
-    {
-        $tmpDir = sys_get_temp_dir().'/peq_contract_'.uniqid();
-        mkdir($tmpDir, 0o777, true);
-        file_put_contents($tmpDir.'/Test.php', $phpCode);
-
-        try {
-            $analyzer = new PhpStanAnalyzer();
-
-            return $analyzer->analyze($tmpDir);
-        } finally {
-            @unlink($tmpDir.'/Test.php');
-            @rmdir($tmpDir);
-        }
-    }
-
-    /**
-     * Returns the wrap in method body a check needs.
-     */
-    public static function wrapInMethodBody(string $body): string
-    {
-        return <<<PHP
-            <?php
-            declare(strict_types=1);
-            namespace Tests\\Contract\\Analyzer\\Generated;
-
-            class Dep extends \\Exception {
-                public const SOME_CONST = 1;
-                public static int \$staticProp = 1;
-                public static function staticMethod(): void {}
-            }
-
-            class Subject {
-                public function testMethod(mixed \$y = null): mixed {
-                    {$body}
-                    return null;
-                }
-            }
-            PHP;
-    }
-
-    /**
-     * Returns the wrap in function call context a check needs.
-     */
-    public static function wrapInFunctionCallContext(string $body): string
-    {
-        return <<<PHP
-            <?php
-            declare(strict_types=1);
-
-            function dep_func(): mixed { return null; }
-
-            class Subject {
-                public function testMethod(mixed \$y = null): mixed {
-                    {$body}
-                    return null;
-                }
-            }
-            PHP;
-    }
-
-    /**
-     * Returns the wrap in method call context a check needs.
-     */
-    public static function wrapInMethodCallContext(string $body): string
-    {
-        return <<<PHP
-            <?php
-            declare(strict_types=1);
-            namespace Tests\\Contract\\Analyzer\\Generated;
-
-            class Subject {
-                public function helperMethod(): int { return 1; }
-                public function testMethod(mixed \$y = null): mixed {
-                    {$body}
-                    return null;
-                }
-            }
-            PHP;
-    }
-
-    /**
-     * Returns the wrap in property access context a check needs.
-     */
-    public static function wrapInPropertyAccessContext(string $body): string
-    {
-        return <<<PHP
-            <?php
-            declare(strict_types=1);
-            namespace Tests\\Contract\\Analyzer\\Generated;
-
-            class Subject {
-                public int \$targetProp = 0;
-                public function testMethod(mixed \$y = null): mixed {
-                    {$body}
-                    return null;
-                }
-            }
-            PHP;
-    }
-
-    /**
-     * Returns the assert edge exists a check needs.
-     */
-    public function assertEdgeExists(
-        Graph $graph,
-        string $fromSuffix,
-        string $toSuffix,
-        EdgeKind $kind,
-        string $msg,
-    ): void {
-        foreach ($graph->nodes() as $node) {
-            if (!str_ends_with($node->id()->toString(), $fromSuffix)) {
-                continue;
-            }
-            foreach ($graph->edges($node->id()) as $edge) {
-                if ($edge->kind() === $kind && str_ends_with($edge->to()->toString(), $toSuffix)) {
-                    $this->addToAssertionCount(1);
-
-                    return;
-                }
-            }
-        }
-        self::fail($msg."\nNodes: ".implode(', ', array_map(fn ($n) => $n->id()->toString(), $graph->nodes())));
-    }
-
-    /**
-     * Returns the assert edge not exists a check needs.
-     */
-    public function assertEdgeNotExists(
-        Graph $graph,
-        string $fromSuffix,
-        string $toSuffix,
-        EdgeKind $kind,
-        string $msg,
-    ): void {
-        foreach ($graph->nodes() as $node) {
-            if (!str_ends_with($node->id()->toString(), $fromSuffix)) {
-                continue;
-            }
-            foreach ($graph->edges($node->id()) as $edge) {
-                if ($edge->kind() === $kind && str_ends_with($edge->to()->toString(), $toSuffix)) {
-                    self::fail($msg);
-                }
-            }
-        }
-        $this->addToAssertionCount(1);
     }
 }

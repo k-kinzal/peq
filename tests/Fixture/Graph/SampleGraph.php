@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Fixture\Graph;
 
-use App\Analyzer\Graph\Edge\DeclarationMethodEdge;
-use App\Analyzer\Graph\Edge\MethodCallEdge;
+use App\Analyzer\Graph\Edge\Declaration\MethodEdge;
+use App\Analyzer\Graph\Edge\Usage\MethodCallEdge;
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\Node\MethodNode;
@@ -41,8 +41,8 @@ final class SampleGraph
         $graph = new Graph();
         $graph->addNodes([$invoice, $total, $lines, $add]);
         $graph->addEdges([
-            new DeclarationMethodEdge($invoice, $total, $meta),
-            new DeclarationMethodEdge($invoice, $lines, $meta),
+            new MethodEdge($invoice, $total, $meta),
+            new MethodEdge($invoice, $lines, $meta),
             new MethodCallEdge($total, $add, $meta),
         ]);
 
@@ -88,8 +88,8 @@ final class SampleGraph
         $graph = new Graph();
         $graph->addNodes([$invoice, $total, $lines, $add]);
         $graph->addEdges([
-            new DeclarationMethodEdge($invoice, $total, $meta),
-            new DeclarationMethodEdge($invoice, $lines, $meta),
+            new MethodEdge($invoice, $total, $meta),
+            new MethodEdge($invoice, $lines, $meta),
             new MethodCallEdge($total, $add, $meta),
             new MethodCallEdge($lines, $add, $meta),
         ]);

@@ -20,12 +20,15 @@ use BackedEnum;
  * stay pass-through, and what makes "level must be a positive integer" one rule
  * rather than one rule per source.
  *
+ * @phpstan-import-type ConfigField from ConfigReader
+ * @phpstan-import-type ConfigFields from ConfigReader
+ *
  * @visibility namespace
  */
 final class RawConfig
 {
     /**
-     * @param array<string, mixed> $values The field values a source reported
+     * @param ConfigFields $values The field values a source reported
      */
     public function __construct(
         private readonly array $values,
@@ -268,11 +271,11 @@ final class RawConfig
     /**
      * Describes a rejected value for an error message without dumping its contents.
      *
-     * @param mixed $value The value that failed a check
+     * @param null|ConfigField $value The value that failed a check
      *
      * @return string A short description naming the type and, for scalars, the value
      */
-    public static function describe(mixed $value): string
+    public static function describe(array|bool|float|int|string|null $value): string
     {
         if (is_string($value)) {
             return sprintf('the string "%s"', $value);

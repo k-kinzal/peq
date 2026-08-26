@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Fixture\Analyzer;
 
+use App\Analyzer\AnalysisFailedException;
 use App\Analyzer\Graph\Graph;
-use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
-use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
+use App\Analyzer\PhpStanAnalyzer\CollectorReport;
 use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
 use App\Analyzer\PhpStanAnalyzer\GraphBuilder;
 use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
-use PHPStan\Analyser\Analyser;
+use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use PHPStan\DependencyInjection\Container;
 
 /**
@@ -51,29 +51,24 @@ final class AnalysisSteps
      * @param Container    $container The container to analyse with
      * @param list<string> $files     The files to analyse
      *
-     * @return array<string, mixed> What the collectors reported, keyed by file
+     * @return CollectorReport What the collectors reported
      *
-     * @throws \PHPStan\DependencyInjection\MissingServiceException If the container holds no analyser
+     * @throws AnalysisFailedException If the container holds no analyser
      */
-    public static function collect(Container $container, array $files): array
+    public static function collect(Container $container, array $files): CollectorReport
     {
-        return $container->getByType(Analyser::class)->analyse($files, null, null, false, $files)->getCollectedData();
+        return (new PhpStanAnalyzer())->collect($container, $files);
     }
 
     /**
      * Assembles the graph from what the collectors reported.
      *
-     * @param array<string, mixed> $collected    What the collectors reported
-     * @param bool                 $methodBodies Whether the findings of method bodies are included
+     * @param CollectorReport $report What the collectors reported
      *
      * @return Graph The graph those findings describe
      */
-    public static function graph(array $collected, bool $methodBodies = true): Graph
+    public static function graph(CollectorReport $report): Graph
     {
-        $collectors = $methodBodies
-            ? [DependencyCollector::class, InClassMethodCollector::class]
-            : [DependencyCollector::class];
-
-        return (new GraphBuilder())->build($collected, $collectors);
+        return (new GraphBuilder())->build($report->symbols());
     }
 }
