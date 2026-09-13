@@ -26,10 +26,6 @@ rules:
 
   - path: 'src'
     max_dirs: 9
-    # Four, because the relations a source writes and the processors that read
-    # them are grouped by what they are — a declaration, a usage, a derived
-    # reading — one level below the package that owns them, which is what keeps
-    # each of those directories inside the file limit.
     max_depth: 4
 
   - path: 'src/**'
@@ -68,8 +64,8 @@ rules:
     max_dirs: 1
 
   - path: 'tests'
-    allow: []
-    allow_dirs: ['Benchmark', 'Contract', 'Fixture', 'Integration', 'Unit']
+    allow: ['run.php']
+    allow_dirs: ['Benchmark', 'Contract', 'Fixture', 'Integration', 'Property', 'Unit']
     max_depth: 5
 
   - path: 'tests/Unit/**'
@@ -83,6 +79,14 @@ rules:
   - path: 'tests/Contract/**'
     forbid_empty: true
     allow: ['*ContractTest.php']
+    file_case: pascal
+    dir_case: pascal
+    max_files: 15
+    max_dirs: 20
+
+  - path: 'tests/Property/**'
+    forbid_empty: true
+    allow: ['*Test.php']
     file_case: pascal
     dir_case: pascal
     max_files: 15

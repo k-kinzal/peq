@@ -26,17 +26,10 @@ return (new Config())
         '@PhpCsFixer' => true,
         '@PHP81Migration' => true,
 
-        // Coverage scope is declared with PHPUnit attributes, which this rule would
-        // duplicate as @covers annotations that nothing reads.
         'php_unit_test_class_requires_covers' => false,
-        // The three rules below would undo what the toolkit's PHPStan rules require:
-        // a PHPDoc block on every public declaration, with every parameter and
-        // return documented. Turning a docblock into a comment or deleting a tag
-        // that "repeats the signature" makes the analysis fail, not the file tidier.
         'phpdoc_to_comment' => false,
         'phpdoc_no_useless_inheritdoc' => false,
         'no_superfluous_phpdoc_tags' => false,
-        // Reading order follows the sentence, not the compiler.
         'yoda_style' => ['equal' => false, 'identical' => false, 'less_and_greater' => false],
 
         '@PSR12' => true,

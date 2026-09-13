@@ -58,16 +58,11 @@ deptrac:
           value: src/Config/.*
 
   ruleset:
-    # The CLI boundary. It parses input, stacks configuration, delegates the use
-    # case and hands the result to a reporter. It must not reach an analyzer or
-    # the graph model directly.
     Command:
       - Action
       - Config
       - Reporter
 
-    # Use-case orchestration: pick an analyzer implementation, run it, resolve
-    # the requested symbol against the resulting graph.
     Action:
       - Analyzer
       - PhpStanAnalyzer
@@ -75,44 +70,33 @@ deptrac:
       - Graph
       - Config
 
-    # The analysis contract. Only the graph model is part of its vocabulary.
     Analyzer:
       - Graph
 
-    # Analyzer implementations depend on the contract and the graph they build.
-    # Neither may depend on Config: an analyzer is told its parameters, it does
-    # not read the application's configuration format.
     PhpStanAnalyzer:
       - Analyzer
       - Graph
+
     DebugAnalyzer:
       - Analyzer
       - Graph
 
-    # The graph model is the bottom of the stack and depends on nothing.
     Graph: ~
 
-    # Reporting contracts and the reporter selection that reads configuration.
     Reporter:
       - Graph
       - Config
       - Traversal
       - TreeReporter
 
-    # Traversal strategies walk the graph. They know nothing about output format.
     Traversal:
       - Reporter
       - Graph
 
-    # Output formatting depends on the traversal contract, never the reverse.
     TreeReporter:
       - Reporter
       - Traversal
       - Graph
 
-    # Configuration names the graph's own vocabulary rather than restating it: the
-    # direction a report reads is the same closed type the graph classifies its
-    # edges with, so there is one Direction and not a string that has to agree with
-    # one. The graph model depends on nothing, so this cannot become a cycle.
     Config:
       - Graph

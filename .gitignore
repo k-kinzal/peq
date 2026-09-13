@@ -196,3 +196,5 @@ dist/
 /build/
 /.deptrac.cache
 /.php-cs-fixer.cache
+
+/phpbench.json
