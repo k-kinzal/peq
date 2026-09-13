@@ -1,0 +1,54 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M2DH1TBCDKVMX1K3AG0KR475",
+  "strategy": "manual-commit",
+  "branch": "toolkit/php-ai-toolkit-adoption",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".gitattributes",
+    ".github/workflows/ci.yaml",
+    ".github/workflows/docs-preview.yaml",
+    ".github/workflows/docs.yaml",
+    ".github/workflows/pbt.yaml",
+    ".gitignore",
+    ".php-cs-fixer.dist.php",
+    "composer.json",
+    "composer.lock",
+    "composer.lock.php-8.1",
+    "composer.lock.php-8.2",
+    "composer.lock.php-8.3",
+    "composer.lock.php-8.4",
+    "composer.lock.php-8.5",
+    "deptrac.yaml",
+    "infection.json5",
+    "loc.yaml",
+    "phpbench.json.dist",
+    "phpcs.xml.dist",
+    "phpstan.neon.dist",
+    "phpunit.xml.dist",
+    "phpunit10.xml.dist",
+    "phpunit11.xml.dist",
+    "tests/Fixture/Config/ParsedYaml.php",
+    "tests/Fixture/Graph/GeneratedRelations.php",
+    "tests/Property/ConfigReaderPropertyTest.php",
+    "tests/Property/GraphPropertyTest.php",
+    "tests/run.php",
+    "tree.yaml"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 446,
+    "cache_creation_tokens": 1837893,
+    "cache_read_tokens": 183188516,
+    "output_tokens": 122828,
+    "api_call_count": 223
+  }
+}
