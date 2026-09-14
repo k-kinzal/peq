@@ -7,13 +7,15 @@ namespace Tests\Unit\Analyzer\DebugAnalyzer\Generator;
 use App\Analyzer\DebugAnalyzer\Generator\NameGenerator;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\SeededGenerators;
+use Tests\Fixture\Analyzer\DebugAnalyzer\SeededGenerators;
 
 /**
  * @internal
  */
 #[CoversClass(NameGenerator::class)]
+#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\FakerRandomSource::class)]
 #[Small]
 final class NameGeneratorTest extends TestCase
 {

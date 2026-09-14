@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Analyzer\DebugAnalyzer\Generator;
 
 use Closure;
-use Faker\Generator;
 
 /**
  * Generates the names a PHP codebase is made of.
@@ -22,10 +21,10 @@ use Faker\Generator;
 final class NameGenerator
 {
     /**
-     * @param Generator $faker The random source the names are drawn from
+     * @param RandomSource $random The random source the names are drawn from
      */
     public function __construct(
-        private readonly Generator $faker,
+        private readonly RandomSource $random,
     ) {}
 
     /**
@@ -66,7 +65,7 @@ final class NameGenerator
     public function namespace(): string
     {
         $segments = [];
-        $count = $this->faker->numberBetween(1, 3);
+        $count = $this->random->numberBetween(1, 3);
         for ($i = 0; $i < $count; ++$i) {
             $segments[] = $this->pascalCase();
         }
@@ -188,9 +187,9 @@ final class NameGenerator
     public function words(Closure $shape, int $min, int $max): array
     {
         $words = [];
-        $count = $this->faker->numberBetween($min, $max);
+        $count = $this->random->numberBetween($min, $max);
         for ($i = 0; $i < $count; ++$i) {
-            $words[] = $shape($this->faker->word());
+            $words[] = $shape($this->random->word());
         }
 
         return $words;

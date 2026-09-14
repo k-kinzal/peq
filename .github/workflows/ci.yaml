@@ -40,6 +40,7 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: mbstring, pcntl
           coverage: none
+          ini-values: zend.assertions=1
 
       - name: Select the lock file of this PHP minor
         run: cp "composer.lock.php-${{ matrix.php }}" composer.lock
@@ -122,7 +123,7 @@ jobs:
           php-version: '8.5'
           extensions: mbstring, pcntl
           coverage: pcov
-          ini-values: memory_limit=1G
+          ini-values: zend.assertions=1, memory_limit=1G
 
       - name: Select the lock file of this PHP minor
         run: cp composer.lock.php-8.5 composer.lock

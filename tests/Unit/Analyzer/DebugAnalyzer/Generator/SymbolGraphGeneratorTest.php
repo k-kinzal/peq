@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\DebugAnalyzer\Generator;
 
+use App\Analyzer\DebugAnalyzer\Generator\GeneratedGraph;
 use App\Analyzer\Graph\Edge;
 use App\Analyzer\Graph\NodeKind;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -12,8 +13,8 @@ use PHPUnit\Framework\Attributes\DataProviderExternal;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\DrawnSymbolGraphs;
-use Tests\Fixture\Analyzer\SeededGenerators;
+use Tests\Fixture\Analyzer\DebugAnalyzer\DrawnSymbolGraphs;
+use Tests\Fixture\Analyzer\DebugAnalyzer\SeededGenerators;
 use Tests\Fixture\Graph\GraphInvariants;
 
 /**
@@ -21,10 +22,11 @@ use Tests\Fixture\Graph\GraphInvariants;
  */
 #[CoversClass(\App\Analyzer\DebugAnalyzer\Generator\GraphGenerator::class)]
 #[CoversClass(\App\Analyzer\DebugAnalyzer\Generator\ClassLikeGraphGenerator::class)]
-#[CoversClass(\App\Analyzer\DebugAnalyzer\Generator\GeneratedGraph::class)]
+#[CoversClass(GeneratedGraph::class)]
 #[CoversClass(\App\Analyzer\DebugAnalyzer\Generator\LeafGraphGenerator::class)]
 #[CoversClass(\App\Analyzer\DebugAnalyzer\Generator\MemberGraphGenerator::class)]
 #[CoversClass(\App\Analyzer\DebugAnalyzer\Generator\NameGenerator::class)]
+#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\FakerRandomSource::class)]
 #[CoversClass(\App\Analyzer\DebugAnalyzer\Generator\NodeGenerator::class)]
 #[CoversClass(\App\Analyzer\DebugAnalyzer\Generator\NodeIdGenerator::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
@@ -171,6 +173,17 @@ final class SymbolGraphGeneratorTest extends TestCase
         self::assertSame($kind, $result->root->kind());
     }
 
+    #[DataProvider('providerEverySymbolItCanGenerate')]
+    public function testEveryOperationDrawsTheSameGraphAgainForTheSameSeed(string $operation, NodeKind $kind): void
+    {
+        $first = SeededGenerators::symbolGraph($operation, 2, 7);
+        $again = SeededGenerators::symbolGraph($operation, 2, 7);
+
+        self::assertSame($first->root->id()->toString(), $again->root->id()->toString());
+        self::assertSame(SeededGenerators::relationsOf($first), SeededGenerators::relationsOf($again));
+        self::assertSame($kind, $again->root->kind());
+    }
+
     /**
      * @return iterable<string, array{string, NodeKind}>
      */
@@ -200,18 +213,12 @@ final class SymbolGraphGeneratorTest extends TestCase
     /**
      * @param list<string> $relations
      */
-    #[DataProviderExternal(DrawnSymbolGraphs::class, 'atSeed42')]
-    public function testEveryOperationDrawsTheSameGraphForTheSameSeed(string $operation, string $root, array $relations): void
+    #[DataProviderExternal(DrawnSymbolGraphs::class, 'atSeed29')]
+    public function testEveryOperationDrawsTheGraphWrittenDownForItsDraws(string $operation, string $root, array $relations): void
     {
-        $generated = SeededGenerators::symbolGraph($operation, 2, 42);
-
-        $written = array_map(
-            static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(),
-            $generated->graph->authoredEdges(),
-        );
-        sort($written);
+        $generated = SeededGenerators::symbolGraphOf(SeededGenerators::portableGraphs(29), $operation, 2);
 
         self::assertSame($root, $generated->root->id()->toString());
-        self::assertSame($relations, $written);
+        self::assertSame($relations, SeededGenerators::relationsOf($generated));
     }
 }

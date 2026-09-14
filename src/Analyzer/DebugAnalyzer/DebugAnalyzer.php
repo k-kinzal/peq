@@ -6,6 +6,7 @@ namespace App\Analyzer\DebugAnalyzer;
 
 use App\Analyzer\Analyzer;
 use App\Analyzer\DebugAnalyzer\Generator\ClassLikeGraphGenerator;
+use App\Analyzer\DebugAnalyzer\Generator\FakerRandomSource;
 use App\Analyzer\DebugAnalyzer\Generator\GraphGenerator;
 use App\Analyzer\DebugAnalyzer\Generator\LeafGraphGenerator;
 use App\Analyzer\DebugAnalyzer\Generator\MemberGraphGenerator;
@@ -24,8 +25,8 @@ use Faker\Factory;
  * nothing is parsed.
  *
  * The graph is drawn from a seedable random source, so passing a seed makes the
- * same graph come out every time — which is what turns a reproduction of a
- * reporting bug into something that can be attached to a report.
+ * same graph come out every time on the same PHP runtime — which is what turns a
+ * reproduction of a reporting bug into something that can be attached to a report.
  */
 final class DebugAnalyzer implements Analyzer
 {
@@ -54,15 +55,16 @@ final class DebugAnalyzer implements Analyzer
             $faker->seed($this->seed);
         }
 
-        $ids = new NodeIdGenerator(new NameGenerator($faker), $faker);
-        $nodes = new NodeGenerator($ids, $faker);
+        $random = new FakerRandomSource($faker);
+        $ids = new NodeIdGenerator(new NameGenerator($random), $random);
+        $nodes = new NodeGenerator($ids, $random);
 
         return (new GraphGenerator(
-            classLikes: new ClassLikeGraphGenerator($nodes, $ids, $faker),
-            members: new MemberGraphGenerator($nodes, $ids, $faker),
+            classLikes: new ClassLikeGraphGenerator($nodes, $ids, $random),
+            members: new MemberGraphGenerator($nodes, $ids, $random),
             leaves: new LeafGraphGenerator($nodes),
             ids: $ids,
-            faker: $faker,
+            random: $random,
         ))->graph($this->depth);
     }
 }

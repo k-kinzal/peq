@@ -21,7 +21,6 @@ use App\Analyzer\Graph\NodeId\PropertyNodeId;
 use App\Analyzer\Graph\NodeId\TraitNodeId;
 use App\Analyzer\Graph\NodeId\UnknownNodeId;
 use App\Analyzer\Graph\NodeKind;
-use Faker\Generator;
 
 /**
  * Generates the identifiers and source locations a graph is keyed by.
@@ -35,12 +34,12 @@ use Faker\Generator;
 final class NodeIdGenerator
 {
     /**
-     * @param NameGenerator $names The source of the names identifiers are built from
-     * @param Generator     $faker The random source line numbers and choices are drawn from
+     * @param NameGenerator $names  The source of the names identifiers are built from
+     * @param RandomSource  $random The random source line numbers and choices are drawn from
      */
     public function __construct(
         private readonly NameGenerator $names,
-        private readonly Generator $faker,
+        private readonly RandomSource $random,
     ) {}
 
     /**
@@ -52,7 +51,7 @@ final class NodeIdGenerator
     {
         $kinds = NodeKind::cases();
 
-        return $kinds[$this->faker->numberBetween(0, count($kinds) - 1)];
+        return $kinds[$this->random->numberBetween(0, count($kinds) - 1)];
     }
 
     /**
@@ -70,7 +69,7 @@ final class NodeIdGenerator
             static fn (EdgeKind $kind): bool => $kind->direction() === Direction::Uses,
         ));
 
-        return $kinds[$this->faker->numberBetween(0, count($kinds) - 1)];
+        return $kinds[$this->random->numberBetween(0, count($kinds) - 1)];
     }
 
     /**
@@ -230,7 +229,7 @@ final class NodeIdGenerator
      */
     public function typeNodeId(): BuiltinNodeId|ClassNodeId|EnumNodeId|InterfaceNodeId
     {
-        return match ($this->faker->numberBetween(1, 4)) {
+        return match ($this->random->numberBetween(1, 4)) {
             1 => $this->classNodeId(),
             2 => $this->interfaceNodeId(),
             3 => $this->enumNodeId(),
@@ -247,7 +246,7 @@ final class NodeIdGenerator
     {
         return new FileMeta(
             path: $this->names->phpFilePath(),
-            line: $this->faker->numberBetween(1, 100),
+            line: $this->random->numberBetween(1, 100),
             column: 1,
         );
     }

@@ -24,7 +24,6 @@ use App\Analyzer\Graph\NodeId\ClassNodeId;
 use App\Analyzer\Graph\NodeId\EnumNodeId;
 use App\Analyzer\Graph\NodeId\InterfaceNodeId;
 use App\Analyzer\Graph\NodeId\TraitNodeId;
-use Faker\Generator;
 
 /**
  * Generates the symbols that can declare members: classes, interfaces, traits, enums.
@@ -40,14 +39,14 @@ use Faker\Generator;
 final class ClassLikeGraphGenerator
 {
     /**
-     * @param NodeGenerator   $nodes The source of the nodes these graphs hold
-     * @param NodeIdGenerator $ids   The source of the source locations relations carry
-     * @param Generator       $faker The random source counts and optional relations are drawn from
+     * @param NodeGenerator   $nodes  The source of the nodes these graphs hold
+     * @param NodeIdGenerator $ids    The source of the source locations relations carry
+     * @param RandomSource    $random The random source counts and optional relations are drawn from
      */
     public function __construct(
         private readonly NodeGenerator $nodes,
         private readonly NodeIdGenerator $ids,
-        private readonly Generator $faker,
+        private readonly RandomSource $random,
     ) {}
 
     /**
@@ -113,7 +112,7 @@ final class ClassLikeGraphGenerator
      */
     public function classInheritance(SymbolGraphGenerator $symbols, GeneratedGraph $result, int $depth): GeneratedGraph
     {
-        if ($this->faker->boolean()) {
+        if ($this->random->boolean()) {
             $result = $result->relatedTo(
                 $symbols->classGraph(null, $depth - 1),
                 fn (ClassNode $child, ClassNode $parent): Edge => new ExtendsEdge($child, $parent, $this->ids->fileMeta()),
@@ -163,7 +162,7 @@ final class ClassLikeGraphGenerator
                 fn (GraphInterfaceNode $owner, ConstantNode $constant): Edge => new ConstantEdge($owner, $constant, $this->ids->fileMeta()),
             );
         }
-        if ($this->faker->boolean()) {
+        if ($this->random->boolean()) {
             $result = $result->relatedTo(
                 $symbols->interfaceGraph(null, $depth - 1),
                 fn (GraphInterfaceNode $child, GraphInterfaceNode $parent): Edge => new ExtendsEdge($child, $parent, $this->ids->fileMeta()),
@@ -238,6 +237,6 @@ final class ClassLikeGraphGenerator
      */
     public function memberCount(): int
     {
-        return $this->faker->numberBetween(0, 5);
+        return $this->random->numberBetween(0, 5);
     }
 }

@@ -22,6 +22,7 @@ use Tests\Fixture\Graph\GraphInvariants;
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\LeafGraphGenerator::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\MemberGraphGenerator::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\NameGenerator::class)]
+#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\FakerRandomSource::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\NodeGenerator::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\NodeIdGenerator::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]

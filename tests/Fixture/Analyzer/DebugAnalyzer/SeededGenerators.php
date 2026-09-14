@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Tests\Fixture\Analyzer;
+namespace Tests\Fixture\Analyzer\DebugAnalyzer;
 
 use App\Analyzer\DebugAnalyzer\Generator\ClassLikeGraphGenerator;
+use App\Analyzer\DebugAnalyzer\Generator\FakerRandomSource;
 use App\Analyzer\DebugAnalyzer\Generator\GeneratedGraph;
 use App\Analyzer\DebugAnalyzer\Generator\GraphGenerator;
 use App\Analyzer\DebugAnalyzer\Generator\LeafGraphGenerator;
@@ -12,9 +13,10 @@ use App\Analyzer\DebugAnalyzer\Generator\MemberGraphGenerator;
 use App\Analyzer\DebugAnalyzer\Generator\NameGenerator;
 use App\Analyzer\DebugAnalyzer\Generator\NodeGenerator;
 use App\Analyzer\DebugAnalyzer\Generator\NodeIdGenerator;
+use App\Analyzer\DebugAnalyzer\Generator\RandomSource;
+use App\Analyzer\Graph\Edge;
 use App\Analyzer\Graph\Node;
 use Faker\Factory;
-use Faker\Generator;
 use InvalidArgumentException;
 
 /**
@@ -27,18 +29,18 @@ use InvalidArgumentException;
 final class SeededGenerators
 {
     /**
-     * Returns a seeded random source.
+     * Returns the random source peq draws from, seeded.
      *
      * @param int $seed The seed making the draws reproducible
      *
-     * @return Generator The random source
+     * @return RandomSource The random source
      */
-    public static function faker(int $seed = 42): Generator
+    public static function random(int $seed = 42): RandomSource
     {
         $faker = Factory::create();
         $faker->seed($seed);
 
-        return $faker;
+        return new FakerRandomSource($faker);
     }
 
     /**
@@ -50,7 +52,7 @@ final class SeededGenerators
      */
     public static function names(int $seed = 42): NameGenerator
     {
-        return new NameGenerator(self::faker($seed));
+        return new NameGenerator(self::random($seed));
     }
 
     /**
@@ -62,9 +64,9 @@ final class SeededGenerators
      */
     public static function ids(int $seed = 42): NodeIdGenerator
     {
-        $faker = self::faker($seed);
+        $random = self::random($seed);
 
-        return new NodeIdGenerator(new NameGenerator($faker), $faker);
+        return new NodeIdGenerator(new NameGenerator($random), $random);
     }
 
     /**
@@ -76,9 +78,9 @@ final class SeededGenerators
      */
     public static function nodes(int $seed = 42): NodeGenerator
     {
-        $faker = self::faker($seed);
+        $random = self::random($seed);
 
-        return new NodeGenerator(new NodeIdGenerator(new NameGenerator($faker), $faker), $faker);
+        return new NodeGenerator(new NodeIdGenerator(new NameGenerator($random), $random), $random);
     }
 
     /**
@@ -90,26 +92,48 @@ final class SeededGenerators
      */
     public static function graphs(int $seed = 42): GraphGenerator
     {
-        $faker = self::faker($seed);
-        $ids = new NodeIdGenerator(new NameGenerator($faker), $faker);
-        $nodes = new NodeGenerator($ids, $faker);
+        return self::graphsDrawingFrom(self::random($seed));
+    }
+
+    /**
+     * Returns a generator of whole graphs drawing from a sequence every PHP runtime shares.
+     *
+     * The random source peq draws from replays a seed only on the side of PHP 8.3 it
+     * was seeded on. A graph written down to hold the generators to must not depend
+     * on which side a run lands on, so this wiring draws from PortableDraws instead.
+     *
+     * @param int $seed The seed of the portable sequence
+     *
+     * @return GraphGenerator The graph generator
+     */
+    public static function portableGraphs(int $seed = 42): GraphGenerator
+    {
+        return self::graphsDrawingFrom(new PortableDraws($seed));
+    }
+
+    /**
+     * Wires the generator stack over one random source.
+     *
+     * @param RandomSource $random The random source every generator draws from
+     *
+     * @return GraphGenerator The graph generator
+     */
+    public static function graphsDrawingFrom(RandomSource $random): GraphGenerator
+    {
+        $ids = new NodeIdGenerator(new NameGenerator($random), $random);
+        $nodes = new NodeGenerator($ids, $random);
 
         return new GraphGenerator(
-            classLikes: new ClassLikeGraphGenerator($nodes, $ids, $faker),
-            members: new MemberGraphGenerator($nodes, $ids, $faker),
+            classLikes: new ClassLikeGraphGenerator($nodes, $ids, $random),
+            members: new MemberGraphGenerator($nodes, $ids, $random),
             leaves: new LeafGraphGenerator($nodes),
             ids: $ids,
-            faker: $faker,
+            random: $random,
         );
     }
 
     /**
      * Generates a small graph through one named operation of the recursion contract.
-     *
-     * The operations differ in arity — the three that relate to nothing further take
-     * no depth — so a test that wants to exercise all of them uniformly asks here.
-     * Naming them one by one is what makes an operation added to the contract, or
-     * renamed in it, fail to compile here rather than fail at run time.
      *
      * @param string $operation The name of the operation on the recursion contract
      * @param int    $depth     How many further levels of symbols to generate
@@ -121,8 +145,27 @@ final class SeededGenerators
      */
     public static function symbolGraph(string $operation, int $depth = 2, int $seed = 42): GeneratedGraph
     {
-        $generator = self::graphs($seed);
+        return self::symbolGraphOf(self::graphs($seed), $operation, $depth);
+    }
 
+    /**
+     * Generates a small graph through one named operation of a given generator.
+     *
+     * The operations differ in arity — the three that relate to nothing further take
+     * no depth — so a test that wants to exercise all of them uniformly asks here.
+     * Naming them one by one is what makes an operation added to the contract, or
+     * renamed in it, fail to compile here rather than fail at run time.
+     *
+     * @param GraphGenerator $generator The generator to ask
+     * @param string         $operation The name of the operation on the recursion contract
+     * @param int            $depth     How many further levels of symbols to generate
+     *
+     * @return GeneratedGraph<Node> What that operation generated
+     *
+     * @throws InvalidArgumentException If the contract has no operation of that name
+     */
+    public static function symbolGraphOf(GraphGenerator $generator, string $operation, int $depth): GeneratedGraph
+    {
         return match ($operation) {
             'classGraph' => $generator->classGraph(null, $depth),
             'interfaceGraph' => $generator->interfaceGraph(null, $depth),
@@ -137,6 +180,24 @@ final class SeededGenerators
             'builtinGraph' => $generator->builtinGraph(),
             default => throw new InvalidArgumentException(sprintf('The recursion contract has no operation named "%s".', $operation)),
         };
+    }
+
+    /**
+     * Spells every authored relation of a generated graph, in a stable order.
+     *
+     * @param GeneratedGraph<Node> $generated The generated graph
+     *
+     * @return list<string> One "from -[kind]-> to" line per relation, sorted
+     */
+    public static function relationsOf(GeneratedGraph $generated): array
+    {
+        $written = array_map(
+            static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(),
+            $generated->graph->authoredEdges(),
+        );
+        sort($written);
+
+        return $written;
     }
 
     /**
@@ -160,10 +221,10 @@ final class SeededGenerators
      */
     public static function classLikes(int $seed = 42): ClassLikeGraphGenerator
     {
-        $faker = self::faker($seed);
-        $ids = new NodeIdGenerator(new NameGenerator($faker), $faker);
+        $random = self::random($seed);
+        $ids = new NodeIdGenerator(new NameGenerator($random), $random);
 
-        return new ClassLikeGraphGenerator(new NodeGenerator($ids, $faker), $ids, $faker);
+        return new ClassLikeGraphGenerator(new NodeGenerator($ids, $random), $ids, $random);
     }
 
     /**
@@ -175,9 +236,9 @@ final class SeededGenerators
      */
     public static function members(int $seed = 42): MemberGraphGenerator
     {
-        $faker = self::faker($seed);
-        $ids = new NodeIdGenerator(new NameGenerator($faker), $faker);
+        $random = self::random($seed);
+        $ids = new NodeIdGenerator(new NameGenerator($random), $random);
 
-        return new MemberGraphGenerator(new NodeGenerator($ids, $faker), $ids, $faker);
+        return new MemberGraphGenerator(new NodeGenerator($ids, $random), $ids, $random);
     }
 }

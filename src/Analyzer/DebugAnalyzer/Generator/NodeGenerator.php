@@ -28,7 +28,6 @@ use App\Analyzer\Graph\NodeId\PropertyNodeId;
 use App\Analyzer\Graph\NodeId\TraitNodeId;
 use App\Analyzer\Graph\NodeId\UnknownNodeId;
 use App\Analyzer\Graph\NodeKind;
-use Faker\Generator;
 
 /**
  * Generates the nodes a graph is made of.
@@ -43,12 +42,12 @@ use Faker\Generator;
 final class NodeGenerator
 {
     /**
-     * @param NodeIdGenerator $ids   The source of identifiers and source locations
-     * @param Generator       $faker The random source resolution flags are drawn from
+     * @param NodeIdGenerator $ids    The source of identifiers and source locations
+     * @param RandomSource    $random The random source resolution flags are drawn from
      */
     public function __construct(
         private readonly NodeIdGenerator $ids,
-        private readonly Generator $faker,
+        private readonly RandomSource $random,
     ) {}
 
     /**
@@ -86,7 +85,7 @@ final class NodeGenerator
     {
         return new ClassNode(
             id: $nodeId ?? $this->ids->classNodeId(),
-            resolved: $this->faker->boolean(),
+            resolved: $this->random->boolean(),
             meta: $this->ids->fileMeta(),
         );
     }
@@ -102,7 +101,7 @@ final class NodeGenerator
     {
         return new GraphInterfaceNode(
             id: $nodeId ?? $this->ids->interfaceNodeId(),
-            resolved: $this->faker->boolean(),
+            resolved: $this->random->boolean(),
             meta: $this->ids->fileMeta(),
         );
     }
@@ -118,7 +117,7 @@ final class NodeGenerator
     {
         return new TraitNode(
             id: $nodeId ?? $this->ids->traitNodeId(),
-            resolved: $this->faker->boolean(),
+            resolved: $this->random->boolean(),
             meta: $this->ids->fileMeta(),
         );
     }
@@ -134,7 +133,7 @@ final class NodeGenerator
     {
         return new EnumNode(
             id: $nodeId ?? $this->ids->enumNodeId(),
-            resolved: $this->faker->boolean(),
+            resolved: $this->random->boolean(),
             meta: $this->ids->fileMeta(),
         );
     }
@@ -150,7 +149,7 @@ final class NodeGenerator
     {
         return new EnumCaseNode(
             id: $nodeId ?? $this->ids->enumCaseNodeId(),
-            resolved: $this->faker->boolean(),
+            resolved: $this->random->boolean(),
             meta: $this->ids->fileMeta(),
         );
     }
@@ -166,7 +165,7 @@ final class NodeGenerator
     {
         return new MethodNode(
             id: $nodeId ?? $this->ids->methodNodeId(),
-            resolved: $this->faker->boolean(),
+            resolved: $this->random->boolean(),
             meta: $this->ids->fileMeta(),
         );
     }
@@ -182,7 +181,7 @@ final class NodeGenerator
     {
         return new PropertyNode(
             id: $nodeId ?? $this->ids->propertyNodeId(),
-            resolved: $this->faker->boolean(),
+            resolved: $this->random->boolean(),
             meta: $this->ids->fileMeta(),
         );
     }
@@ -198,7 +197,7 @@ final class NodeGenerator
     {
         return new FunctionNode(
             id: $nodeId ?? $this->ids->functionNodeId(),
-            resolved: $this->faker->boolean(),
+            resolved: $this->random->boolean(),
             meta: $this->ids->fileMeta(),
         );
     }
@@ -214,7 +213,7 @@ final class NodeGenerator
     {
         return new ConstantNode(
             id: $nodeId ?? $this->ids->constantNodeId(),
-            resolved: $this->faker->boolean(),
+            resolved: $this->random->boolean(),
             meta: $this->ids->fileMeta(),
         );
     }
@@ -230,7 +229,7 @@ final class NodeGenerator
     {
         return new BuiltinNode(
             id: $nodeId ?? $this->ids->builtinNodeId(),
-            resolved: $this->faker->boolean(),
+            resolved: $this->random->boolean(),
             meta: $this->ids->fileMeta(),
         );
     }
@@ -246,7 +245,7 @@ final class NodeGenerator
     {
         return new UnknownNode(
             id: $nodeId ?? $this->ids->unknownNodeId(),
-            resolved: $this->faker->boolean(),
+            resolved: $this->random->boolean(),
             meta: $this->ids->fileMeta(),
         );
     }

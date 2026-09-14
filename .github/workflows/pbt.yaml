@@ -38,6 +38,7 @@ jobs:
           php-version: '8.5'
           extensions: mbstring, pcntl
           coverage: none
+          ini-values: zend.assertions=1
 
       - name: Select the lock file of this PHP minor
         run: cp composer.lock.php-8.5 composer.lock

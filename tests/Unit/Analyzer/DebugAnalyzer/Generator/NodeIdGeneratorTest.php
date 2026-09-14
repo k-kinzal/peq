@@ -23,13 +23,14 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\SeededGenerators;
+use Tests\Fixture\Analyzer\DebugAnalyzer\SeededGenerators;
 
 /**
  * @internal
  */
 #[CoversClass(NodeIdGenerator::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\NameGenerator::class)]
+#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\FakerRandomSource::class)]
 #[UsesClass(\App\Analyzer\Graph\EdgeKind::class)]
 #[UsesClass(\App\Analyzer\Graph\FileMeta::class)]
 #[UsesClass(BuiltinNodeId::class)]

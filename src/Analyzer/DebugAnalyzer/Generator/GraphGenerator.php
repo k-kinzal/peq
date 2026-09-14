@@ -25,7 +25,6 @@ use App\Analyzer\Graph\NodeId\InterfaceNodeId;
 use App\Analyzer\Graph\NodeId\MethodNodeId;
 use App\Analyzer\Graph\NodeId\PropertyNodeId;
 use App\Analyzer\Graph\NodeId\TraitNodeId;
-use Faker\Generator;
 
 /**
  * Generates a whole dependency graph, and routes the recursion between generators.
@@ -44,14 +43,14 @@ final class GraphGenerator implements SymbolGraphGenerator
      * @param MemberGraphGenerator    $members    The generator of methods, functions and properties
      * @param LeafGraphGenerator      $leaves     The generator of constants, enum cases and builtin types
      * @param NodeIdGenerator         $ids        The source of identifiers drawn when none is given
-     * @param Generator               $faker      The random source the root symbol is drawn from
+     * @param RandomSource            $random     The random source the root symbol is drawn from
      */
     public function __construct(
         private readonly ClassLikeGraphGenerator $classLikes,
         private readonly MemberGraphGenerator $members,
         private readonly LeafGraphGenerator $leaves,
         private readonly NodeIdGenerator $ids,
-        private readonly Generator $faker,
+        private readonly RandomSource $random,
     ) {}
 
     /**
@@ -69,7 +68,7 @@ final class GraphGenerator implements SymbolGraphGenerator
     {
         $remaining = $depth - 1;
 
-        return (match ($this->faker->numberBetween(1, 4)) {
+        return (match ($this->random->numberBetween(1, 4)) {
             1 => $this->classGraph(null, $remaining),
             2 => $this->interfaceGraph(null, $remaining),
             3 => $this->traitGraph(null, $remaining),

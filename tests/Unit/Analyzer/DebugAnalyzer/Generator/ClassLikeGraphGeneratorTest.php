@@ -13,7 +13,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\SeededGenerators;
+use Tests\Fixture\Analyzer\DebugAnalyzer\SeededGenerators;
 use Tests\Fixture\Graph\GraphInvariants;
 
 /**
@@ -25,6 +25,7 @@ use Tests\Fixture\Graph\GraphInvariants;
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\LeafGraphGenerator::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\MemberGraphGenerator::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\NameGenerator::class)]
+#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\FakerRandomSource::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\NodeGenerator::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\NodeIdGenerator::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]

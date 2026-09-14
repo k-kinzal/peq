@@ -26,7 +26,6 @@ use App\Analyzer\Graph\Node\PropertyNode;
 use App\Analyzer\Graph\NodeId\FunctionNodeId;
 use App\Analyzer\Graph\NodeId\MethodNodeId;
 use App\Analyzer\Graph\NodeId\PropertyNodeId;
-use Faker\Generator;
 
 /**
  * Generates the symbols a class-like declares: methods, functions and properties.
@@ -42,14 +41,14 @@ use Faker\Generator;
 final class MemberGraphGenerator
 {
     /**
-     * @param NodeGenerator   $nodes The source of the nodes these graphs hold
-     * @param NodeIdGenerator $ids   The source of the source locations relations carry
-     * @param Generator       $faker The random source counts and optional relations are drawn from
+     * @param NodeGenerator   $nodes  The source of the nodes these graphs hold
+     * @param NodeIdGenerator $ids    The source of the source locations relations carry
+     * @param RandomSource    $random The random source counts and optional relations are drawn from
      */
     public function __construct(
         private readonly NodeGenerator $nodes,
         private readonly NodeIdGenerator $ids,
-        private readonly Generator $faker,
+        private readonly RandomSource $random,
     ) {}
 
     /**
@@ -90,7 +89,7 @@ final class MemberGraphGenerator
         }
 
         $result = $this->callableSignature($symbols, $result, $depth);
-        if ($this->faker->boolean()) {
+        if ($this->random->boolean()) {
             $result = $result->relatedTo(
                 $symbols->functionGraph(null, $depth - 1),
                 fn (FunctionNode $caller, FunctionNode $called): Edge => new FunctionCallEdge($caller, $called, $this->ids->fileMeta()),
@@ -140,7 +139,7 @@ final class MemberGraphGenerator
             fn (FunctionNode|MethodNode $callable, BuiltinNode|ClassNode|EnumNode|GraphInterfaceNode $type): Edge => new TypeReturnEdge($callable, $type, $this->ids->fileMeta()),
         );
 
-        for ($remaining = $this->faker->numberBetween(0, 5); $remaining > 0; --$remaining) {
+        for ($remaining = $this->random->numberBetween(0, 5); $remaining > 0; --$remaining) {
             $result = $result->relatedTo(
                 $symbols->typeGraph(null, $depth - 1),
                 fn (FunctionNode|MethodNode $callable, BuiltinNode|ClassNode|EnumNode|GraphInterfaceNode $type): Edge => new TypeParameterEdge($callable, $type, $this->ids->fileMeta()),
@@ -161,19 +160,19 @@ final class MemberGraphGenerator
      */
     public function methodCalls(SymbolGraphGenerator $symbols, GeneratedGraph $result, int $depth): GeneratedGraph
     {
-        if ($this->faker->boolean()) {
+        if ($this->random->boolean()) {
             $result = $result->relatedTo(
                 $symbols->methodGraph(null, $depth - 1),
                 fn (MethodNode $caller, MethodNode $called): Edge => new MethodCallEdge($caller, $called, $this->ids->fileMeta()),
             );
         }
-        if ($this->faker->boolean()) {
+        if ($this->random->boolean()) {
             $result = $result->relatedTo(
                 $symbols->methodGraph(null, $depth - 1),
                 fn (MethodNode $caller, MethodNode $called): Edge => new StaticCallEdge($caller, $called, $this->ids->fileMeta()),
             );
         }
-        if ($this->faker->boolean()) {
+        if ($this->random->boolean()) {
             $result = $result->relatedTo(
                 $symbols->functionGraph(null, $depth - 1),
                 fn (MethodNode $caller, FunctionNode $called): Edge => new FunctionCallEdge($caller, $called, $this->ids->fileMeta()),
@@ -194,25 +193,25 @@ final class MemberGraphGenerator
      */
     public function methodAccesses(SymbolGraphGenerator $symbols, GeneratedGraph $result, int $depth): GeneratedGraph
     {
-        if ($this->faker->boolean()) {
+        if ($this->random->boolean()) {
             $result = $result->relatedTo(
                 $symbols->propertyGraph(null, $depth - 1),
                 fn (MethodNode $reader, PropertyNode $property): Edge => new PropertyAccessEdge($reader, $property, $this->ids->fileMeta()),
             );
         }
-        if ($this->faker->boolean()) {
+        if ($this->random->boolean()) {
             $result = $result->relatedTo(
                 $symbols->propertyGraph(null, $depth - 1),
                 fn (MethodNode $reader, PropertyNode $property): Edge => new StaticPropertyAccessEdge($reader, $property, $this->ids->fileMeta()),
             );
         }
-        if ($this->faker->boolean()) {
+        if ($this->random->boolean()) {
             $result = $result->relatedTo(
                 $symbols->constantGraph(),
                 fn (MethodNode $reader, ConstantNode $constant): Edge => new ConstFetchEdge($reader, $constant, $this->ids->fileMeta()),
             );
         }
-        if ($this->faker->boolean()) {
+        if ($this->random->boolean()) {
             $result = $result->relatedTo(
                 $symbols->classGraph(null, $depth - 1),
                 fn (MethodNode $caller, ClassNode $instantiated): Edge => new InstantiationEdge($caller, $instantiated, $this->ids->fileMeta()),

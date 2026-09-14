@@ -11,7 +11,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\SeededGenerators;
+use Tests\Fixture\Analyzer\DebugAnalyzer\SeededGenerators;
 
 /**
  * @internal
@@ -19,6 +19,7 @@ use Tests\Fixture\Analyzer\SeededGenerators;
 #[CoversClass(LeafGraphGenerator::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\GeneratedGraph::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\NameGenerator::class)]
+#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\FakerRandomSource::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\NodeGenerator::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\NodeIdGenerator::class)]
 #[UsesClass(\App\Analyzer\Graph\FileMeta::class)]
