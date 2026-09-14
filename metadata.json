@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M2EQN3NDY2322JHBAJ72XTZJ",
+  "strategy": "manual-commit",
+  "branch": "toolkit/php-ai-toolkit-adoption",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/Analyzer/DebugAnalyzer/DebugAnalyzer.php",
+    "src/Analyzer/DebugAnalyzer/Generator/ClassLikeGraphGenerator.php",
+    "src/Analyzer/DebugAnalyzer/Generator/GraphGenerator.php",
+    "src/Analyzer/DebugAnalyzer/Generator/MemberGraphGenerator.php",
+    "src/Analyzer/DebugAnalyzer/Generator/NameGenerator.php",
+    "src/Analyzer/DebugAnalyzer/Generator/NodeGenerator.php",
+    "src/Analyzer/DebugAnalyzer/Generator/NodeIdGenerator.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 2410,
+    "cache_creation_tokens": 5918185,
+    "cache_read_tokens": 610096954,
+    "output_tokens": 1086253,
+    "api_call_count": 1205
+  }
+}
