@@ -163,7 +163,7 @@
 <span class="src-line" id="L125" data-diff="added"><a class="ln" href="#L125">125</a>    {</span>
 <span class="src-line" id="L126" data-diff="added"><a class="ln" href="#L126">126</a>        <span class="tok-var">$kinds</span> = <span class="tok-id">array_map</span>(</span>
 <span class="src-line" id="L127" data-diff="added"><a class="ln" href="#L127">127</a>            <span class="tok-kw">static</span> <span class="tok-kw">fn</span> (<span class="tok-kw">array</span> <span class="tok-var">$case</span>): <span class="tok-id">NodeKind</span> =&gt; <span class="tok-var">$case</span>[<span class="tok-num">1</span>],</span>
-<span class="src-line" id="L128" data-diff="added"><a class="ln" href="#L128">128</a>            <span class="tok-id">iterator_to_array</span>(<span class="tok-id">self</span>::<span class="tok-id">providerEveryKindOfNode</span>()),</span>
+<span class="src-line" id="L128" data-diff="added"><a class="ln" href="#L128">128</a>            [...<span class="tok-id">self</span>::<span class="tok-id">providerEveryKindOfNode</span>()],</span>
 <span class="src-line" id="L129" data-diff="added"><a class="ln" href="#L129">129</a>        );</span>
 <span class="src-line" id="L130" data-diff="added"><a class="ln" href="#L130">130</a></span>
 <span class="src-line" id="L131" data-diff="added"><a class="ln" href="#L131">131</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(<span class="tok-id">array_values</span>(<span class="tok-var">$kinds</span>), <span class="tok-id">array_values</span>(<span class="tok-id">array_unique</span>(<span class="tok-var">$kinds</span>, <span class="tok-id">SORT_REGULAR</span>)));</span>

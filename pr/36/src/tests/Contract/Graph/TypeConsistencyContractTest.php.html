@@ -94,19 +94,18 @@
 <span class="src-line" id="L11" data-diff="added"><a class="ln" href="#L11">11</a><span class="tok-kw">use</span> <span class="tok-id">PHPUnit\Framework\Attributes\DataProvider</span>;</span>
 <span class="src-line" id="L12" data-diff="added"><a class="ln" href="#L12">12</a><span class="tok-kw">use</span> <span class="tok-id">PHPUnit\Framework\Attributes\Small</span>;</span>
 <span class="src-line" id="L13" data-diff="same"><a class="ln" href="#L13">13</a><span class="tok-kw">use</span> <span class="tok-id">PHPUnit\Framework\TestCase</span>;</span>
-<span class="src-line" id="L14" data-diff="added"><a class="ln" href="#L14">14</a><span class="tok-kw">use</span> <span class="tok-id">Tests\Fixture\Graph\GraphModel</span>;</span>
-<span class="src-line" id="L15" data-diff="same"><a class="ln" href="#L15">15</a></span>
-<span class="src-line" id="L16" data-diff="same"><a class="ln" href="#L16">16</a><span class="tok-com">/**</span></span>
-<span class="src-line" id="L17" data-diff="same"><a class="ln" href="#L17">17</a><span class="tok-com"> * @internal</span></span>
+<span class="src-line" id="L14" data-diff="same"><a class="ln" href="#L14">14</a></span>
+<span class="src-line" id="L15" data-diff="same"><a class="ln" href="#L15">15</a><span class="tok-com">/**</span></span>
+<span class="src-line" id="L16" data-diff="same"><a class="ln" href="#L16">16</a><span class="tok-com"> * @internal</span></span>
 <span class="src-line" data-diff="removed"><span class="ln">59</span><span class="tok-com"> *</span></span>
 <span class="src-line" data-diff="removed"><span class="ln">60</span><span class="tok-com"> * Verifies that enum-to-class mappings are exhaustive: every EdgeKind has</span></span>
 <span class="src-line" data-diff="removed"><span class="ln">61</span><span class="tok-com"> * a corresponding Edge class, every NodeKind has a corresponding Node class</span></span>
 <span class="src-line" data-diff="removed"><span class="ln">62</span><span class="tok-com"> * and NodeId class, and file counts match enum case counts</span></span>
-<span class="src-line" id="L18" data-diff="same"><a class="ln" href="#L18">18</a><span class="tok-com"> */</span></span>
-<span class="src-line" id="L19" data-diff="added"><a class="ln" href="#L19">19</a>#[<span class="tok-id">CoversClass</span>(<span class="tok-id">EdgeKind</span>::<span class="tok-kw">class</span>)]</span>
-<span class="src-line" id="L20" data-diff="added"><a class="ln" href="#L20">20</a>#[<span class="tok-id">Small</span>]</span>
-<span class="src-line" id="L21" data-diff="same"><a class="ln" href="#L21">21</a><span class="tok-kw">final</span> <span class="tok-kw">class</span> <span class="tok-id">TypeConsistencyContractTest</span> <span class="tok-kw">extends</span> <span class="tok-id">TestCase</span></span>
-<span class="src-line" id="L22" data-diff="same"><a class="ln" href="#L22">22</a>{</span>
+<span class="src-line" id="L17" data-diff="same"><a class="ln" href="#L17">17</a><span class="tok-com"> */</span></span>
+<span class="src-line" id="L18" data-diff="added"><a class="ln" href="#L18">18</a>#[<span class="tok-id">CoversClass</span>(<span class="tok-id">EdgeKind</span>::<span class="tok-kw">class</span>)]</span>
+<span class="src-line" id="L19" data-diff="added"><a class="ln" href="#L19">19</a>#[<span class="tok-id">Small</span>]</span>
+<span class="src-line" id="L20" data-diff="same"><a class="ln" href="#L20">20</a><span class="tok-kw">final</span> <span class="tok-kw">class</span> <span class="tok-id">TypeConsistencyContractTest</span> <span class="tok-kw">extends</span> <span class="tok-id">TestCase</span></span>
+<span class="src-line" id="L21" data-diff="same"><a class="ln" href="#L21">21</a>{</span>
 <span class="src-line" data-diff="removed"><span class="ln">66</span>    <span class="tok-com">/** @var array&lt;string, class-string&gt; */</span></span>
 <span class="src-line" data-diff="removed"><span class="ln">67</span>    <span class="tok-kw">private</span> <span class="tok-kw">const</span> <span class="tok-id">EDGE_KIND_TO_CLASS</span> = [</span>
 <span class="src-line" data-diff="removed"><span class="ln">68</span>        <span class="tok-str">&#039;function-call&#039;</span> =&gt; <span class="tok-id">FunctionCallEdge</span>::<span class="tok-kw">class</span>,</span>
@@ -165,8 +164,8 @@
 <span class="src-line" data-diff="removed"><span class="ln">121</span></span>
 <span class="src-line" data-diff="removed"><span class="ln">122</span>    #[<span class="tok-id">Test</span>]</span>
 <span class="src-line" data-diff="removed"><span class="ln">123</span>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testEveryEdgeKindHasEdgeClass</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L23" data-diff="added"><a class="ln" href="#L23">23</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testEveryKindOfRelationHasExactlyOneClass</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L24" data-diff="same"><a class="ln" href="#L24">24</a>    {</span>
+<span class="src-line" id="L22" data-diff="added"><a class="ln" href="#L22">22</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testEveryKindOfRelationHasExactlyOneClass</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L23" data-diff="same"><a class="ln" href="#L23">23</a>    {</span>
 <span class="src-line" data-diff="removed"><span class="ln">125</span>        <span class="tok-kw">foreach</span> (<span class="tok-id">EdgeKind</span>::<span class="tok-id">cases</span>() <span class="tok-kw">as</span> <span class="tok-var">$case</span>) {</span>
 <span class="src-line" data-diff="removed"><span class="ln">126</span>            <span class="tok-id">self</span>::<span class="tok-id">assertArrayHasKey</span>(</span>
 <span class="src-line" data-diff="removed"><span class="ln">127</span>                <span class="tok-var">$case</span>-&gt;<span class="tok-id">value</span>,</span>
@@ -174,19 +173,21 @@
 <span class="src-line" data-diff="removed"><span class="ln">129</span>                <span class="tok-id">sprintf</span>(<span class="tok-str">&#039;EdgeKind::%s (%s) has no entry in EDGE_KIND_TO_CLASS&#039;</span>, <span class="tok-var">$case</span>-&gt;<span class="tok-id">name</span>, <span class="tok-var">$case</span>-&gt;<span class="tok-id">value</span>),</span>
 <span class="src-line" data-diff="removed"><span class="ln">130</span>            );</span>
 <span class="src-line" data-diff="removed"><span class="ln">131</span>        }</span>
-<span class="src-line" data-diff="removed"><span class="ln">132</span></span>
+<span class="src-line" id="L24" data-diff="added"><a class="ln" href="#L24">24</a>        <span class="tok-var">$files</span> = <span class="tok-id">glob</span>(<span class="tok-id">dirname</span>(__DIR__, <span class="tok-num">3</span>).<span class="tok-str">&#039;/src/Analyzer/Graph/Edge/*/*Edge.php&#039;</span>);</span>
+<span class="src-line" id="L25" data-diff="same"><a class="ln" href="#L25">25</a></span>
 <span class="src-line" data-diff="removed"><span class="ln">133</span>        <span class="tok-id">self</span>::<span class="tok-id">assertCount</span>(</span>
 <span class="src-line" data-diff="removed"><span class="ln">134</span>            <span class="tok-id">count</span>(<span class="tok-id">EdgeKind</span>::<span class="tok-id">cases</span>()),</span>
 <span class="src-line" data-diff="removed"><span class="ln">135</span>            <span class="tok-id">self</span>::<span class="tok-id">EDGE_KIND_TO_CLASS</span>,</span>
 <span class="src-line" data-diff="removed"><span class="ln">136</span>            <span class="tok-str">&#039;EDGE_KIND_TO_CLASS map size does not match EdgeKind case count&#039;</span>,</span>
 <span class="src-line" data-diff="removed"><span class="ln">137</span>        );</span>
-<span class="src-line" id="L25" data-diff="added"><a class="ln" href="#L25">25</a>        <span class="tok-id">self</span>::<span class="tok-id">assertCount</span>(<span class="tok-id">count</span>(<span class="tok-id">GraphModel</span>::<span class="tok-id">edgeKinds</span>()), <span class="tok-id">GraphModel</span>::<span class="tok-id">edgeClasses</span>());</span>
-<span class="src-line" id="L26" data-diff="same"><a class="ln" href="#L26">26</a>    }</span>
-<span class="src-line" id="L27" data-diff="same"><a class="ln" href="#L27">27</a></span>
+<span class="src-line" id="L26" data-diff="added"><a class="ln" href="#L26">26</a>        <span class="tok-id">self</span>::<span class="tok-id">assertIsArray</span>(<span class="tok-var">$files</span>);</span>
+<span class="src-line" id="L27" data-diff="added"><a class="ln" href="#L27">27</a>        <span class="tok-id">self</span>::<span class="tok-id">assertCount</span>(<span class="tok-id">count</span>(<span class="tok-id">EdgeKind</span>::<span class="tok-id">cases</span>()), <span class="tok-var">$files</span>);</span>
+<span class="src-line" id="L28" data-diff="same"><a class="ln" href="#L28">28</a>    }</span>
+<span class="src-line" id="L29" data-diff="same"><a class="ln" href="#L29">29</a></span>
 <span class="src-line" data-diff="removed"><span class="ln">140</span>    #[<span class="tok-id">Test</span>]</span>
 <span class="src-line" data-diff="removed"><span class="ln">141</span>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testEveryEdgeClassReturnsCorrectKind</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L28" data-diff="added"><a class="ln" href="#L28">28</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testEveryKindOfSymbolHasExactlyOneNodeClass</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L29" data-diff="same"><a class="ln" href="#L29">29</a>    {</span>
+<span class="src-line" id="L30" data-diff="added"><a class="ln" href="#L30">30</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testEveryKindOfSymbolHasExactlyOneNodeClass</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L31" data-diff="same"><a class="ln" href="#L31">31</a>    {</span>
 <span class="src-line" data-diff="removed"><span class="ln">143</span>        <span class="tok-kw">foreach</span> (<span class="tok-id">self</span>::<span class="tok-id">EDGE_KIND_TO_CLASS</span> <span class="tok-kw">as</span> <span class="tok-var">$kindValue</span> =&gt; <span class="tok-var">$className</span>) {</span>
 <span class="src-line" data-diff="removed"><span class="ln">144</span>            <span class="tok-id">self</span>::<span class="tok-id">assertTrue</span>(<span class="tok-id">class_exists</span>(<span class="tok-var">$className</span>), <span class="tok-id">sprintf</span>(<span class="tok-str">&#039;Class %s does not exist&#039;</span>, <span class="tok-var">$className</span>));</span>
 <span class="src-line" data-diff="removed"><span class="ln">145</span></span>
@@ -196,19 +197,21 @@
 <span class="src-line" data-diff="removed"><span class="ln">149</span>                <span class="tok-var">$reflection</span>-&gt;<span class="tok-id">implementsInterface</span>(<span class="tok-id">Edge</span>::<span class="tok-kw">class</span>),</span>
 <span class="src-line" data-diff="removed"><span class="ln">150</span>                <span class="tok-id">sprintf</span>(<span class="tok-str">&#039;%s does not implement Edge interface&#039;</span>, <span class="tok-var">$className</span>),</span>
 <span class="src-line" data-diff="removed"><span class="ln">151</span>            );</span>
-<span class="src-line" data-diff="removed"><span class="ln">152</span></span>
+<span class="src-line" id="L32" data-diff="added"><a class="ln" href="#L32">32</a>        <span class="tok-var">$files</span> = <span class="tok-id">glob</span>(<span class="tok-id">dirname</span>(__DIR__, <span class="tok-num">3</span>).<span class="tok-str">&#039;/src/Analyzer/Graph/Node/*Node.php&#039;</span>);</span>
+<span class="src-line" id="L33" data-diff="same"><a class="ln" href="#L33">33</a></span>
 <span class="src-line" data-diff="removed"><span class="ln">153</span>            <span class="tok-id">self</span>::<span class="tok-id">assertTrue</span>(</span>
 <span class="src-line" data-diff="removed"><span class="ln">154</span>                <span class="tok-var">$reflection</span>-&gt;<span class="tok-id">hasMethod</span>(<span class="tok-str">&#039;kind&#039;</span>),</span>
 <span class="src-line" data-diff="removed"><span class="ln">155</span>                <span class="tok-id">sprintf</span>(<span class="tok-str">&#039;%s does not have a kind() method&#039;</span>, <span class="tok-var">$className</span>),</span>
 <span class="src-line" data-diff="removed"><span class="ln">156</span>            );</span>
 <span class="src-line" data-diff="removed"><span class="ln">157</span>        }</span>
-<span class="src-line" id="L30" data-diff="added"><a class="ln" href="#L30">30</a>        <span class="tok-id">self</span>::<span class="tok-id">assertCount</span>(<span class="tok-id">count</span>(<span class="tok-id">GraphModel</span>::<span class="tok-id">nodeKinds</span>()), <span class="tok-id">GraphModel</span>::<span class="tok-id">nodeClasses</span>());</span>
-<span class="src-line" id="L31" data-diff="same"><a class="ln" href="#L31">31</a>    }</span>
-<span class="src-line" id="L32" data-diff="same"><a class="ln" href="#L32">32</a></span>
+<span class="src-line" id="L34" data-diff="added"><a class="ln" href="#L34">34</a>        <span class="tok-id">self</span>::<span class="tok-id">assertIsArray</span>(<span class="tok-var">$files</span>);</span>
+<span class="src-line" id="L35" data-diff="added"><a class="ln" href="#L35">35</a>        <span class="tok-id">self</span>::<span class="tok-id">assertCount</span>(<span class="tok-id">count</span>(<span class="tok-id">NodeKind</span>::<span class="tok-id">cases</span>()), <span class="tok-var">$files</span>);</span>
+<span class="src-line" id="L36" data-diff="same"><a class="ln" href="#L36">36</a>    }</span>
+<span class="src-line" id="L37" data-diff="same"><a class="ln" href="#L37">37</a></span>
 <span class="src-line" data-diff="removed"><span class="ln">160</span>    #[<span class="tok-id">Test</span>]</span>
 <span class="src-line" data-diff="removed"><span class="ln">161</span>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testEveryNodeKindHasNodeClass</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L33" data-diff="added"><a class="ln" href="#L33">33</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testEveryKindOfSymbolHasExactlyOneIdentifierClass</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L34" data-diff="same"><a class="ln" href="#L34">34</a>    {</span>
+<span class="src-line" id="L38" data-diff="added"><a class="ln" href="#L38">38</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testEveryKindOfSymbolHasExactlyOneIdentifierClass</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L39" data-diff="same"><a class="ln" href="#L39">39</a>    {</span>
 <span class="src-line" data-diff="removed"><span class="ln">163</span>        <span class="tok-kw">foreach</span> (<span class="tok-id">NodeKind</span>::<span class="tok-id">cases</span>() <span class="tok-kw">as</span> <span class="tok-var">$case</span>) {</span>
 <span class="src-line" data-diff="removed"><span class="ln">164</span>            <span class="tok-id">self</span>::<span class="tok-id">assertArrayHasKey</span>(</span>
 <span class="src-line" data-diff="removed"><span class="ln">165</span>                <span class="tok-var">$case</span>-&gt;<span class="tok-id">value</span>,</span>
@@ -216,19 +219,21 @@
 <span class="src-line" data-diff="removed"><span class="ln">167</span>                <span class="tok-id">sprintf</span>(<span class="tok-str">&#039;NodeKind::%s (%s) has no entry in NODE_KIND_TO_CLASS&#039;</span>, <span class="tok-var">$case</span>-&gt;<span class="tok-id">name</span>, <span class="tok-var">$case</span>-&gt;<span class="tok-id">value</span>),</span>
 <span class="src-line" data-diff="removed"><span class="ln">168</span>            );</span>
 <span class="src-line" data-diff="removed"><span class="ln">169</span>        }</span>
-<span class="src-line" data-diff="removed"><span class="ln">170</span></span>
+<span class="src-line" id="L40" data-diff="added"><a class="ln" href="#L40">40</a>        <span class="tok-var">$files</span> = <span class="tok-id">glob</span>(<span class="tok-id">dirname</span>(__DIR__, <span class="tok-num">3</span>).<span class="tok-str">&#039;/src/Analyzer/Graph/NodeId/*NodeId.php&#039;</span>);</span>
+<span class="src-line" id="L41" data-diff="same"><a class="ln" href="#L41">41</a></span>
 <span class="src-line" data-diff="removed"><span class="ln">171</span>        <span class="tok-id">self</span>::<span class="tok-id">assertCount</span>(</span>
 <span class="src-line" data-diff="removed"><span class="ln">172</span>            <span class="tok-id">count</span>(<span class="tok-id">NodeKind</span>::<span class="tok-id">cases</span>()),</span>
 <span class="src-line" data-diff="removed"><span class="ln">173</span>            <span class="tok-id">self</span>::<span class="tok-id">NODE_KIND_TO_CLASS</span>,</span>
 <span class="src-line" data-diff="removed"><span class="ln">174</span>            <span class="tok-str">&#039;NODE_KIND_TO_CLASS map size does not match NodeKind case count&#039;</span>,</span>
 <span class="src-line" data-diff="removed"><span class="ln">175</span>        );</span>
-<span class="src-line" id="L35" data-diff="added"><a class="ln" href="#L35">35</a>        <span class="tok-id">self</span>::<span class="tok-id">assertCount</span>(<span class="tok-id">count</span>(<span class="tok-id">GraphModel</span>::<span class="tok-id">nodeKinds</span>()), <span class="tok-id">GraphModel</span>::<span class="tok-id">nodeIdClasses</span>());</span>
-<span class="src-line" id="L36" data-diff="same"><a class="ln" href="#L36">36</a>    }</span>
-<span class="src-line" id="L37" data-diff="same"><a class="ln" href="#L37">37</a></span>
+<span class="src-line" id="L42" data-diff="added"><a class="ln" href="#L42">42</a>        <span class="tok-id">self</span>::<span class="tok-id">assertIsArray</span>(<span class="tok-var">$files</span>);</span>
+<span class="src-line" id="L43" data-diff="added"><a class="ln" href="#L43">43</a>        <span class="tok-id">self</span>::<span class="tok-id">assertCount</span>(<span class="tok-id">count</span>(<span class="tok-id">NodeKind</span>::<span class="tok-id">cases</span>()), <span class="tok-var">$files</span>);</span>
+<span class="src-line" id="L44" data-diff="same"><a class="ln" href="#L44">44</a>    }</span>
+<span class="src-line" id="L45" data-diff="same"><a class="ln" href="#L45">45</a></span>
 <span class="src-line" data-diff="removed"><span class="ln">178</span>    #[<span class="tok-id">Test</span>]</span>
 <span class="src-line" data-diff="removed"><span class="ln">179</span>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testEveryNodeKindHasNodeIdClass</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L38" data-diff="added"><a class="ln" href="#L38">38</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testOnlyTheDerivedReadingsAreMarkedAsDerived</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L39" data-diff="same"><a class="ln" href="#L39">39</a>    {</span>
+<span class="src-line" id="L46" data-diff="added"><a class="ln" href="#L46">46</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testOnlyTheTwoDerivedReadingsAreReadTowardsTheSubject</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L47" data-diff="same"><a class="ln" href="#L47">47</a>    {</span>
 <span class="src-line" data-diff="removed"><span class="ln">181</span>        <span class="tok-kw">foreach</span> (<span class="tok-id">NodeKind</span>::<span class="tok-id">cases</span>() <span class="tok-kw">as</span> <span class="tok-var">$case</span>) {</span>
 <span class="src-line" data-diff="removed"><span class="ln">182</span>            <span class="tok-id">self</span>::<span class="tok-id">assertArrayHasKey</span>(</span>
 <span class="src-line" data-diff="removed"><span class="ln">183</span>                <span class="tok-var">$case</span>-&gt;<span class="tok-id">value</span>,</span>
@@ -241,57 +246,48 @@
 <span class="src-line" data-diff="removed"><span class="ln">190</span>            <span class="tok-id">count</span>(<span class="tok-id">NodeKind</span>::<span class="tok-id">cases</span>()),</span>
 <span class="src-line" data-diff="removed"><span class="ln">191</span>            <span class="tok-id">self</span>::<span class="tok-id">NODE_KIND_TO_ID_CLASS</span>,</span>
 <span class="src-line" data-diff="removed"><span class="ln">192</span>            <span class="tok-str">&#039;NODE_KIND_TO_ID_CLASS map size does not match NodeKind case count&#039;</span>,</span>
-<span class="src-line" data-diff="removed"><span class="ln">193</span>        );</span>
-<span class="src-line" id="L40" data-diff="added"><a class="ln" href="#L40">40</a>        <span class="tok-id">self</span>::<span class="tok-id">assertCount</span>(<span class="tok-num">2</span>, <span class="tok-id">GraphModel</span>::<span class="tok-id">inverseEdgeClasses</span>());</span>
-<span class="src-line" id="L41" data-diff="same"><a class="ln" href="#L41">41</a>    }</span>
-<span class="src-line" id="L42" data-diff="same"><a class="ln" href="#L42">42</a></span>
+<span class="src-line" id="L48" data-diff="added"><a class="ln" href="#L48">48</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(</span>
+<span class="src-line" id="L49" data-diff="added"><a class="ln" href="#L49">49</a>            [<span class="tok-id">EdgeKind</span>::<span class="tok-id">UsedBy</span>, <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclaredIn</span>],</span>
+<span class="src-line" id="L50" data-diff="added"><a class="ln" href="#L50">50</a>            <span class="tok-id">array_values</span>(<span class="tok-id">array_filter</span>(<span class="tok-id">EdgeKind</span>::<span class="tok-id">cases</span>(), <span class="tok-kw">static</span> <span class="tok-kw">fn</span> (<span class="tok-id">EdgeKind</span> <span class="tok-var">$kind</span>): <span class="tok-id">bool</span> =&gt; <span class="tok-var">$kind</span>-&gt;<span class="tok-id">direction</span>() === <span class="tok-id">Direction</span>::<span class="tok-id">UsedBy</span>)),</span>
+<span class="src-line" id="L51" data-diff="same"><a class="ln" href="#L51">51</a>        );</span>
+<span class="src-line" id="L52" data-diff="same"><a class="ln" href="#L52">52</a>    }</span>
+<span class="src-line" id="L53" data-diff="same"><a class="ln" href="#L53">53</a></span>
 <span class="src-line" data-diff="removed"><span class="ln">196</span>    #[<span class="tok-id">Test</span>]</span>
 <span class="src-line" data-diff="removed"><span class="ln">197</span>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testEdgeKindInvertCoversAllNonReverseCases</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L43" data-diff="added"><a class="ln" href="#L43">43</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testEveryOtherRelationClassStandsForSomethingSourceCodeWrites</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L44" data-diff="same"><a class="ln" href="#L44">44</a>    {</span>
+<span class="src-line" id="L54" data-diff="added"><a class="ln" href="#L54">54</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testTheDerivedReadingsAreTheOnlyClassesInTheInverseGroup</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L55" data-diff="same"><a class="ln" href="#L55">55</a>    {</span>
 <span class="src-line" data-diff="removed"><span class="ln">199</span>        <span class="tok-var">$nonReverseCases</span> = <span class="tok-id">array_filter</span>(</span>
 <span class="src-line" data-diff="removed"><span class="ln">200</span>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">cases</span>(),</span>
 <span class="src-line" data-diff="removed"><span class="ln">201</span>            <span class="tok-kw">static</span> <span class="tok-kw">fn</span> (<span class="tok-id">EdgeKind</span> <span class="tok-var">$kind</span>): <span class="tok-id">bool</span> =&gt; <span class="tok-var">$kind</span> !== <span class="tok-id">EdgeKind</span>::<span class="tok-id">UsedBy</span> &amp;&amp; <span class="tok-var">$kind</span> !== <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclaredIn</span>,</span>
 <span class="src-line" data-diff="removed"><span class="ln">202</span>        );</span>
-<span class="src-line" id="L45" data-diff="added"><a class="ln" href="#L45">45</a>        <span class="tok-id">self</span>::<span class="tok-id">assertCount</span>(<span class="tok-id">count</span>(<span class="tok-id">GraphModel</span>::<span class="tok-id">edgeKinds</span>()) - <span class="tok-num">2</span>, <span class="tok-id">GraphModel</span>::<span class="tok-id">authoredEdgeClasses</span>());</span>
-<span class="src-line" id="L46" data-diff="added"><a class="ln" href="#L46">46</a>    }</span>
-<span class="src-line" id="L47" data-diff="same"><a class="ln" href="#L47">47</a></span>
+<span class="src-line" data-diff="removed"><span class="ln">203</span></span>
 <span class="src-line" data-diff="removed"><span class="ln">204</span>        <span class="tok-kw">foreach</span> (<span class="tok-var">$nonReverseCases</span> <span class="tok-kw">as</span> <span class="tok-var">$case</span>) {</span>
 <span class="src-line" data-diff="removed"><span class="ln">205</span>            <span class="tok-var">$inverted</span> = <span class="tok-var">$case</span>-&gt;<span class="tok-id">invert</span>();</span>
-<span class="src-line" id="L48" data-diff="added"><a class="ln" href="#L48">48</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L49" data-diff="added"><a class="ln" href="#L49">49</a><span class="tok-com">     * @param EdgeKind $kind The kind to classify</span></span>
-<span class="src-line" id="L50" data-diff="added"><a class="ln" href="#L50">50</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L51" data-diff="added"><a class="ln" href="#L51">51</a>    #[<span class="tok-id">DataProvider</span>(<span class="tok-str">&#039;providerEveryKindOfRelation&#039;</span>)]</span>
-<span class="src-line" id="L52" data-diff="added"><a class="ln" href="#L52">52</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testEveryKindOfRelationIsClassifiedByDirection</span>(<span class="tok-id">EdgeKind</span> <span class="tok-var">$kind</span>): <span class="tok-id">void</span></span>
-<span class="src-line" id="L53" data-diff="added"><a class="ln" href="#L53">53</a>    {</span>
-<span class="src-line" id="L54" data-diff="added"><a class="ln" href="#L54">54</a>        <span class="tok-id">self</span>::<span class="tok-id">assertContains</span>(<span class="tok-var">$kind</span>-&gt;<span class="tok-id">direction</span>(), [<span class="tok-id">Direction</span>::<span class="tok-id">Uses</span>, <span class="tok-id">Direction</span>::<span class="tok-id">UsedBy</span>]);</span>
-<span class="src-line" id="L55" data-diff="added"><a class="ln" href="#L55">55</a>    }</span>
-<span class="src-line" id="L56" data-diff="same"><a class="ln" href="#L56">56</a></span>
+<span class="src-line" id="L56" data-diff="added"><a class="ln" href="#L56">56</a>        <span class="tok-var">$files</span> = <span class="tok-id">glob</span>(<span class="tok-id">dirname</span>(__DIR__, <span class="tok-num">3</span>).<span class="tok-str">&#039;/src/Analyzer/Graph/Edge/Inverse/*.php&#039;</span>);</span>
+<span class="src-line" id="L57" data-diff="same"><a class="ln" href="#L57">57</a></span>
 <span class="src-line" data-diff="removed"><span class="ln">207</span>            <span class="tok-id">self</span>::<span class="tok-id">assertContains</span>(</span>
 <span class="src-line" data-diff="removed"><span class="ln">208</span>                <span class="tok-var">$inverted</span>,</span>
 <span class="src-line" data-diff="removed"><span class="ln">209</span>                [<span class="tok-id">EdgeKind</span>::<span class="tok-id">UsedBy</span>, <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclaredIn</span>],</span>
 <span class="src-line" data-diff="removed"><span class="ln">210</span>                <span class="tok-id">sprintf</span>(<span class="tok-str">&#039;EdgeKind::%s-&gt;invert() returned unexpected kind %s&#039;</span>, <span class="tok-var">$case</span>-&gt;<span class="tok-id">name</span>, <span class="tok-var">$inverted</span>-&gt;<span class="tok-id">name</span>),</span>
 <span class="src-line" data-diff="removed"><span class="ln">211</span>            );</span>
-<span class="src-line" id="L57" data-diff="added"><a class="ln" href="#L57">57</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L58" data-diff="added"><a class="ln" href="#L58">58</a><span class="tok-com">     * @return iterable&lt;string, array{EdgeKind}&gt; One case per relation kind</span></span>
-<span class="src-line" id="L59" data-diff="added"><a class="ln" href="#L59">59</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L60" data-diff="added"><a class="ln" href="#L60">60</a>    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">function</span> <span class="tok-id">providerEveryKindOfRelation</span>(): <span class="tok-id">iterable</span></span>
-<span class="src-line" id="L61" data-diff="added"><a class="ln" href="#L61">61</a>    {</span>
-<span class="src-line" id="L62" data-diff="added"><a class="ln" href="#L62">62</a>        <span class="tok-kw">foreach</span> (<span class="tok-id">EdgeKind</span>::<span class="tok-id">cases</span>() <span class="tok-kw">as</span> <span class="tok-var">$kind</span>) {</span>
-<span class="src-line" id="L63" data-diff="added"><a class="ln" href="#L63">63</a>            <span class="tok-kw">yield</span> <span class="tok-var">$kind</span>-&gt;<span class="tok-id">value</span> =&gt; [<span class="tok-var">$kind</span>];</span>
-<span class="src-line" id="L64" data-diff="same"><a class="ln" href="#L64">64</a>        }</span>
-<span class="src-line" id="L65" data-diff="same"><a class="ln" href="#L65">65</a>    }</span>
-<span class="src-line" id="L66" data-diff="same"><a class="ln" href="#L66">66</a></span>
+<span class="src-line" data-diff="removed"><span class="ln">212</span>        }</span>
+<span class="src-line" id="L58" data-diff="added"><a class="ln" href="#L58">58</a>        <span class="tok-id">self</span>::<span class="tok-id">assertIsArray</span>(<span class="tok-var">$files</span>);</span>
+<span class="src-line" id="L59" data-diff="added"><a class="ln" href="#L59">59</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>([<span class="tok-str">&#039;DeclaredInEdge.php&#039;</span>, <span class="tok-str">&#039;UsedByEdge.php&#039;</span>], <span class="tok-id">array_map</span>(<span class="tok-str">&#039;basename&#039;</span>, <span class="tok-var">$files</span>));</span>
+<span class="src-line" id="L60" data-diff="same"><a class="ln" href="#L60">60</a>    }</span>
+<span class="src-line" id="L61" data-diff="same"><a class="ln" href="#L61">61</a></span>
 <span class="src-line" data-diff="removed"><span class="ln">215</span>    #[<span class="tok-id">Test</span>]</span>
 <span class="src-line" data-diff="removed"><span class="ln">216</span>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testEdgeClassCountMatchesEdgeKindCount</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L67" data-diff="added"><a class="ln" href="#L67">67</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testTheKindsOfSymbolAreAClosedSet</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L68" data-diff="same"><a class="ln" href="#L68">68</a>    {</span>
+<span class="src-line" id="L62" data-diff="added"><a class="ln" href="#L62">62</a>    #[<span class="tok-id">DataProvider</span>(<span class="tok-str">&#039;providerEveryKindOfRelation&#039;</span>)]</span>
+<span class="src-line" id="L63" data-diff="added"><a class="ln" href="#L63">63</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testEveryKindOfRelationIsClassifiedByDirection</span>(<span class="tok-id">EdgeKind</span> <span class="tok-var">$kind</span>): <span class="tok-id">void</span></span>
+<span class="src-line" id="L64" data-diff="same"><a class="ln" href="#L64">64</a>    {</span>
 <span class="src-line" data-diff="removed"><span class="ln">218</span>        <span class="tok-var">$edgeDir</span> = __DIR__.<span class="tok-str">&#039;/../../../src/Analyzer/Graph/Edge&#039;</span>;</span>
 <span class="src-line" data-diff="removed"><span class="ln">219</span>        <span class="tok-var">$files</span> = <span class="tok-id">glob</span>(<span class="tok-var">$edgeDir</span>.<span class="tok-str">&#039;/*.php&#039;</span>);</span>
 <span class="src-line" data-diff="removed"><span class="ln">220</span>        <span class="tok-id">self</span>::<span class="tok-id">assertNotFalse</span>(<span class="tok-var">$files</span>, <span class="tok-str">&#039;Failed to glob Edge directory&#039;</span>);</span>
 <span class="src-line" data-diff="removed"><span class="ln">221</span></span>
 <span class="src-line" data-diff="removed"><span class="ln">222</span>        <span class="tok-var">$phpFileCount</span> = <span class="tok-id">count</span>(<span class="tok-var">$files</span>);</span>
-<span class="src-line" data-diff="removed"><span class="ln">223</span></span>
+<span class="src-line" id="L65" data-diff="added"><a class="ln" href="#L65">65</a>        <span class="tok-id">self</span>::<span class="tok-id">assertContains</span>(<span class="tok-var">$kind</span>-&gt;<span class="tok-id">direction</span>(), [<span class="tok-id">Direction</span>::<span class="tok-id">Uses</span>, <span class="tok-id">Direction</span>::<span class="tok-id">UsedBy</span>]);</span>
+<span class="src-line" id="L66" data-diff="added"><a class="ln" href="#L66">66</a>    }</span>
+<span class="src-line" id="L67" data-diff="same"><a class="ln" href="#L67">67</a></span>
 <span class="src-line" data-diff="removed"><span class="ln">224</span>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(</span>
 <span class="src-line" data-diff="removed"><span class="ln">225</span>            <span class="tok-id">count</span>(<span class="tok-id">EdgeKind</span>::<span class="tok-id">cases</span>()),</span>
 <span class="src-line" data-diff="removed"><span class="ln">226</span>            <span class="tok-var">$phpFileCount</span>,</span>
@@ -301,10 +297,17 @@
 <span class="src-line" data-diff="removed"><span class="ln">230</span>                <span class="tok-id">count</span>(<span class="tok-id">EdgeKind</span>::<span class="tok-id">cases</span>()),</span>
 <span class="src-line" data-diff="removed"><span class="ln">231</span>            ),</span>
 <span class="src-line" data-diff="removed"><span class="ln">232</span>        );</span>
-<span class="src-line" id="L69" data-diff="added"><a class="ln" href="#L69">69</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(<span class="tok-id">NodeKind</span>::<span class="tok-id">cases</span>(), <span class="tok-id">GraphModel</span>::<span class="tok-id">nodeKinds</span>());</span>
-<span class="src-line" id="L70" data-diff="same"><a class="ln" href="#L70">70</a>    }</span>
-<span class="src-line" id="L71" data-diff="same"><a class="ln" href="#L71">71</a>}</span>
-<span class="src-line" id="L72" data-diff="same"><a class="ln" href="#L72">72</a></span>
+<span class="src-line" id="L68" data-diff="added"><a class="ln" href="#L68">68</a>    <span class="tok-com">/**</span></span>
+<span class="src-line" id="L69" data-diff="added"><a class="ln" href="#L69">69</a><span class="tok-com">     * @return iterable&lt;string, array{EdgeKind}&gt;</span></span>
+<span class="src-line" id="L70" data-diff="added"><a class="ln" href="#L70">70</a><span class="tok-com">     */</span></span>
+<span class="src-line" id="L71" data-diff="added"><a class="ln" href="#L71">71</a>    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">function</span> <span class="tok-id">providerEveryKindOfRelation</span>(): <span class="tok-id">iterable</span></span>
+<span class="src-line" id="L72" data-diff="added"><a class="ln" href="#L72">72</a>    {</span>
+<span class="src-line" id="L73" data-diff="added"><a class="ln" href="#L73">73</a>        <span class="tok-kw">foreach</span> (<span class="tok-id">EdgeKind</span>::<span class="tok-id">cases</span>() <span class="tok-kw">as</span> <span class="tok-var">$kind</span>) {</span>
+<span class="src-line" id="L74" data-diff="added"><a class="ln" href="#L74">74</a>            <span class="tok-kw">yield</span> <span class="tok-var">$kind</span>-&gt;<span class="tok-id">value</span> =&gt; [<span class="tok-var">$kind</span>];</span>
+<span class="src-line" id="L75" data-diff="added"><a class="ln" href="#L75">75</a>        }</span>
+<span class="src-line" id="L76" data-diff="same"><a class="ln" href="#L76">76</a>    }</span>
+<span class="src-line" id="L77" data-diff="same"><a class="ln" href="#L77">77</a>}</span>
+<span class="src-line" id="L78" data-diff="same"><a class="ln" href="#L78">78</a></span>
 </code></pre>
 </main>
 <footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>
