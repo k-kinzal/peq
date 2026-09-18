@@ -4,48 +4,34 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\PhpStanAnalyzer\Processor\Usage;
 
+use App\Analyzer\Graph\Edge;
 use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
+use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use App\Analyzer\PhpStanAnalyzer\Processor\Usage\StaticPropertyAccessProcessor;
-use Override;
-use PHPStan\Testing\PHPStanTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Medium;
-use Tests\Fixture\Analyzer\CollectorRun;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
 #[CoversClass(StaticPropertyAccessProcessor::class)]
 #[Medium]
-final class StaticPropertyAccessProcessorTest extends PHPStanTestCase
+final class StaticPropertyAccessProcessorTest extends TestCase
 {
-    #[Override]
-    public static function getAdditionalConfigFiles(): array
-    {
-        return [];
-    }
-
     public function testProcessRecordsAStaticPropertyBeingRead(): void
     {
-        $collected = CollectorRun::over(
-            new InClassMethodCollector(),
-            dirname(__DIR__, 5).'/Fixture/Source/UsageProcessors.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(dirname(__DIR__, 5).'/Fixture/Source/UsageProcessors.php');
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        self::assertContains('Tests\Fixture\Source\UsageProcessorFixture::testMethod -[static-property-access]-> Tests\Fixture\Source\UsageDep::staticCount', CollectorRun::edgeDescriptions($collected));
+        self::assertContains('Tests\Fixture\Source\UsageProcessorFixture::testMethod -[static-property-access]-> Tests\Fixture\Source\UsageDep::staticCount', $relations);
     }
 
     public function testProcessRecordsNothingForSourcesWithNoSuchRelation(): void
     {
-        $collected = CollectorRun::over(
-            new InClassMethodCollector(),
-            dirname(__DIR__, 5).'/Fixture/Source/ClassDependency.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(dirname(__DIR__, 5).'/Fixture/Source/ClassDependency.php');
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        self::assertNotContains('Tests\Fixture\Source\UsageProcessorFixture::testMethod -[static-property-access]-> Tests\Fixture\Source\UsageDep::staticCount', CollectorRun::edgeDescriptions($collected));
+        self::assertNotContains('Tests\Fixture\Source\UsageProcessorFixture::testMethod -[static-property-access]-> Tests\Fixture\Source\UsageDep::staticCount', $relations);
     }
 }

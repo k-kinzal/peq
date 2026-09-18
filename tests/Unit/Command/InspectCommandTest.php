@@ -5,18 +5,20 @@ declare(strict_types=1);
 namespace Tests\Unit\Command;
 
 use App\Action\Inspect\InspectAction;
+use App\Analyzer\DebugAnalyzer\DebugAnalyzer;
 use App\Command\InspectCommand;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Medium;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
-use Tests\Fixture\Analyzer\GeneratedSymbol;
 
 /**
  * @internal
  */
 #[CoversClass(InspectCommand::class)]
+#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\RandomSource::class)]
 #[Medium]
 final class InspectCommandTest extends TestCase
 {
@@ -48,23 +50,25 @@ final class InspectCommandTest extends TestCase
 
     public function testExecuteWritesTheTreeOfTheRequestedSymbol(): void
     {
+        $root = (new DebugAnalyzer(seed: 42, depth: 3))->analyze('/generated')->nodes()[0]->id()->toString();
         $tester = new CommandTester(new InspectCommand(new InspectAction()));
         $tester->execute([
-            'target' => GeneratedSymbol::rootName(),
+            'target' => $root,
             '--type' => 'debug',
             '--debug-seed' => '42',
             '--debug-depth' => '3',
             '--config' => __DIR__.'/absent.yaml',
         ]);
 
-        self::assertStringContainsString(GeneratedSymbol::rootName(), $tester->getDisplay());
+        self::assertStringContainsString($root, $tester->getDisplay());
     }
 
     public function testExecuteSucceedsWhenTheSymbolWasFound(): void
     {
+        $root = (new DebugAnalyzer(seed: 42, depth: 3))->analyze('/generated')->nodes()[0]->id()->toString();
         $tester = new CommandTester(new InspectCommand(new InspectAction()));
         $status = $tester->execute([
-            'target' => GeneratedSymbol::rootName(),
+            'target' => $root,
             '--type' => 'debug',
             '--debug-seed' => '42',
             '--debug-depth' => '3',
@@ -117,9 +121,10 @@ final class InspectCommandTest extends TestCase
 
     public function testExecuteBoundsTheTreeAtTheLevelAsked(): void
     {
+        $root = (new DebugAnalyzer(seed: 42, depth: 3))->analyze('/generated')->nodes()[0]->id()->toString();
         $tester = new CommandTester(new InspectCommand(new InspectAction()));
         $tester->execute([
-            'target' => GeneratedSymbol::rootName(),
+            'target' => $root,
             '--type' => 'debug',
             '--debug-seed' => '42',
             '--debug-depth' => '3',
@@ -128,5 +133,10 @@ final class InspectCommandTest extends TestCase
         ]);
 
         self::assertStringNotContainsString('│   ', $tester->getDisplay());
+    }
+
+    public function testTheConfigurationFileDefaultsToTheOneInTheWorkingDirectory(): void
+    {
+        self::assertSame(getcwd().'/.peq.yaml', (new InspectCommand(new InspectAction()))->getDefinition()->getOption('config')->getDefault());
     }
 }

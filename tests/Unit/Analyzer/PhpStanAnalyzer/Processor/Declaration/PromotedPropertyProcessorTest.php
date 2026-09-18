@@ -4,48 +4,67 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\PhpStanAnalyzer\Processor\Declaration;
 
+use App\Analyzer\Graph\Edge;
+use App\Analyzer\Graph\NodeId\ClassNodeId;
+use App\Analyzer\Graph\NodeId\PropertyNodeId;
 use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
+use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use App\Analyzer\PhpStanAnalyzer\Processor\Declaration\PromotedPropertyProcessor;
-use Override;
-use PHPStan\Testing\PHPStanTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Medium;
-use Tests\Fixture\Analyzer\CollectorRun;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
 #[CoversClass(PromotedPropertyProcessor::class)]
 #[Medium]
-final class PromotedPropertyProcessorTest extends PHPStanTestCase
+final class PromotedPropertyProcessorTest extends TestCase
 {
-    #[Override]
-    public static function getAdditionalConfigFiles(): array
-    {
-        return [];
-    }
-
     public function testProcessRecordsAPropertyPromotedFromAConstructorParameter(): void
     {
-        $collected = CollectorRun::over(
-            new DependencyCollector(),
-            dirname(__DIR__, 5).'/Fixture/Source/Comprehensive.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(dirname(__DIR__, 5).'/Fixture/Source/Comprehensive.php');
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        self::assertContains('Tests\Fixture\Source\ComprehensiveClass -[declaration-property]-> Tests\Fixture\Source\ComprehensiveClass::promotedProp', CollectorRun::edgeDescriptions($collected));
+        self::assertContains('Tests\Fixture\Source\ComprehensiveClass -[declaration-property]-> Tests\Fixture\Source\ComprehensiveClass::promotedProp', $relations);
     }
 
     public function testProcessRecordsNothingForSourcesWithNoSuchRelation(): void
     {
-        $collected = CollectorRun::over(
-            new DependencyCollector(),
-            dirname(__DIR__, 5).'/Fixture/Source/ClassDependency.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(dirname(__DIR__, 5).'/Fixture/Source/ClassDependency.php');
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        self::assertNotContains('Tests\Fixture\Source\ComprehensiveClass -[declaration-property]-> Tests\Fixture\Source\ComprehensiveClass::promotedProp', CollectorRun::edgeDescriptions($collected));
+        self::assertNotContains('Tests\Fixture\Source\ComprehensiveClass -[declaration-property]-> Tests\Fixture\Source\ComprehensiveClass::promotedProp', $relations);
+    }
+
+    public function testProcessRecordsTheTypeAPromotedPropertyIsDeclaredWith(): void
+    {
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, implode(PHP_EOL, ['<?php', 'namespace Tests\Contract\Analyzer\Properties;', '', 'class Subject', '{', '    public function __construct(public readonly \DateTimeImmutable $when) {}', '}', '']));
+        $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze($file);
+        unlink($file);
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+
+        self::assertContains('Tests\Contract\Analyzer\Properties\Subject::when -[declaration-type-property]-> DateTimeImmutable', $relations);
+    }
+
+    public function testProcessRecordsNothingForAParameterThatPromotesNothing(): void
+    {
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, implode(PHP_EOL, ['<?php', 'namespace Tests\Contract\Analyzer\Properties;', '', 'class Subject', '{', '    public function __construct(\DateTimeImmutable $when) {}', '}', '']));
+        $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze($file);
+        unlink($file);
+
+        self::assertNull($graph->nodeNamed('Tests\Contract\Analyzer\Properties\Subject::when'));
+    }
+
+    public function testProcessRecordsWhereAPromotedPropertyIsDeclared(): void
+    {
+        $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(dirname(__DIR__, 5).'/Fixture/Source/Comprehensive.php');
+        $declaration = $graph->edge(ClassNodeId::of('Tests\Fixture\Source\ComprehensiveClass'), PropertyNodeId::of('Tests\Fixture\Source\ComprehensiveClass', 'promotedProp'));
+
+        self::assertNotNull($declaration);
+        self::assertSame(33, $declaration->meta()->line);
+        self::assertSame(1, $declaration->meta()->column);
     }
 }

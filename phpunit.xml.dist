@@ -13,7 +13,6 @@
          beStrictAboutTestsThatDoNotTestAnything="true"
          failOnAllIssues="true"
          displayDetailsOnAllIssues="true"
-         shortenArraysForExportThreshold="0"
          enforceTimeLimit="true"
          timeoutForSmallTests="1"
          timeoutForMediumTests="10"
@@ -22,11 +21,11 @@
         <testsuite name="unit">
             <directory>tests/Unit</directory>
         </testsuite>
-        <testsuite name="contract">
-            <directory>tests/Contract</directory>
-        </testsuite>
         <testsuite name="integration">
             <directory>tests/Integration</directory>
+        </testsuite>
+        <testsuite name="contract">
+            <directory>tests/Contract</directory>
         </testsuite>
         <testsuite name="property">
             <directory>tests/Property</directory>
@@ -41,7 +40,7 @@
             <parameter name="directories" value="src"/>
         </bootstrap>
     </extensions>
-    <source ignoreIndirectDeprecations="true"
+    <source restrictDeprecations="true"
             restrictNotices="true"
             restrictWarnings="true"
             ignoreSuppressionOfDeprecations="true"
@@ -52,7 +51,7 @@
             ignoreSuppressionOfWarnings="true"
             ignoreSuppressionOfPhpWarnings="true">
         <include>
-            <directory suffix=".php">src</directory>
+            <directory>src</directory>
         </include>
     </source>
     <coverage includeUncoveredFiles="true"

@@ -69,4 +69,23 @@ final class PhpFileCollectorTest extends TestCase
     {
         self::assertSame([], (new PhpFileCollector())->collect([]));
     }
+
+    public function testCollectLeavesOutWhatAPathPatternMatches(): void
+    {
+        $files = (new PhpFileCollector())->collect([dirname(__DIR__, 3).'/Fixture'], [], ['#^Sample/#']);
+
+        self::assertNotContains(realpath(dirname(__DIR__, 3).'/Fixture/Sample/ComplexSample.php'), $files);
+        self::assertContains(realpath(dirname(__DIR__, 3).'/Fixture/Source/ClassDependency.php'), $files);
+    }
+
+    public function testCollectKeepsReadingPathsAfterADirectory(): void
+    {
+        $files = (new PhpFileCollector())->collect([
+            dirname(__DIR__, 3).'/Fixture/Source',
+            dirname(__DIR__, 3).'/Fixture/Sample/ComplexSample.php',
+        ]);
+
+        self::assertContains(realpath(dirname(__DIR__, 3).'/Fixture/Sample/ComplexSample.php'), $files);
+        self::assertContains(realpath(dirname(__DIR__, 3).'/Fixture/Source/ClassDependency.php'), $files);
+    }
 }

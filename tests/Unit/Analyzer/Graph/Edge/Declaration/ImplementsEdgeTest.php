@@ -28,6 +28,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(ClassNode::class)]
 #[UsesClass(GraphInterfaceNode::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
 #[Small]
 final class ImplementsEdgeTest extends TestCase
 {

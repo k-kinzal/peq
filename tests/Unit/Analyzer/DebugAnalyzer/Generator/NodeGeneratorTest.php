@@ -4,39 +4,44 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\DebugAnalyzer\Generator;
 
+use App\Analyzer\DebugAnalyzer\Generator\NameGenerator;
 use App\Analyzer\DebugAnalyzer\Generator\NodeGenerator;
+use App\Analyzer\DebugAnalyzer\Generator\NodeIdGenerator;
+use App\Analyzer\DebugAnalyzer\Generator\RandomSource;
 use App\Analyzer\Graph\Node\BuiltinNode;
 use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\Node\EnumNode;
 use App\Analyzer\Graph\Node\GraphInterfaceNode;
+use App\Analyzer\Graph\NodeId\BuiltinNodeId;
 use App\Analyzer\Graph\NodeId\ClassNodeId;
+use App\Analyzer\Graph\NodeId\EnumNodeId;
+use App\Analyzer\Graph\NodeId\InterfaceNodeId;
+use App\Analyzer\Graph\NodeId\UnknownNodeId;
 use App\Analyzer\Graph\NodeKind;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\DebugAnalyzer\SeededGenerators;
 
 /**
  * @internal
  */
 #[CoversClass(NodeGenerator::class)]
-#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\NameGenerator::class)]
-#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\FakerRandomSource::class)]
-#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\NodeIdGenerator::class)]
+#[UsesClass(NameGenerator::class)]
+#[UsesClass(NodeIdGenerator::class)]
 #[UsesClass(\App\Analyzer\Graph\FileMeta::class)]
-#[UsesClass(\App\Analyzer\Graph\NodeId\BuiltinNodeId::class)]
+#[UsesClass(BuiltinNodeId::class)]
 #[UsesClass(ClassNodeId::class)]
 #[UsesClass(\App\Analyzer\Graph\NodeId\ConstantNodeId::class)]
 #[UsesClass(\App\Analyzer\Graph\NodeId\EnumCaseNodeId::class)]
-#[UsesClass(\App\Analyzer\Graph\NodeId\EnumNodeId::class)]
+#[UsesClass(EnumNodeId::class)]
 #[UsesClass(\App\Analyzer\Graph\NodeId\FunctionNodeId::class)]
-#[UsesClass(\App\Analyzer\Graph\NodeId\InterfaceNodeId::class)]
+#[UsesClass(InterfaceNodeId::class)]
 #[UsesClass(\App\Analyzer\Graph\NodeId\MethodNodeId::class)]
 #[UsesClass(\App\Analyzer\Graph\NodeId\PropertyNodeId::class)]
 #[UsesClass(\App\Analyzer\Graph\NodeId\TraitNodeId::class)]
-#[UsesClass(\App\Analyzer\Graph\NodeId\UnknownNodeId::class)]
+#[UsesClass(UnknownNodeId::class)]
 #[UsesClass(BuiltinNode::class)]
 #[UsesClass(ClassNode::class)]
 #[UsesClass(\App\Analyzer\Graph\Node\ConstantNode::class)]
@@ -49,13 +54,14 @@ use Tests\Fixture\Analyzer\DebugAnalyzer\SeededGenerators;
 #[UsesClass(\App\Analyzer\Graph\Node\TraitNode::class)]
 #[UsesClass(\App\Analyzer\Graph\Node\UnknownNode::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(RandomSource::class)]
 #[Small]
 final class NodeGeneratorTest extends TestCase
 {
     #[DataProvider('providerEveryKindOfSymbol')]
     public function testNodeBuildsANodeOfTheKindItWasAskedFor(NodeKind $kind): void
     {
-        self::assertSame($kind, SeededGenerators::nodes()->node($kind)->kind());
+        self::assertSame($kind, (new NodeGenerator(new NodeIdGenerator(new NameGenerator(new RandomSource(42)), new RandomSource(42)), new RandomSource(42)))->node($kind)->kind());
     }
 
     /**
@@ -68,90 +74,170 @@ final class NodeGeneratorTest extends TestCase
         }
     }
 
-    public function testNodeDrawsAKindWhenGivenNone(): void
+    #[DataProvider('providerNodeGenerator')]
+    public function testNodeDrawsAKindWhenGivenNone(NodeGenerator $nodes): void
     {
-        self::assertContains(SeededGenerators::nodes()->node()->kind(), NodeKind::cases());
+        self::assertContains($nodes->node()->kind(), NodeKind::cases());
     }
 
-    public function testClassNodeReusesAnIdentifierItIsGiven(): void
+    #[DataProvider('providerNodeGenerator')]
+    public function testClassNodeReusesAnIdentifierItIsGiven(NodeGenerator $nodes): void
     {
         $id = ClassNodeId::of('App\Domain\Invoice');
 
-        self::assertSame($id, SeededGenerators::nodes()->classNode($id)->id());
+        self::assertSame($id, $nodes->classNode($id)->id());
     }
 
-    public function testClassNodeDrawsAnIdentifierWhenGivenNone(): void
+    #[DataProvider('providerNodeGenerator')]
+    public function testClassNodeDrawsAnIdentifierWhenGivenNone(NodeGenerator $nodes): void
     {
-        self::assertStringEndsWith('Class', SeededGenerators::nodes()->classNode()->id()->className);
+        self::assertStringEndsWith('Class', $nodes->classNode()->id()->className);
     }
 
-    public function testInterfaceNodeStandsForAnInterface(): void
+    #[DataProvider('providerNodeGenerator')]
+    public function testInterfaceNodeStandsForAnInterface(NodeGenerator $nodes): void
     {
-        self::assertSame(NodeKind::Interface, SeededGenerators::nodes()->interfaceNode()->kind());
+        self::assertSame(NodeKind::Interface, $nodes->interfaceNode()->kind());
     }
 
-    public function testTraitNodeStandsForATrait(): void
+    #[DataProvider('providerNodeGenerator')]
+    public function testTraitNodeStandsForATrait(NodeGenerator $nodes): void
     {
-        self::assertSame(NodeKind::Trait, SeededGenerators::nodes()->traitNode()->kind());
+        self::assertSame(NodeKind::Trait, $nodes->traitNode()->kind());
     }
 
-    public function testEnumNodeStandsForAnEnum(): void
+    #[DataProvider('providerNodeGenerator')]
+    public function testEnumNodeStandsForAnEnum(NodeGenerator $nodes): void
     {
-        self::assertSame(NodeKind::Enum, SeededGenerators::nodes()->enumNode()->kind());
+        self::assertSame(NodeKind::Enum, $nodes->enumNode()->kind());
     }
 
-    public function testEnumCaseNodeStandsForAnEnumCase(): void
+    #[DataProvider('providerNodeGenerator')]
+    public function testEnumCaseNodeStandsForAnEnumCase(NodeGenerator $nodes): void
     {
-        self::assertSame(NodeKind::EnumCase, SeededGenerators::nodes()->enumCaseNode()->kind());
+        self::assertSame(NodeKind::EnumCase, $nodes->enumCaseNode()->kind());
     }
 
-    public function testMethodNodeStandsForAMethod(): void
+    #[DataProvider('providerNodeGenerator')]
+    public function testMethodNodeStandsForAMethod(NodeGenerator $nodes): void
     {
-        self::assertSame(NodeKind::Method, SeededGenerators::nodes()->methodNode()->kind());
+        self::assertSame(NodeKind::Method, $nodes->methodNode()->kind());
     }
 
-    public function testPropertyNodeStandsForAProperty(): void
+    #[DataProvider('providerNodeGenerator')]
+    public function testPropertyNodeStandsForAProperty(NodeGenerator $nodes): void
     {
-        self::assertSame(NodeKind::Property, SeededGenerators::nodes()->propertyNode()->kind());
+        self::assertSame(NodeKind::Property, $nodes->propertyNode()->kind());
     }
 
-    public function testFunctionNodeStandsForAFunction(): void
+    #[DataProvider('providerNodeGenerator')]
+    public function testFunctionNodeStandsForAFunction(NodeGenerator $nodes): void
     {
-        self::assertSame(NodeKind::Function, SeededGenerators::nodes()->functionNode()->kind());
+        self::assertSame(NodeKind::Function, $nodes->functionNode()->kind());
     }
 
-    public function testConstantNodeStandsForAConstant(): void
+    #[DataProvider('providerNodeGenerator')]
+    public function testConstantNodeStandsForAConstant(NodeGenerator $nodes): void
     {
-        self::assertSame(NodeKind::Constant, SeededGenerators::nodes()->constantNode()->kind());
+        self::assertSame(NodeKind::Constant, $nodes->constantNode()->kind());
     }
 
-    public function testBuiltinNodeStandsForABuiltinType(): void
+    #[DataProvider('providerNodeGenerator')]
+    public function testBuiltinNodeStandsForABuiltinType(NodeGenerator $nodes): void
     {
-        self::assertSame(NodeKind::Builtin, SeededGenerators::nodes()->builtinNode()->kind());
+        self::assertSame(NodeKind::Builtin, $nodes->builtinNode()->kind());
     }
 
-    public function testUnknownNodeStandsForAnUnresolvedSymbol(): void
+    #[DataProvider('providerNodeGenerator')]
+    public function testUnknownNodeStandsForAnUnresolvedSymbol(NodeGenerator $nodes): void
     {
-        self::assertSame(NodeKind::Unknown, SeededGenerators::nodes()->unknownNode()->kind());
+        self::assertSame(NodeKind::Unknown, $nodes->unknownNode()->kind());
     }
 
-    public function testTypeNodeBuildsSomethingThatCanStandInATypePosition(): void
+    #[DataProvider('providerNodeGenerator')]
+    public function testTypeNodeBuildsSomethingThatCanStandInATypePosition(NodeGenerator $nodes): void
     {
-        $node = SeededGenerators::nodes()->typeNode();
+        $node = $nodes->typeNode();
 
         self::assertContains($node::class, [BuiltinNode::class, ClassNode::class, EnumNode::class, GraphInterfaceNode::class]);
     }
 
-    public function testEveryGeneratedNodeCarriesASourceLocation(): void
+    #[DataProvider('providerNodeGenerator')]
+    public function testEveryGeneratedNodeCarriesASourceLocation(NodeGenerator $nodes): void
     {
-        self::assertNotNull(SeededGenerators::nodes()->classNode()->meta());
+        self::assertNotNull($nodes->classNode()->meta());
+    }
+
+    /**
+     * @return iterable<string, array{NodeGenerator}>
+     */
+    public static function providerNodeGenerator(): iterable
+    {
+        $random = new RandomSource(42);
+
+        yield 'drawing from seed 42' => [new NodeGenerator(new NodeIdGenerator(new NameGenerator($random), $random), $random)];
     }
 
     public function testTheSameSeedProducesTheSameNode(): void
     {
+        $first = new RandomSource(7);
+        $again = new RandomSource(7);
+
         self::assertSame(
-            SeededGenerators::nodes(7)->methodNode()->id()->toString(),
-            SeededGenerators::nodes(7)->methodNode()->id()->toString(),
+            (new NodeGenerator(new NodeIdGenerator(new NameGenerator($first), $first), $first))->methodNode()->id()->toString(),
+            (new NodeGenerator(new NodeIdGenerator(new NameGenerator($again), $again), $again))->methodNode()->id()->toString(),
         );
+    }
+
+    public function testUnknownNodeReusesAnIdentifierItIsGiven(): void
+    {
+        $random = new RandomSource(7);
+        $nodes = new NodeGenerator(new NodeIdGenerator(new NameGenerator($random), $random), $random);
+
+        self::assertSame('App\Domain\Missing', $nodes->unknownNode(new UnknownNodeId('App\Domain\Missing'))->id()->toString());
+    }
+
+    public function testUnknownNodeDrawsTheIdentifierOfItsSeedWhenGivenNone(): void
+    {
+        $random = new RandomSource(7);
+        $nodes = new NodeGenerator(new NodeIdGenerator(new NameGenerator($random), $random), $random);
+
+        self::assertSame('SaepeSaepe', $nodes->unknownNode()->id()->toString());
+    }
+
+    /**
+     * @param class-string $expected
+     */
+    #[DataProvider('providerEveryTypePosition')]
+    public function testTypeNodeBuildsTheNodeOfTheTypeItIsGiven(BuiltinNodeId|ClassNodeId|EnumNodeId|InterfaceNodeId $nodeId, string $expected): void
+    {
+        $random = new RandomSource(7);
+        $node = (new NodeGenerator(new NodeIdGenerator(new NameGenerator($random), $random), $random))->typeNode($nodeId);
+
+        self::assertInstanceOf($expected, $node);
+        self::assertSame($nodeId, $node->id());
+    }
+
+    /**
+     * @return iterable<string, array{BuiltinNodeId|ClassNodeId|EnumNodeId|InterfaceNodeId, class-string}>
+     */
+    public static function providerEveryTypePosition(): iterable
+    {
+        yield 'a builtin type' => [BuiltinNodeId::of('int'), BuiltinNode::class];
+
+        yield 'a class' => [ClassNodeId::of('App\Domain\Invoice'), ClassNode::class];
+
+        yield 'an interface' => [InterfaceNodeId::of('App\Domain\Payable'), GraphInterfaceNode::class];
+
+        yield 'an enum' => [EnumNodeId::of('App\Domain\InvoiceState'), EnumNode::class];
+    }
+
+    public function testTypeNodeDrawsTheTypeOfItsSeedWhenGivenNone(): void
+    {
+        $random = new RandomSource(7);
+        $node = (new NodeGenerator(new NodeIdGenerator(new NameGenerator($random), $random), $random))->typeNode();
+
+        self::assertInstanceOf(EnumNode::class, $node);
+        self::assertSame('AdRerumHarum\EnimDolor\ModiMinusEnum', $node->id()->toString());
     }
 }

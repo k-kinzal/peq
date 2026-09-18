@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Contract\Analyzer;
 
+use App\Analyzer\Graph\Edge;
+use App\Analyzer\Graph\Node;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use Generator;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -11,8 +13,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\AnalysedSnippet;
-use Tests\Fixture\Graph\GraphInvariants;
 
 /**
  * @internal
@@ -25,12 +25,19 @@ final class PhpStanAnalyzerInvariantContractTest extends TestCase
     #[Test]
     public function testGraphInvariants(string $label, string $phpCode): void
     {
-        $graph = AnalysedSnippet::graph($phpCode);
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $phpCode);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+        $edges = array_merge([], ...array_map(static fn (Node $node): array => $graph->edges($node->id()), $graph->nodes()));
+        $spelled = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $edges);
+        $names = array_map(static fn (Node $node): string => $node->id()->toString(), $graph->nodes());
 
-        GraphInvariants::assertBidirectional($graph);
-        GraphInvariants::assertEndpointsExist($graph);
-        GraphInvariants::assertNodeUniqueness($graph);
-        GraphInvariants::assertNoEdgeDuplicates($graph);
+        self::assertNotSame([], $edges, "[{$label}]");
+        self::assertSame([], array_values(array_filter($edges, static fn (Edge $edge): bool => $graph->edge($edge->to(), $edge->from()) === null)), "[{$label}] relations with no reverse reading");
+        self::assertSame([], array_values(array_filter($edges, static fn (Edge $edge): bool => $graph->node($edge->from()) === null || $graph->node($edge->to()) === null)), "[{$label}] relations pointing outside the graph");
+        self::assertSame($names, array_values(array_unique($names)), "[{$label}] identifiers naming more than one symbol");
+        self::assertSame($spelled, array_values(array_unique($spelled)), "[{$label}] relations recorded twice");
     }
 
     /**

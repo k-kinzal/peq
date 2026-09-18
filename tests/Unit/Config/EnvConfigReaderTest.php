@@ -125,4 +125,18 @@ final class EnvConfigReaderTest extends TestCase
     {
         self::assertSame([], (new EnvConfigReader('PEQ_TEST_ABSENT_'))->read());
     }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadReportsEverySettingTheEnvironmentHolds(): void
+    {
+        putenv('PEQ_TEST_BASE_PATH=/env/path');
+        putenv('PEQ_TEST_LEVEL=10');
+
+        $config = (new EnvConfigReader('PEQ_TEST_'))->read();
+
+        self::assertSame('/env/path', $config['basePath'] ?? null);
+        self::assertSame('10', $config['level'] ?? null);
+    }
 }

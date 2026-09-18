@@ -5,114 +5,194 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\DebugAnalyzer\Generator;
 
 use App\Analyzer\DebugAnalyzer\Generator\NameGenerator;
+use App\Analyzer\DebugAnalyzer\Generator\RandomSource;
+use Closure;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\DebugAnalyzer\SeededGenerators;
 
 /**
  * @internal
  */
 #[CoversClass(NameGenerator::class)]
-#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\FakerRandomSource::class)]
+#[UsesClass(RandomSource::class)]
 #[Small]
 final class NameGeneratorTest extends TestCase
 {
-    public function testPascalCaseStartsWithACapitalAndHasNoSeparators(): void
+    #[DataProvider('providerNameGenerator')]
+    public function testPascalCaseStartsWithACapitalAndHasNoSeparators(NameGenerator $names): void
     {
-        self::assertMatchesRegularExpression('/^[A-Z][A-Za-z]+$/', SeededGenerators::names()->pascalCase());
+        self::assertMatchesRegularExpression('/^[A-Z][A-Za-z]+$/', $names->pascalCase());
     }
 
-    public function testCamelCaseStartsWithALowerCaseLetter(): void
+    #[DataProvider('providerNameGenerator')]
+    public function testCamelCaseStartsWithALowerCaseLetter(NameGenerator $names): void
     {
-        self::assertMatchesRegularExpression('/^[a-z][A-Za-z]+$/', SeededGenerators::names()->camelCase());
+        self::assertMatchesRegularExpression('/^[a-z][A-Za-z]+$/', $names->camelCase());
     }
 
-    public function testUpperSnakeCaseSeparatesItsWordsWithUnderscores(): void
+    #[DataProvider('providerNameGenerator')]
+    public function testUpperSnakeCaseSeparatesItsWordsWithUnderscores(NameGenerator $names): void
     {
-        self::assertMatchesRegularExpression('/^[A-Z]+(_[A-Z]+)+$/', SeededGenerators::names()->upperSnakeCase());
+        self::assertMatchesRegularExpression('/^[A-Z]+(_[A-Z]+)+$/', $names->upperSnakeCase());
     }
 
-    public function testNamespaceJoinsPascalCaseSegmentsWithBackslashes(): void
+    #[DataProvider('providerNameGenerator')]
+    public function testNamespaceJoinsPascalCaseSegmentsWithBackslashes(NameGenerator $names): void
     {
-        self::assertMatchesRegularExpression('/^[A-Z][A-Za-z]*(\\\[A-Z][A-Za-z]*)*$/', SeededGenerators::names()->namespace());
+        self::assertMatchesRegularExpression('/^[A-Z][A-Za-z]*(\\\[A-Z][A-Za-z]*)*$/', $names->namespace());
     }
 
-    public function testClassNameEndsInTheKindOfSymbolItNames(): void
+    #[DataProvider('providerNameGenerator')]
+    public function testClassNameEndsInTheKindOfSymbolItNames(NameGenerator $names): void
     {
-        self::assertStringEndsWith('Class', SeededGenerators::names()->className());
+        self::assertStringEndsWith('Class', $names->className());
     }
 
-    public function testInterfaceNameEndsInTheKindOfSymbolItNames(): void
+    #[DataProvider('providerNameGenerator')]
+    public function testInterfaceNameEndsInTheKindOfSymbolItNames(NameGenerator $names): void
     {
-        self::assertStringEndsWith('Interface', SeededGenerators::names()->interfaceName());
+        self::assertStringEndsWith('Interface', $names->interfaceName());
     }
 
-    public function testTraitNameEndsInTheKindOfSymbolItNames(): void
+    #[DataProvider('providerNameGenerator')]
+    public function testTraitNameEndsInTheKindOfSymbolItNames(NameGenerator $names): void
     {
-        self::assertStringEndsWith('Trait', SeededGenerators::names()->traitName());
+        self::assertStringEndsWith('Trait', $names->traitName());
     }
 
-    public function testEnumNameEndsInTheKindOfSymbolItNames(): void
+    #[DataProvider('providerNameGenerator')]
+    public function testEnumNameEndsInTheKindOfSymbolItNames(NameGenerator $names): void
     {
-        self::assertStringEndsWith('Enum', SeededGenerators::names()->enumName());
+        self::assertStringEndsWith('Enum', $names->enumName());
     }
 
-    public function testMethodNameIsCamelCaseAsAMethodNameIs(): void
+    #[DataProvider('providerNameGenerator')]
+    public function testMethodNameIsCamelCaseAsAMethodNameIs(NameGenerator $names): void
     {
-        self::assertMatchesRegularExpression('/^[a-z][A-Za-z]+Method$/', SeededGenerators::names()->methodName());
+        self::assertMatchesRegularExpression('/^[a-z][A-Za-z]+Method$/', $names->methodName());
     }
 
-    public function testPropertyNameIsCamelCaseAsAPropertyNameIs(): void
+    #[DataProvider('providerNameGenerator')]
+    public function testPropertyNameIsCamelCaseAsAPropertyNameIs(NameGenerator $names): void
     {
-        self::assertMatchesRegularExpression('/^[a-z][A-Za-z]+Property$/', SeededGenerators::names()->propertyName());
+        self::assertMatchesRegularExpression('/^[a-z][A-Za-z]+Property$/', $names->propertyName());
     }
 
-    public function testConstantNameIsUpperSnakeCaseAsAConstantNameIs(): void
+    #[DataProvider('providerNameGenerator')]
+    public function testConstantNameIsUpperSnakeCaseAsAConstantNameIs(NameGenerator $names): void
     {
-        self::assertMatchesRegularExpression('/^[A-Z_]+_CONST$/', SeededGenerators::names()->constantName());
+        self::assertMatchesRegularExpression('/^[A-Z_]+_CONST$/', $names->constantName());
     }
 
-    public function testEnumCaseNameIsUpperSnakeCaseAsAnEnumCaseNameIs(): void
+    #[DataProvider('providerNameGenerator')]
+    public function testEnumCaseNameIsUpperSnakeCaseAsAnEnumCaseNameIs(NameGenerator $names): void
     {
-        self::assertMatchesRegularExpression('/^[A-Z_]+_CASE$/', SeededGenerators::names()->enumCaseName());
+        self::assertMatchesRegularExpression('/^[A-Z_]+_CASE$/', $names->enumCaseName());
     }
 
-    public function testFunctionNameIsCamelCaseAsAFunctionNameIs(): void
+    #[DataProvider('providerNameGenerator')]
+    public function testFunctionNameIsCamelCaseAsAFunctionNameIs(NameGenerator $names): void
     {
-        self::assertMatchesRegularExpression('/^[a-z][A-Za-z]+Function$/', SeededGenerators::names()->functionName());
+        self::assertMatchesRegularExpression('/^[a-z][A-Za-z]+Function$/', $names->functionName());
     }
 
-    public function testPhpFilePathIsAnAbsolutePathToAPhpFile(): void
+    #[DataProvider('providerNameGenerator')]
+    public function testPhpFilePathIsAnAbsolutePathToAPhpFile(NameGenerator $names): void
     {
-        self::assertMatchesRegularExpression('#^(/[a-z]+)+/[A-Z][A-Za-z]*\.php$#', SeededGenerators::names()->phpFilePath());
+        self::assertMatchesRegularExpression('#^(/[a-z]+)+/[A-Z][A-Za-z]*\.php$#', $names->phpFilePath());
     }
 
-    public function testWordsDrawsAtLeastTheFewestAskedFor(): void
+    #[DataProvider('providerNameGenerator')]
+    public function testWordsDrawsAtLeastTheFewestAskedFor(NameGenerator $names): void
     {
-        self::assertGreaterThanOrEqual(2, count(SeededGenerators::names()->words(static fn (string $word): string => $word, 2, 5)));
+        self::assertGreaterThanOrEqual(2, count($names->words(static fn (string $word): string => $word, 2, 5)));
     }
 
-    public function testWordsDrawsAtMostTheMostAskedFor(): void
+    #[DataProvider('providerNameGenerator')]
+    public function testWordsDrawsAtMostTheMostAskedFor(NameGenerator $names): void
     {
-        self::assertLessThanOrEqual(5, count(SeededGenerators::names()->words(static fn (string $word): string => $word, 2, 5)));
+        self::assertLessThanOrEqual(5, count($names->words(static fn (string $word): string => $word, 2, 5)));
     }
 
-    public function testWordsShapesEveryWordItDraws(): void
+    #[DataProvider('providerNameGenerator')]
+    public function testWordsShapesEveryWordItDraws(NameGenerator $names): void
     {
-        $shouted = SeededGenerators::names()->words(static fn (string $word): string => strtoupper($word), 3, 3);
+        $shouted = $names->words(static fn (string $word): string => strtoupper($word), 3, 3);
 
         self::assertSame($shouted, array_map('strtoupper', $shouted));
     }
 
+    /**
+     * @return iterable<string, array{NameGenerator}>
+     */
+    public static function providerNameGenerator(): iterable
+    {
+        yield 'drawing from seed 42' => [new NameGenerator(new RandomSource(42))];
+    }
+
     public function testTheSameSeedProducesTheSameName(): void
     {
-        self::assertSame(SeededGenerators::names(7)->className(), SeededGenerators::names(7)->className());
+        self::assertSame((new NameGenerator(new RandomSource(7)))->className(), (new NameGenerator(new RandomSource(7)))->className());
     }
 
     public function testADifferentSeedProducesADifferentName(): void
     {
-        self::assertNotSame(SeededGenerators::names(7)->namespace(), SeededGenerators::names(9)->namespace());
+        self::assertNotSame((new NameGenerator(new RandomSource(7)))->namespace(), (new NameGenerator(new RandomSource(9)))->namespace());
+    }
+
+    /**
+     * @param Closure(NameGenerator): string $name
+     */
+    #[DataProvider('providerNamesDrawnFromSeedSeven')]
+    public function testEveryNameIsSpelledFromTheDrawsOfItsSeed(Closure $name, string $expected): void
+    {
+        self::assertSame($expected, $name(new NameGenerator(new RandomSource(7))));
+    }
+
+    /**
+     * @return iterable<string, array{Closure(NameGenerator): string, string}>
+     */
+    public static function providerNamesDrawnFromSeedSeven(): iterable
+    {
+        yield 'pascalCase' => [static fn (NameGenerator $names): string => $names->pascalCase(), 'SaepeSaepe'];
+
+        yield 'camelCase' => [static fn (NameGenerator $names): string => $names->camelCase(), 'saepeSaepe'];
+
+        yield 'upperSnakeCase' => [static fn (NameGenerator $names): string => $names->upperSnakeCase(), 'SAEPE_SAEPE'];
+
+        yield 'namespace' => [static fn (NameGenerator $names): string => $names->namespace(), 'SaepeAdRerum\SedEnimDolor'];
+
+        yield 'className' => [static fn (NameGenerator $names): string => $names->className(), 'SaepeSaepeClass'];
+
+        yield 'interfaceName' => [static fn (NameGenerator $names): string => $names->interfaceName(), 'SaepeSaepeInterface'];
+
+        yield 'traitName' => [static fn (NameGenerator $names): string => $names->traitName(), 'SaepeSaepeTrait'];
+
+        yield 'enumName' => [static fn (NameGenerator $names): string => $names->enumName(), 'SaepeSaepeEnum'];
+
+        yield 'methodName' => [static fn (NameGenerator $names): string => $names->methodName(), 'saepeSaepeMethod'];
+
+        yield 'propertyName' => [static fn (NameGenerator $names): string => $names->propertyName(), 'saepeSaepeProperty'];
+
+        yield 'constantName' => [static fn (NameGenerator $names): string => $names->constantName(), 'SAEPE_SAEPE_CONST'];
+
+        yield 'enumCaseName' => [static fn (NameGenerator $names): string => $names->enumCaseName(), 'SAEPE_SAEPE_CASE'];
+
+        yield 'functionName' => [static fn (NameGenerator $names): string => $names->functionName(), 'saepeSaepeFunction'];
+
+        yield 'phpFilePath' => [static fn (NameGenerator $names): string => $names->phpFilePath(), '/saepe/saepe/ad/HarumSed.php'];
+    }
+
+    public function testWordsDrawsTheCountAndThenTheWordsOfItsSeed(): void
+    {
+        self::assertSame(['saepe', 'saepe', 'ad'], (new NameGenerator(new RandomSource(7)))->words(static fn (string $word): string => $word, 1, 4));
+    }
+
+    public function testWordsShapesTheWordsOfItsSeed(): void
+    {
+        self::assertSame(['SAEPE', 'SAEPE', 'AD'], (new NameGenerator(new RandomSource(7)))->words(static fn (string $word): string => strtoupper($word), 3, 3));
     }
 }

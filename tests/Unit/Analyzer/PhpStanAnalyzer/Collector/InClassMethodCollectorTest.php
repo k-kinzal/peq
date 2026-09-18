@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\PhpStanAnalyzer\Collector;
 
+use App\Analyzer\Graph\Edge;
+use App\Analyzer\Graph\Node;
+use App\Analyzer\Graph\NodeKind;
 use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
-use Override;
+use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use PHPStan\Node\InClassMethodNode;
-use PHPStan\Testing\PHPStanTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Medium;
-use Tests\Fixture\Analyzer\CollectorRun;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
@@ -31,14 +33,8 @@ use Tests\Fixture\Analyzer\CollectorRun;
 #[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\TypeReference::class)]
 #[CoversClass(\App\Analyzer\PhpStanAnalyzer\SourceResolver::class)]
 #[Medium]
-final class InClassMethodCollectorTest extends PHPStanTestCase
+final class InClassMethodCollectorTest extends TestCase
 {
-    #[Override]
-    public static function getAdditionalConfigFiles(): array
-    {
-        return [];
-    }
-
     public function testGetNodeTypeAsksToBeCalledForEveryMethodBody(): void
     {
         self::assertSame(InClassMethodNode::class, (new InClassMethodCollector())->getNodeType());
@@ -47,14 +43,10 @@ final class InClassMethodCollectorTest extends PHPStanTestCase
     #[DataProvider('providerRelationsWrittenInAMethodBody')]
     public function testProcessNodeReportsWhatAMethodBodyReaches(string $expected): void
     {
-        $collected = CollectorRun::over(
-            new InClassMethodCollector(),
-            __DIR__.'/../../../../Fixture/Source/MethodBody.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(__DIR__.'/../../../../Fixture/Source/MethodBody.php');
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        self::assertContains($expected, CollectorRun::edgeDescriptions($collected));
+        self::assertContains($expected, $relations);
     }
 
     /**
@@ -72,14 +64,10 @@ final class InClassMethodCollectorTest extends PHPStanTestCase
     #[DataProvider('providerUsagesResolvableFromTheWrittenName')]
     public function testProcessNodeReportsAUsageWhoseOwnerIsWrittenOut(string $expected): void
     {
-        $collected = CollectorRun::over(
-            new InClassMethodCollector(),
-            __DIR__.'/../../../../Fixture/Source/UsageProcessors.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(__DIR__.'/../../../../Fixture/Source/UsageProcessors.php');
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        self::assertContains($expected, CollectorRun::edgeDescriptions($collected));
+        self::assertContains($expected, $relations);
     }
 
     /**
@@ -99,14 +87,10 @@ final class InClassMethodCollectorTest extends PHPStanTestCase
     #[DataProvider('providerUsagesNeedingAnInferredReceiver')]
     public function testProcessNodeLeavesOutAUsageWhoseOwnerIsOnlyInferable(string $unexpected): void
     {
-        $collected = CollectorRun::over(
-            new InClassMethodCollector(),
-            __DIR__.'/../../../../Fixture/Source/UsageProcessors.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(__DIR__.'/../../../../Fixture/Source/UsageProcessors.php');
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        self::assertNotContains($unexpected, CollectorRun::edgeDescriptions($collected));
+        self::assertNotContains($unexpected, $relations);
     }
 
     /**
@@ -119,16 +103,33 @@ final class InClassMethodCollectorTest extends PHPStanTestCase
         yield 'a property read on a local variable' => ['Tests\Fixture\Source\UsageProcessorFixture::testMethod -[property-access]-> Tests\Fixture\Source\UsageDep::instanceProp'];
     }
 
+    #[DataProvider('providerNullsafeUsages')]
+    public function testProcessNodeReportsANullsafeUsageAsTheUsageItGuards(string $expected): void
+    {
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, "<?php\nnamespace Tests\\Contract\\Analyzer\\Nullsafe;\n\nclass Subject\n{\n    public int \$prop = 1;\n\n    public function helper(): void {}\n\n    public function testMethod(): void\n    {\n        \$this?->helper();\n        \$read = \$this?->prop;\n    }\n}\n");
+        $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze($file);
+        unlink($file);
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+
+        self::assertContains($expected, $relations);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function providerNullsafeUsages(): iterable
+    {
+        yield 'a nullsafe call on $this' => ['Tests\Contract\Analyzer\Nullsafe\Subject::testMethod -[method-call]-> Tests\Contract\Analyzer\Nullsafe\Subject::helper'];
+
+        yield 'a nullsafe property read on $this' => ['Tests\Contract\Analyzer\Nullsafe\Subject::testMethod -[property-access]-> Tests\Contract\Analyzer\Nullsafe\Subject::prop'];
+    }
+
     public function testProcessNodeReportsNothingForAFileWithNoMethodBody(): void
     {
-        $collected = CollectorRun::over(
-            new InClassMethodCollector(),
-            __DIR__.'/../../../../Fixture/Source/ClassDependency.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(__DIR__.'/../../../../Fixture/Source/ClassDependency.php');
 
-        self::assertSame([], $collected);
+        self::assertSame([], $graph->nodes());
     }
 
     /**
@@ -137,14 +138,11 @@ final class InClassMethodCollectorTest extends PHPStanTestCase
     #[DataProvider('providerCompleteOutputOfEverySample')]
     public function testProcessNodeReportsExactlyTheseRelations(string $fixture, array $expected): void
     {
-        $collected = CollectorRun::over(
-            new InClassMethodCollector(),
-            dirname(__DIR__, 4).'/Fixture/Source/'.$fixture.'.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(dirname(__DIR__, 4).'/Fixture/Source/'.$fixture.'.php');
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        sort($relations);
 
-        self::assertSame($expected, CollectorRun::sortedEdgeDescriptions($collected));
+        self::assertSame($expected, $relations);
     }
 
     /**
@@ -179,19 +177,13 @@ final class InClassMethodCollectorTest extends PHPStanTestCase
 
     public function testProcessNodeReportsEverySymbolItReadAsAnalysed(): void
     {
-        $collected = CollectorRun::over(
-            new InClassMethodCollector(),
-            dirname(__DIR__, 4).'/Fixture/Source/Comprehensive.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(dirname(__DIR__, 4).'/Fixture/Source/Comprehensive.php');
+
+        $declared = array_values(array_filter($graph->nodes(), static fn (Node $node): bool => $node->kind() !== NodeKind::Unknown));
 
         self::assertSame(
-            CollectorRun::sortedSymbolDescriptions($collected),
-            array_values(array_filter(
-                CollectorRun::sortedSymbolDescriptions($collected),
-                static fn (string $described): bool => str_ends_with($described, '(analysed)'),
-            )),
+            array_map(static fn (Node $node): string => $node->id()->toString(), $declared),
+            array_map(static fn (Node $node): string => $node->id()->toString(), array_values(array_filter($declared, static fn (Node $node): bool => $node->resolved()))),
         );
     }
 }

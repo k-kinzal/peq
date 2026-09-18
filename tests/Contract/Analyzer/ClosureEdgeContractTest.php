@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Contract\Analyzer;
 
-use App\Analyzer\Graph\EdgeKind;
+use App\Analyzer\Graph\Edge;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\AnalysedSnippet;
-use Tests\Fixture\Graph\GraphRelations;
 
 /**
  * @internal
@@ -39,9 +37,13 @@ final class ClosureEdgeContractTest extends TestCase
             }
             PHP;
 
-        $graph = AnalysedSnippet::graph($code);
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        GraphRelations::assertRelationCount($graph, 'Subject::run', 'Dep', EdgeKind::Instantiation, 1);
+        self::assertSame(['Tests\Contract\Analyzer\Closure\Subject::run -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep'], array_values(array_filter($relations, static fn (string $relation): bool => $relation === 'Tests\Contract\Analyzer\Closure\Subject::run -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep')));
     }
 
     #[Test]
@@ -65,9 +67,13 @@ final class ClosureEdgeContractTest extends TestCase
             }
             PHP;
 
-        $graph = AnalysedSnippet::graph($code);
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        GraphRelations::assertRelationCount($graph, 'Subject::run', 'Dep::make', EdgeKind::StaticCall, 1);
+        self::assertSame(['Tests\Contract\Analyzer\Closure\Subject::run -[static-call]-> Tests\Contract\Analyzer\Closure\Dep::make'], array_values(array_filter($relations, static fn (string $relation): bool => $relation === 'Tests\Contract\Analyzer\Closure\Subject::run -[static-call]-> Tests\Contract\Analyzer\Closure\Dep::make')));
     }
 
     #[Test]
@@ -91,8 +97,12 @@ final class ClosureEdgeContractTest extends TestCase
             }
             PHP;
 
-        $graph = AnalysedSnippet::graph($code);
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        GraphRelations::assertRelationCount($graph, 'Subject::run', 'Dep', EdgeKind::Instantiation, 1);
+        self::assertSame(['Tests\Contract\Analyzer\Closure\Subject::run -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep'], array_values(array_filter($relations, static fn (string $relation): bool => $relation === 'Tests\Contract\Analyzer\Closure\Subject::run -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep')));
     }
 }

@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Benchmark;
 
+use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
+use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
+use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
+use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
 use PhpBench\Attributes\BeforeMethods;
 use PhpBench\Attributes\Iterations;
 use PhpBench\Attributes\Revs;
-use Tests\Fixture\Analyzer\AnalysisSteps;
 
 /**
  * Measures building the container an analysis runs in.
@@ -29,7 +32,7 @@ final class ContainerFactoryBench
      */
     public function setUp(): void
     {
-        $this->files = AnalysisSteps::ownFiles();
+        $this->files = (new PhpFileCollector())->collect([dirname(__DIR__, 2).'/src']);
     }
 
     /**
@@ -40,6 +43,6 @@ final class ContainerFactoryBench
     #[Iterations(3)]
     public function benchCreate(): void
     {
-        AnalysisSteps::container($this->files);
+        (new ContainerFactory())->create($this->files, [DependencyCollector::class, InClassMethodCollector::class]);
     }
 }

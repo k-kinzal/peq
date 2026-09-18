@@ -4,40 +4,30 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\PhpStanAnalyzer\Processor;
 
+use App\Analyzer\Graph\Edge;
 use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
+use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use App\Analyzer\PhpStanAnalyzer\Processor\InClassMethodNodeProcessor;
-use Override;
 use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Name;
-use PHPStan\Testing\PHPStanTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Medium;
-use Tests\Fixture\Analyzer\CollectorRun;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
 #[CoversClass(InClassMethodNodeProcessor::class)]
 #[Medium]
-final class InClassMethodNodeProcessorTest extends PHPStanTestCase
+final class InClassMethodNodeProcessorTest extends TestCase
 {
-    #[Override]
-    public static function getAdditionalConfigFiles(): array
-    {
-        return [];
-    }
-
     public function testProcessRecordsWhatAMethodBodyReaches(): void
     {
-        $collected = CollectorRun::over(
-            new InClassMethodCollector(),
-            dirname(__DIR__, 4).'/Fixture/Source/MethodBody.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(dirname(__DIR__, 4).'/Fixture/Source/MethodBody.php');
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        self::assertContains('Tests\Fixture\Source\MethodBodyClass::testMethod -[instantiation]-> stdClass', CollectorRun::edgeDescriptions($collected));
+        self::assertContains('Tests\Fixture\Source\MethodBodyClass::testMethod -[instantiation]-> stdClass', $relations);
     }
 
     public function testHandlesSelectsTheExpressionsDispatchHasAnArmFor(): void
@@ -48,25 +38,16 @@ final class InClassMethodNodeProcessorTest extends PHPStanTestCase
 
     public function testDispatchReportsNothingForAnExpressionWithNoArm(): void
     {
-        $collected = CollectorRun::over(
-            new InClassMethodCollector(),
-            dirname(__DIR__, 4).'/Fixture/Source/ClassDependency.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(dirname(__DIR__, 4).'/Fixture/Source/ClassDependency.php');
 
-        self::assertSame([], $collected);
+        self::assertSame([], $graph->nodes());
     }
 
     public function testProcessRecordsNothingForSourcesWithNoSuchRelation(): void
     {
-        $collected = CollectorRun::over(
-            new InClassMethodCollector(),
-            dirname(__DIR__, 4).'/Fixture/Source/ClassDependency.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(dirname(__DIR__, 4).'/Fixture/Source/ClassDependency.php');
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        self::assertNotContains('Tests\Fixture\Source\MethodBodyClass::testMethod -[instantiation]-> stdClass', CollectorRun::edgeDescriptions($collected));
+        self::assertNotContains('Tests\Fixture\Source\MethodBodyClass::testMethod -[instantiation]-> stdClass', $relations);
     }
 }

@@ -20,7 +20,7 @@ jobs:
   tests:
     name: Tests on PHP ${{ matrix.php }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -38,12 +38,9 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
           php-version: ${{ matrix.php }}
-          extensions: mbstring, pcntl
+          extensions: dom, filter, iconv, libxml, mbstring, pcntl, phar, simplexml, tokenizer, xmlwriter
           coverage: none
           ini-values: zend.assertions=1
-
-      - name: Select the lock file of this PHP minor
-        run: cp "composer.lock.php-${{ matrix.php }}" composer.lock
 
       - name: Install dependencies
         uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda
@@ -61,7 +58,7 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - name: Check out the repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -70,11 +67,8 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
           php-version: '8.5'
-          extensions: mbstring, pcntl
+          extensions: dom, filter, iconv, libxml, mbstring, pcntl, phar, simplexml, tokenizer, xmlwriter
           coverage: none
-
-      - name: Select the lock file of this PHP minor
-        run: cp composer.lock.php-8.5 composer.lock
 
       - name: Validate the Composer manifest against the lock file
         run: composer validate --strict --no-check-publish
@@ -110,7 +104,7 @@ jobs:
   mutation:
     name: Mutation testing
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 60
     steps:
       - name: Check out the repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -121,12 +115,10 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
           php-version: '8.5'
-          extensions: mbstring, pcntl
+          extensions: dom, filter, iconv, libxml, mbstring, pcntl, phar, simplexml, tokenizer, xmlwriter
           coverage: pcov
           ini-values: zend.assertions=1, memory_limit=1G
-
-      - name: Select the lock file of this PHP minor
-        run: cp composer.lock.php-8.5 composer.lock
+          tools: infection:0.35.4
 
       - name: Install dependencies
         uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda
@@ -141,7 +133,7 @@ jobs:
       - name: Mutation testing on changed lines
         if: github.event_name == 'pull_request'
         run: >-
-          php -d memory_limit=4G vendor/bin/infection
+          php -d memory_limit=4G "$(command -v infection)"
           --configuration=infection.json5
           --threads=max
           --only-covering-test-cases
@@ -156,7 +148,7 @@ jobs:
       - name: Mutation testing on the whole source tree
         if: github.event_name != 'pull_request'
         run: >-
-          php -d memory_limit=4G vendor/bin/infection
+          php -d memory_limit=4G "$(command -v infection)"
           --configuration=infection.json5
           --threads=max
           --only-covering-test-cases
@@ -185,7 +177,7 @@ jobs:
   build:
     name: Build the distributed binary
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     needs: [tests, lint]
     steps:
       - name: Check out the repository
@@ -195,12 +187,9 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
           php-version: '8.4'
-          extensions: mbstring, pcntl
-          ini-values: phar.readonly=0
+          extensions: dom, filter, iconv, libxml, mbstring, pcntl, phar, simplexml, tokenizer, xmlwriter
           coverage: none
-
-      - name: Select the lock file of this PHP minor
-        run: cp composer.lock.php-8.4 composer.lock
+          ini-values: phar.readonly=0
 
       - name: Install dependencies
         uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda

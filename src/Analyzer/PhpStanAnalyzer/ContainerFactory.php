@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Analyzer\PhpStanAnalyzer;
 
-use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
-use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
 use PHPStan\DependencyInjection\Container;
 use PHPStan\DependencyInjection\ContainerFactory as PhpStanContainerFactory;
 use RuntimeException;
@@ -41,16 +39,26 @@ final class ContainerFactory
     ) {}
 
     /**
-     * Builds a container whose analysis reports what peq's collectors gathered.
+     * Builds a container whose analysis reports what the given collectors gathered.
      *
-     * @param list<string> $files The files the analysis will cover
+     * The configuration is written into the directory PHPStan works in, under a name
+     * derived from its contents. PHPStan compiles a container class for each
+     * configuration path it is given and loads it once per process, so an analysis
+     * with the same collectors as an earlier one — in the next command, or in the
+     * next test of a suite — starts from the class that one compiled instead of
+     * compiling, loading and keeping another. The name carries the contents because
+     * PHPStan also remembers what it read from a path for the rest of the process,
+     * so a path must never be reused for a different configuration.
+     *
+     * @param list<string>       $files      The files the analysis will cover
+     * @param list<class-string> $collectors The collectors the analysis runs
      *
      * @return Container The configured PHPStan container
      *
      * @throws RuntimeException If the working directory cannot be determined, if PHPStan
      *                          is not loadable, or if the generated configuration cannot be written
      */
-    public function create(array $files): Container
+    public function create(array $files, array $collectors): Container
     {
         $this->autoloader->ensureRegistered();
 
@@ -59,27 +67,22 @@ final class ContainerFactory
             throw new RuntimeException('Unable to determine current working directory');
         }
 
-        $scratch = ScratchDirectory::create('peq-phpstan-');
+        $neon = Yaml::dump([
+            'services' => array_map(
+                static fn (string $collector): array => ['class' => $collector, 'tags' => ['phpstan.collector']],
+                $collectors,
+            ),
+            'parameters' => [
+                'customRulesetUsed' => true,
+                'level' => self::COLLECTOR_ONLY_LEVEL,
+            ],
+            'includes' => [],
+        ], 4);
+        $directory = WorkingDirectory::shared();
+        $configuration = $directory->write('phpstan-'.md5($neon).'.neon', $neon);
 
-        try {
-            $configuration = $scratch->write('phpstan.neon', Yaml::dump([
-                'services' => [
-                    ['class' => DependencyCollector::class, 'tags' => ['phpstan.collector']],
-                    ['class' => InClassMethodCollector::class, 'tags' => ['phpstan.collector']],
-                ],
-                'parameters' => [
-                    'customRulesetUsed' => true,
-                    'level' => self::COLLECTOR_ONLY_LEVEL,
-                    'tmpDir' => $scratch->path.'/tmp',
-                ],
-                'includes' => [],
-            ], 4));
-
-            return (new PhpStanContainerFactory($workingDirectory))
-                ->create($scratch->path, [$configuration], $files)
-            ;
-        } finally {
-            $scratch->delete();
-        }
+        return (new PhpStanContainerFactory($workingDirectory))
+            ->create($directory->path, [$configuration], $files)
+        ;
     }
 }

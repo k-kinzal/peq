@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Contract\Analyzer;
 
-use App\Analyzer\Graph\EdgeKind;
+use App\Analyzer\Graph\Edge;
+use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use App\Analyzer\PhpStanAnalyzer\ReparsedSource;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\AnalysedSnippet;
-use Tests\Fixture\Graph\GraphRelations;
 
 /**
  * @internal
@@ -45,11 +44,15 @@ final class ReparseStrategyContractTest extends TestCase
             }
             PHP;
 
-        $graph = AnalysedSnippet::graph($code);
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        GraphRelations::assertRelationExists($graph, 'Multi::alpha', 'DepA', EdgeKind::Instantiation);
-        GraphRelations::assertRelationExists($graph, 'Multi::beta', 'DepB', EdgeKind::Instantiation);
-        GraphRelations::assertRelationExists($graph, 'Multi::gamma', 'DepC::VAL', EdgeKind::ConstFetch);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\Multi::alpha -[instantiation]-> Tests\Contract\Analyzer\Reparse\DepA', $relations);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\Multi::beta -[instantiation]-> Tests\Contract\Analyzer\Reparse\DepB', $relations);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\Multi::gamma -[const-fetch]-> Tests\Contract\Analyzer\Reparse\DepC::VAL', $relations);
     }
 
     #[Test]
@@ -71,9 +74,13 @@ final class ReparseStrategyContractTest extends TestCase
             }
             PHP;
 
-        $graph = AnalysedSnippet::graph($code);
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        GraphRelations::assertRelationExists($graph, 'WithClosure::run', 'Target', EdgeKind::Instantiation);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\WithClosure::run -[instantiation]-> Tests\Contract\Analyzer\Reparse\Target', $relations);
     }
 
     #[Test]
@@ -99,9 +106,13 @@ final class ReparseStrategyContractTest extends TestCase
             }
             PHP;
 
-        $graph = AnalysedSnippet::graph($code);
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        GraphRelations::assertRelationExists($graph, 'DeepNest::run', 'Nested', EdgeKind::Instantiation);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\DeepNest::run -[instantiation]-> Tests\Contract\Analyzer\Reparse\Nested', $relations);
     }
 
     #[Test]
@@ -127,12 +138,16 @@ final class ReparseStrategyContractTest extends TestCase
             }
             PHP;
 
-        $graph = AnalysedSnippet::graph($code);
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        GraphRelations::assertRelationExists($graph, 'Consumer::work', 'Svc', EdgeKind::Instantiation);
-        GraphRelations::assertRelationExists($graph, 'Consumer::work', 'Svc::create', EdgeKind::StaticCall);
-        GraphRelations::assertRelationExists($graph, 'Consumer::work', 'Svc::FLAG', EdgeKind::ConstFetch);
-        GraphRelations::assertRelationExists($graph, 'Consumer::work', 'Svc', EdgeKind::Instanceof);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\Consumer::work -[instantiation]-> Tests\Contract\Analyzer\Reparse\Svc', $relations);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\Consumer::work -[static-call]-> Tests\Contract\Analyzer\Reparse\Svc::create', $relations);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\Consumer::work -[const-fetch]-> Tests\Contract\Analyzer\Reparse\Svc::FLAG', $relations);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\Consumer::work -[instanceof]-> Tests\Contract\Analyzer\Reparse\Svc', $relations);
     }
 
     #[Test]
@@ -152,15 +167,23 @@ final class ReparseStrategyContractTest extends TestCase
             }
             PHP;
 
-        $graph1 = AnalysedSnippet::graph($code);
-        $graph2 = AnalysedSnippet::graph($code);
-
-        $edges1 = GraphRelations::signatures($graph1);
-        $edges2 = GraphRelations::signatures($graph2);
-
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph1 = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph2 = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+        $edges1 = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph1->authoredEdges());
+        $edges2 = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph2->authoredEdges());
         sort($edges1);
         sort($edges2);
 
+        self::assertSame([
+            'Tests\Contract\Analyzer\Reparse\Deterministic -[declaration-method]-> Tests\Contract\Analyzer\Reparse\Deterministic::doWork',
+            'Tests\Contract\Analyzer\Reparse\Deterministic::doWork -[instantiation]-> Tests\Contract\Analyzer\Reparse\Dep',
+        ], $edges1);
         self::assertSame($edges1, $edges2, 'Two analyses of the same code must produce identical edge sets');
     }
 
@@ -180,9 +203,13 @@ final class ReparseStrategyContractTest extends TestCase
             }
             PHP;
 
-        $graph = AnalysedSnippet::graph($code);
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        GraphRelations::assertRelationExists($graph, 'SelfCaller::entry', 'SelfCaller::helper', EdgeKind::MethodCall);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\SelfCaller::entry -[method-call]-> Tests\Contract\Analyzer\Reparse\SelfCaller::helper', $relations);
     }
 
     #[Test]
@@ -201,9 +228,13 @@ final class ReparseStrategyContractTest extends TestCase
             }
             PHP;
 
-        $graph = AnalysedSnippet::graph($code);
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        GraphRelations::assertRelationExists($graph, 'PropReader::read', 'PropReader::value', EdgeKind::PropertyAccess);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\PropReader::read -[property-access]-> Tests\Contract\Analyzer\Reparse\PropReader::value', $relations);
     }
 
     #[Test]
@@ -225,9 +256,13 @@ final class ReparseStrategyContractTest extends TestCase
             }
             PHP;
 
-        $graph = AnalysedSnippet::graph($code);
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        GraphRelations::assertRelationExists($graph, 'StaticReader::read', 'Registry::count', EdgeKind::StaticPropertyAccess);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\StaticReader::read -[static-property-access]-> Tests\Contract\Analyzer\Reparse\Registry::count', $relations);
     }
 
     #[Test]
@@ -263,16 +298,20 @@ final class ReparseStrategyContractTest extends TestCase
             }
             PHP;
 
-        $graph = AnalysedSnippet::graph($code);
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        GraphRelations::assertRelationExists($graph, 'AllUsages::entry', 'Dep', EdgeKind::Instantiation);
-        GraphRelations::assertRelationExists($graph, 'AllUsages::entry', 'Dep::create', EdgeKind::StaticCall);
-        GraphRelations::assertRelationExists($graph, 'AllUsages::entry', 'Dep::FLAG', EdgeKind::ConstFetch);
-        GraphRelations::assertRelationExists($graph, 'AllUsages::entry', 'Dep', EdgeKind::Instanceof);
-        GraphRelations::assertRelationExists($graph, 'AllUsages::entry', 'Dep', EdgeKind::Catch);
-        GraphRelations::assertRelationExists($graph, 'AllUsages::entry', 'reparse_helper', EdgeKind::FunctionCall);
-        GraphRelations::assertRelationExists($graph, 'AllUsages::entry', 'AllUsages::helper', EdgeKind::MethodCall);
-        GraphRelations::assertRelationExists($graph, 'AllUsages::entry', 'AllUsages::value', EdgeKind::PropertyAccess);
-        GraphRelations::assertRelationExists($graph, 'AllUsages::entry', 'Dep::counter', EdgeKind::StaticPropertyAccess);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\AllUsages::entry -[instantiation]-> Tests\Contract\Analyzer\Reparse\Dep', $relations);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\AllUsages::entry -[static-call]-> Tests\Contract\Analyzer\Reparse\Dep::create', $relations);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\AllUsages::entry -[const-fetch]-> Tests\Contract\Analyzer\Reparse\Dep::FLAG', $relations);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\AllUsages::entry -[instanceof]-> Tests\Contract\Analyzer\Reparse\Dep', $relations);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\AllUsages::entry -[catch]-> Tests\Contract\Analyzer\Reparse\Dep', $relations);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\AllUsages::entry -[function-call]-> Tests\Contract\Analyzer\Reparse\reparse_helper', $relations);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\AllUsages::entry -[method-call]-> Tests\Contract\Analyzer\Reparse\AllUsages::helper', $relations);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\AllUsages::entry -[property-access]-> Tests\Contract\Analyzer\Reparse\AllUsages::value', $relations);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\AllUsages::entry -[static-property-access]-> Tests\Contract\Analyzer\Reparse\Dep::counter', $relations);
     }
 }

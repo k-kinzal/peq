@@ -4,26 +4,30 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\PhpStanAnalyzer;
 
+use App\Analyzer\Graph\Edge\Usage\MethodCallEdge;
+use App\Analyzer\Graph\FileMeta;
+use App\Analyzer\Graph\Node\ClassNode;
+use App\Analyzer\Graph\Node\MethodNode;
+use App\Analyzer\Graph\NodeId\ClassNodeId;
+use App\Analyzer\Graph\NodeId\MethodNodeId;
 use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
 use App\Analyzer\PhpStanAnalyzer\CollectorReport;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Graph\SampleEdges;
-use Tests\Fixture\Graph\SampleNodes;
 
 /**
  * @internal
  */
 #[CoversClass(CollectorReport::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Usage\MethodCallEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\FileMeta::class)]
-#[UsesClass(\App\Analyzer\Graph\NodeId\ClassNodeId::class)]
-#[UsesClass(\App\Analyzer\Graph\NodeId\MethodNodeId::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\ClassNode::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\MethodNode::class)]
+#[UsesClass(MethodCallEdge::class)]
+#[UsesClass(FileMeta::class)]
+#[UsesClass(ClassNodeId::class)]
+#[UsesClass(MethodNodeId::class)]
+#[UsesClass(ClassNode::class)]
+#[UsesClass(MethodNode::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
 #[Small]
 final class CollectorReportTest extends TestCase
@@ -31,7 +35,7 @@ final class CollectorReportTest extends TestCase
     public function testOfReadsTheSymbolsACollectorReported(): void
     {
         $report = CollectorReport::of(
-            ['/project/src/Invoice.php' => [DependencyCollector::class => [[SampleNodes::invoice()]]]],
+            ['/project/src/Invoice.php' => [DependencyCollector::class => [[new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true)]]]],
             [DependencyCollector::class],
         );
 
@@ -41,7 +45,7 @@ final class CollectorReportTest extends TestCase
     public function testOfReadsTheRelationsACollectorReported(): void
     {
         $report = CollectorReport::of(
-            ['/project/src/Invoice.php' => [DependencyCollector::class => [[SampleEdges::methodCall()]]]],
+            ['/project/src/Invoice.php' => [DependencyCollector::class => [[new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1))]]]],
             [DependencyCollector::class],
         );
 
@@ -51,7 +55,7 @@ final class CollectorReportTest extends TestCase
     public function testOfReadsOnlyTheCollectorsItWasAskedFor(): void
     {
         $report = CollectorReport::of(
-            ['/project/src/Invoice.php' => ['Some\Other\Collector' => [[SampleNodes::invoice()]]]],
+            ['/project/src/Invoice.php' => ['Some\Other\Collector' => [[new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true)]]]],
             [DependencyCollector::class],
         );
 
@@ -75,7 +79,7 @@ final class CollectorReportTest extends TestCase
 
     public function testItemsOfReadsTheFindingsOfOneCollectorForOneFile(): void
     {
-        $items = CollectorReport::itemsOf([[SampleNodes::invoice()], [SampleEdges::methodCall()]]);
+        $items = CollectorReport::itemsOf([[new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true)], [new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1))]]);
 
         self::assertCount(2, $items);
     }
@@ -97,8 +101,28 @@ final class CollectorReportTest extends TestCase
 
     public function testSymbolsReportsWhatTheReportWasBuiltWith(): void
     {
-        $node = SampleNodes::invoice();
+        $node = new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true);
 
         self::assertSame([$node], (new CollectorReport([$node]))->symbols());
+    }
+
+    public function testOfKeepsReadingFilesAfterOneWhoseFindingsAreNotShapedAsExpected(): void
+    {
+        $report = CollectorReport::of(
+            [
+                '/project/src/Broken.php' => 'not an array',
+                '/project/src/Invoice.php' => [DependencyCollector::class => [[new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true)]]],
+            ],
+            [DependencyCollector::class],
+        );
+
+        self::assertCount(1, $report->symbols());
+    }
+
+    public function testItemsOfKeepsReadingBatchesAfterOneThatIsNotAListOfFindings(): void
+    {
+        $items = CollectorReport::itemsOf(['not a batch', [new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true)]]);
+
+        self::assertCount(1, $items);
     }
 }

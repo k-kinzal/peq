@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer\PhpStanAnalyzer;
 
-use PhpParser\Error;
+use PhpParser\ErrorHandler\Collecting;
 use PhpParser\Node as PhpParserNode;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
@@ -78,13 +78,10 @@ final class ReparsedSource
 
         $this->parser ??= (new ParserFactory())->createForHostVersion();
 
-        try {
-            $parsed = $this->parser->parse($contents);
-        } catch (Error) {
-            return $this->parsedFiles[$file] = null;
-        }
+        $syntaxErrors = new Collecting();
+        $parsed = $this->parser->parse($contents, $syntaxErrors);
 
-        if ($parsed === null) {
+        if ($parsed === null || $syntaxErrors->hasErrors()) {
             return $this->parsedFiles[$file] = null;
         }
 

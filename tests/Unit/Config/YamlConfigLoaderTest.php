@@ -311,4 +311,37 @@ final class YamlConfigLoaderTest extends TestCase
 
         (new YamlConfigLoader('/unused'))->leaf('direction', new stdClass());
     }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testGroupNamesTheSettingItRejectsByItsGroupAndName(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Invalid configuration "debug.depth"');
+
+        (new YamlConfigLoader('/unused'))->group('debug', ['depth' => ['deep' => 3]]);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testGroupNamesAListSettingItRejectsByItsGroupAndName(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Invalid configuration "debug.seed"');
+
+        (new YamlConfigLoader('/unused'))->group('debug', ['seed' => [[42]]]);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testGroupNamesASingleSettingItRejectsByItsGroupAndName(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Invalid configuration "debug.seed"');
+
+        (new YamlConfigLoader('/unused'))->group('debug', ['seed' => new stdClass()]);
+    }
 }

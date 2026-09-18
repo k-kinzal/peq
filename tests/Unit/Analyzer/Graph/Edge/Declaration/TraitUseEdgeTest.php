@@ -28,6 +28,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(ClassNode::class)]
 #[UsesClass(TraitNode::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
 #[Small]
 final class TraitUseEdgeTest extends TestCase
 {

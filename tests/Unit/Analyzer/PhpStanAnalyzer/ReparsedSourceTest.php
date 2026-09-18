@@ -46,6 +46,18 @@ final class ReparsedSourceTest extends TestCase
         self::assertNull((new ReparsedSource())->statements(__DIR__.'/nonexistent.php'));
     }
 
+    public function testStatementsReportsNothingForAFileThatIsNotValidPhp(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'peq-unparseable-');
+        self::assertIsString($file);
+        file_put_contents($file, '<?php final class {');
+
+        $statements = (new ReparsedSource())->statements($file);
+        unlink($file);
+
+        self::assertNull($statements);
+    }
+
     public function testStatementsRemembersThatAFileCouldNotBeRead(): void
     {
         $source = new ReparsedSource();
@@ -87,5 +99,38 @@ final class ReparsedSourceTest extends TestCase
     public function testMethodBodyReportsNothingForAFileThatCannotBeRead(): void
     {
         self::assertNull((new ReparsedSource())->methodBody(__DIR__.'/nonexistent.php', 'Any', 'any'));
+    }
+
+    public function testStatementsReportsNothingForAFileTheParserCanOnlyPartlyRecover(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'peq-recovered-');
+        self::assertIsString($file);
+        file_put_contents($file, '<?php class A { public function f() { return 1 } }');
+
+        $statements = (new ReparsedSource())->statements($file);
+        unlink($file);
+
+        self::assertNull($statements);
+    }
+
+    public function testMethodBodyReadsAMethodATraitDeclares(): void
+    {
+        $body = (new ReparsedSource())->methodBody(
+            dirname(__DIR__, 3).'/Fixture/Source/Inheritance.php',
+            'Tests\Fixture\Source\InheritanceAuditable',
+            'auditedBy',
+        );
+
+        self::assertNotNull($body);
+        self::assertInstanceOf(Return_::class, $body[0]);
+    }
+
+    public function testMethodBodyReportsNothingForAMethodAnInterfaceDeclares(): void
+    {
+        self::assertNull((new ReparsedSource())->methodBody(
+            dirname(__DIR__, 3).'/Fixture/Source/Inheritance.php',
+            'Tests\Fixture\Source\InheritancePayable',
+            'amount',
+        ));
     }
 }

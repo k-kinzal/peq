@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Contract\Analyzer;
 
+use App\Analyzer\Graph\Edge;
+use App\Analyzer\Graph\Node;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\AnalysedFixture;
 
 /**
  * @internal
@@ -25,7 +26,11 @@ final class AnalysedOutputContractTest extends TestCase
     #[DataProvider('providerSymbolsOfEverySample')]
     public function testTheAnalysisFindsExactlyTheSymbolsTheSourceDeclares(string $fixture, array $expected): void
     {
-        self::assertSame($expected, AnalysedFixture::symbols($fixture));
+        $graph = (new PhpStanAnalyzer())->analyze(dirname(__DIR__, 2).'/Fixture/Source/'.$fixture.'.php');
+        $symbols = array_map(static fn (Node $node): string => $node->id()->toString(), $graph->nodes());
+        sort($symbols);
+
+        self::assertSame($expected, $symbols);
     }
 
     /**
@@ -109,7 +114,11 @@ final class AnalysedOutputContractTest extends TestCase
     #[DataProvider('providerRelationsOfEverySample')]
     public function testTheAnalysisWritesExactlyTheRelationsTheSourceWrites(string $fixture, array $expected): void
     {
-        self::assertSame($expected, AnalysedFixture::relations($fixture));
+        $graph = (new PhpStanAnalyzer())->analyze(dirname(__DIR__, 2).'/Fixture/Source/'.$fixture.'.php');
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        sort($relations);
+
+        self::assertSame($expected, $relations);
     }
 
     /**

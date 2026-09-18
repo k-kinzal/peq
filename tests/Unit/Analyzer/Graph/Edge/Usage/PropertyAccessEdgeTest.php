@@ -28,6 +28,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(FunctionNode::class)]
 #[UsesClass(PropertyNode::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
 #[Small]
 final class PropertyAccessEdgeTest extends TestCase
 {

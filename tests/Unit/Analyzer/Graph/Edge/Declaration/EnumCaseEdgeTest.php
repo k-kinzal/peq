@@ -28,6 +28,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(EnumCaseNode::class)]
 #[UsesClass(EnumNode::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
 #[Small]
 final class EnumCaseEdgeTest extends TestCase
 {

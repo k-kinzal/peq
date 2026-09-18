@@ -133,6 +133,8 @@ final class ConfigLoaderTest extends TestCase
         yield 'a single value replaces a group' => [['debug' => ['depth' => 9]], ['debug' => 3], ['debug' => 3]];
 
         yield 'nothing overlaid changes nothing' => [['level' => 1], [], ['level' => 1]];
+
+        yield 'a group followed by a single setting' => [['debug' => ['depth' => 1], 'level' => 1], ['debug' => ['seed' => 2], 'level' => 3], ['debug' => ['depth' => 1, 'seed' => 2], 'level' => 3]];
     }
 
     /**

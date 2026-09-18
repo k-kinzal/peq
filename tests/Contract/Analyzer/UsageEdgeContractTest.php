@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Contract\Analyzer;
 
-use App\Analyzer\Graph\EdgeKind;
+use App\Analyzer\Graph\Edge;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use Generator;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -12,8 +12,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\AnalysedSnippet;
-use Tests\Fixture\Graph\GraphRelations;
 
 /**
  * @internal
@@ -26,12 +24,31 @@ final class UsageEdgeContractTest extends TestCase
     #[Test]
     public function testInstantiationContract(string $label, string $methodBody): void
     {
-        $graph = AnalysedSnippet::graph(AnalysedSnippet::inMethodBody($methodBody));
-        GraphRelations::assertRelationExists(
-            $graph,
-            'Subject::testMethod',
-            'Dep',
-            EdgeKind::Instantiation,
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, <<<PHP
+            <?php
+            declare(strict_types=1);
+            namespace Tests\\Contract\\Analyzer\\Usage;
+
+            class Dep extends \\Exception {
+                public const SOME_CONST = 1;
+                public static int \$staticProp = 1;
+                public static function staticMethod(): void {}
+            }
+
+            class Subject {
+                public function testMethod(mixed \$y = null): mixed {
+                    {$methodBody}
+                    return null;
+                }
+            }
+            PHP);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+
+        self::assertContains(
+            'Tests\Contract\Analyzer\Usage\Subject::testMethod -[instantiation]-> Tests\Contract\Analyzer\Usage\Dep',
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
             "Contract violated [{$label}]: Instantiation edge missing",
         );
     }
@@ -64,12 +81,31 @@ final class UsageEdgeContractTest extends TestCase
     #[Test]
     public function testStaticCallContract(string $label, string $methodBody): void
     {
-        $graph = AnalysedSnippet::graph(AnalysedSnippet::inMethodBody($methodBody));
-        GraphRelations::assertRelationExists(
-            $graph,
-            'Subject::testMethod',
-            'Dep::staticMethod',
-            EdgeKind::StaticCall,
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, <<<PHP
+            <?php
+            declare(strict_types=1);
+            namespace Tests\\Contract\\Analyzer\\Usage;
+
+            class Dep extends \\Exception {
+                public const SOME_CONST = 1;
+                public static int \$staticProp = 1;
+                public static function staticMethod(): void {}
+            }
+
+            class Subject {
+                public function testMethod(mixed \$y = null): mixed {
+                    {$methodBody}
+                    return null;
+                }
+            }
+            PHP);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+
+        self::assertContains(
+            'Tests\Contract\Analyzer\Usage\Subject::testMethod -[static-call]-> Tests\Contract\Analyzer\Usage\Dep::staticMethod',
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
             "Contract violated [{$label}]: StaticCall edge missing",
         );
     }
@@ -102,12 +138,31 @@ final class UsageEdgeContractTest extends TestCase
     #[Test]
     public function testConstFetchContract(string $label, string $methodBody): void
     {
-        $graph = AnalysedSnippet::graph(AnalysedSnippet::inMethodBody($methodBody));
-        GraphRelations::assertRelationExists(
-            $graph,
-            'Subject::testMethod',
-            'Dep::SOME_CONST',
-            EdgeKind::ConstFetch,
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, <<<PHP
+            <?php
+            declare(strict_types=1);
+            namespace Tests\\Contract\\Analyzer\\Usage;
+
+            class Dep extends \\Exception {
+                public const SOME_CONST = 1;
+                public static int \$staticProp = 1;
+                public static function staticMethod(): void {}
+            }
+
+            class Subject {
+                public function testMethod(mixed \$y = null): mixed {
+                    {$methodBody}
+                    return null;
+                }
+            }
+            PHP);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+
+        self::assertContains(
+            'Tests\Contract\Analyzer\Usage\Subject::testMethod -[const-fetch]-> Tests\Contract\Analyzer\Usage\Dep::SOME_CONST',
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
             "Contract violated [{$label}]: ConstFetch edge missing",
         );
     }
@@ -140,12 +195,31 @@ final class UsageEdgeContractTest extends TestCase
     #[Test]
     public function testInstanceofContract(string $label, string $methodBody): void
     {
-        $graph = AnalysedSnippet::graph(AnalysedSnippet::inMethodBody($methodBody));
-        GraphRelations::assertRelationExists(
-            $graph,
-            'Subject::testMethod',
-            'Dep',
-            EdgeKind::Instanceof,
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, <<<PHP
+            <?php
+            declare(strict_types=1);
+            namespace Tests\\Contract\\Analyzer\\Usage;
+
+            class Dep extends \\Exception {
+                public const SOME_CONST = 1;
+                public static int \$staticProp = 1;
+                public static function staticMethod(): void {}
+            }
+
+            class Subject {
+                public function testMethod(mixed \$y = null): mixed {
+                    {$methodBody}
+                    return null;
+                }
+            }
+            PHP);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+
+        self::assertContains(
+            'Tests\Contract\Analyzer\Usage\Subject::testMethod -[instanceof]-> Tests\Contract\Analyzer\Usage\Dep',
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
             "Contract violated [{$label}]: Instanceof edge missing",
         );
     }
@@ -178,12 +252,31 @@ final class UsageEdgeContractTest extends TestCase
     #[Test]
     public function testCatchContract(string $label, string $methodBody): void
     {
-        $graph = AnalysedSnippet::graph(AnalysedSnippet::inMethodBody($methodBody));
-        GraphRelations::assertRelationExists(
-            $graph,
-            'Subject::testMethod',
-            'Dep',
-            EdgeKind::Catch,
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, <<<PHP
+            <?php
+            declare(strict_types=1);
+            namespace Tests\\Contract\\Analyzer\\Usage;
+
+            class Dep extends \\Exception {
+                public const SOME_CONST = 1;
+                public static int \$staticProp = 1;
+                public static function staticMethod(): void {}
+            }
+
+            class Subject {
+                public function testMethod(mixed \$y = null): mixed {
+                    {$methodBody}
+                    return null;
+                }
+            }
+            PHP);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+
+        self::assertContains(
+            'Tests\Contract\Analyzer\Usage\Subject::testMethod -[catch]-> Tests\Contract\Analyzer\Usage\Dep',
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
             "Contract violated [{$label}]: Catch edge missing",
         );
     }
@@ -216,12 +309,26 @@ final class UsageEdgeContractTest extends TestCase
     #[Test]
     public function testFunctionCallContract(string $label, string $methodBody): void
     {
-        $graph = AnalysedSnippet::graph(AnalysedSnippet::inFunctionCallContext($methodBody));
-        GraphRelations::assertRelationExists(
-            $graph,
-            'Subject::testMethod',
-            'dep_func',
-            EdgeKind::FunctionCall,
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, <<<PHP
+            <?php
+            declare(strict_types=1);
+
+            function dep_func(): mixed { return null; }
+
+            class Subject {
+                public function testMethod(mixed \$y = null): mixed {
+                    {$methodBody}
+                    return null;
+                }
+            }
+            PHP);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+
+        self::assertContains(
+            'Subject::testMethod -[function-call]-> dep_func',
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
             "Contract violated [{$label}]: FunctionCall edge missing",
         );
     }
@@ -254,12 +361,26 @@ final class UsageEdgeContractTest extends TestCase
     #[Test]
     public function testMethodCallContract(string $label, string $methodBody): void
     {
-        $graph = AnalysedSnippet::graph(AnalysedSnippet::inMethodCallContext($methodBody));
-        GraphRelations::assertRelationExists(
-            $graph,
-            'Subject::testMethod',
-            'Subject::helperMethod',
-            EdgeKind::MethodCall,
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, <<<PHP
+            <?php
+            declare(strict_types=1);
+            namespace Tests\\Contract\\Analyzer\\Usage;
+
+            class Subject {
+                public function helperMethod(): int { return 1; }
+                public function testMethod(mixed \$y = null): mixed {
+                    {$methodBody}
+                    return null;
+                }
+            }
+            PHP);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+
+        self::assertContains(
+            'Tests\Contract\Analyzer\Usage\Subject::testMethod -[method-call]-> Tests\Contract\Analyzer\Usage\Subject::helperMethod',
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
             "Contract violated [{$label}]: MethodCall edge missing",
         );
     }
@@ -294,12 +415,26 @@ final class UsageEdgeContractTest extends TestCase
     #[Test]
     public function testPropertyAccessContract(string $label, string $methodBody): void
     {
-        $graph = AnalysedSnippet::graph(AnalysedSnippet::inPropertyAccessContext($methodBody));
-        GraphRelations::assertRelationExists(
-            $graph,
-            'Subject::testMethod',
-            'Subject::targetProp',
-            EdgeKind::PropertyAccess,
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, <<<PHP
+            <?php
+            declare(strict_types=1);
+            namespace Tests\\Contract\\Analyzer\\Usage;
+
+            class Subject {
+                public int \$targetProp = 0;
+                public function testMethod(mixed \$y = null): mixed {
+                    {$methodBody}
+                    return null;
+                }
+            }
+            PHP);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+
+        self::assertContains(
+            'Tests\Contract\Analyzer\Usage\Subject::testMethod -[property-access]-> Tests\Contract\Analyzer\Usage\Subject::targetProp',
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
             "Contract violated [{$label}]: PropertyAccess edge missing",
         );
     }
@@ -334,12 +469,31 @@ final class UsageEdgeContractTest extends TestCase
     #[Test]
     public function testStaticPropertyAccessContract(string $label, string $methodBody): void
     {
-        $graph = AnalysedSnippet::graph(AnalysedSnippet::inMethodBody($methodBody));
-        GraphRelations::assertRelationExists(
-            $graph,
-            'Subject::testMethod',
-            'Dep::staticProp',
-            EdgeKind::StaticPropertyAccess,
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, <<<PHP
+            <?php
+            declare(strict_types=1);
+            namespace Tests\\Contract\\Analyzer\\Usage;
+
+            class Dep extends \\Exception {
+                public const SOME_CONST = 1;
+                public static int \$staticProp = 1;
+                public static function staticMethod(): void {}
+            }
+
+            class Subject {
+                public function testMethod(mixed \$y = null): mixed {
+                    {$methodBody}
+                    return null;
+                }
+            }
+            PHP);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+
+        self::assertContains(
+            'Tests\Contract\Analyzer\Usage\Subject::testMethod -[static-property-access]-> Tests\Contract\Analyzer\Usage\Dep::staticProp',
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
             "Contract violated [{$label}]: StaticPropertyAccess edge missing",
         );
     }
@@ -387,12 +541,14 @@ final class UsageEdgeContractTest extends TestCase
             }
             PHP;
 
-        $graph = AnalysedSnippet::graph($code);
-        GraphRelations::assertRelationMissing(
-            $graph,
-            'Subject::testMethod',
-            'Other::otherMethod',
-            EdgeKind::MethodCall,
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+
+        self::assertNotContains(
+            'Tests\Contract\Analyzer\Generated\Subject::testMethod -[method-call]-> Tests\Contract\Analyzer\Generated\Other::otherMethod',
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
             'Intentional: $obj->method() is not detected (requires type inference)',
         );
     }
@@ -416,12 +572,14 @@ final class UsageEdgeContractTest extends TestCase
             }
             PHP;
 
-        $graph = AnalysedSnippet::graph($code);
-        GraphRelations::assertRelationMissing(
-            $graph,
-            'Subject::testMethod',
-            'Other::value',
-            EdgeKind::PropertyAccess,
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+
+        self::assertNotContains(
+            'Tests\Contract\Analyzer\Generated\Subject::testMethod -[property-access]-> Tests\Contract\Analyzer\Generated\Other::value',
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
             'Intentional: $obj->prop is not detected (requires type inference)',
         );
     }

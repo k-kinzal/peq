@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\PhpStanAnalyzer\Collector;
 
+use App\Analyzer\Graph\Edge;
+use App\Analyzer\Graph\Node;
+use App\Analyzer\Graph\NodeKind;
 use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
-use Override;
+use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use PhpParser\Node as PhpParserNode;
-use PHPStan\Testing\PHPStanTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Medium;
-use Tests\Fixture\Analyzer\CollectorRun;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
@@ -29,22 +31,14 @@ use Tests\Fixture\Analyzer\CollectorRun;
 #[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\FunctionCallProcessor::class)]
 #[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\InstanceofProcessor::class)]
 #[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\InstantiationProcessor::class)]
-#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\MethodCallProcessor::class)]
-#[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\PropertyAccessProcessor::class)]
 #[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\StaticCallProcessor::class)]
 #[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\Usage\StaticPropertyAccessProcessor::class)]
 #[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\TypeResolver::class)]
 #[CoversClass(\App\Analyzer\PhpStanAnalyzer\Processor\TypeReference::class)]
 #[CoversClass(\App\Analyzer\PhpStanAnalyzer\SourceResolver::class)]
 #[Medium]
-final class DependencyCollectorTest extends PHPStanTestCase
+final class DependencyCollectorTest extends TestCase
 {
-    #[Override]
-    public static function getAdditionalConfigFiles(): array
-    {
-        return [];
-    }
-
     public function testGetNodeTypeAsksToBeCalledForEverySyntaxNode(): void
     {
         self::assertSame(PhpParserNode::class, (new DependencyCollector())->getNodeType());
@@ -53,14 +47,9 @@ final class DependencyCollectorTest extends PHPStanTestCase
     #[DataProvider('providerDeclaredSymbols')]
     public function testProcessNodeReportsEverySymbolADeclarationBringsIn(string $expected): void
     {
-        $collected = CollectorRun::over(
-            new DependencyCollector(),
-            __DIR__.'/../../../../Fixture/Source/Comprehensive.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(__DIR__.'/../../../../Fixture/Source/Comprehensive.php');
 
-        self::assertContains($expected, CollectorRun::nodeNames($collected));
+        self::assertContains($expected, array_map(static fn (Node $node): string => $node->id()->toString(), $graph->nodes()));
     }
 
     /**
@@ -92,14 +81,10 @@ final class DependencyCollectorTest extends PHPStanTestCase
     #[DataProvider('providerDeclaredRelations')]
     public function testProcessNodeReportsEveryRelationADeclarationWrites(string $expected): void
     {
-        $collected = CollectorRun::over(
-            new DependencyCollector(),
-            __DIR__.'/../../../../Fixture/Source/Comprehensive.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(__DIR__.'/../../../../Fixture/Source/Comprehensive.php');
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        self::assertContains($expected, CollectorRun::edgeDescriptions($collected));
+        self::assertContains($expected, $relations);
     }
 
     /**
@@ -128,41 +113,86 @@ final class DependencyCollectorTest extends PHPStanTestCase
 
     public function testDeclarationReadsAClassLikeAsADeclaration(): void
     {
-        $collected = CollectorRun::over(
-            new DependencyCollector(),
-            __DIR__.'/../../../../Fixture/Source/Comprehensive.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(__DIR__.'/../../../../Fixture/Source/Comprehensive.php');
 
-        self::assertContains('Tests\Fixture\Source\ComprehensiveClass', CollectorRun::nodeNames($collected));
+        self::assertContains('Tests\Fixture\Source\ComprehensiveClass', array_map(static fn (Node $node): string => $node->id()->toString(), $graph->nodes()));
     }
 
     public function testUsageIsLeftToTheOtherCollectorInsideAMethodBody(): void
     {
-        $collected = CollectorRun::over(
-            new DependencyCollector(),
-            __DIR__.'/../../../../Fixture/Source/MethodBody.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(__DIR__.'/../../../../Fixture/Source/MethodBody.php');
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
         self::assertNotContains(
             'Tests\Fixture\Source\MethodBodyClass::testMethod -[instantiation]-> stdClass',
-            CollectorRun::edgeDescriptions($collected),
+            $relations,
         );
     }
 
-    public function testUsageIsReportedOutsideAnyMethodBody(): void
+    #[DataProvider('providerUsagesWrittenInAFunctionBody')]
+    public function testProcessNodeReportsWhatAFunctionBodyUses(string $expected): void
     {
-        $collected = CollectorRun::over(
-            new DependencyCollector(),
-            __DIR__.'/../../../../Fixture/Source/Comprehensive.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, implode(PHP_EOL, [
+            '<?php',
+            'namespace Tests\Contract\Analyzer\Functions;',
+            '',
+            'class Holder',
+            '{',
+            '    public static int $count = 0;',
+            '}',
+            '',
+            'function build(): void',
+            '{',
+            '    $list = new \ArrayObject();',
+            '    \DateTime::createFromFormat(\'Y\', \'2024\');',
+            '    $format = \DateTime::ATOM;',
+            '    try {',
+            '        $list->count();',
+            '    } catch (\RuntimeException $failure) {',
+            '    }',
+            '    $countable = $list instanceof \Countable;',
+            '    \Elsewhere\helper();',
+            '    $count = Holder::$count;',
+            '}',
+            '',
+        ]));
+        $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze($file);
+        unlink($file);
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        self::assertNotEmpty(CollectorRun::edgeDescriptions($collected));
+        self::assertContains($expected, $relations);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function providerUsagesWrittenInAFunctionBody(): iterable
+    {
+        yield 'a class it instantiates' => ['Tests\Contract\Analyzer\Functions\build -[instantiation]-> ArrayObject'];
+
+        yield 'a static method it calls' => ['Tests\Contract\Analyzer\Functions\build -[static-call]-> DateTime::createFromFormat'];
+
+        yield 'a class constant it reads' => ['Tests\Contract\Analyzer\Functions\build -[const-fetch]-> DateTime::ATOM'];
+
+        yield 'an exception it catches' => ['Tests\Contract\Analyzer\Functions\build -[catch]-> RuntimeException'];
+
+        yield 'a type it checks against' => ['Tests\Contract\Analyzer\Functions\build -[instanceof]-> Countable'];
+
+        yield 'a function it calls' => ['Tests\Contract\Analyzer\Functions\build -[function-call]-> Elsewhere\helper'];
+
+        yield 'a static property it reads' => ['Tests\Contract\Analyzer\Functions\build -[static-property-access]-> Tests\Contract\Analyzer\Functions\Holder::count'];
+    }
+
+    public function testUsageIsReportedInsideAFunctionBody(): void
+    {
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, "<?php\nnamespace Tests\\Contract\\Analyzer\\Functions;\n\nfunction build(): object\n{\n    return new \\stdClass();\n}\n");
+        $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze($file);
+        unlink($file);
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+
+        self::assertContains('Tests\Contract\Analyzer\Functions\build -[instantiation]-> stdClass', $relations);
     }
 
     /**
@@ -171,14 +201,11 @@ final class DependencyCollectorTest extends PHPStanTestCase
     #[DataProvider('providerCompleteOutputOfEverySample')]
     public function testProcessNodeReportsExactlyTheseRelations(string $fixture, array $expected): void
     {
-        $collected = CollectorRun::over(
-            new DependencyCollector(),
-            dirname(__DIR__, 4).'/Fixture/Source/'.$fixture.'.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(dirname(__DIR__, 4).'/Fixture/Source/'.$fixture.'.php');
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        sort($relations);
 
-        self::assertSame($expected, CollectorRun::sortedEdgeDescriptions($collected));
+        self::assertSame($expected, $relations);
     }
 
     /**
@@ -230,6 +257,8 @@ final class DependencyCollectorTest extends PHPStanTestCase
             'Tests\Fixture\Source\InheritanceInvoice -[declaration-extends]-> Tests\Fixture\Source\InheritanceDocument',
             'Tests\Fixture\Source\InheritanceInvoice -[declaration-implements]-> Tests\Fixture\Source\InheritanceRefundable',
             'Tests\Fixture\Source\InheritanceInvoice -[declaration-method]-> Tests\Fixture\Source\InheritanceInvoice::amount',
+            'Tests\Fixture\Source\InheritanceInvoice -[declaration-method]-> Tests\Fixture\Source\InheritanceInvoice::auditedBy',
+            'Tests\Fixture\Source\InheritanceInvoice -[declaration-method]-> Tests\Fixture\Source\InheritanceInvoice::createdAt',
             'Tests\Fixture\Source\InheritanceInvoice -[declaration-method]-> Tests\Fixture\Source\InheritanceInvoice::refund',
             'Tests\Fixture\Source\InheritanceInvoice -[declaration-method]-> Tests\Fixture\Source\InheritanceInvoice::title',
             'Tests\Fixture\Source\InheritanceInvoice -[declaration-trait-use]-> Tests\Fixture\Source\InheritanceAuditable',
@@ -247,19 +276,13 @@ final class DependencyCollectorTest extends PHPStanTestCase
 
     public function testProcessNodeReportsEverySymbolItReadAsAnalysed(): void
     {
-        $collected = CollectorRun::over(
-            new DependencyCollector(),
-            dirname(__DIR__, 4).'/Fixture/Source/Comprehensive.php',
-            self::getContainer(),
-            self::getParser(),
-        );
+        $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(dirname(__DIR__, 4).'/Fixture/Source/Comprehensive.php');
+
+        $declared = array_values(array_filter($graph->nodes(), static fn (Node $node): bool => $node->kind() !== NodeKind::Unknown));
 
         self::assertSame(
-            CollectorRun::sortedSymbolDescriptions($collected),
-            array_values(array_filter(
-                CollectorRun::sortedSymbolDescriptions($collected),
-                static fn (string $described): bool => str_ends_with($described, '(analysed)'),
-            )),
+            array_map(static fn (Node $node): string => $node->id()->toString(), $declared),
+            array_map(static fn (Node $node): string => $node->id()->toString(), array_values(array_filter($declared, static fn (Node $node): bool => $node->resolved()))),
         );
     }
 }

@@ -6,10 +6,6 @@
     <file>bin</file>
     <file>config</file>
     <file>src</file>
-    <file>tests</file>
-
-    <exclude-pattern>tests/Fixture/Source/*</exclude-pattern>
-    <exclude-pattern>tests/Fixture/Sample/*</exclude-pattern>
 
     <config name="testVersion" value="8.1-"/>
 

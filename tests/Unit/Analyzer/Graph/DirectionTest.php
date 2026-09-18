@@ -6,6 +6,7 @@ namespace Tests\Unit\Analyzer\Graph;
 
 use App\Analyzer\Graph\Direction;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\TestCase;
 
@@ -32,8 +33,23 @@ final class DirectionTest extends TestCase
         self::assertSame(Direction::UsedBy, Direction::from('used-by'));
     }
 
-    public function testAnUnknownDirectionResolvesToNothing(): void
+    #[DataProvider('providerUnknownDirections')]
+    public function testAnUnknownDirectionResolvesToNothing(string $written): void
     {
-        self::assertNull(Direction::tryFrom('sideways'));
+        self::assertNull(Direction::tryFrom($written));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function providerUnknownDirections(): iterable
+    {
+        yield 'sideways' => ['sideways'];
+
+        yield 'nothing written' => [''];
+
+        yield 'USES' => ['USES'];
+
+        yield 'used_by' => ['used_by'];
     }
 }

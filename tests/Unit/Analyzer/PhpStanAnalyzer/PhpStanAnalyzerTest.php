@@ -14,6 +14,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Medium;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use Tests\Fixture\Analyzer\FailingCollector;
 
 /**
  * @internal
@@ -122,6 +123,14 @@ final class PhpStanAnalyzerTest extends TestCase
         self::assertTrue($graph->nodeNamed('Tests\Fixture\Source\MethodBodyClass')?->resolved());
     }
 
+    public function testAnalyzeReportsAFailureRatherThanAGraphMissingTheFile(): void
+    {
+        $this->expectException(AnalysisFailedException::class);
+        $this->expectExceptionMessageMatches('/^PHPStan could not finish analysing .*MethodBody\.php: the collector gave up on a /');
+
+        (new PhpStanAnalyzer(collectors: [FailingCollector::class]))->analyze(dirname(__DIR__, 3).'/Fixture/Source/MethodBody.php');
+    }
+
     public function testAnalyzeReportsASymbolItOnlySawReferencedAsUnresolved(): void
     {
         $graph = (new PhpStanAnalyzer())->analyze(dirname(__DIR__, 3).'/Fixture/Source/MethodBody.php');
@@ -142,10 +151,10 @@ final class PhpStanAnalyzerTest extends TestCase
     public function testCollectReadsWhatPeqsCollectorsReportedForTheFiles(): void
     {
         $files = [dirname(__DIR__, 3).'/Fixture/Sample/AnalysedSample.php'];
-        $container = (new ContainerFactory())->create($files);
+        $container = (new ContainerFactory())->create($files, [\App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector::class]);
 
-        $report = (new PhpStanAnalyzer())->collect($container, $files);
+        $report = (new PhpStanAnalyzer(collectors: [\App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector::class]))->collect($container, $files);
 
-        self::assertNotEmpty($report->symbols());
+        self::assertNotSame([], $report->symbols());
     }
 }

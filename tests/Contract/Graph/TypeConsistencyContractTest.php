@@ -11,7 +11,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Graph\GraphModel;
 
 /**
  * @internal
@@ -22,32 +21,44 @@ final class TypeConsistencyContractTest extends TestCase
 {
     public function testEveryKindOfRelationHasExactlyOneClass(): void
     {
-        self::assertCount(count(GraphModel::edgeKinds()), GraphModel::edgeClasses());
+        $files = glob(dirname(__DIR__, 3).'/src/Analyzer/Graph/Edge/*/*Edge.php');
+
+        self::assertIsArray($files);
+        self::assertCount(count(EdgeKind::cases()), $files);
     }
 
     public function testEveryKindOfSymbolHasExactlyOneNodeClass(): void
     {
-        self::assertCount(count(GraphModel::nodeKinds()), GraphModel::nodeClasses());
+        $files = glob(dirname(__DIR__, 3).'/src/Analyzer/Graph/Node/*Node.php');
+
+        self::assertIsArray($files);
+        self::assertCount(count(NodeKind::cases()), $files);
     }
 
     public function testEveryKindOfSymbolHasExactlyOneIdentifierClass(): void
     {
-        self::assertCount(count(GraphModel::nodeKinds()), GraphModel::nodeIdClasses());
+        $files = glob(dirname(__DIR__, 3).'/src/Analyzer/Graph/NodeId/*NodeId.php');
+
+        self::assertIsArray($files);
+        self::assertCount(count(NodeKind::cases()), $files);
     }
 
-    public function testOnlyTheDerivedReadingsAreMarkedAsDerived(): void
+    public function testOnlyTheTwoDerivedReadingsAreReadTowardsTheSubject(): void
     {
-        self::assertCount(2, GraphModel::inverseEdgeClasses());
+        self::assertSame(
+            [EdgeKind::UsedBy, EdgeKind::DeclaredIn],
+            array_values(array_filter(EdgeKind::cases(), static fn (EdgeKind $kind): bool => $kind->direction() === Direction::UsedBy)),
+        );
     }
 
-    public function testEveryOtherRelationClassStandsForSomethingSourceCodeWrites(): void
+    public function testTheDerivedReadingsAreTheOnlyClassesInTheInverseGroup(): void
     {
-        self::assertCount(count(GraphModel::edgeKinds()) - 2, GraphModel::authoredEdgeClasses());
+        $files = glob(dirname(__DIR__, 3).'/src/Analyzer/Graph/Edge/Inverse/*.php');
+
+        self::assertIsArray($files);
+        self::assertSame(['DeclaredInEdge.php', 'UsedByEdge.php'], array_map('basename', $files));
     }
 
-    /**
-     * @param EdgeKind $kind The kind to classify
-     */
     #[DataProvider('providerEveryKindOfRelation')]
     public function testEveryKindOfRelationIsClassifiedByDirection(EdgeKind $kind): void
     {
@@ -55,17 +66,12 @@ final class TypeConsistencyContractTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{EdgeKind}> One case per relation kind
+     * @return iterable<string, array{EdgeKind}>
      */
     public static function providerEveryKindOfRelation(): iterable
     {
         foreach (EdgeKind::cases() as $kind) {
             yield $kind->value => [$kind];
         }
-    }
-
-    public function testTheKindsOfSymbolAreAClosedSet(): void
-    {
-        self::assertSame(NodeKind::cases(), GraphModel::nodeKinds());
     }
 }

@@ -5,13 +5,18 @@ declare(strict_types=1);
 namespace Tests\Benchmark;
 
 use App\Analyzer\AnalysisFailedException;
+use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
+use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
 use App\Analyzer\PhpStanAnalyzer\CollectorReport;
+use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
+use App\Analyzer\PhpStanAnalyzer\GraphBuilder;
+use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
+use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use PhpBench\Attributes\BeforeMethods;
 use PhpBench\Attributes\Groups;
 use PhpBench\Attributes\Iterations;
 use PhpBench\Attributes\Revs;
 use PHPStan\DependencyInjection\Container;
-use Tests\Fixture\Analyzer\AnalysisSteps;
 
 /**
  * Breaks an analysis run into its steps and measures each of them.
@@ -44,7 +49,7 @@ final class AnalyzeStepsBench
      */
     public function setUpFiles(): void
     {
-        $this->files = AnalysisSteps::ownFiles();
+        $this->files = (new PhpFileCollector())->collect([dirname(__DIR__, 2).'/src']);
     }
 
     /**
@@ -53,7 +58,7 @@ final class AnalyzeStepsBench
     public function setUpContainer(): void
     {
         $this->setUpFiles();
-        $this->container = AnalysisSteps::container($this->files);
+        $this->container = (new ContainerFactory())->create($this->files, [DependencyCollector::class, InClassMethodCollector::class]);
     }
 
     /**
@@ -66,7 +71,7 @@ final class AnalyzeStepsBench
         $this->setUpContainer();
         $this->report = $this->container === null
             ? new CollectorReport([])
-            : AnalysisSteps::collect($this->container, $this->files);
+            : (new PhpStanAnalyzer())->collect($this->container, $this->files);
     }
 
     /**
@@ -77,7 +82,7 @@ final class AnalyzeStepsBench
     #[Groups(['steps'])]
     public function benchCollectFiles(): void
     {
-        AnalysisSteps::ownFiles();
+        (new PhpFileCollector())->collect([dirname(__DIR__, 2).'/src']);
     }
 
     /**
@@ -89,7 +94,7 @@ final class AnalyzeStepsBench
     #[Groups(['steps'])]
     public function benchBuildContainer(): void
     {
-        AnalysisSteps::container($this->files);
+        (new ContainerFactory())->create($this->files, [DependencyCollector::class, InClassMethodCollector::class]);
     }
 
     /**
@@ -104,7 +109,7 @@ final class AnalyzeStepsBench
     public function benchAnalyse(): void
     {
         if ($this->container !== null) {
-            AnalysisSteps::collect($this->container, $this->files);
+            (new PhpStanAnalyzer())->collect($this->container, $this->files);
         }
     }
 
@@ -117,6 +122,6 @@ final class AnalyzeStepsBench
     #[Groups(['steps'])]
     public function benchBuildGraph(): void
     {
-        AnalysisSteps::graph($this->report ?? new CollectorReport([]));
+        (new GraphBuilder())->build(($this->report ?? new CollectorReport([]))->symbols());
     }
 }

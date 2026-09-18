@@ -6,13 +6,17 @@ namespace Tests\Unit\Analyzer\Graph;
 
 use App\Analyzer\Graph\Direction;
 use App\Analyzer\Graph\Edge;
+use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\InverseEdge;
+use App\Analyzer\Graph\Node\ClassNode;
+use App\Analyzer\Graph\Node\MethodNode;
+use App\Analyzer\Graph\NodeId\ClassNodeId;
+use App\Analyzer\Graph\NodeId\MethodNodeId;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Graph\SampleEdges;
 
 /**
  * @internal
@@ -23,10 +27,10 @@ use Tests\Fixture\Graph\SampleEdges;
 #[CoversClass(Edge\Usage\MethodCallEdge::class)]
 #[CoversClass(Edge\Inverse\UsedByEdge::class)]
 #[UsesClass(\App\Analyzer\Graph\EdgeKind::class)]
-#[UsesClass(\App\Analyzer\Graph\NodeId\ClassNodeId::class)]
-#[UsesClass(\App\Analyzer\Graph\NodeId\MethodNodeId::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\ClassNode::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\MethodNode::class)]
+#[UsesClass(ClassNodeId::class)]
+#[UsesClass(MethodNodeId::class)]
+#[UsesClass(ClassNode::class)]
+#[UsesClass(MethodNode::class)]
 #[Small]
 final class EdgeTest extends TestCase
 {
@@ -83,8 +87,26 @@ final class EdgeTest extends TestCase
      */
     public static function providerEveryAuthoredRelation(): iterable
     {
-        yield 'a usage' => [SampleEdges::methodCall(), 'App\Domain\Invoice::total', 'App\Domain\Money::add'];
+        $meta = new FileMeta('/project/src/Domain/Invoice.php', 12, 1);
 
-        yield 'a declaration' => [SampleEdges::methodDeclaration(), 'App\Domain\Invoice', 'App\Domain\Invoice::total'];
+        yield 'a usage' => [
+            new Edge\Usage\MethodCallEdge(
+                new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true, $meta),
+                new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true, $meta),
+                $meta,
+            ),
+            'App\Domain\Invoice::total',
+            'App\Domain\Money::add',
+        ];
+
+        yield 'a declaration' => [
+            new Edge\Declaration\MethodEdge(
+                new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true, $meta),
+                new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true, $meta),
+                $meta,
+            ),
+            'App\Domain\Invoice',
+            'App\Domain\Invoice::total',
+        ];
     }
 }

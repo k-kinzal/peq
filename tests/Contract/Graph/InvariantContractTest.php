@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Contract\Graph;
 
+use App\Analyzer\DebugAnalyzer\DebugAnalyzer;
+use App\Analyzer\Graph\Edge;
 use App\Analyzer\Graph\Graph;
+use App\Analyzer\Graph\Node;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\DataProviderExternal;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\GeneratedGraphs;
-use Tests\Fixture\Graph\GraphInvariants;
 
 /**
  * @internal
@@ -19,45 +20,82 @@ use Tests\Fixture\Graph\GraphInvariants;
 #[Large]
 final class InvariantContractTest extends TestCase
 {
-    #[DataProviderExternal(GeneratedGraphs::class, 'seeds')]
-    public function testEveryRelationIsReadableFromBothOfItsEnds(int $seed): void
+    #[DataProvider('providerGeneratedGraphs')]
+    public function testEveryRelationIsReadableFromBothOfItsEnds(Graph $graph): void
     {
-        GraphInvariants::assertBidirectional(GeneratedGraphs::ofSeed($seed));
+        $edges = array_merge([], ...array_map(static fn (Node $node): array => $graph->edges($node->id()), $graph->nodes()));
+
+        self::assertNotSame([], $edges);
+        self::assertSame([], array_values(array_filter($edges, static fn (Edge $edge): bool => $graph->edge($edge->to(), $edge->from()) === null)));
     }
 
-    #[DataProviderExternal(GeneratedGraphs::class, 'seeds')]
-    public function testNoRelationPointsAtASymbolTheGraphDoesNotHold(int $seed): void
+    #[DataProvider('providerGeneratedGraphs')]
+    public function testNoRelationPointsAtASymbolTheGraphDoesNotHold(Graph $graph): void
     {
-        GraphInvariants::assertEndpointsExist(GeneratedGraphs::ofSeed($seed));
+        $edges = array_merge([], ...array_map(static fn (Node $node): array => $graph->edges($node->id()), $graph->nodes()));
+
+        self::assertNotSame([], $edges);
+        self::assertSame([], array_values(array_filter($edges, static fn (Edge $edge): bool => $graph->node($edge->from()) === null || $graph->node($edge->to()) === null)));
     }
 
-    #[DataProviderExternal(GeneratedGraphs::class, 'seeds')]
-    public function testAnIdentifierNamesAtMostOneSymbol(int $seed): void
+    #[DataProvider('providerGeneratedGraphs')]
+    public function testAnIdentifierNamesAtMostOneSymbol(Graph $graph): void
     {
-        GraphInvariants::assertNodeUniqueness(GeneratedGraphs::ofSeed($seed));
+        $names = array_map(static fn (Node $node): string => $node->id()->toString(), $graph->nodes());
+
+        self::assertSame($names, array_values(array_unique($names)));
     }
 
-    #[DataProviderExternal(GeneratedGraphs::class, 'seeds')]
-    public function testTheSameRelationIsRecordedAtMostOncePerDirection(int $seed): void
+    #[DataProvider('providerGeneratedGraphs')]
+    public function testTheSameRelationIsRecordedAtMostOncePerDirection(Graph $graph): void
     {
-        GraphInvariants::assertNoEdgeDuplicates(GeneratedGraphs::ofSeed($seed));
+        $spelled = array_map(
+            static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(),
+            array_merge([], ...array_map(static fn (Node $node): array => $graph->edges($node->id()), $graph->nodes())),
+        );
+
+        self::assertSame($spelled, array_values(array_unique($spelled)));
     }
 
-    #[DataProviderExternal(GeneratedGraphs::class, 'seedPairs')]
-    public function testMergeKeepsEverySymbolOfBothGraphs(int $seed, int $other): void
+    /**
+     * @return iterable<string, array{Graph}>
+     */
+    public static function providerGeneratedGraphs(): iterable
     {
-        $graph = GeneratedGraphs::ofSeed($seed, 2);
-        $merged = $graph->merge(GeneratedGraphs::ofSeed($other, 2));
+        yield 'seed 1' => [(new DebugAnalyzer(seed: 1, depth: 3))->analyze('/generated')];
 
-        GraphInvariants::assertAllNodesPreserved($graph, $merged);
+        yield 'seed 7' => [(new DebugAnalyzer(seed: 7, depth: 3))->analyze('/generated')];
+
+        yield 'seed 42' => [(new DebugAnalyzer(seed: 42, depth: 3))->analyze('/generated')];
+
+        yield 'seed 137' => [(new DebugAnalyzer(seed: 137, depth: 3))->analyze('/generated')];
+
+        yield 'seed 1024' => [(new DebugAnalyzer(seed: 1024, depth: 3))->analyze('/generated')];
+
+        yield 'seed 9973' => [(new DebugAnalyzer(seed: 9973, depth: 3))->analyze('/generated')];
     }
 
-    #[DataProviderExternal(GeneratedGraphs::class, 'seedPairs')]
-    public function testMergeKeepsTheInvariantsOfTheGraphsItJoins(int $seed, int $other): void
+    #[DataProvider('providerPairsOfGeneratedGraphs')]
+    public function testMergeKeepsEverySymbolAndRelationOfBothGraphs(Graph $first, Graph $second): void
     {
-        $merged = GeneratedGraphs::ofSeed($seed, 2)->merge(GeneratedGraphs::ofSeed($other, 2));
+        $merged = $first->merge($second);
+        $names = static fn (Graph $graph): array => array_map(static fn (Node $node): string => $node->id()->toString(), $graph->nodes());
+        $relations = static fn (Graph $graph): array => array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        GraphInvariants::assertBidirectional($merged);
-        GraphInvariants::assertNoEdgeDuplicates($merged);
+        self::assertSame([], array_values(array_diff(array_merge($names($first), $names($second)), $names($merged))));
+        self::assertSame([], array_values(array_diff(array_merge($relations($first), $relations($second)), $relations($merged))));
+        self::assertSame($relations($merged), array_values(array_unique($relations($merged))));
+    }
+
+    /**
+     * @return iterable<string, array{Graph, Graph}>
+     */
+    public static function providerPairsOfGeneratedGraphs(): iterable
+    {
+        yield 'seeds 1 and 7' => [(new DebugAnalyzer(seed: 1, depth: 2))->analyze('/generated'), (new DebugAnalyzer(seed: 7, depth: 2))->analyze('/generated')];
+
+        yield 'seeds 42 and 137' => [(new DebugAnalyzer(seed: 42, depth: 2))->analyze('/generated'), (new DebugAnalyzer(seed: 137, depth: 2))->analyze('/generated')];
+
+        yield 'seed 1024 with itself' => [(new DebugAnalyzer(seed: 1024, depth: 2))->analyze('/generated'), (new DebugAnalyzer(seed: 1024, depth: 2))->analyze('/generated')];
     }
 }

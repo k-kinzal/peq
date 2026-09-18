@@ -6,15 +6,14 @@ namespace App\Analyzer\DebugAnalyzer;
 
 use App\Analyzer\Analyzer;
 use App\Analyzer\DebugAnalyzer\Generator\ClassLikeGraphGenerator;
-use App\Analyzer\DebugAnalyzer\Generator\FakerRandomSource;
 use App\Analyzer\DebugAnalyzer\Generator\GraphGenerator;
 use App\Analyzer\DebugAnalyzer\Generator\LeafGraphGenerator;
 use App\Analyzer\DebugAnalyzer\Generator\MemberGraphGenerator;
 use App\Analyzer\DebugAnalyzer\Generator\NameGenerator;
 use App\Analyzer\DebugAnalyzer\Generator\NodeGenerator;
 use App\Analyzer\DebugAnalyzer\Generator\NodeIdGenerator;
+use App\Analyzer\DebugAnalyzer\Generator\RandomSource;
 use App\Analyzer\Graph\Graph;
-use Faker\Factory;
 
 /**
  * An analyzer that invents a dependency graph instead of reading one.
@@ -24,9 +23,10 @@ use Faker\Factory;
  * bounds and tree output exercisable on demand. The path it is given is ignored:
  * nothing is parsed.
  *
- * The graph is drawn from a seedable random source, so passing a seed makes the
- * same graph come out every time on the same PHP runtime — which is what turns a
- * reproduction of a reporting bug into something that can be attached to a report.
+ * The graph is drawn from a random source the analyzer seeds and owns, so passing
+ * a seed makes the same graph come out every time, on every PHP version — which is
+ * what turns a reproduction of a reporting bug into something that can be attached
+ * to a report.
  */
 final class DebugAnalyzer implements Analyzer
 {
@@ -50,12 +50,7 @@ final class DebugAnalyzer implements Analyzer
      */
     public function analyze(string $path): Graph
     {
-        $faker = Factory::create();
-        if ($this->seed !== null) {
-            $faker->seed($this->seed);
-        }
-
-        $random = new FakerRandomSource($faker);
+        $random = new RandomSource($this->seed ?? random_int(0, PHP_INT_MAX));
         $ids = new NodeIdGenerator(new NameGenerator($random), $random);
         $nodes = new NodeGenerator($ids, $random);
 

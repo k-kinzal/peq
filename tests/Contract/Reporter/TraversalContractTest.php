@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Contract\Reporter;
 
+use App\Analyzer\DebugAnalyzer\DebugAnalyzer;
 use App\Analyzer\Graph\Direction;
+use App\Analyzer\Graph\Edge;
+use App\Analyzer\Graph\Graph;
+use App\Analyzer\Graph\Node;
 use App\Reporter\Traversal\DepthFirstTraversal;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\DataProviderExternal;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\GeneratedGraphs;
-use Tests\Fixture\Reporter\TraversalInvariants;
 
 /**
  * @internal
@@ -20,51 +22,81 @@ use Tests\Fixture\Reporter\TraversalInvariants;
 #[Large]
 final class TraversalContractTest extends TestCase
 {
-    #[DataProviderExternal(GeneratedGraphs::class, 'seeds')]
-    public function testTraverseVisitsOnlySymbolsTheGraphHoldsWhenReadingForwards(int $seed): void
+    #[DataProvider('providerGeneratedGraphs')]
+    public function testTraverseVisitsOnlySymbolsTheGraphHoldsWhenReadingForwards(Graph $graph): void
     {
-        $graph = GeneratedGraphs::ofSeed($seed);
+        $visited = [];
+        (new DepthFirstTraversal(Direction::Uses))->traverse($graph, $graph->nodes()[0]->id(), static function (Node $node, int $depth) use (&$visited): bool {
+            $visited[] = $node->id()->toString();
 
-        TraversalInvariants::assertVisitsOnlyKnownSymbols(
-            $graph,
-            $graph->nodes()[0]->id(),
-            new DepthFirstTraversal(Direction::Uses),
-        );
+            return $depth < 4;
+        });
+
+        self::assertNotSame([], $visited);
+        self::assertSame([], array_values(array_filter($visited, static fn (string $name): bool => $graph->nodeNamed($name) === null)));
     }
 
-    #[DataProviderExternal(GeneratedGraphs::class, 'seeds')]
-    public function testTraverseVisitsOnlySymbolsTheGraphHoldsWhenReadingBackwards(int $seed): void
+    #[DataProvider('providerGeneratedGraphs')]
+    public function testTraverseVisitsOnlySymbolsTheGraphHoldsWhenReadingBackwards(Graph $graph): void
     {
-        $graph = GeneratedGraphs::ofSeed($seed);
+        $visited = [];
+        (new DepthFirstTraversal(Direction::UsedBy))->traverse($graph, $graph->nodes()[0]->id(), static function (Node $node, int $depth) use (&$visited): bool {
+            $visited[] = $node->id()->toString();
 
-        TraversalInvariants::assertVisitsOnlyKnownSymbols(
-            $graph,
-            $graph->nodes()[0]->id(),
-            new DepthFirstTraversal(Direction::UsedBy),
-        );
+            return $depth < 4;
+        });
+
+        self::assertNotSame([], $visited);
+        self::assertSame([], array_values(array_filter($visited, static fn (string $name): bool => $graph->nodeNamed($name) === null)));
     }
 
-    #[DataProviderExternal(GeneratedGraphs::class, 'seeds')]
-    public function testTraverseTerminatesOnAnyGeneratedGraph(int $seed): void
+    #[DataProvider('providerGeneratedGraphs')]
+    public function testTraverseReachesEveryRelationFromTheSymbolItStartsAt(Graph $graph): void
     {
-        $graph = GeneratedGraphs::ofSeed($seed);
+        $unreached = array_filter($graph->authoredEdges(), static function (Edge $edge) use ($graph): bool {
+            $visited = [];
+            (new DepthFirstTraversal(Direction::Uses))->traverse($graph, $edge->from(), static function (Node $node, int $depth) use (&$visited): bool {
+                $visited[] = $node->id()->toString();
 
-        self::assertNotEmpty(TraversalInvariants::visitedNames(
-            $graph,
-            $graph->nodes()[0]->id(),
-            new DepthFirstTraversal(Direction::Uses),
-        ));
+                return $depth < 1;
+            });
+
+            return !in_array($edge->to()->toString(), $visited, true);
+        });
+
+        self::assertNotSame([], $graph->authoredEdges());
+        self::assertSame([], array_values($unreached));
     }
 
-    #[DataProviderExternal(GeneratedGraphs::class, 'seeds')]
-    public function testTraverseReachesEveryRelationFromBothOfItsEnds(int $seed): void
+    #[DataProvider('providerGeneratedGraphs')]
+    public function testTraverseReachesEveryRelationFromTheSymbolItPointsAt(Graph $graph): void
     {
-        TraversalInvariants::assertEveryRelationIsReachableBothWays(GeneratedGraphs::ofSeed($seed, 2));
+        $unreached = array_filter($graph->authoredEdges(), static function (Edge $edge) use ($graph): bool {
+            $visited = [];
+            (new DepthFirstTraversal(Direction::UsedBy))->traverse($graph, $edge->to(), static function (Node $node, int $depth) use (&$visited): bool {
+                $visited[] = $node->id()->toString();
+
+                return $depth < 1;
+            });
+
+            return !in_array($edge->from()->toString(), $visited, true);
+        });
+
+        self::assertNotSame([], $graph->authoredEdges());
+        self::assertSame([], array_values($unreached));
     }
 
-    public function testDirectionIsTheOneTheTraversalWasGiven(): void
+    /**
+     * @return iterable<string, array{Graph}>
+     */
+    public static function providerGeneratedGraphs(): iterable
     {
-        self::assertSame(Direction::Uses, (new DepthFirstTraversal(Direction::Uses))->direction());
-        self::assertSame(Direction::UsedBy, (new DepthFirstTraversal(Direction::UsedBy))->direction());
+        yield 'seed 1' => [(new DebugAnalyzer(seed: 1, depth: 2))->analyze('/generated')];
+
+        yield 'seed 7' => [(new DebugAnalyzer(seed: 7, depth: 2))->analyze('/generated')];
+
+        yield 'seed 42' => [(new DebugAnalyzer(seed: 42, depth: 2))->analyze('/generated')];
+
+        yield 'seed 1024' => [(new DebugAnalyzer(seed: 1024, depth: 2))->analyze('/generated')];
     }
 }

@@ -5,24 +5,27 @@ declare(strict_types=1);
 namespace Tests\Unit\Action\Inspect;
 
 use App\Action\Inspect\InspectActionInput;
+use App\Analyzer\Graph\Direction;
+use App\Config\AnalyzerKind;
+use App\Config\Config;
+use App\Config\DebugAnalyzerConfig;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Config\SampleConfig;
 
 /**
  * @internal
  */
 #[CoversClass(InspectActionInput::class)]
-#[UsesClass(\App\Config\Config::class)]
-#[UsesClass(\App\Config\DebugAnalyzerConfig::class)]
+#[UsesClass(Config::class)]
+#[UsesClass(DebugAnalyzerConfig::class)]
 #[Small]
 final class InspectActionInputTest extends TestCase
 {
     public function testTheConfigurationIsCarriedThroughUnchanged(): void
     {
-        $config = SampleConfig::generated();
+        $config = new Config(basePath: '.', direction: Direction::Uses, analyzer: AnalyzerKind::Debug, debug: new DebugAnalyzerConfig(depth: 3, seed: 42));
 
         self::assertSame($config, (new InspectActionInput($config, 'App\Domain\Invoice'))->config);
     }
@@ -31,7 +34,7 @@ final class InspectActionInputTest extends TestCase
     {
         self::assertSame(
             'App\Domain\Invoice::total',
-            (new InspectActionInput(SampleConfig::generated(), 'App\Domain\Invoice::total'))->target,
+            (new InspectActionInput(new Config(basePath: '.', direction: Direction::Uses, analyzer: AnalyzerKind::Debug, debug: new DebugAnalyzerConfig(depth: 3, seed: 42)), 'App\Domain\Invoice::total'))->target,
         );
     }
 
@@ -39,7 +42,7 @@ final class InspectActionInputTest extends TestCase
     {
         self::assertSame(
             'App\Domain\NeverAnalysed',
-            (new InspectActionInput(SampleConfig::generated(), 'App\Domain\NeverAnalysed'))->target,
+            (new InspectActionInput(new Config(basePath: '.', direction: Direction::Uses, analyzer: AnalyzerKind::Debug, debug: new DebugAnalyzerConfig(depth: 3, seed: 42)), 'App\Domain\NeverAnalysed'))->target,
         );
     }
 }

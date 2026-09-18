@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\DebugAnalyzer;
 
 use App\Analyzer\DebugAnalyzer\DebugAnalyzer;
+use App\Analyzer\Graph\Edge;
+use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeKind;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Graph\GraphInvariants;
 
 /**
  * @internal
@@ -22,28 +23,27 @@ use Tests\Fixture\Graph\GraphInvariants;
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\LeafGraphGenerator::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\MemberGraphGenerator::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\NameGenerator::class)]
-#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\FakerRandomSource::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\NodeGenerator::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\NodeIdGenerator::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Usage\ConstFetchEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Declaration\ConstantEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Declaration\ExtendsEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Declaration\ImplementsEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Declaration\MethodEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Declaration\PropertyEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Declaration\TraitUseEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Declaration\TypeParameterEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Declaration\TypePropertyEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Declaration\TypeReturnEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Inverse\DeclaredInEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Usage\FunctionCallEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Usage\InstantiationEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Usage\MethodCallEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Usage\PropertyAccessEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Usage\StaticCallEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Usage\StaticPropertyAccessEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Inverse\UsedByEdge::class)]
+#[UsesClass(Edge\Usage\ConstFetchEdge::class)]
+#[UsesClass(Edge\Declaration\ConstantEdge::class)]
+#[UsesClass(Edge\Declaration\ExtendsEdge::class)]
+#[UsesClass(Edge\Declaration\ImplementsEdge::class)]
+#[UsesClass(Edge\Declaration\MethodEdge::class)]
+#[UsesClass(Edge\Declaration\PropertyEdge::class)]
+#[UsesClass(Edge\Declaration\TraitUseEdge::class)]
+#[UsesClass(Edge\Declaration\TypeParameterEdge::class)]
+#[UsesClass(Edge\Declaration\TypePropertyEdge::class)]
+#[UsesClass(Edge\Declaration\TypeReturnEdge::class)]
+#[UsesClass(Edge\Inverse\DeclaredInEdge::class)]
+#[UsesClass(Edge\Usage\FunctionCallEdge::class)]
+#[UsesClass(Edge\Usage\InstantiationEdge::class)]
+#[UsesClass(Edge\Usage\MethodCallEdge::class)]
+#[UsesClass(Edge\Usage\PropertyAccessEdge::class)]
+#[UsesClass(Edge\Usage\StaticCallEdge::class)]
+#[UsesClass(Edge\Usage\StaticPropertyAccessEdge::class)]
+#[UsesClass(Edge\Inverse\UsedByEdge::class)]
 #[UsesClass(\App\Analyzer\Graph\FileMeta::class)]
 #[UsesClass(\App\Analyzer\Graph\Graph::class)]
 #[UsesClass(\App\Analyzer\Graph\NodeId\BuiltinNodeId::class)]
@@ -55,22 +55,23 @@ use Tests\Fixture\Graph\GraphInvariants;
 #[UsesClass(\App\Analyzer\Graph\NodeId\MethodNodeId::class)]
 #[UsesClass(\App\Analyzer\Graph\NodeId\PropertyNodeId::class)]
 #[UsesClass(\App\Analyzer\Graph\NodeId\TraitNodeId::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\BuiltinNode::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\ClassNode::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\ConstantNode::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\EnumNode::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\FunctionNode::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\GraphInterfaceNode::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\MethodNode::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\PropertyNode::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\TraitNode::class)]
+#[UsesClass(Node\BuiltinNode::class)]
+#[UsesClass(Node\ClassNode::class)]
+#[UsesClass(Node\ConstantNode::class)]
+#[UsesClass(Node\EnumNode::class)]
+#[UsesClass(Node\FunctionNode::class)]
+#[UsesClass(Node\GraphInterfaceNode::class)]
+#[UsesClass(Node\MethodNode::class)]
+#[UsesClass(Node\PropertyNode::class)]
+#[UsesClass(Node\TraitNode::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\RandomSource::class)]
 #[Small]
 final class DebugAnalyzerTest extends TestCase
 {
     public function testAnalyzeProducesAGraphWithoutReadingAnySource(): void
     {
-        self::assertNotEmpty((new DebugAnalyzer(seed: 42, depth: 3))->analyze('/no/such/path'));
+        self::assertNotSame([], (new DebugAnalyzer(seed: 42, depth: 3))->analyze('/no/such/path')->nodes());
     }
 
     public function testAnalyzeIgnoresThePathItIsGiven(): void
@@ -118,8 +119,12 @@ final class DebugAnalyzerTest extends TestCase
     {
         $graph = (new DebugAnalyzer(seed: 42, depth: 3))->analyze('/generated');
 
-        GraphInvariants::assertBidirectional($graph);
-        GraphInvariants::assertEndpointsExist($graph);
-        GraphInvariants::assertNodeUniqueness($graph);
+        $edges = array_merge([], ...array_map(static fn (Node $node): array => $graph->edges($node->id()), $graph->nodes()));
+        $names = array_map(static fn (Node $node): string => $node->id()->toString(), $graph->nodes());
+
+        self::assertNotSame([], $edges);
+        self::assertSame([], array_values(array_filter($edges, static fn (Edge $edge): bool => $graph->edge($edge->to(), $edge->from()) === null)));
+        self::assertSame([], array_values(array_filter($edges, static fn (Edge $edge): bool => $graph->node($edge->from()) === null || $graph->node($edge->to()) === null)));
+        self::assertSame($names, array_values(array_unique($names)));
     }
 }

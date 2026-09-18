@@ -19,7 +19,7 @@ final class AnalysisFailedExceptionTest extends TestCase
 {
     public function testAnAnalysisFailureNeedsNoHandlerOnTheWayOut(): void
     {
-        self::assertContains(RuntimeException::class, class_parents(new AnalysisFailedException('nothing could be analysed')) === false ? [] : class_parents(new AnalysisFailedException('nothing could be analysed')));
+        self::assertContains(RuntimeException::class, class_parents(new AnalysisFailedException('nothing could be analysed')));
     }
 
     public function testAnAnalysisFailureCarriesTheFailureItCameFrom(): void

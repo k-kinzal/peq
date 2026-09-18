@@ -5,57 +5,77 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\Graph\Edge\Inverse;
 
 use App\Analyzer\Graph\Edge\Inverse\UsedByEdge;
+use App\Analyzer\Graph\Edge\Usage\MethodCallEdge;
 use App\Analyzer\Graph\EdgeKind;
+use App\Analyzer\Graph\FileMeta;
+use App\Analyzer\Graph\Node\MethodNode;
+use App\Analyzer\Graph\NodeId\MethodNodeId;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Graph\SampleEdges;
 
 /**
  * @internal
  */
 #[CoversClass(UsedByEdge::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Usage\MethodCallEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\FileMeta::class)]
-#[UsesClass(\App\Analyzer\Graph\NodeId\MethodNodeId::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\MethodNode::class)]
+#[UsesClass(MethodCallEdge::class)]
+#[UsesClass(FileMeta::class)]
+#[UsesClass(MethodNodeId::class)]
+#[UsesClass(MethodNode::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
 #[Small]
 final class UsedByEdgeTest extends TestCase
 {
-    public function testFromNamesTheSymbolThatIsUsed(): void
+    #[DataProvider('providerTotalCallingAdd')]
+    public function testFromNamesTheSymbolThatIsUsed(MethodCallEdge $usage): void
     {
-        self::assertSame('App\Domain\Money::add', (new UsedByEdge(SampleEdges::methodCall()))->from()->toString());
+        self::assertSame('App\Domain\Money::add', (new UsedByEdge($usage))->from()->toString());
     }
 
-    public function testToNamesTheSymbolThatUsesIt(): void
+    #[DataProvider('providerTotalCallingAdd')]
+    public function testToNamesTheSymbolThatUsesIt(MethodCallEdge $usage): void
     {
-        self::assertSame('App\Domain\Invoice::total', (new UsedByEdge(SampleEdges::methodCall()))->to()->toString());
+        self::assertSame('App\Domain\Invoice::total', (new UsedByEdge($usage))->to()->toString());
     }
 
-    public function testKindMarksTheRelationAsAReverseUsage(): void
+    #[DataProvider('providerTotalCallingAdd')]
+    public function testKindMarksTheRelationAsAReverseUsage(MethodCallEdge $usage): void
     {
-        self::assertSame(EdgeKind::UsedBy, (new UsedByEdge(SampleEdges::methodCall()))->kind());
+        self::assertSame(EdgeKind::UsedBy, (new UsedByEdge($usage))->kind());
     }
 
-    public function testMetaIsWhereTheUsageItReversesIsWritten(): void
+    #[DataProvider('providerTotalCallingAdd')]
+    public function testMetaIsWhereTheUsageItReversesIsWritten(MethodCallEdge $usage): void
     {
-        $usage = SampleEdges::methodCall();
-
         self::assertSame($usage->meta(), (new UsedByEdge($usage))->meta());
     }
 
-    public function testInvertGivesBackTheExactUsageItWasDerivedFrom(): void
+    #[DataProvider('providerTotalCallingAdd')]
+    public function testInvertGivesBackTheExactUsageItWasDerivedFrom(MethodCallEdge $usage): void
     {
-        $usage = SampleEdges::methodCall();
-
         self::assertSame($usage, (new UsedByEdge($usage))->invert());
     }
 
-    public function testTheOriginalKindSurvivesTheReverseReading(): void
+    #[DataProvider('providerTotalCallingAdd')]
+    public function testTheOriginalKindSurvivesTheReverseReading(MethodCallEdge $usage): void
     {
-        self::assertSame(EdgeKind::MethodCall, (new UsedByEdge(SampleEdges::methodCall()))->invert()->kind());
+        self::assertSame(EdgeKind::MethodCall, (new UsedByEdge($usage))->invert()->kind());
+    }
+
+    /**
+     * @return iterable<string, array{MethodCallEdge}>
+     */
+    public static function providerTotalCallingAdd(): iterable
+    {
+        $meta = new FileMeta('/project/src/Domain/Invoice.php', 12, 1);
+
+        yield 'App\Domain\Invoice::total calls App\Domain\Money::add' => [new MethodCallEdge(
+            new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true, $meta),
+            new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true, $meta),
+            $meta,
+        )];
     }
 }

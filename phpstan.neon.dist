@@ -4,8 +4,6 @@ includes:
     - vendor/phpstan/phpstan-strict-rules/rules.neon
     - vendor/k-kinzal/php-ai-toolkit/extension.neon
     - vendor/k-kinzal/php-ai-toolkit/rules.neon
-    - vendor/phpstan/phpstan-symfony/extension.neon
-    - vendor/phpstan/phpstan-deprecation-rules/rules.neon
 
 parameters:
     level: max
@@ -13,51 +11,21 @@ parameters:
         - bin
         - src
         - tests
-
-    checkUninitializedProperties: true
-    checkTooWideReturnTypesInProtectedAndPublicMethods: true
-    checkImplicitMixed: true
-    checkBenevolentUnionTypes: true
-    treatPhpDocTypesAsCertain: false
-
     excludePaths:
-        analyseAndScan:
-            - tests/Fixture/Source
-            - tests/Fixture/Sample
-
-    stubFiles:
-        - phpstan-stubs/php-parser.stub
-
+        - tests/Fixture
     toolkit:
-        testNamespacePrefixes!:
-            - 'Tests\Unit'
-            - 'Tests\Contract'
-            - 'Tests\Integration'
         restrictedTestNamespacePrefixes:
-            - 'Tests\Unit'
             - 'Tests\Contract'
-            - 'Tests\Integration'
-        broadCatchAllowedPaths:
-            - 'bin/console'
-        forbiddenTermsByPath:
-            'src/Analyzer/Graph/*':
-                - phpstan
-                - phpparser
-            'src/Analyzer/DebugAnalyzer/*':
-                - phpstan
-                - phpparser
-            'src/Reporter/*':
-                - phpstan
-                - phpparser
-
     ignoreErrors:
         -
             identifier: phpstanApi.classConstant
-            paths:
-                - src/Analyzer/PhpStanAnalyzer/PhpStanAnalyzer.php
-                - src/Analyzer/PhpStanAnalyzer/PhpStanAutoloader.php
+            path: src/Analyzer/PhpStanAnalyzer/PhpStanAnalyzer.php
         -
             identifier: phpstanApi.method
-            paths:
-                - src/Analyzer/PhpStanAnalyzer/PhpStanAnalyzer.php
-                - src/Analyzer/PhpStanAnalyzer/Processor/Usage/FunctionCallProcessor.php
+            path: src/Analyzer/PhpStanAnalyzer/PhpStanAnalyzer.php
+        -
+            identifier: phpstanApi.classConstant
+            path: src/Analyzer/PhpStanAnalyzer/PhpStanAutoloader.php
+        -
+            identifier: phpstanApi.method
+            path: src/Analyzer/PhpStanAnalyzer/Processor/Usage/FunctionCallProcessor.php

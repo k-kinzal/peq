@@ -11,7 +11,10 @@ $finder = Finder::create()
     ->in(__DIR__)
     ->exclude([
         'build',
+        'cache',
         'dist',
+        'node_modules',
+        'var',
         'vendor',
         'vendor-bin',
     ])

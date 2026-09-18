@@ -35,7 +35,7 @@ final class ConfigExceptionTest extends TestCase
 
     public function testAConfigurationErrorMustBeHandledRatherThanEscaping(): void
     {
-        $families = (class_parents(new ConfigException('unusable')) === false ? [] : class_parents(new ConfigException('unusable')));
+        $families = class_parents(new ConfigException('unusable'));
 
         self::assertNotContains(RuntimeException::class, $families);
         self::assertNotContains(LogicException::class, $families);

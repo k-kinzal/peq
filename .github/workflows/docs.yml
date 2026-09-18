@@ -31,32 +31,32 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
-          php-version: '8.4'
-          extensions: mbstring, pcntl, gd
+          php-version: '8.5'
+          extensions: dom, filter, iconv, libxml, mbstring, pcntl, phar, simplexml, tokenizer, xmlwriter, gd
           coverage: pcov
-          ini-values: zend.assertions=1, memory_limit=2G
-
-      - name: Select the matching lock file
-        run: cp composer.lock.php-8.4 composer.lock
+          ini-values: zend.assertions=1
 
       - name: Install dependencies
         uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda
         with:
           dependency-versions: locked
           composer-options: --prefer-dist
+          require-lock-file: 'true'
+
+      - name: Check installed platform requirements
+        run: composer check-platform-reqs
 
       - name: Restore the DocGen cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: build/docgen-cache
-          key: docgen-${{ runner.os }}-${{ hashFiles('composer.lock.php-8.4') }}-${{ github.sha }}
+          key: docgen-${{ runner.os }}-${{ hashFiles('composer.lock') }}-${{ github.sha }}
           restore-keys: |
-            docgen-${{ runner.os }}-${{ hashFiles('composer.lock.php-8.4') }}-
+            docgen-${{ runner.os }}-${{ hashFiles('composer.lock') }}-
             docgen-${{ runner.os }}-
 
       - name: Generate the coverage report the site reads
-        run: |
-          php tests/run.php --exclude-group=pbt --coverage-xml build/coverage-xml
+        run: vendor/bin/phpunit --exclude-group=pbt --coverage-xml build/coverage-xml
 
       - name: Generate the documentation
         run: |
@@ -76,6 +76,7 @@ jobs:
         working-directory: .docs-branch
         run: |
           set -euo pipefail
+
           rsync -a --checksum --delete --exclude '/.git/' --exclude '/pr/' --exclude '/CNAME' ../build/docs/ ./
 
           git add --all

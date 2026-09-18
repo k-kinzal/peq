@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace Tests\Property;
 
+use App\Config\ConfigException;
 use App\Config\YamlConfigLoader;
+use Eris\Generator\AssociativeArrayGenerator;
+use Eris\Generator\OneOfGenerator;
+use Eris\Generator\SequenceGenerator;
+use Eris\Generators;
 use Eris\TestTrait;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Medium;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Config\ParsedYaml;
 
 /**
  * The configuration reader, checked against contents nobody wrote for it.
@@ -21,6 +25,10 @@ use Tests\Fixture\Config\ParsedYaml;
  * raises a configuration error naming what it found. Anything else — a TypeError, a
  * warning, a value of a shape nothing downstream expects — is a failure of the
  * boundary rather than of the file.
+ *
+ * Parsed YAML is a scalar, a list or a map, nested; the documents are drawn from
+ * those shapes around the settings peq reads, with values taken from the words and
+ * numbers a hand-edited file holds.
  *
  * @group pbt
  *
@@ -38,22 +46,36 @@ final class ConfigReaderPropertyTest extends TestCase
      */
     public function testAnyParsedContentsAreEitherReadAsSettingsOrRejected(): void
     {
-        $this->forAll(ParsedYaml::anyDocument())
+        $scalar = new OneOfGenerator([
+            Generators::elements(['uses', 'used-by', 'phpstan', 'debug', '']),
+            Generators::choose(-5, 5),
+            Generators::elements([true, false]),
+            Generators::constant(null),
+            Generators::elements([1.5, -0.25]),
+        ]);
+        $value = new OneOfGenerator([
+            $scalar,
+            new SequenceGenerator($scalar),
+            new AssociativeArrayGenerator(['depth' => $scalar, 'seed' => $scalar]),
+            new AssociativeArrayGenerator(['nested' => new AssociativeArrayGenerator(['deep' => $scalar])]),
+        ]);
+
+        $this->limitTo(300)
+            ->forAll(new OneOfGenerator([
+                new AssociativeArrayGenerator(['basePath' => $value, 'debug' => $value, 'direction' => $value, 'level' => $value]),
+                new SequenceGenerator($value),
+                $scalar,
+            ]))
             ->then(static function (array|bool|float|int|string|null $parsed): void {
-                $reading = ParsedYaml::readingOf(new YamlConfigLoader('/unused'), $parsed);
-                if (is_string($reading)) {
-                    self::assertStringContainsString('configuration', $reading);
+                try {
+                    $settings = (new YamlConfigLoader('/unused'))->settings($parsed);
+                } catch (ConfigException $refusal) {
+                    self::assertStringContainsString('configuration', $refusal->getMessage());
 
                     return;
                 }
 
-                foreach ($reading as $name => $value) {
-                    self::assertIsString($name);
-                    self::assertTrue(
-                        $value === null || is_scalar($value) || is_array($value),
-                        'A setting is a value, a list of values, or a group of them.',
-                    );
-                }
+                self::assertSame(is_array($parsed) ? array_keys($parsed) : [], array_keys($settings), 'Every named setting is read under its own name, and nothing else is.');
             })
         ;
     }
@@ -63,14 +85,35 @@ final class ConfigReaderPropertyTest extends TestCase
      */
     public function testReadingTheSameContentsTwiceReportsTheSameThing(): void
     {
-        $this->forAll(ParsedYaml::anyDocument())
+        $scalar = new OneOfGenerator([
+            Generators::elements(['uses', 'used-by', 'phpstan', 'debug', '']),
+            Generators::choose(-5, 5),
+            Generators::elements([true, false]),
+            Generators::constant(null),
+        ]);
+
+        $this->limitTo(300)
+            ->forAll(new OneOfGenerator([
+                new AssociativeArrayGenerator(['basePath' => $scalar, 'direction' => $scalar, 'debug' => new AssociativeArrayGenerator(['depth' => $scalar, 'seed' => $scalar])]),
+                new SequenceGenerator($scalar),
+                $scalar,
+            ]))
             ->then(static function (array|bool|float|int|string|null $parsed): void {
                 $loader = new YamlConfigLoader('/unused');
 
-                self::assertSame(
-                    ParsedYaml::readingOf($loader, $parsed),
-                    ParsedYaml::readingOf($loader, $parsed),
-                );
+                try {
+                    $first = $loader->settings($parsed);
+                } catch (ConfigException $refusal) {
+                    $first = $refusal->getMessage();
+                }
+
+                try {
+                    $again = $loader->settings($parsed);
+                } catch (ConfigException $refusal) {
+                    $again = $refusal->getMessage();
+                }
+
+                self::assertSame($first, $again);
             })
         ;
     }

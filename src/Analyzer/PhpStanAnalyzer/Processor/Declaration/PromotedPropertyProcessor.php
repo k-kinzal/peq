@@ -33,6 +33,9 @@ final class PromotedPropertyProcessor
     /**
      * Records the property a promoted constructor parameter declares.
      *
+     * A parameter is promoted by carrying a visibility; one that carries none
+     * declares nothing, and neither does one written outside a class.
+     *
      * @param Param $node  The syntax node met during analysis
      * @param Scope $scope The analyser scope it was written in
      *

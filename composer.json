@@ -17,7 +17,6 @@
     ],
     "require": {
         "php": "^8.1",
-        "fakerphp/faker": "^1.24",
         "phpstan/phpstan": "^2.0",
         "symfony/config": "^6.4 || ^7.0",
         "symfony/console": "^6.4 || ^7.0",
@@ -28,20 +27,15 @@
     },
     "require-dev": {
         "bamarni/composer-bin-plugin": "^1.8",
-        "brianium/paratest": "^6.11 || ^7",
-        "deptrac/deptrac": "^3.0 || ^4.0",
+        "deptrac/deptrac": "^4.4",
         "friendsofphp/php-cs-fixer": "^3.0",
         "giorgiosironi/eris": "^1.0",
-        "infection/infection": "^0.27 || ^0.28 || ^0.29 || ^0.30 || ^0.31 || ^0.32 || ^0.33 || ^0.34 || ^0.35",
         "k-kinzal/php-ai-toolkit": "dev-main",
         "mikey179/vfsstream": "^1.6",
         "phpbench/phpbench": "^1.2",
         "phpcompatibility/php-compatibility": "^10.0@alpha",
-        "phpstan/phpstan-deprecation-rules": "^2.0",
-        "phpstan/phpstan-phpunit": "^2.0",
         "phpstan/phpstan-strict-rules": "^2.0",
-        "phpstan/phpstan-symfony": "^2.0",
-        "phpunit/phpunit": "^10.0 || ^11.0 || ^12.0",
+        "phpunit/phpunit": "^10.5.46",
         "squizlabs/php_codesniffer": "^4.0"
     },
     "autoload": {
@@ -64,11 +58,12 @@
     "config": {
         "allow-plugins": {
             "bamarni/composer-bin-plugin": true,
-            "dealerdirect/phpcodesniffer-composer-installer": true,
-            "infection/extension-installer": true
+            "dealerdirect/phpcodesniffer-composer-installer": true
         },
         "sort-packages": true,
-        "process-timeout": 0
+        "platform": {
+            "php": "8.1.0"
+        }
     },
     "extra": {
         "bamarni-bin": {
@@ -87,7 +82,7 @@
         "docgen:diff": "@docgen --diff=main --serve",
         "docgen:fresh": "@docgen --no-cache",
         "docgen:serve": "@docgen --serve",
-        "doctest": "@php tests/run.php --testsuite doctest --exclude-group=pbt",
+        "doctest": "phpunit --testsuite doctest",
         "format": "php-cs-fixer fix --allow-risky=yes",
         "format:check": "php-cs-fixer fix --dry-run --diff --allow-risky=yes",
         "lint": [
@@ -106,11 +101,11 @@
         "post-update-cmd": [
             "@composer bin box require --dev humbug/box"
         ],
-        "test": "@php tests/run.php --parallel --exclude-group=pbt",
-        "test:contract": "@php tests/run.php --testsuite contract --exclude-group=pbt",
-        "test:integration": "@php tests/run.php --testsuite integration --exclude-group=pbt",
-        "test:pbt": "@php tests/run.php --group=pbt",
-        "test:unit": "@php tests/run.php --testsuite unit --exclude-group=pbt",
+        "test": "phpunit --exclude-group=pbt",
+        "test:contract": "phpunit --testsuite contract --exclude-group=pbt",
+        "test:integration": "phpunit --testsuite integration --exclude-group=pbt",
+        "test:pbt": "phpunit --group=pbt",
+        "test:unit": "phpunit --testsuite unit --exclude-group=pbt",
         "tree-guard": "tree-guard --config=tree.yaml"
     }
 }

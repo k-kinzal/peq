@@ -5,11 +5,16 @@ declare(strict_types=1);
 namespace Tests\Benchmark;
 
 use App\Analyzer\AnalysisFailedException;
+use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
+use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
 use App\Analyzer\PhpStanAnalyzer\CollectorReport;
+use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
+use App\Analyzer\PhpStanAnalyzer\GraphBuilder;
+use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
+use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use PhpBench\Attributes\BeforeMethods;
 use PhpBench\Attributes\Iterations;
 use PhpBench\Attributes\Revs;
-use Tests\Fixture\Analyzer\AnalysisSteps;
 
 /**
  * Measures assembling a graph out of what an analysis reported.
@@ -34,8 +39,8 @@ final class GraphBuildingBench
      */
     public function setUp(): void
     {
-        $files = AnalysisSteps::ownFiles();
-        $this->report = AnalysisSteps::collect(AnalysisSteps::container($files), $files);
+        $files = (new PhpFileCollector())->collect([dirname(__DIR__, 2).'/src']);
+        $this->report = (new PhpStanAnalyzer())->collect((new ContainerFactory())->create($files, [DependencyCollector::class, InClassMethodCollector::class]), $files);
     }
 
     /**
@@ -46,6 +51,6 @@ final class GraphBuildingBench
     #[Iterations(5)]
     public function benchBuildGraph(): void
     {
-        AnalysisSteps::graph($this->report ?? new CollectorReport([]));
+        (new GraphBuilder())->build(($this->report ?? new CollectorReport([]))->symbols());
     }
 }

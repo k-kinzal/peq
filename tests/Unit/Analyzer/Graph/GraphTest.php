@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\Graph;
 
+use App\Analyzer\Graph\Edge\Declaration\MethodEdge;
 use App\Analyzer\Graph\Edge\Usage\MethodCallEdge;
 use App\Analyzer\Graph\Edge\Usage\StaticCallEdge;
 use App\Analyzer\Graph\EdgeKind;
+use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\Node\MethodNode;
@@ -17,20 +19,18 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Graph\GraphInvariants;
-use Tests\Fixture\Graph\SampleEdges;
 
 /**
  * @internal
  */
 #[CoversClass(Graph::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Declaration\MethodEdge::class)]
+#[UsesClass(MethodEdge::class)]
 #[UsesClass(\App\Analyzer\Graph\Edge\Inverse\DeclaredInEdge::class)]
 #[UsesClass(MethodCallEdge::class)]
 #[UsesClass(StaticCallEdge::class)]
 #[UsesClass(\App\Analyzer\Graph\Edge\Inverse\UsedByEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\FileMeta::class)]
+#[UsesClass(FileMeta::class)]
 #[UsesClass(ClassNodeId::class)]
 #[UsesClass(MethodNodeId::class)]
 #[UsesClass(\App\Analyzer\Graph\NodeId\UnknownNodeId::class)]
@@ -82,7 +82,7 @@ final class GraphTest extends TestCase
     public function testAddNodeReplacesAPlaceholderWithTheRealSymbol(): void
     {
         $graph = new Graph();
-        $graph->addEdge(SampleEdges::methodCall());
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
         $graph->addNode(new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true));
 
         self::assertSame(NodeKind::Method, $graph->nodeNamed('App\Domain\Money::add')?->kind());
@@ -113,7 +113,7 @@ final class GraphTest extends TestCase
     public function testAddEdgeMakesTheRelationReadableFromItsSource(): void
     {
         $graph = new Graph();
-        $edge = SampleEdges::methodCall();
+        $edge = new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1));
         $graph->addEdge($edge);
 
         self::assertSame($edge, $graph->edge($edge->from(), $edge->to(), EdgeKind::MethodCall));
@@ -122,7 +122,7 @@ final class GraphTest extends TestCase
     public function testAddEdgeMakesTheRelationReadableFromItsTargetToo(): void
     {
         $graph = new Graph();
-        $edge = SampleEdges::methodCall();
+        $edge = new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1));
         $graph->addEdge($edge);
 
         self::assertSame(EdgeKind::UsedBy, $graph->edge($edge->to(), $edge->from())?->kind());
@@ -131,7 +131,7 @@ final class GraphTest extends TestCase
     public function testAddEdgeRecordsPlaceholdersForSymbolsNotSeenYet(): void
     {
         $graph = new Graph();
-        $graph->addEdge(SampleEdges::methodCall());
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
 
         self::assertSame(NodeKind::Unknown, $graph->nodeNamed('App\Domain\Money::add')?->kind());
     }
@@ -139,7 +139,7 @@ final class GraphTest extends TestCase
     public function testAddNodeKeepsTheRelationsRecordedWhileTheSymbolWasAPlaceholder(): void
     {
         $graph = new Graph();
-        $edge = SampleEdges::methodCall();
+        $edge = new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1));
         $graph->addEdge($edge);
         $graph->addNode(new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true));
 
@@ -149,7 +149,7 @@ final class GraphTest extends TestCase
     public function testAddEdgeRecordsAPlaceholderForTheSymbolARelationStartsAt(): void
     {
         $graph = new Graph();
-        $graph->addEdge(SampleEdges::methodCall());
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
 
         self::assertSame(NodeKind::Unknown, $graph->nodeNamed('App\Domain\Invoice::total')?->kind());
     }
@@ -158,8 +158,8 @@ final class GraphTest extends TestCase
     {
         $graph = new Graph();
         $called = new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true);
-        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), $called, SampleEdges::meta()));
-        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Receipt', 'total'), true), $called, SampleEdges::meta()));
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), $called, new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Receipt', 'total'), true), $called, new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
 
         self::assertCount(2, $graph->authoredEdges());
     }
@@ -168,8 +168,8 @@ final class GraphTest extends TestCase
     {
         $graph = new Graph();
         $caller = new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true);
-        $graph->addEdge(new MethodCallEdge($caller, new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), SampleEdges::meta()));
-        $graph->addEdge(new MethodCallEdge($caller, new MethodNode(MethodNodeId::of('App\Domain\Money', 'subtract'), true), SampleEdges::meta()));
+        $graph->addEdge(new MethodCallEdge($caller, new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
+        $graph->addEdge(new MethodCallEdge($caller, new MethodNode(MethodNodeId::of('App\Domain\Money', 'subtract'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
 
         self::assertCount(2, $graph->authoredEdges());
     }
@@ -179,8 +179,8 @@ final class GraphTest extends TestCase
         $graph = new Graph();
         $caller = new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true);
         $called = new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true);
-        $graph->addEdge(new MethodCallEdge($caller, $called, SampleEdges::meta()));
-        $graph->addEdge(new StaticCallEdge($caller, $called, SampleEdges::meta()));
+        $graph->addEdge(new MethodCallEdge($caller, $called, new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
+        $graph->addEdge(new StaticCallEdge($caller, $called, new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
 
         self::assertCount(2, $graph->authoredEdges());
     }
@@ -188,27 +188,31 @@ final class GraphTest extends TestCase
     public function testAddEdgeRecordsTheSameRelationOnlyOnce(): void
     {
         $graph = new Graph();
-        $graph->addEdge(SampleEdges::methodCall());
-        $graph->addEdge(SampleEdges::methodCall());
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
 
-        self::assertCount(1, $graph->edges(SampleEdges::methodCall()->from()));
+        self::assertCount(1, $graph->edges(MethodNodeId::of('App\Domain\Invoice', 'total')));
     }
 
     public function testAddEdgesRecordsEveryRelationItIsGiven(): void
     {
         $graph = new Graph();
-        $graph->addEdges([SampleEdges::methodCall(), SampleEdges::methodDeclaration()]);
+        $graph->addEdges([
+            new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)),
+            new MethodEdge(new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true), new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)),
+        ]);
 
-        GraphInvariants::assertBidirectional($graph);
         self::assertCount(2, $graph->authoredEdges());
+        self::assertSame(EdgeKind::UsedBy, $graph->edge(MethodNodeId::of('App\Domain\Money', 'add'), MethodNodeId::of('App\Domain\Invoice', 'total'))?->kind());
+        self::assertSame(EdgeKind::DeclaredIn, $graph->edge(MethodNodeId::of('App\Domain\Invoice', 'total'), ClassNodeId::of('App\Domain\Invoice'))?->kind());
     }
 
     public function testEdgesReportsBothReadingsRecordedForASymbol(): void
     {
         $graph = new Graph();
-        $graph->addEdge(SampleEdges::methodDeclaration());
+        $graph->addEdge(new MethodEdge(new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true), new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
 
-        self::assertCount(1, $graph->edges(SampleEdges::methodDeclaration()->to()));
+        self::assertCount(1, $graph->edges(MethodNodeId::of('App\Domain\Invoice', 'total')));
     }
 
     public function testEdgesReportsNothingForASymbolWithNoRelations(): void
@@ -219,7 +223,7 @@ final class GraphTest extends TestCase
     public function testEdgeCanBeAskedWithoutNamingAKind(): void
     {
         $graph = new Graph();
-        $edge = SampleEdges::methodCall();
+        $edge = new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1));
         $graph->addEdge($edge);
 
         self::assertSame($edge, $graph->edge($edge->from(), $edge->to()));
@@ -228,7 +232,7 @@ final class GraphTest extends TestCase
     public function testEdgeFindsNothingForAKindThatWasNeverRecorded(): void
     {
         $graph = new Graph();
-        $edge = SampleEdges::methodCall();
+        $edge = new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1));
         $graph->addEdge($edge);
 
         self::assertNull($graph->edge($edge->from(), $edge->to(), EdgeKind::StaticCall));
@@ -237,7 +241,7 @@ final class GraphTest extends TestCase
     public function testAuthoredEdgesLeavesOutTheDerivedReadings(): void
     {
         $graph = new Graph();
-        $graph->addEdge(SampleEdges::methodCall());
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
 
         self::assertCount(1, $graph->authoredEdges());
         self::assertInstanceOf(MethodCallEdge::class, $graph->authoredEdges()[0]);
@@ -251,25 +255,27 @@ final class GraphTest extends TestCase
     public function testMergeHoldsEverySymbolOfBothGraphs(): void
     {
         $first = new Graph();
-        $first->addEdge(SampleEdges::methodCall());
+        $first->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
         $second = new Graph();
-        $second->addEdge(SampleEdges::methodDeclaration());
+        $second->addEdge(new MethodEdge(new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true), new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
 
         $merged = $first->merge($second);
 
-        GraphInvariants::assertAllNodesPreserved($first, $merged);
-        GraphInvariants::assertAllNodesPreserved($second, $merged);
+        $names = array_map(static fn (\App\Analyzer\Graph\Node $node): string => $node->id()->toString(), $merged->nodes());
+        sort($names);
+
+        self::assertSame(['App\Domain\Invoice', 'App\Domain\Invoice::total', 'App\Domain\Money::add'], $names);
     }
 
     public function testMergeDerivesTheReverseReadingsAgainRatherThanCarryingThem(): void
     {
         $first = new Graph();
-        $first->addEdge(SampleEdges::methodCall());
+        $first->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
 
         $merged = $first->merge(new Graph());
 
         self::assertCount(1, $merged->authoredEdges());
-        GraphInvariants::assertNoEdgeDuplicates($merged);
+        self::assertCount(1, $merged->edges(MethodNodeId::of('App\Domain\Money', 'add')));
     }
 
     public function testMergeLeavesBothGraphsItWasBuiltFromUntouched(): void
@@ -288,11 +294,24 @@ final class GraphTest extends TestCase
     public function testMergingAGraphWithItselfChangesNothing(): void
     {
         $graph = new Graph();
-        $graph->addEdge(SampleEdges::methodCall());
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
 
         $merged = $graph->merge($graph);
 
         self::assertCount(count($graph->nodes()), $merged->nodes());
         self::assertCount(count($graph->authoredEdges()), $merged->authoredEdges());
+    }
+
+    public function testMergeKeepsSymbolsThatHaveNoRelationsOnEitherSide(): void
+    {
+        $first = new Graph();
+        $first->addNode(new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true));
+        $second = new Graph();
+        $second->addNode(new ClassNode(ClassNodeId::of('App\Domain\Money'), true));
+
+        $merged = $first->merge($second);
+
+        self::assertNotNull($merged->nodeNamed('App\Domain\Invoice'));
+        self::assertNotNull($merged->nodeNamed('App\Domain\Money'));
     }
 }

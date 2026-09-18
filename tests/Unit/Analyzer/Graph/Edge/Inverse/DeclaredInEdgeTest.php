@@ -4,60 +4,82 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\Graph\Edge\Inverse;
 
+use App\Analyzer\Graph\Edge\Declaration\MethodEdge;
 use App\Analyzer\Graph\Edge\Inverse\DeclaredInEdge;
 use App\Analyzer\Graph\EdgeKind;
+use App\Analyzer\Graph\FileMeta;
+use App\Analyzer\Graph\Node\ClassNode;
+use App\Analyzer\Graph\Node\MethodNode;
+use App\Analyzer\Graph\NodeId\ClassNodeId;
+use App\Analyzer\Graph\NodeId\MethodNodeId;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Graph\SampleEdges;
 
 /**
  * @internal
  */
 #[CoversClass(DeclaredInEdge::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\Edge\Declaration\MethodEdge::class)]
-#[UsesClass(\App\Analyzer\Graph\FileMeta::class)]
-#[UsesClass(\App\Analyzer\Graph\NodeId\ClassNodeId::class)]
-#[UsesClass(\App\Analyzer\Graph\NodeId\MethodNodeId::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\ClassNode::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\MethodNode::class)]
+#[UsesClass(MethodEdge::class)]
+#[UsesClass(FileMeta::class)]
+#[UsesClass(ClassNodeId::class)]
+#[UsesClass(MethodNodeId::class)]
+#[UsesClass(ClassNode::class)]
+#[UsesClass(MethodNode::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
 #[Small]
 final class DeclaredInEdgeTest extends TestCase
 {
-    public function testFromNamesTheDeclaredSymbol(): void
+    #[DataProvider('providerInvoiceDeclaringTotal')]
+    public function testFromNamesTheDeclaredSymbol(MethodEdge $declaration): void
     {
-        self::assertSame('App\Domain\Invoice::total', (new DeclaredInEdge(SampleEdges::methodDeclaration()))->from()->toString());
+        self::assertSame('App\Domain\Invoice::total', (new DeclaredInEdge($declaration))->from()->toString());
     }
 
-    public function testToNamesTheSymbolThatDeclaresIt(): void
+    #[DataProvider('providerInvoiceDeclaringTotal')]
+    public function testToNamesTheSymbolThatDeclaresIt(MethodEdge $declaration): void
     {
-        self::assertSame('App\Domain\Invoice', (new DeclaredInEdge(SampleEdges::methodDeclaration()))->to()->toString());
+        self::assertSame('App\Domain\Invoice', (new DeclaredInEdge($declaration))->to()->toString());
     }
 
-    public function testKindMarksTheRelationAsAReverseDeclaration(): void
+    #[DataProvider('providerInvoiceDeclaringTotal')]
+    public function testKindMarksTheRelationAsAReverseDeclaration(MethodEdge $declaration): void
     {
-        self::assertSame(EdgeKind::DeclaredIn, (new DeclaredInEdge(SampleEdges::methodDeclaration()))->kind());
+        self::assertSame(EdgeKind::DeclaredIn, (new DeclaredInEdge($declaration))->kind());
     }
 
-    public function testMetaIsWhereTheDeclarationItReversesIsWritten(): void
+    #[DataProvider('providerInvoiceDeclaringTotal')]
+    public function testMetaIsWhereTheDeclarationItReversesIsWritten(MethodEdge $declaration): void
     {
-        $declaration = SampleEdges::methodDeclaration();
-
         self::assertSame($declaration->meta(), (new DeclaredInEdge($declaration))->meta());
     }
 
-    public function testInvertGivesBackTheExactDeclarationItWasDerivedFrom(): void
+    #[DataProvider('providerInvoiceDeclaringTotal')]
+    public function testInvertGivesBackTheExactDeclarationItWasDerivedFrom(MethodEdge $declaration): void
     {
-        $declaration = SampleEdges::methodDeclaration();
-
         self::assertSame($declaration, (new DeclaredInEdge($declaration))->invert());
     }
 
-    public function testTheOriginalKindSurvivesTheReverseReading(): void
+    #[DataProvider('providerInvoiceDeclaringTotal')]
+    public function testTheOriginalKindSurvivesTheReverseReading(MethodEdge $declaration): void
     {
-        self::assertSame(EdgeKind::DeclarationMethod, (new DeclaredInEdge(SampleEdges::methodDeclaration()))->invert()->kind());
+        self::assertSame(EdgeKind::DeclarationMethod, (new DeclaredInEdge($declaration))->invert()->kind());
+    }
+
+    /**
+     * @return iterable<string, array{MethodEdge}>
+     */
+    public static function providerInvoiceDeclaringTotal(): iterable
+    {
+        $meta = new FileMeta('/project/src/Domain/Invoice.php', 12, 1);
+
+        yield 'App\Domain\Invoice declares total' => [new MethodEdge(
+            new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true, $meta),
+            new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true, $meta),
+            $meta,
+        )];
     }
 }

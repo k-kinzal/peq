@@ -59,7 +59,6 @@ final class PhpFileCollector
         }
         if ($excludes !== []) {
             $finder->notPath($excludes);
-            $finder->exclude($excludes);
         }
 
         foreach ($finder as $file) {

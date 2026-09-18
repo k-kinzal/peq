@@ -4,22 +4,32 @@ declare(strict_types=1);
 
 namespace Tests\Property;
 
+use App\Analyzer\Graph\Direction;
+use App\Analyzer\Graph\Edge;
+use App\Analyzer\Graph\EdgeKind;
+use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Graph;
+use App\Analyzer\Graph\Node;
+use App\Analyzer\Graph\NodeId\ClassNodeId;
+use Eris\Generator\SequenceGenerator;
+use Eris\Generator\TupleGenerator;
+use Eris\Generators;
 use Eris\TestTrait;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Graph\GeneratedRelations;
-use Tests\Fixture\Graph\GraphInvariants;
+use Tests\Fixture\Graph\StubEdge;
+use Tests\Fixture\Graph\StubNode;
 
 /**
- * The graph model, checked over arbitrary relations rather than chosen ones.
+ * The graph model, checked over arbitrary sequences of relations rather than chosen ones.
  *
- * Every property here is one of the graph's own promises. What asking them this way
- * adds is the counterexample: Eris shrinks a failing list of relations down to the
- * shortest one that still breaks the promise, which is the difference between "a
- * generated graph was wrong somewhere" and "these two relations are wrong".
+ * Each property adds a drawn list of relations to an empty graph and checks one of
+ * the graph's own promises. Relations are drawn between four names, which is what
+ * makes a list of ten relations hold cycles, repeats and shared endpoints rather than
+ * ten unrelated pairs; Eris shrinks a failing list to the shortest one that still
+ * breaks the promise.
  *
  * @group pbt
  *
@@ -37,9 +47,28 @@ final class GraphPropertyTest extends TestCase
      */
     public function testEveryRelationIsReadableFromBothOfItsEnds(): void
     {
-        $this->forAll(GeneratedRelations::specifications())
+        $this->limitTo(200)
+            ->forAll(new SequenceGenerator(new TupleGenerator([
+                Generators::elements(['App\A', 'App\B', 'App\C', 'App\D']),
+                Generators::elements(['App\A', 'App\B', 'App\C', 'App\D']),
+                Generators::elements(array_values(array_filter(EdgeKind::cases(), static fn (EdgeKind $kind): bool => $kind->direction() === Direction::Uses))),
+            ])))
             ->then(static function (array $relations): void {
-                GraphInvariants::assertBidirectional(GeneratedRelations::graphOf($relations));
+                $graph = new Graph();
+                foreach ($relations as $relation) {
+                    self::assertIsArray($relation);
+                    [$from, $to, $kind] = $relation;
+                    self::assertIsString($from);
+                    self::assertIsString($to);
+                    self::assertInstanceOf(EdgeKind::class, $kind);
+                    $graph->addEdge(new StubEdge(new StubNode(ClassNodeId::of($from)), new StubNode(ClassNodeId::of($to)), new FileMeta('/project/src/A.php', 1, 1), $kind));
+                }
+
+                foreach ($graph->nodes() as $node) {
+                    foreach ($graph->edges($node->id()) as $edge) {
+                        self::assertNotNull($graph->edge($edge->to(), $edge->from()), sprintf('%s -[%s]-> %s has no reverse reading', $edge->from()->toString(), $edge->kind()->value, $edge->to()->toString()));
+                    }
+                }
             })
         ;
     }
@@ -49,64 +78,142 @@ final class GraphPropertyTest extends TestCase
      */
     public function testNoRelationPointsAtASymbolTheGraphDoesNotHold(): void
     {
-        $this->forAll(GeneratedRelations::specifications())
+        $this->limitTo(200)
+            ->forAll(new SequenceGenerator(new TupleGenerator([
+                Generators::elements(['App\A', 'App\B', 'App\C', 'App\D']),
+                Generators::elements(['App\A', 'App\B', 'App\C', 'App\D']),
+                Generators::elements(array_values(array_filter(EdgeKind::cases(), static fn (EdgeKind $kind): bool => $kind->direction() === Direction::Uses))),
+            ])))
             ->then(static function (array $relations): void {
-                GraphInvariants::assertEndpointsExist(GeneratedRelations::graphOf($relations));
+                $graph = new Graph();
+                foreach ($relations as $relation) {
+                    self::assertIsArray($relation);
+                    [$from, $to, $kind] = $relation;
+                    self::assertIsString($from);
+                    self::assertIsString($to);
+                    self::assertInstanceOf(EdgeKind::class, $kind);
+                    $graph->addEdge(new StubEdge(new StubNode(ClassNodeId::of($from)), new StubNode(ClassNodeId::of($to)), new FileMeta('/project/src/A.php', 1, 1), $kind));
+                }
+
+                foreach ($graph->nodes() as $node) {
+                    foreach ($graph->edges($node->id()) as $edge) {
+                        self::assertNotNull($graph->node($edge->from()), sprintf('%s is not in the graph', $edge->from()->toString()));
+                        self::assertNotNull($graph->node($edge->to()), sprintf('%s is not in the graph', $edge->to()->toString()));
+                    }
+                }
             })
         ;
     }
 
     /**
-     * Checks that an identifier never names more than one symbol.
+     * Checks that an identifier never names more than one symbol, and that the same relation is recorded once.
      */
-    public function testAnIdentifierNamesAtMostOneSymbol(): void
+    public function testNeitherASymbolNorARelationIsRecordedTwice(): void
     {
-        $this->forAll(GeneratedRelations::specifications())
+        $this->limitTo(200)
+            ->forAll(new SequenceGenerator(new TupleGenerator([
+                Generators::elements(['App\A', 'App\B', 'App\C', 'App\D']),
+                Generators::elements(['App\A', 'App\B', 'App\C', 'App\D']),
+                Generators::elements(array_values(array_filter(EdgeKind::cases(), static fn (EdgeKind $kind): bool => $kind->direction() === Direction::Uses))),
+            ])))
             ->then(static function (array $relations): void {
-                GraphInvariants::assertNodeUniqueness(GeneratedRelations::graphOf($relations));
+                $graph = new Graph();
+                foreach ($relations as $relation) {
+                    self::assertIsArray($relation);
+                    [$from, $to, $kind] = $relation;
+                    self::assertIsString($from);
+                    self::assertIsString($to);
+                    self::assertInstanceOf(EdgeKind::class, $kind);
+                    $graph->addEdge(new StubEdge(new StubNode(ClassNodeId::of($from)), new StubNode(ClassNodeId::of($to)), new FileMeta('/project/src/A.php', 1, 1), $kind));
+                }
+
+                $names = array_map(static fn (Node $node): string => $node->id()->toString(), $graph->nodes());
+                self::assertSame($names, array_values(array_unique($names)));
+
+                foreach ($graph->nodes() as $node) {
+                    $spelled = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->edges($node->id()));
+                    self::assertSame($spelled, array_values(array_unique($spelled)));
+                }
             })
         ;
     }
 
     /**
-     * Checks that the same relation is never recorded twice in one direction.
-     */
-    public function testTheSameRelationIsRecordedAtMostOncePerDirection(): void
-    {
-        $this->forAll(GeneratedRelations::specifications())
-            ->then(static function (array $relations): void {
-                GraphInvariants::assertNoEdgeDuplicates(GeneratedRelations::graphOf($relations));
-            })
-        ;
-    }
-
-    /**
-     * Checks that inverting any relation twice yields the relation it started from.
+     * Checks that inverting any recorded relation twice yields the relation it started from.
      */
     public function testInvertingAnyRelationTwiceYieldsTheRelationItStartedFrom(): void
     {
-        $this->forAll(GeneratedRelations::specifications())
+        $this->limitTo(200)
+            ->forAll(new SequenceGenerator(new TupleGenerator([
+                Generators::elements(['App\A', 'App\B', 'App\C', 'App\D']),
+                Generators::elements(['App\A', 'App\B', 'App\C', 'App\D']),
+                Generators::elements(array_values(array_filter(EdgeKind::cases(), static fn (EdgeKind $kind): bool => $kind->direction() === Direction::Uses))),
+            ])))
             ->then(static function (array $relations): void {
-                GraphInvariants::assertInversionRoundTrips(GeneratedRelations::graphOf($relations));
+                $graph = new Graph();
+                foreach ($relations as $relation) {
+                    self::assertIsArray($relation);
+                    [$from, $to, $kind] = $relation;
+                    self::assertIsString($from);
+                    self::assertIsString($to);
+                    self::assertInstanceOf(EdgeKind::class, $kind);
+                    $graph->addEdge(new StubEdge(new StubNode(ClassNodeId::of($from)), new StubNode(ClassNodeId::of($to)), new FileMeta('/project/src/A.php', 1, 1), $kind));
+                }
+
+                foreach ($graph->nodes() as $node) {
+                    foreach ($graph->edges($node->id()) as $edge) {
+                        self::assertSame($edge->kind(), $edge->invert()->invert()->kind());
+                        self::assertSame($edge->from()->toString(), $edge->invert()->invert()->from()->toString());
+                        self::assertSame($edge->to()->toString(), $edge->invert()->invert()->to()->toString());
+                    }
+                }
             })
         ;
     }
 
     /**
-     * Checks that merging two graphs keeps every symbol both of them hold.
+     * Checks that merging two graphs keeps every symbol and every relation of both.
      */
-    public function testMergeKeepsEverySymbolOfBothGraphs(): void
+    public function testMergeKeepsEverySymbolAndRelationOfBothGraphs(): void
     {
-        $this->forAll(GeneratedRelations::specifications(), GeneratedRelations::specifications())
+        $this->limitTo(100)
+            ->forAll(
+                new SequenceGenerator(new TupleGenerator([
+                    Generators::elements(['App\A', 'App\B', 'App\C', 'App\D']),
+                    Generators::elements(['App\A', 'App\B', 'App\C', 'App\D']),
+                    Generators::elements(array_values(array_filter(EdgeKind::cases(), static fn (EdgeKind $kind): bool => $kind->direction() === Direction::Uses))),
+                ])),
+                new SequenceGenerator(new TupleGenerator([
+                    Generators::elements(['App\A', 'App\B', 'App\C', 'App\D']),
+                    Generators::elements(['App\A', 'App\B', 'App\C', 'App\D']),
+                    Generators::elements(array_values(array_filter(EdgeKind::cases(), static fn (EdgeKind $kind): bool => $kind->direction() === Direction::Uses))),
+                ])),
+            )
             ->then(static function (array $left, array $right): void {
-                $first = GeneratedRelations::graphOf($left);
-                $second = GeneratedRelations::graphOf($right);
-                $merged = $first->merge($second);
+                $first = new Graph();
+                $second = new Graph();
+                foreach ([[$first, $left], [$second, $right]] as [$graph, $relations]) {
+                    foreach ($relations as $relation) {
+                        self::assertIsArray($relation);
+                        [$from, $to, $kind] = $relation;
+                        self::assertIsString($from);
+                        self::assertIsString($to);
+                        self::assertInstanceOf(EdgeKind::class, $kind);
+                        $graph->addEdge(new StubEdge(new StubNode(ClassNodeId::of($from)), new StubNode(ClassNodeId::of($to)), new FileMeta('/project/src/A.php', 1, 1), $kind));
+                    }
+                }
 
-                GraphInvariants::assertAllNodesPreserved($first, $merged);
-                GraphInvariants::assertAllNodesPreserved($second, $merged);
-                GraphInvariants::assertBidirectional($merged);
-                GraphInvariants::assertNoEdgeDuplicates($merged);
+                $merged = $first->merge($second);
+                $spell = static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString();
+                $mergedRelations = array_map($spell, $merged->authoredEdges());
+
+                foreach (array_merge($first->nodes(), $second->nodes()) as $node) {
+                    self::assertNotNull($merged->node($node->id()), sprintf('%s was lost in the merge', $node->id()->toString()));
+                }
+                foreach (array_merge($first->authoredEdges(), $second->authoredEdges()) as $edge) {
+                    self::assertContains($spell($edge), $mergedRelations);
+                }
+                self::assertSame($mergedRelations, array_values(array_unique($mergedRelations)));
             })
         ;
     }

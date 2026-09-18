@@ -4,73 +4,121 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\DebugAnalyzer\Generator;
 
-use App\Analyzer\DebugAnalyzer\Generator\FakerRandomSource;
 use App\Analyzer\DebugAnalyzer\Generator\RandomSource;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\DebugAnalyzer\PortableDraws;
-use Tests\Fixture\Analyzer\DebugAnalyzer\SeededGenerators;
 
 /**
  * @internal
  */
-#[CoversClass(FakerRandomSource::class)]
+#[CoversClass(RandomSource::class)]
 #[Small]
 final class RandomSourceTest extends TestCase
 {
-    #[DataProvider('providerEverySource')]
-    public function testNumberBetweenNeverDrawsBelowTheSmallestBound(RandomSource $random): void
+    public function testNumberBetweenDrawsTheSameSequenceForTheSameSeedOnEveryRuntime(): void
     {
-        self::assertGreaterThanOrEqual(3, min(array_map(static fn (): int => $random->numberBetween(3, 5), range(1, 64))));
+        $random = new RandomSource(7);
+
+        self::assertSame([22, 37, 5, 40, 88, 35, 94, 84], array_map(static fn (): int => $random->numberBetween(0, 99), range(1, 8)));
     }
 
-    #[DataProvider('providerEverySource')]
-    public function testNumberBetweenNeverDrawsAboveTheLargestBound(RandomSource $random): void
+    public function testNumberBetweenNeverDrawsBelowTheSmallestBound(): void
     {
-        self::assertLessThanOrEqual(5, max(array_map(static fn (): int => $random->numberBetween(3, 5), range(1, 64))));
+        $random = new RandomSource(42);
+
+        self::assertSame(3, min(array_map(static fn (): int => $random->numberBetween(3, 5), range(1, 64))));
     }
 
-    #[DataProvider('providerEverySource')]
-    public function testNumberBetweenReachesBothBounds(RandomSource $random): void
+    public function testNumberBetweenNeverDrawsAboveTheLargestBound(): void
     {
-        $drawn = array_map(static fn (): int => $random->numberBetween(3, 5), range(1, 64));
+        $random = new RandomSource(42);
 
-        self::assertSame([3, 5], [min($drawn), max($drawn)]);
+        self::assertSame(5, max(array_map(static fn (): int => $random->numberBetween(3, 5), range(1, 64))));
     }
 
-    #[DataProvider('providerEverySource')]
-    public function testNumberBetweenDrawsTheOnlyNumberTheBoundsLeaveOpen(RandomSource $random): void
+    public function testNumberBetweenDrawsTheOnlyNumberTheBoundsLeaveOpen(): void
     {
-        self::assertSame(5, $random->numberBetween(5, 5));
+        self::assertSame(5, (new RandomSource(42))->numberBetween(5, 5));
     }
 
-    #[DataProvider('providerEverySource')]
-    public function testBooleanCanDrawTrue(RandomSource $random): void
+    public function testNumberBetweenDrawsANegativeBoundAsWritten(): void
     {
-        self::assertContains(true, array_map(static fn (): bool => $random->boolean(), range(1, 64)));
+        self::assertSame(-3, (new RandomSource(42))->numberBetween(-3, -3));
     }
 
-    #[DataProvider('providerEverySource')]
-    public function testBooleanCanDrawFalse(RandomSource $random): void
+    #[DataProvider('providerSeedsWithNothingToMixOn')]
+    public function testASeedThatWouldLeaveTheSequenceStuckStillDraws(int $seed): void
     {
-        self::assertContains(false, array_map(static fn (): bool => $random->boolean(), range(1, 64)));
-    }
+        $random = new RandomSource($seed);
+        $drawn = array_map(static fn (): int => $random->numberBetween(0, 99), range(1, 8));
 
-    #[DataProvider('providerEverySource')]
-    public function testWordIsASingleLowercaseWord(RandomSource $random): void
-    {
-        self::assertMatchesRegularExpression('/^[a-z]+$/', $random->word());
+        self::assertNotSame(array_fill(0, 8, $drawn[0]), $drawn);
     }
 
     /**
-     * @return iterable<string, array{RandomSource}>
+     * @return iterable<string, array{int}>
      */
-    public static function providerEverySource(): iterable
+    public static function providerSeedsWithNothingToMixOn(): iterable
     {
-        yield 'the Faker source peq draws from' => [SeededGenerators::random()];
+        yield 'zero' => [0];
 
-        yield 'the portable source graphs are recorded from' => [new PortableDraws(42)];
+        yield 'the mixing constant itself' => [0x9E3779B9];
+
+        yield 'every bit set' => [-1];
+
+        yield 'the largest integer' => [PHP_INT_MAX];
+    }
+
+    public function testADifferentSeedDrawsADifferentSequence(): void
+    {
+        $seven = new RandomSource(7);
+        $nine = new RandomSource(9);
+
+        self::assertNotSame(
+            array_map(static fn (): int => $seven->numberBetween(0, 99), range(1, 8)),
+            array_map(static fn (): int => $nine->numberBetween(0, 99), range(1, 8)),
+        );
+    }
+
+    public function testBooleanDrawsBothOutcomes(): void
+    {
+        $random = new RandomSource(7);
+        $drawn = array_map(static fn (): bool => $random->boolean(), range(1, 64));
+
+        self::assertContains(true, $drawn);
+        self::assertContains(false, $drawn);
+    }
+
+    public function testBooleanDrawsEachOutcomeAboutHalfTheTime(): void
+    {
+        $random = new RandomSource(7);
+        $trues = count(array_filter(array_map(static fn (): bool => $random->boolean(), range(1, 1000))));
+
+        self::assertGreaterThan(400, $trues);
+        self::assertLessThan(600, $trues);
+    }
+
+    public function testWordDrawsTheSameWordsForTheSameSeed(): void
+    {
+        $random = new RandomSource(7);
+
+        self::assertSame(['velit', 'saepe', 'saepe', 'ad'], array_map(static fn (): string => $random->word(), range(1, 4)));
+    }
+
+    public function testWordIsALowercaseWordEveryTime(): void
+    {
+        $random = new RandomSource(42);
+        $drawn = array_map(static fn (): string => $random->word(), range(1, 64));
+
+        self::assertSame($drawn, array_values(array_filter($drawn, static fn (string $word): bool => preg_match('/^[a-z]+$/', $word) === 1)));
+    }
+
+    public function testBooleanDrawsTheSameSequenceForTheSameSeed(): void
+    {
+        $random = new RandomSource(7);
+
+        self::assertSame([false, true, true, false, false, true, false, false], array_map(static fn (): bool => $random->boolean(), range(1, 8)));
     }
 }

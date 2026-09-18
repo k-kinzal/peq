@@ -125,7 +125,7 @@ final class NodeTest extends TestCase
     {
         $kinds = array_map(
             static fn (array $case): NodeKind => $case[1],
-            iterator_to_array(self::providerEveryKindOfNode()),
+            [...self::providerEveryKindOfNode()],
         );
 
         self::assertSame(array_values($kinds), array_values(array_unique($kinds, SORT_REGULAR)));

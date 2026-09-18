@@ -37,7 +37,7 @@ final class SymbolNotFoundExceptionTest extends TestCase
 
     public function testAMissingSymbolMustBeHandledRatherThanEscaping(): void
     {
-        $families = (class_parents(SymbolNotFoundException::forTarget('App\Domain\NeverAnalysed')) === false ? [] : class_parents(SymbolNotFoundException::forTarget('App\Domain\NeverAnalysed')));
+        $families = class_parents(SymbolNotFoundException::forTarget('App\Domain\NeverAnalysed'));
 
         self::assertNotContains(RuntimeException::class, $families);
         self::assertNotContains(LogicException::class, $families);

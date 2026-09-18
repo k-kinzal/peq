@@ -17,11 +17,8 @@ use App\Analyzer\PhpStanAnalyzer\Processor\Usage\ConstFetchProcessor;
 use App\Analyzer\PhpStanAnalyzer\Processor\Usage\FunctionCallProcessor;
 use App\Analyzer\PhpStanAnalyzer\Processor\Usage\InstanceofProcessor;
 use App\Analyzer\PhpStanAnalyzer\Processor\Usage\InstantiationProcessor;
-use App\Analyzer\PhpStanAnalyzer\Processor\Usage\MethodCallProcessor;
-use App\Analyzer\PhpStanAnalyzer\Processor\Usage\PropertyAccessProcessor;
 use App\Analyzer\PhpStanAnalyzer\Processor\Usage\StaticCallProcessor;
 use App\Analyzer\PhpStanAnalyzer\Processor\Usage\StaticPropertyAccessProcessor;
-use PhpParser\Modifiers;
 use PhpParser\Node as PhpParserNode;
 use PhpParser\Node\Stmt\ClassConst;
 use PhpParser\Node\Stmt\ClassLike;
@@ -95,13 +92,16 @@ final class DependencyCollector implements Collector
             $node instanceof Property => PropertyProcessor::process($node, $scope),
             $node instanceof ClassConst => ClassConstProcessor::process($node, $scope),
             $node instanceof EnumCase => EnumCaseProcessor::process($node, $scope),
-            $node instanceof PhpParserNode\Param && ($node->flags & Modifiers::VISIBILITY_MASK) !== 0 => PromotedPropertyProcessor::process($node, $scope),
+            $node instanceof PhpParserNode\Param => PromotedPropertyProcessor::process($node, $scope),
             default => null,
         };
     }
 
     /**
      * Reads a node as a usage expression, if it is one.
+     *
+     * Calls and reads on `$this` are not among them: outside a method body there is
+     * no `$this` to write them on, and inside one they are read by the other collector.
      *
      * @param PhpParserNode $node  The node the analyser reached
      * @param Scope         $scope The analyser scope it was reached in
@@ -117,10 +117,6 @@ final class DependencyCollector implements Collector
             $node instanceof PhpParserNode\Stmt\Catch_ => CatchProcessor::process($node, $scope),
             $node instanceof PhpParserNode\Expr\Instanceof_ => InstanceofProcessor::process($node, $scope),
             $node instanceof PhpParserNode\Expr\FuncCall => FunctionCallProcessor::process($node, $scope),
-            $node instanceof PhpParserNode\Expr\NullsafeMethodCall => MethodCallProcessor::process($node, $scope),
-            $node instanceof PhpParserNode\Expr\MethodCall => MethodCallProcessor::process($node, $scope),
-            $node instanceof PhpParserNode\Expr\NullsafePropertyFetch => PropertyAccessProcessor::process($node, $scope),
-            $node instanceof PhpParserNode\Expr\PropertyFetch => PropertyAccessProcessor::process($node, $scope),
             $node instanceof PhpParserNode\Expr\StaticPropertyFetch => StaticPropertyAccessProcessor::process($node, $scope),
             default => null,
         };

@@ -16,7 +16,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\TypeReferences;
 
 /**
  * @internal
@@ -70,31 +69,44 @@ final class TypeResolverTest extends TestCase
 
     public function testReferencesLeavesOutNamesPhpResolvesItself(): void
     {
-        $references = TypeResolver::references(TypeReferences::at(4, new Identifier('int')), '/project/src/Invoice.php');
+        $type = new Identifier('int');
+        $type->setAttribute('startLine', 4);
 
-        self::assertSame([], $references);
+        self::assertSame([], TypeResolver::references($type, '/project/src/Invoice.php'));
     }
 
     public function testReferencesReportsTheClassLikeAWrittenTypeNames(): void
     {
-        $references = TypeResolver::references(TypeReferences::at(4, new Name('App\Domain\Money')), '/project/src/Invoice.php');
+        $type = new Name('App\Domain\Money');
+        $type->setAttribute('startLine', 4);
+        $references = TypeResolver::references($type, '/project/src/Invoice.php');
 
         self::assertCount(1, $references);
         self::assertSame('App\Domain\Money', $references[0]->node->id()->toString());
+        self::assertFalse($references[0]->node->resolved());
     }
 
     public function testReferencesReportsWhereEachNameIsWritten(): void
     {
-        $references = TypeResolver::references(TypeReferences::at(4, new Name('App\Domain\Money')), '/project/src/Invoice.php');
+        $type = new Name('App\Domain\Money');
+        $type->setAttribute('startLine', 4);
+        $references = TypeResolver::references($type, '/project/src/Invoice.php');
 
         self::assertSame('/project/src/Invoice.php', $references[0]->meta->path);
+        self::assertSame(4, $references[0]->meta->line);
+        self::assertSame(1, $references[0]->meta->column);
     }
 
     public function testReferencesReportsOneEntryPerNameOfAUnion(): void
     {
-        $union = new UnionType([TypeReferences::at(4, new Name('App\Domain\Money')), TypeReferences::at(4, new Name('App\Domain\Invoice')), TypeReferences::at(4, new Identifier('null'))]);
+        $money = new Name('App\Domain\Money');
+        $money->setAttribute('startLine', 4);
+        $invoice = new Name('App\Domain\Invoice');
+        $invoice->setAttribute('startLine', 5);
+        $references = TypeResolver::references(new UnionType([$money, $invoice, new Identifier('null')]), '/project/src/Invoice.php');
 
-        self::assertCount(2, TypeResolver::references($union, '/project/src/Invoice.php'));
+        self::assertSame(['App\Domain\Money', 'App\Domain\Invoice'], array_map(static fn (\App\Analyzer\PhpStanAnalyzer\Processor\TypeReference $reference): string => $reference->node->id()->toString(), $references));
+        self::assertSame([4, 5], array_map(static fn (\App\Analyzer\PhpStanAnalyzer\Processor\TypeReference $reference): int => $reference->meta->line, $references));
     }
 
     public function testReferencesReportsNothingWhenNoTypeWasWritten(): void
