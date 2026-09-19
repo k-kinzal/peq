@@ -209,4 +209,90 @@ final class TraitFlatteningTest extends TestCase
     {
         self::assertNull(TraitFlattening::methodWritten(ParsedSnippet::classLike("<?php\nclass Taker { public function written(): void {} }\n"), 'other'));
     }
+
+    public function testRenamesReadsAMethodNameWhateverCasingTheAdaptationWritesIt(): void
+    {
+        $use = ParsedSnippet::traitUse("<?php\nnamespace App;\nclass Taker { use Shared { SHARED as renamed; } }\n");
+
+        self::assertSame(['shared' => 'renamed'], TraitFlattening::renames($use, 'App\Shared'));
+    }
+
+    public function testRenamesReadsATraitNameWhateverCasingTheAdaptationWritesIt(): void
+    {
+        $use = ParsedSnippet::traitUse("<?php\nnamespace App;\nclass Taker { use Shared { \\App\\SHARED::shared as renamed; } }\n");
+
+        self::assertSame(['shared' => 'renamed'], TraitFlattening::renames($use, 'App\Shared'));
+    }
+
+    public function testMethodsOfReadsAMethodUnderTheNameItAnswersTo(): void
+    {
+        $index = ParsedSnippet::index(['Shared.php' => "<?php\nnamespace App;\ntrait Shared { public function Mixed_Case(): void {} }\n"]);
+
+        self::assertSame(['mixed_case'], array_keys(TraitFlattening::methodsOf('App\Shared', [], $index, [])));
+    }
+
+    public function testMethodsOfFindsATraitWhateverCasingItIsAskedFor(): void
+    {
+        $index = ParsedSnippet::index(['Shared.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\n"]);
+
+        self::assertSame(['shared'], array_keys(TraitFlattening::methodsOf('app\shared', [], $index, [])));
+    }
+
+    public function testMethodsOfStopsAtATraitAlreadyBeingReadWhateverCasingItIsNamedIn(): void
+    {
+        $index = ParsedSnippet::index(['Shared.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\n"]);
+
+        self::assertSame([], TraitFlattening::methodsOf('APP\SHARED', [], $index, ['app\shared']));
+    }
+
+    public function testKeepsMethodDiscardsACopyOfAMethodTheClassWritesUnderAnotherCasing(): void
+    {
+        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Taker { use Shared; public function SHARED(): void {} }\n"]);
+        $method = ParsedSnippet::method("<?php\ntrait Shared { public function shared(): void {} }\n");
+
+        self::assertFalse(TraitFlattening::keepsMethod(ParsedSnippet::declarationIn($index, 'App\Taker'), $method, 'shared', 'App\Shared', $index));
+    }
+
+    public function testKeepsMethodKeepsACopyTheTraitWritesWhateverCasingTheTraitIsNamedIn(): void
+    {
+        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Taker { use Shared; }\n"]);
+        $method = ParsedSnippet::method("<?php\ntrait Shared { public function shared(): void {} }\n");
+
+        self::assertTrue(TraitFlattening::keepsMethod(ParsedSnippet::declarationIn($index, 'App\Taker'), $method, 'shared', 'app\shared', $index));
+    }
+
+    public function testProviderOfFindsAMethodWhateverCasingItIsAskedFor(): void
+    {
+        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Taker { use Shared; }\n"]);
+
+        self::assertSame('App\Shared', TraitFlattening::providerOf(ParsedSnippet::declarationIn($index, 'App\Taker'), 'SHARED', $index));
+    }
+
+    public function testProviderOfIsSettledByAnInsteadofWhateverCasingItWrites(): void
+    {
+        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Left { public function shared(): void {} }\ntrait Right { public function shared(): void {} }\nclass Taker { use Left, Right { \\App\\RIGHT::SHARED insteadof Left; } }\n"]);
+
+        self::assertSame('App\Right', TraitFlattening::providerOf(ParsedSnippet::declarationIn($index, 'App\Taker'), 'shared', $index));
+    }
+
+    public function testInheritsFindsAMethodWrittenAboveUnderAnotherCasing(): void
+    {
+        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\nclass Root { public function SHARED(): void {} }\nclass Taker extends Root {}\n"]);
+
+        self::assertTrue(TraitFlattening::inherits(ParsedSnippet::declarationIn($index, 'App\Taker'), 'shared', $index, []));
+    }
+
+    public function testInheritsFindsAMethodATraitOfAnAncestorWrites(): void
+    {
+        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Writing { public function shared(): void {} }\nclass Root { use Writing; }\nclass Taker extends Root {}\n"]);
+
+        self::assertTrue(TraitFlattening::inherits(ParsedSnippet::declarationIn($index, 'App\Taker'), 'shared', $index, []));
+    }
+
+    public function testInheritsStopsAtAnAncestorAlreadyBeingRead(): void
+    {
+        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\nclass Root { public function shared(): void {} }\nclass Taker extends Root {}\n"]);
+
+        self::assertFalse(TraitFlattening::inherits(ParsedSnippet::declarationIn($index, 'App\Taker'), 'shared', $index, ['app\root']));
+    }
 }

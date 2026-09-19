@@ -101,12 +101,30 @@ final class DeclarationEmitterTest extends TestCase
 
         yield 'an enum' => [NodeKind::Enum, 'enum'];
 
+        yield 'a constant stands for a class' => [NodeKind::Constant, 'class'];
+
+        yield 'an enum case stands for a class' => [NodeKind::EnumCase, 'class'];
+
+        yield 'a function stands for a class' => [NodeKind::Function, 'class'];
+
+        yield 'a method stands for a class' => [NodeKind::Method, 'class'];
+
+        yield 'a property stands for a class' => [NodeKind::Property, 'class'];
+
+        yield 'a builtin stands for a class' => [NodeKind::Builtin, 'class'];
+
         yield 'anything else stands for a class' => [NodeKind::Unknown, 'class'];
     }
 
     public function testOwnerNodeOfASymbolOnlyBeingReferredToStandsNowhere(): void
     {
         self::assertNull(DeclarationEmitter::ownerNode(NodeKind::Klass, 'App\Written')->meta());
+    }
+
+    #[DataProvider('providerKinds')]
+    public function testOwnerNodeStandsForASymbolAnalysisHasRead(NodeKind $kind, string $expected): void
+    {
+        self::assertTrue(DeclarationEmitter::ownerNode($kind, 'App\Written')->resolved(), $expected);
     }
 
     public function testOwnerNodeOfASymbolBeingDeclaredStandsWhereItIsWritten(): void

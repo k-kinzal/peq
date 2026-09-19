@@ -101,13 +101,33 @@ final class UsageEmitterTest extends TestCase
      */
     public static function providerExpressionsWorthLookingAt(): iterable
     {
+        yield 'reading a constant' => ['\App\Money::ZERO', true];
+
         yield 'instantiating a class' => ['new \App\Money()', true];
 
+        yield 'calling a static method' => ['\App\Money::make()', true];
+
+        yield 'testing a type' => ['$held instanceof \App\Money', true];
+
+        yield 'calling a function' => ['\App\helper()', true];
+
         yield 'calling a method' => ['$this->helper()', true];
+
+        yield 'calling a method carefully' => ['$this?->helper()', true];
+
+        yield 'reading a property' => ['$this->held', true];
+
+        yield 'reading a property carefully' => ['$this?->held', true];
+
+        yield 'reading a static property' => ['\App\Money::$rate', true];
 
         yield 'adding two numbers' => ['1 + 1', false];
 
         yield 'reading a variable' => ['$held', false];
+
+        yield 'writing a string' => ["'text'", false];
+
+        yield 'calling something a variable names is still a call' => ['$held()', true];
     }
 
     public function testConstantFetchRecordsAConstantBeingRead(): void
@@ -219,5 +239,25 @@ final class UsageEmitterTest extends TestCase
     public function testIsThisDoesNotTakeAnotherVariableForIt(): void
     {
         self::assertFalse(UsageEmitter::isThis(ParsedSnippet::expression('$other')));
+    }
+
+    public function testRecordsRecognisesACatchClauseWorthLookingAt(): void
+    {
+        $clause = ParsedSnippet::memberStatement(
+            "<?php\nnamespace App;\ntry { \$written = 1; } catch (\\App\\Failure \$caught) { \$caught->getMessage(); }\n",
+            PhpParserNode\Stmt\Catch_::class,
+        );
+
+        self::assertTrue(UsageEmitter::records($clause));
+    }
+
+    public function testRecordsDoesNotTakeAnyStatementForOneWorthLookingAt(): void
+    {
+        $statement = ParsedSnippet::memberStatement(
+            "<?php\nnamespace App;\nclass Written { public int \$held = 0; }\n",
+            PhpParserNode\Stmt\Property::class,
+        );
+
+        self::assertFalse(UsageEmitter::records($statement));
     }
 }
