@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Benchmark;
 
+use App\Analyzer\PhpFileCollector;
 use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
 use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
 use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
-use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
 use PhpBench\Attributes\BeforeMethods;
 use PhpBench\Attributes\Iterations;
 use PhpBench\Attributes\Revs;

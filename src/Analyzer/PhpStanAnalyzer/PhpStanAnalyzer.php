@@ -7,6 +7,7 @@ namespace App\Analyzer\PhpStanAnalyzer;
 use App\Analyzer\AnalysisFailedException;
 use App\Analyzer\Analyzer;
 use App\Analyzer\Graph\Graph;
+use App\Analyzer\PhpFileCollector;
 use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
 use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
 use PHPStan\Analyser\Analyser as PhpStanAnalyser;

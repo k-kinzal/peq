@@ -20,12 +20,13 @@ final class AnalyzerKindTest extends TestCase
     public function testKindsAreSpelledTheWayTheCommandLineSpellsThem(): void
     {
         self::assertSame('phpstan', AnalyzerKind::PhpStan->value);
+        self::assertSame('native', AnalyzerKind::Native->value);
         self::assertSame('debug', AnalyzerKind::Debug->value);
     }
 
     public function testTheChoiceOfAnalyzerIsClosed(): void
     {
-        self::assertSame([AnalyzerKind::PhpStan, AnalyzerKind::Debug], AnalyzerKind::cases());
+        self::assertSame([AnalyzerKind::PhpStan, AnalyzerKind::Native, AnalyzerKind::Debug], AnalyzerKind::cases());
     }
 
     public function testAWrittenKindResolvesToItsCase(): void

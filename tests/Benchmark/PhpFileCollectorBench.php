@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Benchmark;
 
-use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
+use App\Analyzer\PhpFileCollector;
 use PhpBench\Attributes\BeforeMethods;
 use PhpBench\Attributes\Iterations;
 use PhpBench\Attributes\Revs;

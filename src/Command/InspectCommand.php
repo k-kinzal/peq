@@ -65,7 +65,7 @@ final class InspectCommand extends Command
             new InputOption('reverse', 'R', InputOption::VALUE_NONE, 'Shortcut for --direction used-by'),
             new InputOption('include', 'I', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Include patterns', []),
             new InputOption('exclude', 'E', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Exclude patterns', []),
-            new InputOption('type', null, InputOption::VALUE_REQUIRED, 'Analyzer type (phpstan|debug)'),
+            new InputOption('type', null, InputOption::VALUE_REQUIRED, 'Analyzer type (phpstan|native|debug)'),
             new InputOption('debug-depth', null, InputOption::VALUE_REQUIRED, 'Debug analyzer depth'),
             new InputOption('debug-seed', null, InputOption::VALUE_REQUIRED, 'Debug analyzer seed'),
             new InputOption('memory-limit', null, InputOption::VALUE_REQUIRED, 'Memory limit (e.g. 1G, 256M)'),

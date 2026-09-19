@@ -17,6 +17,9 @@ enum AnalyzerKind: string
     /** Builds the graph from real sources, using PHPStan to resolve types */
     case PhpStan = 'phpstan';
 
+    /** Builds the same graph from real sources, reading them directly instead of through PHPStan */
+    case Native = 'native';
+
     /** Builds a synthetic graph, for exercising output without parsing sources */
     case Debug = 'debug';
 }
