@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Gql\Invocation;
 
+use App\Gql\Argument\TextArgument;
 use App\Gql\Datum\DateTimeDatum;
 use App\Gql\Datum\Datum;
 use App\Gql\Datum\DatumJson;
@@ -11,7 +12,6 @@ use App\Gql\Datum\DatumKind;
 use App\Gql\Datum\DatumOrder;
 use App\Gql\Datum\NullDatum;
 use App\Gql\Datum\StringDatum;
-use App\Gql\Evaluation\TextOperation;
 use App\Gql\GqlException;
 use App\Gql\StatusCode;
 
@@ -115,7 +115,7 @@ final class GeneralFunctions
             return new NullDatum();
         }
 
-        $written = $values === [] ? 'now' : TextOperation::characters($values[0]);
+        $written = $values === [] ? 'now' : TextArgument::of($values[0]);
         $moment = date_create_immutable($written);
         if ($moment === false) {
             throw GqlException::because(StatusCode::InvalidType, sprintf('"%s" is not a moment in time', $written));

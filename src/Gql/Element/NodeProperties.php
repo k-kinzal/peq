@@ -61,6 +61,51 @@ final class NodeProperties
     }
 
     /**
+     * Returns every property a symbol can carry and what kind of value it is.
+     *
+     * Not every symbol carries every one of these. A class has no visibility, a
+     * constant has no signature, and a symbol analysis only ever saw referred to
+     * carries nothing but its name — which is why a query asks `IS NULL` rather than
+     * assuming. What the list promises is only that nothing else is offered.
+     *
+     * @example What a declaration says is offered beside what its name says
+     *     \App\Gql\Element\NodeProperties::all()['visibility'] // => 'STRING'
+     * @example So is the shape a callable's callers were written against
+     *     \App\Gql\Element\NodeProperties::all()['parameters'] // => 'LIST<STRING>'
+     *
+     * @return array<string, string> The property names, and the GQL type of each
+     */
+    public static function all(): array
+    {
+        return [
+            'id' => 'STRING',
+            'kind' => 'STRING',
+            'name' => 'STRING',
+            'namespace' => 'STRING',
+            'owner' => 'STRING',
+            'resolved' => 'BOOL',
+            'file' => 'STRING',
+            'fileName' => 'STRING',
+            'line' => 'INT64',
+            'column' => 'INT64',
+            'visibility' => 'STRING',
+            'static' => 'BOOL',
+            'abstract' => 'BOOL',
+            'final' => 'BOOL',
+            'readonly' => 'BOOL',
+            'deprecated' => 'BOOL',
+            'attributes' => 'LIST<STRING>',
+            'type' => 'STRING',
+            'value' => 'STRING',
+            'signature' => 'STRING',
+            'returnType' => 'STRING',
+            'parameters' => 'LIST<STRING>',
+            'parameterTypes' => 'LIST<STRING>',
+            'parameterCount' => 'INT64',
+        ];
+    }
+
+    /**
      * Returns what a symbol's own name says about it.
      *
      * A member is written as its owner and its own name joined by two colons, which

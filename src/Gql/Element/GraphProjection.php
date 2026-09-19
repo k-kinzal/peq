@@ -22,7 +22,7 @@ use App\Gql\Datum\NodeDatum;
  * against every symbol in a codebase, and working out a symbol's labels each time it
  * is considered would make the cost of a pattern depend on how often it fails.
  *
- * @visibility App\Gql
+ * @visibility App
  */
 final class GraphProjection
 {

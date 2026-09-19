@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Gql\Evaluation;
 
+use App\Gql\Argument\NumberArgument;
 use App\Gql\Datum\Datum;
 use App\Gql\Datum\DatumKind;
-use App\Gql\Datum\DatumOrder;
 use App\Gql\Datum\FloatDatum;
 use App\Gql\Datum\IntegerDatum;
 use App\Gql\Datum\NullDatum;
@@ -55,12 +55,10 @@ final class Arithmetic
         if ($left->kind() === DatumKind::Null || $right->kind() === DatumKind::Null) {
             return new NullDatum();
         }
-        self::requireNumber($left);
-        self::requireNumber($right);
 
-        $approximate = $left->kind() === DatumKind::Float || $right->kind() === DatumKind::Float;
-        $first = DatumOrder::numberOf($left);
-        $second = DatumOrder::numberOf($right);
+        $approximate = NumberArgument::approximate($left) || NumberArgument::approximate($right);
+        $first = NumberArgument::of($left);
+        $second = NumberArgument::of($right);
 
         if ($operator === BinaryOperator::Divide) {
             return self::divide($first, $second, $approximate);
@@ -90,6 +88,8 @@ final class Arithmetic
      *     \App\Gql\Evaluation\Arithmetic::divide(3, 2.0, true)->toText() // => '1.5'
      * @example Dividing by zero is reported rather than guessed at
      *     \App\Gql\Evaluation\Arithmetic::divide(1, 0, false) // throws \App\Gql\GqlException: division by zero
+     * @example Including when the zero is an approximate one
+     *     \App\Gql\Evaluation\Arithmetic::divide(1.0, 0.0, true) // throws \App\Gql\GqlException: division by zero
      *
      * @return Datum The quotient
      *
@@ -97,7 +97,7 @@ final class Arithmetic
      */
     public static function divide(float|int $left, float|int $right, bool $approximate): Datum
     {
-        if ($right === 0) {
+        if ($right === 0 || $right === 0.0) {
             throw GqlException::because(StatusCode::DivisionByZero, 'a number cannot be divided by zero');
         }
         if ($approximate) {
@@ -108,36 +108,14 @@ final class Arithmetic
     }
 
     /**
-     * Reports a value that is not a number as the mistake it is.
-     *
-     * @param Datum $value The value to check
-     *
-     * @example A number passes without comment
-     *     \App\Gql\Evaluation\Arithmetic::requireNumber(new \App\Gql\Datum\IntegerDatum(1)) // => null
-     * @example Anything else is reported under the status GQL gives it
-     *     \App\Gql\Evaluation\Arithmetic::requireNumber(new \App\Gql\Datum\StringDatum('1')) // throws \App\Gql\GqlException: invalid value type
-     *
-     * @throws GqlException If the value is not a number
-     */
-    public static function requireNumber(Datum $value): void
-    {
-        if ($value->kind()->numeric()) {
-            return;
-        }
-
-        throw GqlException::because(
-            StatusCode::InvalidType,
-            sprintf('a number was expected, and a %s was given', $value->kind()->typeName()),
-        );
-    }
-
-    /**
      * Returns a number with its sign reversed.
      *
      * @param Datum $value The number
      *
      * @example A whole number keeps being whole
      *     \App\Gql\Evaluation\Arithmetic::negate(new \App\Gql\Datum\IntegerDatum(3))->toText() // => '-3'
+     * @example An approximate one keeps being approximate
+     *     \App\Gql\Evaluation\Arithmetic::negate(new \App\Gql\Datum\FloatDatum(1.5))->toText() // => '-1.5'
      * @example The absence of a value has no sign to reverse
      *     \App\Gql\Evaluation\Arithmetic::negate(new \App\Gql\Datum\NullDatum())->kind() // => \App\Gql\Datum\DatumKind::Null
      *
@@ -150,10 +128,11 @@ final class Arithmetic
         if ($value->kind() === DatumKind::Null) {
             return new NullDatum();
         }
-        self::requireNumber($value);
 
-        return $value instanceof FloatDatum
-            ? new FloatDatum(-$value->value)
-            : new IntegerDatum(-(int) DatumOrder::numberOf($value));
+        $number = NumberArgument::of($value);
+
+        return NumberArgument::approximate($value)
+            ? new FloatDatum(-(float) $number)
+            : new IntegerDatum(-(int) $number);
     }
 }

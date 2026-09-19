@@ -338,6 +338,10 @@ final class ExpressionEvaluation
      *     $rows = new \App\Gql\Datum\ListDatum([new \App\Gql\Datum\IntegerDatum(1), new \App\Gql\Datum\IntegerDatum(4)]);
      *     $row = \App\Gql\Binding\BindingRow::unit()->with('e', $rows);
      *     (new \App\Gql\Evaluation\ExpressionEvaluation())->evaluate($parser->parse(), $row)->toText() // => '4'
+     * @example A summary over no rows at all summarises no rows, whatever it was written over
+     *     $parser = new \App\Gql\Parsing\ExpressionParser(\App\Gql\Parsing\TokenReader::of('count(DISTINCT caller)'));
+     *     $evaluation = \App\Gql\Evaluation\ExpressionEvaluation::over([]);
+     *     $evaluation->evaluate($parser->parse(), \App\Gql\Binding\BindingRow::unit())->toText() // => '0'
      *
      * @return Datum What it is worth
      *
@@ -357,6 +361,10 @@ final class ExpressionEvaluation
         }
 
         $argument = $expression->arguments[0];
+        if ($this->group === []) {
+            return $this->summaryOverRows($expression, $argument, $plain);
+        }
+
         $value = $plain->evaluate($argument, $row);
         if ($value instanceof ListDatum) {
             $summary = AggregateCatalog::start($expression->name, $expression->distinct, false);

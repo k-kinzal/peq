@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Gql\Evaluation;
 
+use App\Gql\Argument\NumberArgument;
 use App\Gql\Datum\Datum;
 use App\Gql\Datum\DatumKind;
 use App\Gql\GqlException;
@@ -71,7 +72,7 @@ final class UnaryOperation
         if ($operand->kind() === DatumKind::Null) {
             return $operand;
         }
-        Arithmetic::requireNumber($operand);
+        NumberArgument::of($operand);
 
         return $operand;
     }

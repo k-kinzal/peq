@@ -7,6 +7,7 @@ namespace App\Reporter;
 use App\Config\Config;
 use App\Config\OutputFormat;
 use App\Reporter\DotReporter\DotReporter;
+use App\Reporter\GraphReporter\GraphReporter;
 use App\Reporter\JsonReporter\JsonReporter;
 use App\Reporter\TableReporter\TableReporter;
 use App\Reporter\Traversal\DepthFirstTraversal;
@@ -52,6 +53,7 @@ final class ReporterFactory
             OutputFormat::Json => new JsonReporter(traversal: $traversal, level: $config->level),
             OutputFormat::Dot => new DotReporter(traversal: $traversal, level: $config->level),
             OutputFormat::Table => new TableReporter(traversal: $traversal, level: $config->level),
+            OutputFormat::Graph => new GraphReporter(traversal: $traversal, level: $config->level),
         };
     }
 }

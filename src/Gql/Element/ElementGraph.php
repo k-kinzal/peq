@@ -21,7 +21,7 @@ use App\Gql\Datum\NodeDatum;
  * the derived readings out is what stops an undirected pattern from matching every
  * relation twice.
  *
- * @visibility App\Gql
+ * @visibility App
  */
 final class ElementGraph
 {
@@ -80,6 +80,35 @@ final class ElementGraph
     public function leaving(string $id): array
     {
         return $this->leaving[$id] ?? [];
+    }
+
+    /**
+     * Returns every relation between two of a given set of symbols.
+     *
+     * A drawing of what a query found is worth more than a list of it, and what makes
+     * it a drawing is the arrows. A query that matched a pattern binds the symbols it
+     * was written about and usually not the relations between them, so those are read
+     * back out of the graph here — the same induced subgraph an inspection draws.
+     *
+     * @param array<string, true> $wanted What identifies each symbol, as a set
+     *
+     * @example A set with nothing in it is joined by nothing
+     *     (new \App\Gql\Element\ElementGraph([], [], []))->between([]) // => []
+     *
+     * @return list<EdgeDatum> The relations between them
+     */
+    public function between(array $wanted): array
+    {
+        $found = [];
+        foreach (array_keys($wanted) as $id) {
+            foreach ($this->leaving($id) as $edge) {
+                if (isset($wanted[$edge->target])) {
+                    $found[] = $edge;
+                }
+            }
+        }
+
+        return $found;
     }
 
     /**

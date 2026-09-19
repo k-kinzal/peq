@@ -49,15 +49,25 @@ final class EdgeProperties
     }
 
     /**
-     * Returns every property a relation carries, for a reader asking what there is.
+     * Returns every property a relation carries and what kind of value it is.
      *
-     * @example Where a relation is written is among them
-     *     in_array('line', \App\Gql\Element\EdgeProperties::all(), true) // => true
+     * An agent writing its first query against a graph it has not seen needs the
+     * names before it can ask anything and the types before it can compare anything,
+     * so both are offered rather than left to be discovered from an answer.
      *
-     * @return list<string> The property names
+     * @example Where a relation is written is among them, with the type it is
+     *     \App\Gql\Element\EdgeProperties::all()['line'] // => 'INT64'
+     *
+     * @return array<string, string> The property names, and the GQL type of each
      */
     public static function all(): array
     {
-        return ['kind', 'file', 'fileName', 'line', 'column'];
+        return [
+            'kind' => 'STRING',
+            'file' => 'STRING',
+            'fileName' => 'STRING',
+            'line' => 'INT64',
+            'column' => 'INT64',
+        ];
     }
 }

@@ -66,6 +66,9 @@ final class InputConfigReader implements ConfigReader
         if ($this->input->hasParameterOption(['--type'])) {
             $config['type'] = $this->option('type');
         }
+        if ($this->input->hasParameterOption(['--hops'])) {
+            $config['hops'] = $this->option('hops');
+        }
 
         $debug = [];
         if ($this->input->hasParameterOption(['--debug-depth'])) {

@@ -61,6 +61,26 @@ final class EdgeDatum implements Datum
     }
 
     /**
+     * Returns the most particular of the labels the edge carries.
+     *
+     * An edge carries what it is and the families it belongs to — `methodCall`,
+     * `call`, `usage` — and a reader being shown one wants the first of those. The
+     * families exist so that a pattern can select by them, not so that a drawing can
+     * repeat them.
+     *
+     * @example The most particular label is the one a reader is shown
+     *     (new \App\Gql\Datum\EdgeDatum('e', ['methodCall', 'call', 'usage'], [], 'a', 'b'))->label() // => 'methodCall'
+     * @example An edge that carries no label has nothing to be shown as
+     *     (new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b'))->label() // => ''
+     *
+     * @return string The label, or an empty string when it carries none
+     */
+    public function label(): string
+    {
+        return $this->labels[0] ?? '';
+    }
+
+    /**
      * Writes the edge out the way a result shows it.
      *
      * @example An edge is shown as the relation it is, between the symbols it joins
@@ -74,6 +94,6 @@ final class EdgeDatum implements Datum
     #[Override]
     public function toText(): string
     {
-        return $this->origin.' -['.implode('&', $this->labels).']-> '.$this->target;
+        return $this->origin.' -['.$this->label().']-> '.$this->target;
     }
 }

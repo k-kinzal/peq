@@ -20,10 +20,43 @@ use App\Analyzer\Graph\EdgeKind;
  * "everything this reaches by calling" means; `-[:declaration]->` covers everything a
  * class-like writes down about itself.
  *
+ * The particular name is a lookup and the families are a decision, which is why one
+ * is written as data and the other as a match. Both are still total: a kind added
+ * without a name is an offset static analysis cannot prove exists, and one added
+ * without a family is an unhandled arm.
+ *
  * @visibility App\Gql
  */
 final class EdgeLabels
 {
+    /**
+     * What a query calls each kind of relation.
+     */
+    private const NAMES = [
+        'function-call' => 'functionCall',
+        'method-call' => 'methodCall',
+        'static-call' => 'staticCall',
+        'instantiation' => 'instantiation',
+        'property-access' => 'propertyAccess',
+        'static-property-access' => 'staticPropertyAccess',
+        'const-fetch' => 'constFetch',
+        'instanceof' => 'instanceOf',
+        'catch' => 'catches',
+        'declaration-trait-use' => 'traitUse',
+        'declaration-extends' => 'extends',
+        'declaration-implements' => 'implements',
+        'declaration-method' => 'declaresMethod',
+        'declaration-property' => 'declaresProperty',
+        'declaration-constant' => 'declaresConstant',
+        'declaration-enum-case' => 'declaresEnumCase',
+        'declaration-type-parameter' => 'parameterType',
+        'declaration-type-return' => 'returnType',
+        'declaration-type-property' => 'propertyType',
+        'attribute' => 'attribute',
+        'used-by' => 'usedBy',
+        'declared-in' => 'declaredIn',
+    ];
+
     /**
      * Returns the labels a kind of relation carries.
      *
@@ -38,29 +71,66 @@ final class EdgeLabels
      */
     public static function of(EdgeKind $kind): array
     {
+        return [self::name($kind), ...self::belongsTo($kind)];
+    }
+
+    /**
+     * Returns what a query calls one kind of relation.
+     *
+     * @param EdgeKind $kind The kind of relation
+     *
+     * @example A relation is named the way a sentence about code would name it
+     *     \App\Gql\Element\EdgeLabels::name(\App\Analyzer\Graph\EdgeKind::DeclarationMethod) // => 'declaresMethod'
+     *
+     * @return string The name
+     */
+    public static function name(EdgeKind $kind): string
+    {
+        return self::NAMES[$kind->value];
+    }
+
+    /**
+     * Returns the families of relation a kind of relation belongs to.
+     *
+     * @param EdgeKind $kind The kind of relation
+     *
+     * @example Every call belongs to the family a pattern selects calls by
+     *     \App\Gql\Element\EdgeLabels::belongsTo(\App\Analyzer\Graph\EdgeKind::StaticCall) // => ['call', 'usage']
+     * @example Everything a class-like writes down about itself is a declaration
+     *     \App\Gql\Element\EdgeLabels::belongsTo(\App\Analyzer\Graph\EdgeKind::Attribute) // => ['declaration']
+     *
+     * @return list<string> The families, most specific first
+     */
+    public static function belongsTo(EdgeKind $kind): array
+    {
         return match ($kind) {
-            EdgeKind::FunctionCall => ['functionCall', 'call', 'usage'],
-            EdgeKind::MethodCall => ['methodCall', 'call', 'usage'],
-            EdgeKind::StaticCall => ['staticCall', 'call', 'usage'],
-            EdgeKind::Instantiation => ['instantiation', 'usage'],
-            EdgeKind::PropertyAccess => ['propertyAccess', 'usage'],
-            EdgeKind::StaticPropertyAccess => ['staticPropertyAccess', 'usage'],
-            EdgeKind::ConstFetch => ['constFetch', 'usage'],
-            EdgeKind::Instanceof => ['instanceOf', 'usage'],
-            EdgeKind::Catch => ['catches', 'usage'],
-            EdgeKind::DeclarationTraitUse => ['traitUse', 'declaration'],
-            EdgeKind::DeclarationExtends => ['extends', 'declaration'],
-            EdgeKind::DeclarationImplements => ['implements', 'declaration'],
-            EdgeKind::DeclarationMethod => ['declaresMethod', 'declares', 'declaration'],
-            EdgeKind::DeclarationProperty => ['declaresProperty', 'declares', 'declaration'],
-            EdgeKind::DeclarationConstant => ['declaresConstant', 'declares', 'declaration'],
-            EdgeKind::DeclarationEnumCase => ['declaresEnumCase', 'declares', 'declaration'],
-            EdgeKind::DeclarationTypeParameter => ['parameterType', 'signatureType', 'declaration'],
-            EdgeKind::DeclarationTypeReturn => ['returnType', 'signatureType', 'declaration'],
-            EdgeKind::DeclarationTypeProperty => ['propertyType', 'declaration'],
-            EdgeKind::Attribute => ['attribute', 'declaration'],
-            EdgeKind::UsedBy => ['usedBy', 'inverse'],
-            EdgeKind::DeclaredIn => ['declaredIn', 'inverse'],
+            EdgeKind::FunctionCall,
+            EdgeKind::MethodCall,
+            EdgeKind::StaticCall => ['call', 'usage'],
+
+            EdgeKind::Instantiation,
+            EdgeKind::PropertyAccess,
+            EdgeKind::StaticPropertyAccess,
+            EdgeKind::ConstFetch,
+            EdgeKind::Instanceof,
+            EdgeKind::Catch => ['usage'],
+
+            EdgeKind::DeclarationMethod,
+            EdgeKind::DeclarationProperty,
+            EdgeKind::DeclarationConstant,
+            EdgeKind::DeclarationEnumCase => ['declares', 'declaration'],
+
+            EdgeKind::DeclarationTypeParameter,
+            EdgeKind::DeclarationTypeReturn => ['signatureType', 'declaration'],
+
+            EdgeKind::DeclarationTraitUse,
+            EdgeKind::DeclarationExtends,
+            EdgeKind::DeclarationImplements,
+            EdgeKind::DeclarationTypeProperty,
+            EdgeKind::Attribute => ['declaration'],
+
+            EdgeKind::UsedBy,
+            EdgeKind::DeclaredIn => ['inverse'],
         };
     }
 

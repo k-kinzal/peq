@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace App\Gql\Invocation;
 
+use App\Gql\Argument\NumberArgument;
 use App\Gql\Datum\Datum;
 use App\Gql\Datum\DatumKind;
-use App\Gql\Datum\DatumOrder;
 use App\Gql\Datum\FloatDatum;
 use App\Gql\Datum\IntegerDatum;
 use App\Gql\Datum\NullDatum;
-use App\Gql\Evaluation\Arithmetic;
 use App\Gql\GqlException;
 use Override;
 
@@ -63,11 +62,9 @@ final class SumAccumulator implements Accumulator
         if ($value->kind() === DatumKind::Null) {
             return;
         }
-        Arithmetic::requireNumber($value);
-
         $this->material = true;
-        $this->approximate = $this->approximate || $value->kind() === DatumKind::Float;
-        $this->total += DatumOrder::numberOf($value);
+        $this->approximate = $this->approximate || NumberArgument::approximate($value);
+        $this->total += NumberArgument::of($value);
     }
 
     /**

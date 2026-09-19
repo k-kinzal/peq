@@ -29,6 +29,9 @@ enum OutputFormat: string
     /** Writes the walk as a table, one row per symbol it reached */
     case Table = 'table';
 
+    /** Draws the graph itself in the terminal: every symbol once, numbered, with arrows between them */
+    case Graph = 'graph';
+
     /**
      * Writes out the formats a report can be asked for, as they are written.
      *
@@ -37,7 +40,7 @@ enum OutputFormat: string
      * format the help text offers.
      *
      * @example The choices are written the way the command line spells them
-     *     \App\Config\OutputFormat::spell() // => 'tree|json|dot|table'
+     *     \App\Config\OutputFormat::spell() // => 'tree|json|dot|table|graph'
      *
      * @return string The formats, separated by the character that separates them on the command line
      */

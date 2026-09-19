@@ -18,7 +18,12 @@ namespace App\Gql\Datum;
  * Only the leaves — strings and numbers — go through PHP's encoder, which is what
  * they are good at.
  *
- * @visibility App\Gql
+ * The reporters name this too, which is why its scope reaches past the language. A
+ * symbol serialised inside a query and the same symbol serialised by the reporter
+ * around it should be the same text, and the only way to promise that is for both to
+ * go through here.
+ *
+ * @visibility App
  */
 final class DatumJson
 {

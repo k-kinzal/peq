@@ -1,6 +1,6 @@
 # Agents
 
-A CLI tool that analyzes PHP code dependencies and visualizes the blast radius of changes. Provides tree output for humans via TreeReporter and structured output for AI agents via JsonReporter, DotReporter and TableReporter, enabling both to modify PHP code safely.
+A CLI tool that analyzes PHP code dependencies and visualizes the blast radius of changes. `peq <symbol>` draws what one symbol reaches, as a tree, for a person; `peq graph '<query>'` answers whatever can be written in GQL, as a table, for a program or an agent. Both write the same set of formats.
 
 ## Supported Versions
 
@@ -10,7 +10,8 @@ A CLI tool that analyzes PHP code dependencies and visualizes the blast radius o
 
 - **Impact analysis is the primary goal** — automatically identify what breaks when a class, method, or function changes
 - **Bidirectional traversal** — walk the graph in two directions: `uses` (what the target depends on) and `used-by` (what depends on the target)
-- **Reporter switching** — `--output` picks how one walk is written down: `tree` for a person, `json` for a program or an agent, `dot` for a renderer, `table` for a review. Where the walk stops is decided once, by `Expansion`, so no format can disagree with another about what is affected
+- **Reporter switching** — `--output` picks how one walk is written down: `tree` for a person, `json` for a program or an agent, `dot` for a renderer, `table` for a review, `graph` for the wiring rather than the shape. Where the walk stops is decided once, by `Expansion`, so no format can disagree with another about what is affected
+- **GQL is the query language** — `peq graph` runs ISO GQL as the Microsoft Fabric guide documents it. It is the standard the SQL committee publishes, so an agent already knows it; an invented syntax would have to be explained in every prompt. Read-only by design: nothing in the language can change a graph peq has just read out of source code
 - **Two engines, one graph** — `PhpStanAnalyzer` is the reference; `NativeAnalyzer` reads sources directly and is checked against it by comparing canonical graph snapshots. A change to either must keep them identical
 - **The binary carries one engine** — `phpstan/phpstan` is a dev dependency, so the PHAR holds only `NativeAnalyzer`. `AnalyzerKind` offers a kind only when what it is built on is installed
 - **Graph model** — bidirectional adjacency list of nodes (Class, Method, Function, etc. — 11 kinds) and edges (MethodCall, Extends, etc. — 22 kinds). Inverse edges (UsedBy, DeclaredIn) are generated automatically when an edge is added
@@ -30,12 +31,13 @@ Pipeline: `CLI input → Config stacking → Action → Analyzer → Graph → T
 
 | Layer | Responsibility | Key file |
 |-------|---------------|----------|
-| **Command** | IO only — parse arguments, delegate output | `src/Command/InspectCommand.php` |
+| **Command** | IO only — parse arguments, delegate output | `src/Command/InspectCommand.php`, `src/Command/GraphCommand.php` |
 | **Config** | Merge 4 layers: Default → Env(`PEQ_*`) → YAML → CLI | `src/Config/ConfigLoader.php` |
-| **Action** | Orchestrate Analyzer and Reporter | `src/Action/Inspect/InspectAction.php` |
+| **Action** | Orchestrate Analyzer and Reporter | `src/Action/Inspect/InspectAction.php`, `src/Action/Query/QueryAction.php` |
 | **Analyzer** | Parse source code → build Graph | `src/Analyzer/` |
 | **Equivalence** | Compare two graphs in canonical form | `src/Analyzer/Graph/GraphSnapshot.php` |
-| **Reporter** | Format graph into output | `src/Reporter/` |
+| **Gql** | Read a GQL query and run it against the graph | `src/Gql/Execution/QueryExecution.php` |
+| **Reporter** | Format graph or query result into output | `src/Reporter/` |
 
 Dependencies between layers flow top-down only. Command never calls Analyzer directly.
 
@@ -50,12 +52,28 @@ src/
 │   ├── PhpStanAnalyzer/  # Reference engine, built on PHPStan
 │   └── NativeAnalyzer/   # Same graph, read straight from the sources
 ├── Config/          # Layered configuration readers
+├── Gql/             # The query language, from text to answer
+│   ├── Lexing/      # Query text into its pieces
+│   ├── Syntax/      # What a query is, as a shape
+│   ├── Parsing/     # Pieces into that shape
+│   ├── Datum/       # The values a query holds, and how they compare
+│   ├── Argument/    # Reading a value as the kind an operation needs
+│   ├── Binding/     # The rows a clause is given and produces
+│   ├── Element/     # The analysed graph as labelled elements a query can match
+│   ├── Evaluation/  # Operators, under three-valued logic
+│   ├── Invocation/  # The built-in functions and the aggregates
+│   ├── Matching/    # Finding every way a pattern matches
+│   ├── Execution/   # Running the clauses, and combining query blocks
+│   └── Result/      # The answer: columns, rows and a GQLSTATUS
 └── Reporter/        # Output formatters and traversal strategies
     ├── Traversal/   # How the graph is walked
+    ├── Diagram/     # Drawing a graph in a terminal, shared by both commands
     ├── TreeReporter/     # An indented tree, for a person
     ├── JsonReporter/     # A JSON document, for a program
     ├── DotReporter/      # A Graphviz digraph, for a renderer
-    └── TableReporter/    # A table of rows, for a review
+    ├── TableReporter/    # A table of rows, for a review
+    ├── GraphReporter/    # The graph itself, numbered, for the wiring
+    └── Query/            # The same formats, for what a query answered
 tests/               # Mirrors src/ namespaces. Keep fixtures next to the code they test
 config/              # DI container wiring (services.php)
 bin/                 # Entry point (console)
@@ -70,7 +88,8 @@ bin/                 # Entry point (console)
 - `composer format` — apply PHP CS Fixer
 - `composer compile` — build PHAR with Box after lint/tests pass
 - `bin/console Namespace\\Class::method /path -L 3 --exclude vendor` — inspect dependencies. Use `--direction=used-by` for reverse traversal, and `--type=native` for the faster engine
-- `bin/console Namespace\\Class::method /path --output=json` — write the same walk as JSON. `--output` takes `tree|json|dot|table`
+- `bin/console Namespace\\Class::method /path --output=json` — write the same walk as JSON. `--output` takes `tree|json|dot|table|graph`
+- `bin/console graph "MATCH (m:Method)-[:call]->(t) RETURN m.id, t.id" /path` — query the graph in GQL. `--schema` writes the labels, properties and functions a query can use
 
 ## Adding an Output Format
 
@@ -109,3 +128,15 @@ claim is a test, not a comment:
 Changing either engine means re-running all five. A difference that is intended has to
 be written down in the README, because a user picking `--type` is choosing between two
 answers that are otherwise the same.
+
+## Adding to the Query Language
+
+The language is not ours to extend. A clause, an operator or a function that GQL does
+not define does not belong in `src/Gql`, however useful it would be: the reason the
+command is worth having is that a reader already knows what it accepts, and every
+addition of our own makes that less true.
+
+What is ours is the vocabulary a query is written against — the labels a symbol
+carries, the properties it offers. Adding one means teaching `NodeLabels`,
+`NodeProperties` or their edge counterparts, and adding it to `GraphSchema` so that
+`--schema` still answers what a query may write.

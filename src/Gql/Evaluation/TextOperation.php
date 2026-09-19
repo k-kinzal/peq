@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Gql\Evaluation;
 
+use App\Gql\Argument\TextArgument;
 use App\Gql\Datum\Datum;
 use App\Gql\Datum\DatumKind;
 use App\Gql\Datum\ListDatum;
 use App\Gql\Datum\NullDatum;
 use App\Gql\Datum\StringDatum;
 use App\Gql\GqlException;
-use App\Gql\StatusCode;
 use App\Gql\Syntax\Expression\BinaryOperator;
 
 /**
@@ -61,8 +61,8 @@ final class TextOperation
             return self::concatenate($left, $right);
         }
 
-        $subject = self::characters($left);
-        $sought = self::characters($right);
+        $subject = TextArgument::of($left);
+        $sought = TextArgument::of($right);
         if ($operator === BinaryOperator::Contains) {
             return Logic::datum(str_contains($subject, $sought));
         }
@@ -94,35 +94,5 @@ final class TextOperation
         }
 
         return new StringDatum($left->toText().$right->toText());
-    }
-
-    /**
-     * Reads a value as the characters a string predicate works on.
-     *
-     * A value that is not a string is reported rather than converted, because a
-     * predicate asking whether a number starts with another number is a query its
-     * author did not mean to write.
-     *
-     * @param Datum $value The value to read
-     *
-     * @example A string reads as its characters
-     *     \App\Gql\Evaluation\TextOperation::characters(new \App\Gql\Datum\StringDatum('App')) // => 'App'
-     * @example Anything else is reported under the status GQL gives it
-     *     \App\Gql\Evaluation\TextOperation::characters(new \App\Gql\Datum\IntegerDatum(1)) // throws \App\Gql\GqlException: invalid value type
-     *
-     * @return string The characters
-     *
-     * @throws GqlException If the value is not a string
-     */
-    public static function characters(Datum $value): string
-    {
-        if ($value instanceof StringDatum) {
-            return $value->value;
-        }
-
-        throw GqlException::because(
-            StatusCode::InvalidType,
-            sprintf('a string was expected, and a %s was given', $value->kind()->typeName()),
-        );
     }
 }

@@ -21,6 +21,16 @@ use App\Analyzer\Graph\Direction;
 final class Config
 {
     /**
+     * How far a query's repetition goes when it writes no upper bound of its own.
+     *
+     * A pattern like `-[:call]->{1,}` asks for everything reachable, and on a graph
+     * with cycles that is bounded only by the path mode — which makes it finite and
+     * not necessarily small. Ten steps is far enough to answer the questions a reader
+     * asks in practice and near enough to answer them while they wait.
+     */
+    public const HOPS = 10;
+
+    /**
      * @param string              $basePath  The base path for the PHP project to analyze
      * @param Direction           $direction Which way the dependency graph is read
      * @param null|int            $level     Deepest level to report, or null for the whole graph
@@ -28,6 +38,7 @@ final class Config
      * @param list<string>        $includes  File path patterns to include in analysis
      * @param list<string>        $excludes  File path patterns to exclude from analysis
      * @param AnalyzerKind        $analyzer  Which analyzer builds the graph
+     * @param int                 $hops      How far a query's repetition goes when it writes no upper bound
      * @param DebugAnalyzerConfig $debug     Settings for the synthetic graph of the debug analyzer
      */
     public function __construct(
@@ -38,6 +49,7 @@ final class Config
         public readonly array $includes = [],
         public readonly array $excludes = [],
         public readonly AnalyzerKind $analyzer = AnalyzerKind::PhpStan,
+        public readonly int $hops = self::HOPS,
         public readonly DebugAnalyzerConfig $debug = new DebugAnalyzerConfig(),
     ) {
         assert($this->basePath !== '', 'A base path must name a location');
@@ -96,6 +108,7 @@ final class Config
             includes: $raw->stringList('includes'),
             excludes: $raw->stringList('excludes'),
             analyzer: $raw->oneOf('type', AnalyzerKind::available()),
+            hops: $raw->optionalPositiveInt('hops') ?? self::HOPS,
             debug: DebugAnalyzerConfig::fromRaw($raw->nested('debug')),
         );
     }

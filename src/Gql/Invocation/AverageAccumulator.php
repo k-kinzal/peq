@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace App\Gql\Invocation;
 
+use App\Gql\Argument\NumberArgument;
 use App\Gql\Datum\Datum;
 use App\Gql\Datum\DatumKind;
-use App\Gql\Datum\DatumOrder;
 use App\Gql\Datum\FloatDatum;
 use App\Gql\Datum\NullDatum;
-use App\Gql\Evaluation\Arithmetic;
 use App\Gql\GqlException;
 use Override;
 
@@ -53,10 +52,8 @@ final class AverageAccumulator implements Accumulator
         if ($value->kind() === DatumKind::Null) {
             return;
         }
-        Arithmetic::requireNumber($value);
-
         ++$this->counted;
-        $this->total += DatumOrder::numberOf($value);
+        $this->total += NumberArgument::of($value);
     }
 
     /**

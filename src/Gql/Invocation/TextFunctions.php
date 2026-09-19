@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Gql\Invocation;
 
+use App\Gql\Argument\TextArgument;
 use App\Gql\Datum\Datum;
 use App\Gql\Datum\DatumKind;
 use App\Gql\Datum\IntegerDatum;
 use App\Gql\Datum\NullDatum;
 use App\Gql\Datum\StringDatum;
-use App\Gql\Evaluation\TextOperation;
 use App\Gql\GqlException;
 
 /**
@@ -47,7 +47,7 @@ final class TextFunctions
             return new NullDatum();
         }
 
-        return new IntegerDatum(mb_strlen(TextOperation::characters($value)));
+        return new IntegerDatum(mb_strlen(TextArgument::of($value)));
     }
 
     /**
@@ -68,7 +68,7 @@ final class TextFunctions
             return new NullDatum();
         }
 
-        return new StringDatum(strtoupper(TextOperation::characters($value)));
+        return new StringDatum(strtoupper(TextArgument::of($value)));
     }
 
     /**
@@ -89,7 +89,7 @@ final class TextFunctions
             return new NullDatum();
         }
 
-        return new StringDatum(strtolower(TextOperation::characters($value)));
+        return new StringDatum(strtolower(TextArgument::of($value)));
     }
 
     /**
@@ -110,7 +110,7 @@ final class TextFunctions
             return new NullDatum();
         }
 
-        return new StringDatum(trim(TextOperation::characters($value)));
+        return new StringDatum(trim(TextArgument::of($value)));
     }
 
     /**
@@ -144,6 +144,6 @@ final class TextFunctions
             }
         }
 
-        return new StringDatum(implode(TextOperation::characters($separator), $written));
+        return new StringDatum(implode(TextArgument::of($separator), $written));
     }
 }

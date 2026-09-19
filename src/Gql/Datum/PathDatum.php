@@ -195,7 +195,7 @@ final class PathDatum implements Datum
      */
     public static function arrow(EdgeDatum $edge, bool $forward): string
     {
-        $labels = implode('&', $edge->labels);
+        $labels = $edge->label();
 
         return $forward ? ' -['.$labels.']-> ' : ' <-['.$labels.']- ';
     }
