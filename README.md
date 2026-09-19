@@ -8,7 +8,6 @@ A CLI tool that analyzes PHP code dependencies and visualizes the blast radius o
 ## Requirements
 
 - PHP 8.1 or higher
-- `ext-ast` PHP extension
 
 ## Installation
 
@@ -56,20 +55,34 @@ Options:
 
 Two analyzers read real sources, and they are built to describe the same graph:
 
-| `--type`  | What it does |
-|-----------|--------------|
-| `phpstan` | Runs PHPStan over the sources and assembles the graph from what its collectors report. The reference engine. |
-| `native`  | Reads the sources directly with a parser, resolving names the way PHP does. Between 10x and 70x faster, and the default is still `phpstan` until you ask for it. |
+| `--type`  | What it does | Where it is available |
+|-----------|--------------|-----------------------|
+| `phpstan` | Runs PHPStan over the sources and assembles the graph from what its collectors report. The reference engine. | Installed from source or via Composer |
+| `native`  | Reads the sources directly with a parser, resolving names the way PHP does. Between 13x and 59x faster. | Everywhere, including the released PHAR |
 
 ```bash
 peq 'App\Domain\Invoice::total' src --type=native
 ```
+
+**The released PHAR carries only `native`.** Bundling a static analyser to run a parser
+is most of the download for none of the answers: the PHAR is 7.2MB where PHPStan alone
+is 47MB. `--type` there offers `native|debug` and refuses anything else — the choice a
+build can make is the choice it is asked to make. Installed from source or via Composer,
+`--type=phpstan` is there and remains the default.
 
 The two are not asked to agree by inspection. `native` is checked against `phpstan` by
 comparing the graphs they build of the same sources, reduced to a canonical form: a
 corpus of scenarios written to exercise every kind of symbol and relation the graph
 model has, peq's own sources, and programs drawn at random by a property test that
 shrinks any disagreement to the one expression that causes it.
+
+Every one of those checks runs in CI. A further job reads **every installed dependency**
+with both engines and fails on any difference, so a package that arrives tomorrow is read
+tomorrow:
+
+```bash
+composer test:equivalence
+```
 
 Two differences remain, both of them places where the reference engine has no answer
 to agree with:
@@ -83,7 +96,7 @@ to agree with:
 Create a `.peq.yaml` file in your project root to set default options:
 
 ```yaml
-type: phpstan
+type: native
 excludes:
   - vendor
   - vendor-bin

@@ -11,11 +11,16 @@ use RuntimeException;
 /**
  * Makes PHPStan's classes loadable when peq itself is running from a PHAR.
  *
- * PHPStan ships as a PHAR of its own, and peq bundles it. Loading a PHAR from inside
- * a PHAR gives PHPStan's own autoloader paths of the form `phar://phar://...`, which
- * the PHP stream wrapper cannot resolve. Extracting the bundled archive once and
- * registering the autoloader from the extracted copy is what makes the analyzer work
- * from a distributed binary at all.
+ * PHPStan ships as a PHAR of its own, and loading a PHAR from inside a PHAR gives
+ * PHPStan's own autoloader paths of the form `phar://phar://...`, which the PHP
+ * stream wrapper cannot resolve. Extracting the bundled archive once and registering
+ * the autoloader from the extracted copy is what makes this analyzer work from a
+ * binary that carries PHPStan.
+ *
+ * peq's own distributed binary does not carry it — bundling a static analyser to run
+ * a parser is most of the download for none of the answers — so there this analyzer
+ * is not offered and this class is never reached. A build that does bundle it still
+ * works, which is why the extraction is kept.
  *
  * Outside a PHAR there is nothing to do: Composer's autoloader already resolves
  * PHPStan.
@@ -32,7 +37,7 @@ final class PhpStanAutoloader
     /**
      * Registers a usable PHPStan autoloader if the current process needs one.
      *
-     * @throws RuntimeException If peq is running from a PHAR that does not bundle PHPStan
+     * @throws RuntimeException If peq is running from a PHAR that does not carry PHPStan
      */
     public function ensureRegistered(): void
     {
@@ -43,7 +48,7 @@ final class PhpStanAutoloader
 
         $bundled = Phar::running().'/vendor/phpstan/phpstan/phpstan.phar';
         if (!file_exists($bundled)) {
-            throw new RuntimeException('phpstan.phar not found inside the PHAR archive');
+            throw new RuntimeException('This build of peq does not carry PHPStan, so the analyzer built on it cannot run.');
         }
 
         $extracted = $this->extract($bundled);

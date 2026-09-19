@@ -12,6 +12,7 @@ A CLI tool that analyzes PHP code dependencies and visualizes the blast radius o
 - **Bidirectional traversal** — walk the graph in two directions: `uses` (what the target depends on) and `used-by` (what depends on the target)
 - **Reporter switching** — swap between human-friendly (tree display) and AI-friendly (structured data) output formats
 - **Two engines, one graph** — `PhpStanAnalyzer` is the reference; `NativeAnalyzer` reads sources directly and is checked against it by comparing canonical graph snapshots. A change to either must keep them identical
+- **The binary carries one engine** — `phpstan/phpstan` is a dev dependency, so the PHAR holds only `NativeAnalyzer`. `AnalyzerKind` offers a kind only when what it is built on is installed
 - **Graph model** — bidirectional adjacency list of nodes (Class, Method, Function, etc. — 11 kinds) and edges (MethodCall, Extends, etc. — 22 kinds). Inverse edges (UsedBy, DeclaredIn) are generated automatically when an edge is added
 
 ## Project Tradeoff Sliders
@@ -59,6 +60,7 @@ bin/                 # Entry point (console)
 
 - `composer install` — install dependencies and `vendor-bin/` tools
 - `composer test` — run PHPUnit (random order, `APP_ENV=test`). Append `-- tests/App/...` or `--filter testName` to narrow scope
+- `composer test:equivalence` — read every installed dependency with both engines and fail on any difference
 - `composer lint` — run PHP CS Fixer + PHPStan (max level)
 - `composer format` — apply PHP CS Fixer
 - `composer compile` — build PHAR with Box after lint/tests pass
@@ -76,7 +78,11 @@ claim is a test, not a comment:
 - `tests/Integration/NativeAnalyzerEquivalenceTest.php` — both engines over peq's own sources
 - `tests/Property/NativeAnalyzerEquivalencePropertyTest.php` — both engines over drawn
   programs, shrinking any disagreement (`composer test:pbt`)
+- `tests/Equivalence/InstalledPackageEquivalenceTest.php` — both engines over every
+  installed dependency (`composer test:equivalence`). It sits outside every testsuite in
+  `phpunit.xml.dist` on purpose, so `composer test` and the mutation run do not pay for
+  it; the `Engine equivalence` workflow does
 
-Changing either engine means re-running all four. A difference that is intended has to
+Changing either engine means re-running all five. A difference that is intended has to
 be written down in the README, because a user picking `--type` is choosing between two
 answers that are otherwise the same.

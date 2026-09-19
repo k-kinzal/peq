@@ -210,6 +210,38 @@ final class RawConfigTest extends TestCase
     /**
      * @throws ConfigException
      */
+    public function testOneOfReadsAFieldThatNamesOneOfTheGivenCases(): void
+    {
+        self::assertSame(
+            AnalyzerKind::Native,
+            (new RawConfig(['type' => 'native']))->oneOf('type', [AnalyzerKind::PhpStan, AnalyzerKind::Native]),
+        );
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testOneOfRejectsAFieldThatNamesNoneOfThem(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Invalid configuration "type": expected one of phpstan, native, got "debug".');
+
+        (new RawConfig(['type' => 'debug']))->oneOf('type', [AnalyzerKind::PhpStan, AnalyzerKind::Native]);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testOneOfRejectsAFieldThatIsMissing(): void
+    {
+        $this->expectException(ConfigException::class);
+
+        (new RawConfig([]))->oneOf('type', [AnalyzerKind::Native]);
+    }
+
+    /**
+     * @throws ConfigException
+     */
     public function testEnumReadsACaseTheSourceNamed(): void
     {
         self::assertSame(Direction::UsedBy, (new RawConfig(['direction' => 'used-by']))->enum('direction', Direction::class));

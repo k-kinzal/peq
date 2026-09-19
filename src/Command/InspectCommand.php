@@ -7,6 +7,7 @@ namespace App\Command;
 use App\Action\Inspect\InspectAction;
 use App\Action\Inspect\InspectActionInput;
 use App\Action\Inspect\SymbolNotFoundException;
+use App\Config\AnalyzerKind;
 use App\Config\ConfigException;
 use App\Config\ConfigLoader;
 use App\Config\DefaultConfigReader;
@@ -65,7 +66,7 @@ final class InspectCommand extends Command
             new InputOption('reverse', 'R', InputOption::VALUE_NONE, 'Shortcut for --direction used-by'),
             new InputOption('include', 'I', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Include patterns', []),
             new InputOption('exclude', 'E', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Exclude patterns', []),
-            new InputOption('type', null, InputOption::VALUE_REQUIRED, 'Analyzer type (phpstan|native|debug)'),
+            new InputOption('type', null, InputOption::VALUE_REQUIRED, sprintf('Analyzer type (%s)', AnalyzerKind::spellAvailable())),
             new InputOption('debug-depth', null, InputOption::VALUE_REQUIRED, 'Debug analyzer depth'),
             new InputOption('debug-seed', null, InputOption::VALUE_REQUIRED, 'Debug analyzer seed'),
             new InputOption('memory-limit', null, InputOption::VALUE_REQUIRED, 'Memory limit (e.g. 1G, 256M)'),

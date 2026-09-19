@@ -195,6 +195,41 @@ final class RawConfig
     }
 
     /**
+     * Reads a field that must be one of a given set of enum cases.
+     *
+     * A closed type says which values exist; it does not say which of them this
+     * installation can honour. Where the two differ — an analyzer whose engine this
+     * build does not carry — the field is read against the cases that can actually
+     * be chosen, so the error names the choice the user has rather than the choice
+     * the type allows.
+     *
+     * @template TCase of \BackedEnum
+     *
+     * @param string      $key     The field name
+     * @param list<TCase> $allowed The cases the field may name
+     *
+     * @return TCase The matching case
+     *
+     * @throws ConfigException If the field is missing or names none of those cases
+     */
+    public function oneOf(string $key, array $allowed): BackedEnum
+    {
+        $value = $this->requiredString($key);
+        foreach ($allowed as $case) {
+            if ((string) $case->value === $value) {
+                return $case;
+            }
+        }
+
+        throw new ConfigException(sprintf(
+            'Invalid configuration "%s": expected one of %s, got "%s".',
+            $key,
+            implode(', ', array_map(static fn (BackedEnum $case): string => (string) $case->value, $allowed)),
+            $value,
+        ));
+    }
+
+    /**
      * Reads a field that must be one of the values of a string-backed enum.
      *
      * @template TEnum of \BackedEnum
