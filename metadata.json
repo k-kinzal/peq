@@ -1,0 +1,62 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M2VY2H9EBZ7VQVN296D9WSSH",
+  "strategy": "manual-commit",
+  "branch": "toolkit/php-ai-toolkit-adoption",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/Action/Inspect/InspectAction.php",
+    "src/Action/Inspect/InspectActionOutput.php",
+    "src/Action/Inspect/SymbolNotFoundException.php",
+    "src/Analyzer/DebugAnalyzer/Generator/ClassLikeGraphGenerator.php",
+    "src/Analyzer/DebugAnalyzer/Generator/GeneratedGraph.php",
+    "src/Analyzer/DebugAnalyzer/Generator/GraphGenerator.php",
+    "src/Analyzer/DebugAnalyzer/Generator/LeafGraphGenerator.php",
+    "src/Analyzer/DebugAnalyzer/Generator/MemberGraphGenerator.php",
+    "src/Analyzer/DebugAnalyzer/Generator/NameGenerator.php",
+    "src/Analyzer/DebugAnalyzer/Generator/NodeGenerator.php",
+    "src/Analyzer/DebugAnalyzer/Generator/NodeIdGenerator.php",
+    "src/Analyzer/DebugAnalyzer/Generator/SymbolGraphGenerator.php",
+    "src/Analyzer/Graph/Direction.php",
+    "src/Analyzer/Graph/Edge.php",
+    "src/Analyzer/Graph/EdgeKind.php",
+    "src/Analyzer/Graph/Graph.php",
+    "src/Analyzer/Graph/InverseEdge.php",
+    "src/Analyzer/Graph/Node/UnknownNode.php",
+    "src/Analyzer/Graph/QualifiedName.php",
+    "src/Analyzer/PhpStanAnalyzer/PhpStanAutoloader.php",
+    "src/Analyzer/PhpStanAnalyzer/ScratchDirectory.php",
+    "src/Analyzer/PhpStanAnalyzer/SourceResolver.php",
+    "src/Command/InspectCommand.php",
+    "src/Config/Config.php",
+    "src/Config/ConfigLoader.php",
+    "src/Config/EnvConfigReader.php",
+    "src/Config/InputConfigReader.php",
+    "src/Config/RawConfig.php",
+    "src/Config/YamlConfigLoader.php",
+    "src/Reporter/ReporterFactory.php",
+    "src/Reporter/Traversal.php",
+    "src/Reporter/Traversal/DepthFirstTraversal.php",
+    "src/Reporter/Traversal/DepthFirstWalk.php",
+    "src/Reporter/TreeReporter/LineRenderer.php",
+    "src/Reporter/TreeReporter/TreeCursor.php",
+    "src/Reporter/TreeReporter/TreeReporter.php",
+    "src/Reporter/TreeReporter/TreeReporterOptions.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
