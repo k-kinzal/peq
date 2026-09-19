@@ -1,6 +1,6 @@
 # Agents
 
-A CLI tool that analyzes PHP code dependencies and visualizes the blast radius of changes. Provides tree output for humans via TreeReporter and structured output for AI agents, enabling both to modify PHP code safely.
+A CLI tool that analyzes PHP code dependencies and visualizes the blast radius of changes. Provides tree output for humans via TreeReporter and structured output for AI agents via JsonReporter, DotReporter and TableReporter, enabling both to modify PHP code safely.
 
 ## Supported Versions
 
@@ -10,7 +10,7 @@ A CLI tool that analyzes PHP code dependencies and visualizes the blast radius o
 
 - **Impact analysis is the primary goal** — automatically identify what breaks when a class, method, or function changes
 - **Bidirectional traversal** — walk the graph in two directions: `uses` (what the target depends on) and `used-by` (what depends on the target)
-- **Reporter switching** — swap between human-friendly (tree display) and AI-friendly (structured data) output formats
+- **Reporter switching** — `--output` picks how one walk is written down: `tree` for a person, `json` for a program or an agent, `dot` for a renderer, `table` for a review. Where the walk stops is decided once, by `Expansion`, so no format can disagree with another about what is affected
 - **Two engines, one graph** — `PhpStanAnalyzer` is the reference; `NativeAnalyzer` reads sources directly and is checked against it by comparing canonical graph snapshots. A change to either must keep them identical
 - **The binary carries one engine** — `phpstan/phpstan` is a dev dependency, so the PHAR holds only `NativeAnalyzer`. `AnalyzerKind` offers a kind only when what it is built on is installed
 - **Graph model** — bidirectional adjacency list of nodes (Class, Method, Function, etc. — 11 kinds) and edges (MethodCall, Extends, etc. — 22 kinds). Inverse edges (UsedBy, DeclaredIn) are generated automatically when an edge is added
@@ -51,6 +51,11 @@ src/
 │   └── NativeAnalyzer/   # Same graph, read straight from the sources
 ├── Config/          # Layered configuration readers
 └── Reporter/        # Output formatters and traversal strategies
+    ├── Traversal/   # How the graph is walked
+    ├── TreeReporter/     # An indented tree, for a person
+    ├── JsonReporter/     # A JSON document, for a program
+    ├── DotReporter/      # A Graphviz digraph, for a renderer
+    └── TableReporter/    # A table of rows, for a review
 tests/               # Mirrors src/ namespaces. Keep fixtures next to the code they test
 config/              # DI container wiring (services.php)
 bin/                 # Entry point (console)
@@ -65,6 +70,20 @@ bin/                 # Entry point (console)
 - `composer format` — apply PHP CS Fixer
 - `composer compile` — build PHAR with Box after lint/tests pass
 - `bin/console Namespace\\Class::method /path -L 3 --exclude vendor` — inspect dependencies. Use `--direction=used-by` for reverse traversal, and `--type=native` for the faster engine
+- `bin/console Namespace\\Class::method /path --output=json` — write the same walk as JSON. `--output` takes `tree|json|dot|table`
+
+## Adding an Output Format
+
+A format is one arm of one match. `OutputFormat` is a closed set, `ReporterFactory`
+answers every case of it, and a case added without an arm is a static analysis error
+rather than a runtime surprise.
+
+What a new reporter must not do is decide where the walk stops. The level bound, the
+cycle, the symbol expanded on another branch and the kind with nothing below it are
+`Expansion`'s decisions, handed over as a `Continuation`; a reporter chooses what to
+draw for each one. That is what makes `tests/Unit/Reporter/ReporterTest.php` — which
+runs every reporter over the same graph — a contract rather than a smoke test, and it
+is why the four formats can be compared line for line.
 
 ## Keeping the Two Engines Identical
 

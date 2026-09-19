@@ -20,6 +20,7 @@ use Symfony\Component\Console\Input\ArrayInput;
 #[CoversClass(InputConfigReader::class)]
 #[UsesClass(InspectCommand::class)]
 #[UsesClass(\App\Config\AnalyzerKind::class)]
+#[UsesClass(\App\Config\OutputFormat::class)]
 #[Small]
 final class InputConfigReaderTest extends TestCase
 {
@@ -36,6 +37,27 @@ final class InputConfigReaderTest extends TestCase
 
         self::assertSame('used-by', $config['direction'] ?? null);
         self::assertSame('5', $config['level'] ?? null);
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadReportsTheFormatTheUserAskedFor(): void
+    {
+        $config = (new InputConfigReader(new ArrayInput([
+            'target' => 'App\Domain\Invoice',
+            '--output' => 'json',
+        ], (new InspectCommand(new InspectAction()))->getDefinition())))->read();
+
+        self::assertSame('json', $config['output'] ?? null);
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadLeavesOutTheFormatWhenTheUserAskedForNone(): void
+    {
+        self::assertArrayNotHasKey('output', (new InputConfigReader(new ArrayInput(['target' => 'App\Domain\Invoice'], (new InspectCommand(new InspectAction()))->getDefinition())))->read());
     }
 
     /**

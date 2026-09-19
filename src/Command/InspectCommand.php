@@ -13,6 +13,7 @@ use App\Config\ConfigLoader;
 use App\Config\DefaultConfigReader;
 use App\Config\EnvConfigReader;
 use App\Config\InputConfigReader;
+use App\Config\OutputFormat;
 use App\Config\YamlConfigLoader;
 use App\Reporter\ReporterFactory;
 use Override;
@@ -64,6 +65,7 @@ final class InspectCommand extends Command
             new InputOption('direction', 'D', InputOption::VALUE_REQUIRED, 'Dependency direction: uses|used-by (default: uses)'),
             new InputOption('level', 'L', InputOption::VALUE_REQUIRED, 'Limit depth of the dependency graph'),
             new InputOption('reverse', 'R', InputOption::VALUE_NONE, 'Shortcut for --direction used-by'),
+            new InputOption('output', 'O', InputOption::VALUE_REQUIRED, sprintf('Output format (%s)', OutputFormat::spell())),
             new InputOption('include', 'I', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Include patterns', []),
             new InputOption('exclude', 'E', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Exclude patterns', []),
             new InputOption('type', null, InputOption::VALUE_REQUIRED, sprintf('Analyzer type (%s)', AnalyzerKind::spellAvailable())),
