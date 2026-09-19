@@ -111,13 +111,15 @@ final readonly class PhpVersion
      *
      * This is what peq reads sources as when nothing says otherwise. A runtime newer
      * than the engine analyses is reported as the newest the engine analyses, because
-     * the alternative is refusing to run on a PHP that peq itself supports.
+     * the alternative is refusing to run on a PHP that peq itself supports. There is
+     * no bound in the other direction: peq needs PHP 8.3 to run at all, which the
+     * engine has read since long before.
      *
-     * @return self The version peq runs on, held within the supported range
+     * @return self The version peq runs on, as far as the analysis engine reads it
      */
     public static function host(): self
     {
-        return new self(min(max(PHP_VERSION_ID, self::OLDEST_SUPPORTED), self::NEWEST_SUPPORTED));
+        return new self(min(PHP_VERSION_ID, self::NEWEST_SUPPORTED));
     }
 
     /**
