@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M2XNFZHYAWHQPBA0ZDH9ANH3",
+  "strategy": "manual-commit",
+  "branch": "feat/output-format",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "README.md",
+    "src/Config/Config.php",
+    "tests/Unit/Command/InspectCommandTest.php",
+    "tests/Unit/Config/ConfigTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 432,
+    "cache_creation_tokens": 220919,
+    "cache_read_tokens": 113189379,
+    "output_tokens": 116880,
+    "api_call_count": 216
+  }
+}
