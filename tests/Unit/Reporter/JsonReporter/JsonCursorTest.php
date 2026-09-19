@@ -69,8 +69,7 @@ final class JsonCursorTest extends TestCase
     {
         $cursor = new JsonCursor($graph, new DepthFirstTraversal(Direction::Uses), 1);
 
-        $cursor->visit(new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true), 2);
-
+        self::assertFalse($cursor->visit(new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true), 2));
         self::assertSame([], $cursor->reached());
     }
 

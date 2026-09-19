@@ -55,8 +55,7 @@ final class TableCursorTest extends TestCase
     {
         $cursor = new TableCursor(1);
 
-        $cursor->visit(new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true), 2);
-
+        self::assertFalse($cursor->visit(new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true), 2));
         self::assertSame([], $cursor->rows());
     }
 

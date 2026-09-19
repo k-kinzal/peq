@@ -63,6 +63,18 @@ final class TreeCursorTest extends TestCase
     }
 
     #[DataProvider('providerInvoiceGraph')]
+    public function testVisitWritesASymbolItHasNotMetBeforeWithNoMarkerAgainstIt(Graph $graph): void
+    {
+        $output = new BufferedOutput();
+        $cursor = new TreeCursor($graph, new DepthFirstTraversal(Direction::Uses), new LineRenderer(), $output);
+
+        $cursor->visit(new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true), 0);
+        $cursor->visit(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), 1);
+
+        self::assertSame("App\\Domain\\Invoice\n├── App\\Domain\\Invoice::total\n", $output->fetch());
+    }
+
+    #[DataProvider('providerInvoiceGraph')]
     public function testVisitAsksTheTreeToContinueBelowAnExpandableSymbol(Graph $graph): void
     {
         $cursor = new TreeCursor($graph, new DepthFirstTraversal(Direction::Uses), new LineRenderer(), new BufferedOutput());
