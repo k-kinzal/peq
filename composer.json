@@ -36,7 +36,7 @@
         "phpcompatibility/php-compatibility": "^10.0@alpha",
         "phpstan/phpstan": "^2.0",
         "phpstan/phpstan-strict-rules": "^2.0",
-        "phpunit/phpunit": "^10.5.46",
+        "phpunit/phpunit": "^12.0.0",
         "squizlabs/php_codesniffer": "^4.0"
     },
     "autoload": {
