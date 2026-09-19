@@ -19,6 +19,7 @@ use Symfony\Component\Console\Input\ArrayInput;
  */
 #[CoversClass(InputConfigReader::class)]
 #[UsesClass(InspectCommand::class)]
+#[UsesClass(\App\Config\AnalyzerKind::class)]
 #[Small]
 final class InputConfigReaderTest extends TestCase
 {

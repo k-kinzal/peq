@@ -30,7 +30,7 @@ final class DefaultConfigReader implements ConfigReader
             'level' => null,
             'includes' => [],
             'excludes' => [],
-            'type' => 'phpstan',
+            'type' => AnalyzerKind::preferred()->value,
             'debug' => [
                 'depth' => 5,
                 'seed' => null,

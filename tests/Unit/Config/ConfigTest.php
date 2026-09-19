@@ -20,6 +20,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(Config::class)]
 #[UsesClass(DebugAnalyzerConfig::class)]
 #[UsesClass(\App\Config\RawConfig::class)]
+#[UsesClass(AnalyzerKind::class)]
 #[Small]
 final class ConfigTest extends TestCase
 {

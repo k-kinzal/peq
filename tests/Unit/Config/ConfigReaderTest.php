@@ -11,6 +11,7 @@ use App\Config\YamlConfigLoader;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Tests\Fixture\Config\StubConfigReader;
 
@@ -20,6 +21,7 @@ use Tests\Fixture\Config\StubConfigReader;
 #[CoversClass(DefaultConfigReader::class)]
 #[CoversClass(EnvConfigReader::class)]
 #[CoversClass(YamlConfigLoader::class)]
+#[UsesClass(\App\Config\AnalyzerKind::class)]
 #[Small]
 final class ConfigReaderTest extends TestCase
 {
