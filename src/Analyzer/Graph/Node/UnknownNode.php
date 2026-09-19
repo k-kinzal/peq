@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer\Graph\Node;
 
+use App\Analyzer\Graph\Declaration\SymbolDeclaration;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId;
@@ -20,14 +21,16 @@ use App\Analyzer\Graph\NodeKind;
 final class UnknownNode implements Node
 {
     /**
-     * @param UnknownNodeId $id       Unique identifier for this unknown node
-     * @param bool          $resolved Whether this node has been fully resolved during analysis (typically false)
-     * @param null|FileMeta $meta     File location metadata (typically null for unknown nodes)
+     * @param UnknownNodeId          $id          Unique identifier for this unknown node
+     * @param bool                   $resolved    Whether this node has been fully resolved during analysis (typically false)
+     * @param null|FileMeta          $meta        File location metadata (typically null for unknown nodes)
+     * @param null|SymbolDeclaration $declaration What the source declares about it, or null when analysis did not read its declaration
      */
     public function __construct(
         public readonly UnknownNodeId $id,
         public readonly bool $resolved = false,
         public readonly ?FileMeta $meta = null,
+        public readonly ?SymbolDeclaration $declaration = null,
     ) {}
 
     /**
@@ -83,5 +86,13 @@ final class UnknownNode implements Node
     public function meta(): ?FileMeta
     {
         return $this->meta;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function declaration(): ?SymbolDeclaration
+    {
+        return $this->declaration;
     }
 }

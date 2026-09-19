@@ -36,10 +36,11 @@ final class Graph
      * Records a node in the graph.
      *
      * Recording is idempotent, because an identifier names one symbol however many
-     * times analysis meets it. Referencing an unseen symbol creates an unresolved
-     * placeholder, and that placeholder is replaced when the real node arrives. A
-     * node that is already concrete is kept: a second description of the same
-     * symbol describes the same symbol.
+     * times analysis meets it. Which of several meetings the graph keeps is decided
+     * by how much each one says about the symbol rather than by which arrived first:
+     * a placeholder left behind by an edge gives way to the real node, and a bare
+     * reference never displaces the declaration that was actually read. Meetings that
+     * say the same amount are the same meeting, and the recorded one stays.
      *
      * @param Node $node The node to record
      */
@@ -47,7 +48,7 @@ final class Graph
     {
         $nodeKey = $node->id()->toString();
         $recorded = $this->nodes[$nodeKey] ?? null;
-        if ($recorded !== null && $recorded->kind() !== NodeKind::Unknown) {
+        if ($recorded !== null && !NodePrecedence::prefers($recorded, $node)) {
             return;
         }
 

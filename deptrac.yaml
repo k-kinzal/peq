@@ -22,6 +22,11 @@ deptrac:
         - type: directory
           value: src/Analyzer/[^/]*\.php$
 
+    - name: Declaration
+      collectors:
+        - type: directory
+          value: src/Analyzer/Declaration/.*
+
     - name: PhpStanAnalyzer
       collectors:
         - type: directory
@@ -94,12 +99,17 @@ deptrac:
     Analyzer:
       - Graph
 
+    Declaration:
+      - Graph
+
     PhpStanAnalyzer:
       - Analyzer
+      - Declaration
       - Graph
 
     NativeAnalyzer:
       - Analyzer
+      - Declaration
       - Graph
 
     DebugAnalyzer:

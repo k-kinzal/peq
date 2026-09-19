@@ -23,6 +23,26 @@ use Tests\Fixture\Analyzer\ParsedSnippet;
 #[Medium]
 final class DeclarationEmitterTest extends TestCase
 {
+    public function testAttributeUsagesReadsAnAttributeUnderTheNameItResolvesTo(): void
+    {
+        $code = "<?php\nnamespace App;\nuse App\\Http\\Route;\n#[Route('/users')]\nclass Written {}\n";
+        $declaration = ParsedSnippet::classLike($code);
+        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Written.php' => $code]), '/project/Written.php');
+        $usages = DeclarationEmitter::attributeUsages($declaration->attrGroups, $scope);
+
+        self::assertCount(1, $usages);
+        self::assertSame("App\\Http\\Route('/users')", $usages[0]->toString());
+    }
+
+    public function testAttributeUsagesOfADeclarationCarryingNoneReadsNone(): void
+    {
+        $code = "<?php\nnamespace App;\nclass Written {}\n";
+        $declaration = ParsedSnippet::classLike($code);
+        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Written.php' => $code]), '/project/Written.php');
+
+        self::assertSame([], DeclarationEmitter::attributeUsages($declaration->attrGroups, $scope));
+    }
+
     /**
      * @param list<string> $expected What the declaration is expected to record
      */

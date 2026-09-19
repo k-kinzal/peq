@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Analyzer\PhpStanAnalyzer\Processor\Declaration;
 
+use App\Analyzer\Declaration\WrittenAttribute;
+use App\Analyzer\Graph\Declaration\AttributeUsage;
 use App\Analyzer\Graph\Edge\Declaration\AttributeEdge;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node;
@@ -51,5 +53,31 @@ final class AttributeProcessor
         }
 
         return $items;
+    }
+
+    /**
+     * Reads the attributes written on a declaration, under the names they resolve to.
+     *
+     * The same attributes are read twice for one declaration: once as relations to
+     * the classes they name, and once as facts about the declaration that carries
+     * them. They are different answers to different questions — what breaks if the
+     * attribute class changes, and which declarations are marked with it — so both
+     * are recorded rather than one being derived from the other at query time.
+     *
+     * @param array<AttributeGroup> $attributeGroups The attribute groups written on the declaration
+     * @param Scope                 $scope           The analyser scope, used to resolve the written names
+     *
+     * @return list<AttributeUsage> The attributes, in source order
+     */
+    public static function usages(array $attributeGroups, Scope $scope): array
+    {
+        $usages = [];
+        foreach ($attributeGroups as $group) {
+            foreach ($group->attrs as $attribute) {
+                $usages[] = WrittenAttribute::usage($attribute, $scope->resolveName($attribute->name));
+            }
+        }
+
+        return $usages;
     }
 }

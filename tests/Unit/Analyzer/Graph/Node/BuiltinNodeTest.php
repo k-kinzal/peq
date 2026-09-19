@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\Graph\Node;
 
+use App\Analyzer\Graph\Declaration\Modifiers;
+use App\Analyzer\Graph\Declaration\SymbolDeclaration;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node\BuiltinNode;
 use App\Analyzer\Graph\NodeId\BuiltinNodeId;
@@ -17,6 +19,8 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(BuiltinNode::class)]
+#[UsesClass(Modifiers::class)]
+#[UsesClass(SymbolDeclaration::class)]
 #[UsesClass(FileMeta::class)]
 #[UsesClass(BuiltinNodeId::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
@@ -55,5 +59,17 @@ final class BuiltinNodeTest extends TestCase
     public function testMetaIsNullForASymbolWithNoKnownLocation(): void
     {
         self::assertNull((new BuiltinNode(new BuiltinNodeId('App\Domain', 'Money')))->meta());
+    }
+
+    public function testDeclarationReturnsWhatTheSourceDeclaresAboutTheSymbol(): void
+    {
+        $declared = new SymbolDeclaration(modifiers: new Modifiers(final: true));
+
+        self::assertSame($declared, (new BuiltinNode(new BuiltinNodeId('App\Domain', 'Money'), true, null, $declared))->declaration());
+    }
+
+    public function testDeclarationIsNullForASymbolAnalysisOnlyReferredTo(): void
+    {
+        self::assertNull((new BuiltinNode(new BuiltinNodeId('App\Domain', 'Money')))->declaration());
     }
 }

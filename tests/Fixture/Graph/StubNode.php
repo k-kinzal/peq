@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Fixture\Graph;
 
+use App\Analyzer\Graph\Declaration\SymbolDeclaration;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId;
@@ -19,16 +20,18 @@ use App\Analyzer\Graph\NodeKind;
 final class StubNode implements Node
 {
     /**
-     * @param NodeId<Node>  $id       The identifier the node is keyed by
-     * @param NodeKind      $kind     The kind the node reports
-     * @param bool          $resolved Whether the node reports itself as resolved
-     * @param null|FileMeta $meta     Where the node reports itself as declared
+     * @param NodeId<Node>           $id          The identifier the node is keyed by
+     * @param NodeKind               $kind        The kind the node reports
+     * @param bool                   $resolved    Whether the node reports itself as resolved
+     * @param null|FileMeta          $meta        Where the node reports itself as declared
+     * @param null|SymbolDeclaration $declaration What the node reports its declaration to say
      */
     public function __construct(
         public readonly NodeId $id,
         public readonly NodeKind $kind = NodeKind::Unknown,
         public readonly bool $resolved = true,
         public readonly ?FileMeta $meta = null,
+        public readonly ?SymbolDeclaration $declaration = null,
     ) {}
 
     /**
@@ -61,5 +64,13 @@ final class StubNode implements Node
     public function meta(): ?FileMeta
     {
         return $this->meta;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function declaration(): ?SymbolDeclaration
+    {
+        return $this->declaration;
     }
 }

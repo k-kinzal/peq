@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer\Graph\Node;
 
+use App\Analyzer\Graph\Declaration\SymbolDeclaration;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId;
@@ -19,14 +20,16 @@ use App\Analyzer\Graph\NodeKind;
 final class TraitNode implements Node
 {
     /**
-     * @param TraitNodeId   $id       Unique identifier for this trait
-     * @param bool          $resolved Whether this node has been fully resolved during analysis
-     * @param null|FileMeta $meta     File location metadata (null if not available)
+     * @param TraitNodeId            $id          Unique identifier for this trait
+     * @param bool                   $resolved    Whether this node has been fully resolved during analysis
+     * @param null|FileMeta          $meta        File location metadata (null if not available)
+     * @param null|SymbolDeclaration $declaration What the source declares about it, or null when analysis did not read its declaration
      */
     public function __construct(
         public readonly TraitNodeId $id,
         public readonly bool $resolved = false,
         public readonly ?FileMeta $meta = null,
+        public readonly ?SymbolDeclaration $declaration = null,
     ) {}
 
     /**
@@ -59,5 +62,13 @@ final class TraitNode implements Node
     public function meta(): ?FileMeta
     {
         return $this->meta;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function declaration(): ?SymbolDeclaration
+    {
+        return $this->declaration;
     }
 }

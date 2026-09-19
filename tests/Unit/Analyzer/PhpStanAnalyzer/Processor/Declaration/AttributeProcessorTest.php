@@ -46,6 +46,24 @@ final class AttributeProcessorTest extends TestCase
         self::assertSame(1, $attribute->meta()->column);
     }
 
+    public function testUsagesRecordsAnAttributeOnTheDeclarationThatCarriesIt(): void
+    {
+        $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(dirname(__DIR__, 5).'/Fixture/Source/Comprehensive.php');
+        $declared = $graph->nodeNamed('Tests\Fixture\Source\ComprehensiveClass')?->declaration();
+
+        self::assertNotNull($declared);
+        self::assertSame(['Tests\Fixture\Source\MyAttribute'], $declared->attributeNames());
+    }
+
+    public function testUsagesRecordsNothingOnADeclarationThatCarriesNoAttribute(): void
+    {
+        $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(dirname(__DIR__, 5).'/Fixture/Source/Comprehensive.php');
+        $declared = $graph->nodeNamed('Tests\Fixture\Source\MyInterface')?->declaration();
+
+        self::assertNotNull($declared);
+        self::assertSame([], $declared->attributeNames());
+    }
+
     public function testProcessRecordsEveryAttributeWrittenOnADeclaration(): void
     {
         $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';

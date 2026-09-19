@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\Graph\Node;
 
+use App\Analyzer\Graph\Declaration\Modifiers;
+use App\Analyzer\Graph\Declaration\SymbolDeclaration;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node\UnknownNode;
 use App\Analyzer\Graph\NodeId\ClassNodeId;
@@ -18,6 +20,8 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(UnknownNode::class)]
+#[UsesClass(Modifiers::class)]
+#[UsesClass(SymbolDeclaration::class)]
 #[UsesClass(FileMeta::class)]
 #[UsesClass(ClassNodeId::class)]
 #[UsesClass(UnknownNodeId::class)]
@@ -77,5 +81,17 @@ final class UnknownNodeTest extends TestCase
     public function testStandingInForReportsTheSymbolAsUnresolved(): void
     {
         self::assertFalse(UnknownNode::standingInFor(ClassNodeId::of('App\Domain\Invoice'))->resolved());
+    }
+
+    public function testDeclarationReturnsWhatTheSourceDeclaresAboutTheSymbol(): void
+    {
+        $declared = new SymbolDeclaration(modifiers: new Modifiers(final: true));
+
+        self::assertSame($declared, (new UnknownNode(new UnknownNodeId('App\Domain\Unresolved'), true, null, $declared))->declaration());
+    }
+
+    public function testDeclarationIsNullForASymbolAnalysisOnlyReferredTo(): void
+    {
+        self::assertNull((new UnknownNode(new UnknownNodeId('App\Domain\Unresolved')))->declaration());
     }
 }

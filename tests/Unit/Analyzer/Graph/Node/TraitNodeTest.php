@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\Graph\Node;
 
+use App\Analyzer\Graph\Declaration\Modifiers;
+use App\Analyzer\Graph\Declaration\SymbolDeclaration;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node\TraitNode;
 use App\Analyzer\Graph\NodeId\TraitNodeId;
@@ -17,6 +19,8 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(TraitNode::class)]
+#[UsesClass(Modifiers::class)]
+#[UsesClass(SymbolDeclaration::class)]
 #[UsesClass(FileMeta::class)]
 #[UsesClass(TraitNodeId::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
@@ -55,5 +59,17 @@ final class TraitNodeTest extends TestCase
     public function testMetaIsNullForASymbolWithNoKnownLocation(): void
     {
         self::assertNull((new TraitNode(new TraitNodeId('App\Domain', 'Timestamped')))->meta());
+    }
+
+    public function testDeclarationReturnsWhatTheSourceDeclaresAboutTheSymbol(): void
+    {
+        $declared = new SymbolDeclaration(modifiers: new Modifiers(final: true));
+
+        self::assertSame($declared, (new TraitNode(new TraitNodeId('App\Domain', 'Timestamped'), true, null, $declared))->declaration());
+    }
+
+    public function testDeclarationIsNullForASymbolAnalysisOnlyReferredTo(): void
+    {
+        self::assertNull((new TraitNode(new TraitNodeId('App\Domain', 'Timestamped')))->declaration());
     }
 }

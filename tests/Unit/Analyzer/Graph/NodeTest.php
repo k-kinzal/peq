@@ -93,6 +93,14 @@ final class NodeTest extends TestCase
         self::assertNotSame(NodeKind::Unknown, $kind === NodeKind::Unknown ? NodeKind::Klass : $kind);
     }
 
+    #[DataProvider('providerEveryKindOfNode')]
+    public function testDeclarationIsAbsentUntilAnalysisReadsIt(Node $node, NodeKind $kind, string $identifier): void
+    {
+        self::assertNull($node->declaration());
+        self::assertSame($identifier, $node->id()->toString());
+        self::assertSame($kind, $node->kind());
+    }
+
     /**
      * @return iterable<string, array{Node, NodeKind, string}>
      */

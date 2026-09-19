@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer\PhpStanAnalyzer\Processor\Declaration;
 
+use App\Analyzer\Declaration\DeclarationReader;
 use App\Analyzer\Graph\Edge\Declaration\AttributeEdge;
 use App\Analyzer\Graph\Edge\Declaration\ConstantEdge;
 use App\Analyzer\Graph\FileMeta;
@@ -44,9 +45,16 @@ final class ClassConstProcessor
         $owner = new ClassNode(ClassNodeId::of($className), true, null);
         $meta = new FileMeta($scope->getFile(), $node->getStartLine(), 1);
 
+        $attributes = AttributeProcessor::usages($node->attrGroups, $scope);
+
         $items = [];
         foreach ($node->consts as $constant) {
-            $declared = new ConstantNode(ConstantNodeId::of($className, $constant->name->toString()), true, $meta);
+            $declared = new ConstantNode(
+                ConstantNodeId::of($className, $constant->name->toString()),
+                true,
+                $meta,
+                DeclarationReader::forConstant($node, $constant, $attributes),
+            );
 
             $items[] = $declared;
             $items[] = new ConstantEdge($owner, $declared, $meta);

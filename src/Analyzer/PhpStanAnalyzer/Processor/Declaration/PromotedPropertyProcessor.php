@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer\PhpStanAnalyzer\Processor\Declaration;
 
+use App\Analyzer\Declaration\DeclarationReader;
 use App\Analyzer\Graph\Edge\Declaration\AttributeEdge;
 use App\Analyzer\Graph\Edge\Declaration\PropertyEdge;
 use App\Analyzer\Graph\Edge\Declaration\TypePropertyEdge;
@@ -54,7 +55,12 @@ final class PromotedPropertyProcessor
 
         $className = $classReflection->getName();
         $meta = new FileMeta($scope->getFile(), $node->getStartLine(), 1);
-        $declared = new PropertyNode(PropertyNodeId::of($className, $node->var->name), true, $meta);
+        $declared = new PropertyNode(
+            PropertyNodeId::of($className, $node->var->name),
+            true,
+            $meta,
+            DeclarationReader::forPromotedProperty($node, AttributeProcessor::usages($node->attrGroups, $scope)),
+        );
 
         $items = [
             $declared,

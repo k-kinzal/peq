@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer\PhpStanAnalyzer\Processor\Declaration;
 
+use App\Analyzer\Declaration\DeclarationReader;
 use App\Analyzer\Graph\Edge\Declaration\AttributeEdge;
 use App\Analyzer\Graph\Edge\Declaration\EnumCaseEdge;
 use App\Analyzer\Graph\FileMeta;
@@ -41,7 +42,12 @@ final class EnumCaseProcessor
 
         $className = $classReflection->getName();
         $meta = new FileMeta($scope->getFile(), $node->getStartLine(), 1);
-        $declared = new EnumCaseNode(EnumCaseNodeId::of($className, $node->name->toString()), true, $meta);
+        $declared = new EnumCaseNode(
+            EnumCaseNodeId::of($className, $node->name->toString()),
+            true,
+            $meta,
+            DeclarationReader::forEnumCase($node, AttributeProcessor::usages($node->attrGroups, $scope)),
+        );
 
         return [
             $declared,
