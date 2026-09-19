@@ -38,7 +38,7 @@ final class DefaultConfigReader implements ConfigReader
             'includes' => [],
             'excludes' => [],
             'phpVersion' => PhpVersion::host()->toString(),
-            'type' => 'phpstan',
+            'type' => AnalyzerKind::preferred()->value,
             'debug' => [
                 'depth' => 5,
                 'seed' => null,

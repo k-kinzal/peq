@@ -27,6 +27,11 @@ deptrac:
         - type: directory
           value: src/Analyzer/PhpStanAnalyzer/.*
 
+    - name: NativeAnalyzer
+      collectors:
+        - type: directory
+          value: src/Analyzer/NativeAnalyzer/.*
+
     - name: DebugAnalyzer
       collectors:
         - type: directory
@@ -66,6 +71,7 @@ deptrac:
     Action:
       - Analyzer
       - PhpStanAnalyzer
+      - NativeAnalyzer
       - DebugAnalyzer
       - Graph
       - Config
@@ -74,6 +80,10 @@ deptrac:
       - Graph
 
     PhpStanAnalyzer:
+      - Analyzer
+      - Graph
+
+    NativeAnalyzer:
       - Analyzer
       - Graph
 

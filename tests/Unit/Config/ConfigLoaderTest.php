@@ -26,6 +26,7 @@ use Tests\Fixture\Config\StubConfigReader;
 #[UsesClass(\App\Config\Config::class)]
 #[UsesClass(\App\Config\DebugAnalyzerConfig::class)]
 #[UsesClass(\App\Config\RawConfig::class)]
+#[UsesClass(\App\Config\AnalyzerKind::class)]
 #[Small]
 final class ConfigLoaderTest extends TestCase
 {

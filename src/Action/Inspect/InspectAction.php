@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Action\Inspect;
 
 use App\Analyzer\DebugAnalyzer\DebugAnalyzer;
+use App\Analyzer\NativeAnalyzer\NativeAnalyzer;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use App\Config\AnalyzerKind;
 
@@ -40,6 +41,10 @@ final class InspectAction
                 includes: $config->includes,
                 excludes: $config->excludes,
                 phpVersion: $config->phpVersion?->id,
+            ),
+            AnalyzerKind::Native => new NativeAnalyzer(
+                includes: $config->includes,
+                excludes: $config->excludes,
             ),
             AnalyzerKind::Debug => new DebugAnalyzer(
                 seed: $config->debug->seed,

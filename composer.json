@@ -17,7 +17,7 @@
     ],
     "require": {
         "php": "^8.3",
-        "phpstan/phpstan": "^2.0",
+        "nikic/php-parser": "^5.0",
         "symfony/config": "^6.4 || ^7.0",
         "symfony/console": "^6.4 || ^7.0",
         "symfony/dependency-injection": "^6.4 || ^7.0",
@@ -34,6 +34,7 @@
         "mikey179/vfsstream": "^1.6",
         "phpbench/phpbench": "^1.2",
         "phpcompatibility/php-compatibility": "^10.0@alpha",
+        "phpstan/phpstan": "^2.0",
         "phpstan/phpstan-strict-rules": "^2.0",
         "phpunit/phpunit": "^10.5.46",
         "squizlabs/php_codesniffer": "^4.0"
@@ -56,6 +57,7 @@
         "bin/console"
     ],
     "config": {
+        "process-timeout": 0,
         "allow-plugins": {
             "bamarni/composer-bin-plugin": true,
             "dealerdirect/phpcodesniffer-composer-installer": true
@@ -102,6 +104,7 @@
             "@composer bin box require --dev humbug/box"
         ],
         "test": "phpunit --exclude-group=pbt",
+        "test:equivalence": "phpunit tests/Equivalence",
         "test:contract": "phpunit --testsuite contract --exclude-group=pbt",
         "test:integration": "phpunit --testsuite integration --exclude-group=pbt",
         "test:pbt": "phpunit --group=pbt",

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Analyzer\PhpStanAnalyzer;
+namespace App\Analyzer;
 
 use Symfony\Component\Finder\Finder;
 
@@ -14,7 +14,7 @@ use Symfony\Component\Finder\Finder;
  * path, and a path that cannot be resolved on disk is left out rather than passed on
  * — an analysis run should not fail on a symlink that was removed underneath it.
  *
- * @visibility namespace
+ * @visibility App\Analyzer
  */
 final class PhpFileCollector
 {

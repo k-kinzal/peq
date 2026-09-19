@@ -60,12 +60,16 @@ final readonly class Config
      *
      * @example Every field arrives typed, whatever the source could carry
      *     \App\Config\Config::fromArray([
-     *         'basePath' => '/project', 'direction' => 'used-by', 'type' => 'phpstan',
+     *         'basePath' => '/project', 'direction' => 'used-by', 'type' => 'native',
      *     ])->direction // => \App\Analyzer\Graph\Direction::UsedBy
      * @example A direction that names no way of reading the graph is rejected
      *     \App\Config\Config::fromArray([
-     *         'basePath' => '/project', 'direction' => 'sideways', 'type' => 'phpstan',
+     *         'basePath' => '/project', 'direction' => 'sideways', 'type' => 'native',
      *     ]) // throws \App\Config\ConfigException: direction
+     * @example An analyzer this build does not carry is rejected the same way
+     *     \App\Config\Config::fromArray([
+     *         'basePath' => '/project', 'direction' => 'uses', 'type' => 'nonesuch',
+     *     ]) // throws \App\Config\ConfigException: type
      *
      * @throws ConfigException If any field is missing or cannot be read as its type
      */
@@ -80,7 +84,7 @@ final readonly class Config
             includes: $raw->stringList('includes'),
             excludes: $raw->stringList('excludes'),
             phpVersion: $raw->optionalPhpVersion('phpVersion'),
-            analyzer: $raw->enum('type', AnalyzerKind::class),
+            analyzer: $raw->oneOf('type', AnalyzerKind::available()),
             debug: DebugAnalyzerConfig::fromRaw($raw->nested('debug')),
         );
     }

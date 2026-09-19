@@ -202,6 +202,38 @@ jobs:
       - name: Compile the PHAR
         run: composer compile
 
+      - name: Check the PHAR carries no static analyser
+        run: |
+          set -euo pipefail
+
+          php -r '
+            $phar = new Phar("dist/peq.phar");
+            $carried = 0;
+            foreach (new RecursiveIteratorIterator($phar) as $file) {
+                if (str_contains((string) $file, "phpstan")) {
+                    $carried++;
+                }
+            }
+            if ($carried !== 0) {
+                fwrite(STDERR, sprintf("The PHAR carries %d PHPStan files; it is meant to carry none.\n", $carried));
+                exit(1);
+            }
+          '
+
+      - name: Check the PHAR offers only the engines it carries
+        run: |
+          set -euo pipefail
+
+          ./dist/peq.phar --help inspect | grep -q -- '--type=TYPE *Analyzer type (native|debug)'
+
+          if ./dist/peq.phar 'App\Analyzer\Graph\Graph' src --type=phpstan >/dev/null 2>&1; then
+            echo 'The PHAR accepted an analyzer it does not carry.' >&2
+            exit 1
+          fi
+
+      - name: Check the PHAR reads a source tree
+        run: ./dist/peq.phar 'App\Analyzer\Graph\Graph' src -L 1 | grep -q 'App\\Analyzer\\Graph\\Graph::addEdge'
+
       - name: Upload the PHAR
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
