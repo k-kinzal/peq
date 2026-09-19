@@ -66,12 +66,17 @@ final class DatumIdentity
      *     \App\Gql\Datum\DatumIdentity::number(new \App\Gql\Datum\FloatDatum(2.0)) // => '2'
      * @example One with a fractional part keeps it
      *     \App\Gql\Datum\DatumIdentity::number(new \App\Gql\Datum\FloatDatum(2.5)) // => '2.5'
+     * @example A result that is not a number groups with the other results that are not
+     *     \App\Gql\Datum\DatumIdentity::number(new \App\Gql\Datum\FloatDatum(NAN)) // => 'NAN'
      *
      * @return string The number, in a form equal numbers share
      */
     public static function number(Datum $value): string
     {
         $number = DatumOrder::numberOf($value);
+        if (is_float($number) && is_nan($number)) {
+            return 'NAN';
+        }
         if (is_float($number) && floor($number) === $number && is_finite($number)) {
             return number_format($number, 0, '.', '');
         }

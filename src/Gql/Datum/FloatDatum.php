@@ -51,20 +51,34 @@ final class FloatDatum implements Datum
      * A number that happens to have no fractional part keeps one, so that a column of
      * averages reads as a column of averages rather than as a mixture.
      *
+     * The two results that are not numbers are named rather than converted. PHP warns
+     * when an undefined result is turned into text, which is the right warning to get
+     * in most code and the wrong one here: a query that computed one has an answer to
+     * report, and reporting it should not disturb the run that asked.
+     *
      * @example An approximate number is shown as one
      *     (new \App\Gql\Datum\FloatDatum(1.5))->toText() // => '1.5'
      * @example One that came out whole still says it is approximate
      *     (new \App\Gql\Datum\FloatDatum(2.0))->toText() // => '2.0'
+     * @example A result that is not a number is named
+     *     (new \App\Gql\Datum\FloatDatum(NAN))->toText() // => 'NAN'
+     * @example One beyond every number is named, with its sign
+     *     (new \App\Gql\Datum\FloatDatum(-INF))->toText() // => '-INF'
      *
      * @return string The number, written out
      */
     #[Override]
     public function toText(): string
     {
+        if (is_nan($this->value)) {
+            return 'NAN';
+        }
+        if (is_infinite($this->value)) {
+            return $this->value > 0 ? 'INF' : '-INF';
+        }
+
         $written = (string) $this->value;
 
-        return str_contains($written, '.') || str_contains($written, 'E') || str_contains($written, 'N') || str_contains($written, 'I')
-            ? $written
-            : $written.'.0';
+        return str_contains($written, '.') || str_contains($written, 'E') ? $written : $written.'.0';
     }
 }
