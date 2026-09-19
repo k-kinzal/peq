@@ -71,8 +71,7 @@ final class PathDatum implements Datum
      * Returns the nodes the path passes through, in order.
      *
      * @example A path of one edge passes through two nodes
-     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('a'))
-     *         ->continuedBy(new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
+     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('a'))->continuedBy(new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
      *     count($path->nodes()) // => 2
      *
      * @return list<NodeDatum> The nodes
@@ -155,12 +154,10 @@ final class PathDatum implements Datum
      * way, and drawing it the other way would say the opposite of what was found.
      *
      * @example A path reads as the chain it is
-     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('a'))
-     *         ->continuedBy(new \App\Gql\Datum\EdgeDatum('e', ['calls'], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
+     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('a'))->continuedBy(new \App\Gql\Datum\EdgeDatum('e', ['calls'], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
      *     $path->toText() // => 'a -[calls]-> b'
      * @example An edge crossed the other way keeps pointing the way it points
-     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('b'))
-     *         ->continuedBy(new \App\Gql\Datum\EdgeDatum('e', ['calls'], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('a'));
+     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('b'))->continuedBy(new \App\Gql\Datum\EdgeDatum('e', ['calls'], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('a'));
      *     $path->toText() // => 'b <-[calls]- a'
      *
      * @return string The path, written as a chain

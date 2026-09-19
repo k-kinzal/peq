@@ -58,7 +58,7 @@ final class TokenList
      *
      * @example Looking ahead does not move the reading on
      *     $pieces = \App\Gql\Lexing\Lexer::over('p = (a)')->tokenize();
-     *     $pieces->peek()->lexeme; // => '='
+     *     $pieces->peek()->lexeme // => '='
      *     $pieces->current()->value // => 'p'
      *
      * @return Token The piece there, or the end of the query

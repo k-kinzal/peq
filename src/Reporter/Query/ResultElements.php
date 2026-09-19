@@ -147,8 +147,7 @@ final class ResultElements
      * @param list<Datum> $values The values
      *
      * @example A path is read as everything it is made of
-     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('a'))
-     *         ->continuedBy(new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
+     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('a'))->continuedBy(new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
      *     count(\App\Reporter\Query\ResultElements::flattened([$path])) // => 4
      *
      * @return list<Datum> The values, with the contents of lists and paths beside them

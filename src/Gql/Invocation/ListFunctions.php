@@ -91,7 +91,7 @@ final class ListFunctions
      * @param Datum $value The list, or a path read as its edges
      *
      * @example A list reads as the values it holds
-     *     \App\Gql\Invocation\ListFunctions::items(new \App\Gql\Datum\ListDatum([new \App\Gql\Datum\IntegerDatum(1)])) // => [new \App\Gql\Datum\IntegerDatum(1)]
+     *     \App\Gql\Invocation\ListFunctions::items(new \App\Gql\Datum\ListDatum([new \App\Gql\Datum\IntegerDatum(1)]))[0]->toText() // => '1'
      * @example Anything else is reported under the status GQL gives it
      *     \App\Gql\Invocation\ListFunctions::items(new \App\Gql\Datum\StringDatum('a')) // throws \App\Gql\GqlException: invalid value type
      *

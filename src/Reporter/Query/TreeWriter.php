@@ -95,8 +95,7 @@ final class TreeWriter implements QueryReporter
      * @example A path that crosses nothing is one step
      *     count(\App\Reporter\Query\TreeWriter::steps(\App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('a')))) // => 1
      * @example A path that crosses one relation is two
-     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('a'))
-     *         ->continuedBy(new \App\Gql\Datum\EdgeDatum('e', ['calls'], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
+     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('a'))->continuedBy(new \App\Gql\Datum\EdgeDatum('e', ['calls'], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
      *     count(\App\Reporter\Query\TreeWriter::steps($path)) // => 2
      *
      * @return list<TreeStep> The steps, beginning where the path begins

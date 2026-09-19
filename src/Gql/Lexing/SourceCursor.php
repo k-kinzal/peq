@@ -118,7 +118,7 @@ final class SourceCursor
      *
      * @example Taking moves the cursor past what it returns
      *     $cursor = new \App\Gql\Lexing\SourceCursor('MATCH (p)');
-     *     $cursor->take(5); // => 'MATCH'
+     *     $cursor->take(5) // => 'MATCH'
      *     $cursor->peek() // => ' '
      * @example A newline moves the cursor to the next line
      *     $cursor = new \App\Gql\Lexing\SourceCursor("a\nb");

@@ -35,9 +35,7 @@ final class PathModeRule
      *     $state = \App\Gql\Matching\MatchState::before(\App\Gql\Binding\BindingRow::unit());
      *     \App\Gql\Matching\PathModeRule::allowsEdge(\App\Gql\Syntax\Pattern\PathMode::Walk, $state, new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b')) // => true
      * @example A relation already crossed is refused by the mode that forbids it
-     *     $state = \App\Gql\Matching\MatchState::before(\App\Gql\Binding\BindingRow::unit())
-     *         ->startingAt(new \App\Gql\Datum\NodeDatum('a'))
-     *         ->across(new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
+     *     $state = \App\Gql\Matching\MatchState::before(\App\Gql\Binding\BindingRow::unit())->startingAt(new \App\Gql\Datum\NodeDatum('a'))->across(new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
      *     \App\Gql\Matching\PathModeRule::allowsEdge(\App\Gql\Syntax\Pattern\PathMode::Trail, $state, new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b')) // => false
      *
      * @return bool True when the mode allows it
@@ -65,14 +63,10 @@ final class PathModeRule
      * @param NodeDatum  $node  The symbol about to be arrived at
      *
      * @example Coming back to where the path started is allowed by one mode
-     *     $state = \App\Gql\Matching\MatchState::before(\App\Gql\Binding\BindingRow::unit())
-     *         ->startingAt(new \App\Gql\Datum\NodeDatum('a'))
-     *         ->across(new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
+     *     $state = \App\Gql\Matching\MatchState::before(\App\Gql\Binding\BindingRow::unit())->startingAt(new \App\Gql\Datum\NodeDatum('a'))->across(new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
      *     \App\Gql\Matching\PathModeRule::allowsNode(\App\Gql\Syntax\Pattern\PathMode::Simple, $state, new \App\Gql\Datum\NodeDatum('a')) // => true
      * @example And forbidden by the other
-     *     $state = \App\Gql\Matching\MatchState::before(\App\Gql\Binding\BindingRow::unit())
-     *         ->startingAt(new \App\Gql\Datum\NodeDatum('a'))
-     *         ->across(new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
+     *     $state = \App\Gql\Matching\MatchState::before(\App\Gql\Binding\BindingRow::unit())->startingAt(new \App\Gql\Datum\NodeDatum('a'))->across(new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
      *     \App\Gql\Matching\PathModeRule::allowsNode(\App\Gql\Syntax\Pattern\PathMode::Acyclic, $state, new \App\Gql\Datum\NodeDatum('a')) // => false
      *
      * @return bool True when the mode allows it

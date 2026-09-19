@@ -38,8 +38,7 @@ final class GraphFunctions
      * @param Datum $value The path
      *
      * @example A path of one relation passes through two symbols
-     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('a'))
-     *         ->continuedBy(new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
+     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('a'))->continuedBy(new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
      *     \App\Gql\Invocation\GraphFunctions::nodes($path)->toText() // => '[a, b]'
      *
      * @return Datum The symbols, or the absence of them
@@ -61,8 +60,7 @@ final class GraphFunctions
      * @param Datum $value The path
      *
      * @example The relations of a path are what a reader goes and looks at
-     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('a'))
-     *         ->continuedBy(new \App\Gql\Datum\EdgeDatum('e', ['calls'], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
+     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('a'))->continuedBy(new \App\Gql\Datum\EdgeDatum('e', ['calls'], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
      *     \App\Gql\Invocation\GraphFunctions::edges($path)->toText() // => '[a -[calls]-> b]'
      *
      * @return Datum The relations, or the absence of them
@@ -84,8 +82,7 @@ final class GraphFunctions
      * @param Datum $value The path
      *
      * @example A path of one relation is made of three things
-     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('a'))
-     *         ->continuedBy(new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
+     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('a'))->continuedBy(new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
      *     \App\Gql\Invocation\GraphFunctions::elements($path)->kind() // => \App\Gql\Datum\DatumKind::ListOf
      *
      * @return Datum The symbols and relations, or the absence of them
