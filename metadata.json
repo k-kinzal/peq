@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M2WVVSAMR37AF5TEF4XTRZDM",
+  "strategy": "manual-commit",
+  "branch": "feat/php-version-support-range",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".github/workflows/ci.yaml",
+    "README.md",
+    "composer.json",
+    "composer.lock"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 172,
+    "cache_creation_tokens": 224533,
+    "cache_read_tokens": 13796501,
+    "output_tokens": 98764,
+    "api_call_count": 86
+  }
+}
