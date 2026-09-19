@@ -236,6 +236,19 @@ jobs:
       - name: Check the PHAR reads a source tree
         run: ./dist/peq.phar 'App\Analyzer\Graph\Graph' src -L 1 | grep -q 'App\\Analyzer\\Graph\\Graph::addEdge'
 
+      - name: Check the PHAR writes every format it offers
+        run: |
+          set -euo pipefail
+
+          ./dist/peq.phar --help inspect | grep -q -- '--output=OUTPUT *Output format (tree|json|dot|table)'
+
+          ./dist/peq.phar 'App\Analyzer\Graph\Graph' src -L 1 --output=json \
+            | php -r 'json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);'
+
+          ./dist/peq.phar 'App\Analyzer\Graph\Graph' src -L 1 --output=dot | grep -q '^digraph '
+
+          ./dist/peq.phar 'App\Analyzer\Graph\Graph' src -L 1 --output=table | grep -q '| Depth | Symbol'
+
       - name: Upload the PHAR
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:

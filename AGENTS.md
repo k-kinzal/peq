@@ -85,6 +85,10 @@ draw for each one. That is what makes `tests/Unit/Reporter/ReporterTest.php` —
 runs every reporter over the same graph — a contract rather than a smoke test, and it
 is why the four formats can be compared line for line.
 
+A reporter in a directory of its own needs a `deptrac.yaml` layer of its own. Without
+one its boundaries are unenforced while the report still reads zero violations, which
+is how the native analyzer shipped unchecked for a release.
+
 ## Keeping the Two Engines Identical
 
 `NativeAnalyzer` exists to produce the graph `PhpStanAnalyzer` produces, faster. That
