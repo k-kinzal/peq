@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M2XPN411D81XP71SG92EBNFT",
+  "strategy": "manual-commit",
+  "branch": "feat/output-format",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/Unit/Reporter/TreeReporter/TreeReporterTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 346,
+    "cache_creation_tokens": 370986,
+    "cache_read_tokens": 46240193,
+    "output_tokens": 177401,
+    "api_call_count": 173
+  }
+}
