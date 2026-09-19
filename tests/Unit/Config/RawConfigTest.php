@@ -275,6 +275,63 @@ final class RawConfigTest extends TestCase
     }
 
     /**
+     * @throws ConfigException
+     */
+    public function testOptionalPhpVersionReadsTheVersionASourceNames(): void
+    {
+        self::assertSame(70100, (new RawConfig(['phpVersion' => '7.1']))->optionalPhpVersion('phpVersion')?->id);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testOptionalPhpVersionReadsNothingForASettingTheSourceLeftOut(): void
+    {
+        self::assertNull((new RawConfig([]))->optionalPhpVersion('phpVersion'));
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testOptionalPhpVersionReadsNothingForASettingLeftWithNoValue(): void
+    {
+        self::assertNull((new RawConfig(['phpVersion' => null]))->optionalPhpVersion('phpVersion'));
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testOptionalPhpVersionRejectsAVersionTheAnalysisCannotRead(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Invalid configuration "phpVersion": expected a PHP version between 7.1 and 8.5, got "5.6".');
+
+        (new RawConfig(['phpVersion' => '5.6']))->optionalPhpVersion('phpVersion');
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testOptionalPhpVersionRejectsTextThatNamesNoVersion(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('expected a PHP version between 7.1 and 8.5, got "latest"');
+
+        (new RawConfig(['phpVersion' => 'latest']))->optionalPhpVersion('phpVersion');
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testOptionalPhpVersionRejectsAVersionWrittenAsANumber(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('expected a PHP version written as text, such as "7.1", got 8.3 (float)');
+
+        (new RawConfig(['phpVersion' => 8.3]))->optionalPhpVersion('phpVersion');
+    }
+
+    /**
      * @param null|ConfigField $value
      */
     #[DataProvider('providerRejectedValuesAndTheirDescriptions')]

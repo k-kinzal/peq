@@ -39,6 +39,7 @@ final class InspectAction
             AnalyzerKind::PhpStan => new PhpStanAnalyzer(
                 includes: $config->includes,
                 excludes: $config->excludes,
+                phpVersion: $config->phpVersion?->id,
             ),
             AnalyzerKind::Debug => new DebugAnalyzer(
                 seed: $config->debug->seed,

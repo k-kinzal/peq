@@ -17,6 +17,7 @@ use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\Parser;
 use PhpParser\ParserFactory;
+use PhpParser\PhpVersion as PhpParserVersion;
 
 /**
  * The syntax tree of a file as it is written, read again from disk.
@@ -30,6 +31,11 @@ use PhpParser\ParserFactory;
  * A file is parsed once per instance and kept, because a file holds many methods and
  * every one of them would otherwise pay for the same parse. The lifetime of that
  * memory is the lifetime of this object, which is one analysis run.
+ *
+ * The file is read for the same PHP version the analysis is run for. A file the
+ * analysis could read and this could not would lose every relation written inside
+ * its method bodies without losing the declarations around them, which is the one
+ * way a dependency graph can be wrong while looking complete.
  *
  * @visibility namespace
  */
@@ -56,6 +62,36 @@ final class ReparsedSource
     private ?NodeFinder $finder = null;
 
     /**
+     * @param null|int $phpVersion The PHP version the sources are read as, in PHP_VERSION_ID
+     *                             form, or null to read them as the version peq runs on
+     */
+    public function __construct(
+        private readonly ?int $phpVersion = null,
+    ) {}
+
+    /**
+     * Builds the parser that reads a file as the configured PHP version.
+     *
+     * PHP-Parser reads a version it is told about rather than the one it runs on, so
+     * the same syntax that the analysis accepts is accepted here: a method named
+     * `match` in a PHP 7 source, a property hook in a PHP 8.4 one.
+     *
+     * @return Parser The parser for the configured version, or for the version peq
+     *                runs on when no version was configured
+     */
+    public function parser(): Parser
+    {
+        if ($this->phpVersion === null) {
+            return (new ParserFactory())->createForHostVersion();
+        }
+
+        return (new ParserFactory())->createForVersion(PhpParserVersion::fromComponents(
+            intdiv($this->phpVersion, 10000),
+            intdiv($this->phpVersion, 100) % 100,
+        ));
+    }
+
+    /**
      * Returns the statements of a file, with every name resolved to its full form.
      *
      * A file that cannot be read or cannot be parsed yields null, and the failure is
@@ -76,7 +112,7 @@ final class ReparsedSource
             return $this->parsedFiles[$file] = null;
         }
 
-        $this->parser ??= (new ParserFactory())->createForHostVersion();
+        $this->parser ??= $this->parser();
 
         $syntaxErrors = new Collecting();
         $parsed = $this->parser->parse($contents, $syntaxErrors);

@@ -12,8 +12,9 @@ use App\Analyzer\Graph\Direction;
  * This value object holds all configuration parameters for the dependency analysis,
  * including the target path, analysis direction, depth limits, and file filtering rules.
  * Every field is typed as narrowly as its meaning allows: the direction is the same
- * closed type the graph classifies its edges with, the analyzer is a closed kind, and
- * the debug settings always exist rather than existing only when the debug analyzer
+ * closed type the graph classifies its edges with, the analyzer is a closed kind, the
+ * PHP version of the analysed sources is one the analysis is able to read, and the
+ * debug settings always exist rather than existing only when the debug analyzer
  * happens to be selected.
  *
  * @phpstan-import-type ConfigFields from ConfigReader
@@ -21,13 +22,15 @@ use App\Analyzer\Graph\Direction;
 final readonly class Config
 {
     /**
-     * @param string              $basePath  The base path for the PHP project to analyze
-     * @param Direction           $direction Which way the dependency graph is read
-     * @param null|int            $level     Deepest level to report, or null for the whole graph
-     * @param list<string>        $includes  File path patterns to include in analysis
-     * @param list<string>        $excludes  File path patterns to exclude from analysis
-     * @param AnalyzerKind        $analyzer  Which analyzer builds the graph
-     * @param DebugAnalyzerConfig $debug     Settings for the synthetic graph of the debug analyzer
+     * @param string              $basePath   The base path for the PHP project to analyze
+     * @param Direction           $direction  Which way the dependency graph is read
+     * @param null|int            $level      Deepest level to report, or null for the whole graph
+     * @param list<string>        $includes   File path patterns to include in analysis
+     * @param list<string>        $excludes   File path patterns to exclude from analysis
+     * @param null|PhpVersion     $phpVersion The PHP version the analysed sources are read as, or
+     *                                        null to read them as the version peq runs on
+     * @param AnalyzerKind        $analyzer   Which analyzer builds the graph
+     * @param DebugAnalyzerConfig $debug      Settings for the synthetic graph of the debug analyzer
      */
     public function __construct(
         public string $basePath,
@@ -35,6 +38,7 @@ final readonly class Config
         public ?int $level = null,
         public array $includes = [],
         public array $excludes = [],
+        public ?PhpVersion $phpVersion = null,
         public AnalyzerKind $analyzer = AnalyzerKind::PhpStan,
         public DebugAnalyzerConfig $debug = new DebugAnalyzerConfig(),
     ) {
@@ -75,6 +79,7 @@ final readonly class Config
             level: $raw->optionalPositiveInt('level'),
             includes: $raw->stringList('includes'),
             excludes: $raw->stringList('excludes'),
+            phpVersion: $raw->optionalPhpVersion('phpVersion'),
             analyzer: $raw->enum('type', AnalyzerKind::class),
             debug: DebugAnalyzerConfig::fromRaw($raw->nested('debug')),
         );

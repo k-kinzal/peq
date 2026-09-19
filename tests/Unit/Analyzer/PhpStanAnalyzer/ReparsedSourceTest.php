@@ -46,6 +46,36 @@ final class ReparsedSourceTest extends TestCase
         self::assertNull((new ReparsedSource())->statements(__DIR__.'/nonexistent.php'));
     }
 
+    public function testParserReadsSyntaxOnlyThePhpVersionItWasGivenAdmits(): void
+    {
+        self::assertNotNull((new ReparsedSource(70100))->parser()->parse('<?php function first(string $text) { return $text{0}; }'));
+    }
+
+    public function testParserReadsTheVersionPeqRunsOnWhenItWasGivenNone(): void
+    {
+        self::assertNotNull((new ReparsedSource())->parser()->parse('<?php $count = 1;'));
+    }
+
+    public function testStatementsReadsAFileAsThePhpVersionItWasGiven(): void
+    {
+        self::assertNotEmpty((new ReparsedSource(70100))->statements(dirname(__DIR__, 3).'/Fixture/Target/Php71.php.inc'));
+    }
+
+    public function testStatementsReportsNothingForAFileThePhpVersionItWasGivenCannotParse(): void
+    {
+        self::assertNull((new ReparsedSource(80300))->statements(dirname(__DIR__, 3).'/Fixture/Target/Php71.php.inc'));
+    }
+
+    public function testStatementsReadsAFileWrittenForAVersionNewerThanTheOneItWasGivenAsUnparseable(): void
+    {
+        self::assertNull((new ReparsedSource(80000))->statements(dirname(__DIR__, 3).'/Fixture/Target/Php81.php.inc'));
+    }
+
+    public function testStatementsReadsAPatchReleaseAsTheMinorVersionItBelongsTo(): void
+    {
+        self::assertNotEmpty((new ReparsedSource(70199))->statements(dirname(__DIR__, 3).'/Fixture/Target/Php71.php.inc'));
+    }
+
     public function testStatementsReportsNothingForAFileThatIsNotValidPhp(): void
     {
         $file = tempnam(sys_get_temp_dir(), 'peq-unparseable-');

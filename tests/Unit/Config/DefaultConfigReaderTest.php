@@ -44,6 +44,25 @@ final class DefaultConfigReaderTest extends TestCase
     /**
      * @throws \App\Config\ConfigException
      */
+    public function testReadNamesThePhpVersionTheAnalysedSourcesAreReadAs(): void
+    {
+        self::assertSame(
+            \App\Config\PhpVersion::host()->toString(),
+            (new DefaultConfigReader())->read()['phpVersion'] ?? null,
+        );
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadNamesAPhpVersionTheAnalysisCanBeAskedFor(): void
+    {
+        self::assertNotNull(Config::fromArray((new DefaultConfigReader())->read())->phpVersion);
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
     public function testReadLeavesTheReportUnbounded(): void
     {
         $defaults = (new DefaultConfigReader())->read();

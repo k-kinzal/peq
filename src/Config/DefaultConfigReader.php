@@ -15,6 +15,10 @@ use Override;
  * when merged by the ConfigLoader. It should typically be registered first in the
  * ConfigLoader's reader chain to establish a foundation of sensible defaults.
  *
+ * The PHP version of the analysed sources is among them, so that an analysis is
+ * always run for a version someone can name rather than for whichever one the
+ * analysis engine would have settled on unasked.
+ *
  * @phpstan-import-type ConfigFields from ConfigReader
  */
 final class DefaultConfigReader implements ConfigReader
@@ -33,6 +37,7 @@ final class DefaultConfigReader implements ConfigReader
             'level' => null,
             'includes' => [],
             'excludes' => [],
+            'phpVersion' => PhpVersion::host()->toString(),
             'type' => 'phpstan',
             'debug' => [
                 'depth' => 5,

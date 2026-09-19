@@ -7,7 +7,9 @@ namespace Tests\Unit\Analyzer\PhpStanAnalyzer;
 use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
 use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
 use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
+use App\Analyzer\PhpStanAnalyzer\ReparsedSource;
 use App\Analyzer\PhpStanAnalyzer\WorkingDirectory;
+use PHPStan\DependencyInjection\MissingServiceException;
 use PHPStan\DependencyInjection\ParameterNotFoundException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Medium;
@@ -98,5 +100,45 @@ final class ContainerFactoryTest extends TestCase
         $files = [dirname(__DIR__, 3).'/Fixture/Sample/AnalysedSample.php'];
 
         self::assertNotSame($factory->create($files, [DependencyCollector::class]), $factory->create($files, [DependencyCollector::class]));
+    }
+
+    /**
+     * @throws ParameterNotFoundException
+     */
+    public function testCreateAnalysesTheSourcesAsThePhpVersionItWasGiven(): void
+    {
+        $container = (new ContainerFactory())->create([dirname(__DIR__, 3).'/Fixture/Sample/AnalysedSample.php'], [DependencyCollector::class], 70100);
+
+        self::assertSame(70100, $container->getParameter('phpVersion'));
+    }
+
+    /**
+     * @throws ParameterNotFoundException
+     */
+    public function testCreateLeavesThePhpVersionToPhpStanWhenItWasGivenNone(): void
+    {
+        $container = (new ContainerFactory())->create([dirname(__DIR__, 3).'/Fixture/Sample/AnalysedSample.php'], [DependencyCollector::class]);
+
+        self::assertNull($container->getParameter('phpVersion'));
+    }
+
+    /**
+     * @throws MissingServiceException
+     */
+    public function testCreateReadsMethodBodiesAsThePhpVersionItWasGiven(): void
+    {
+        $container = (new ContainerFactory())->create([dirname(__DIR__, 3).'/Fixture/Sample/AnalysedSample.php'], [InClassMethodCollector::class], 70100);
+
+        self::assertNotEmpty($container->getByType(ReparsedSource::class)->statements(dirname(__DIR__, 3).'/Fixture/Target/Php71.php.inc'));
+    }
+
+    /**
+     * @throws MissingServiceException
+     */
+    public function testCreateReadsMethodBodiesAsTheVersionPeqRunsOnWhenItWasGivenNone(): void
+    {
+        $container = (new ContainerFactory())->create([dirname(__DIR__, 3).'/Fixture/Sample/AnalysedSample.php'], [InClassMethodCollector::class]);
+
+        self::assertNull($container->getByType(ReparsedSource::class)->statements(dirname(__DIR__, 3).'/Fixture/Target/Php71.php.inc'));
     }
 }

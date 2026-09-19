@@ -62,6 +62,9 @@ final readonly class InputConfigReader implements ConfigReader
         if ($this->input->hasParameterOption(['--exclude', '-E'])) {
             $config['excludes'] = $this->option('exclude');
         }
+        if ($this->input->hasParameterOption(['--php-version'])) {
+            $config['phpVersion'] = $this->option('php-version');
+        }
         if ($this->input->hasParameterOption(['--type'])) {
             $config['type'] = $this->option('type');
         }

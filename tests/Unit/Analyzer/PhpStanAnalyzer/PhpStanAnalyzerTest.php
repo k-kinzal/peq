@@ -126,7 +126,7 @@ final class PhpStanAnalyzerTest extends TestCase
     public function testAnalyzeReportsAFailureRatherThanAGraphMissingTheFile(): void
     {
         $this->expectException(AnalysisFailedException::class);
-        $this->expectExceptionMessageMatches('/^PHPStan could not finish analysing .*MethodBody\.php: the collector gave up on a /');
+        $this->expectExceptionMessageMatches('/^PHPStan could not finish analysing .*MethodBody\.php as the PHP version peq runs on: the collector gave up on a /');
 
         (new PhpStanAnalyzer(collectors: [FailingCollector::class]))->analyze(dirname(__DIR__, 3).'/Fixture/Source/MethodBody.php');
     }
@@ -156,5 +156,35 @@ final class PhpStanAnalyzerTest extends TestCase
         $report = (new PhpStanAnalyzer(collectors: [\App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector::class]))->collect($container, $files);
 
         self::assertNotSame([], $report->symbols());
+    }
+
+    public function testAnalysedVersionNamesTheVersionTheSourcesAreReadAs(): void
+    {
+        self::assertSame('PHP 7.1', (new PhpStanAnalyzer(phpVersion: 70100))->analysedVersion());
+    }
+
+    public function testAnalysedVersionNamesAPatchReleaseByTheMinorItBelongsTo(): void
+    {
+        self::assertSame('PHP 8.3', (new PhpStanAnalyzer(phpVersion: 80302))->analysedVersion());
+    }
+
+    public function testAnalysedVersionNamesTheRuntimeWhenNoVersionWasChosen(): void
+    {
+        self::assertSame('the PHP version peq runs on', (new PhpStanAnalyzer())->analysedVersion());
+    }
+
+    public function testAnalyzeReadsASourceAsThePhpVersionItWasGiven(): void
+    {
+        $graph = (new PhpStanAnalyzer(phpVersion: 70100))->analyze(dirname(__DIR__, 3).'/Fixture/Target/Php71.php.inc');
+
+        self::assertNotNull($graph->nodeNamed('Tests\Fixture\Target\Php71\Reader'));
+    }
+
+    public function testAnalyzeReportsAFileThePhpVersionItWasGivenCannotParse(): void
+    {
+        $this->expectException(AnalysisFailedException::class);
+        $this->expectExceptionMessageMatches('/as PHP 7\.1: Syntax error/');
+
+        (new PhpStanAnalyzer(phpVersion: 70100))->analyze(dirname(__DIR__, 3).'/Fixture/Target/Php81.php.inc');
     }
 }
