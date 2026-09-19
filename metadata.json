@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M2WHNPHC278KJC7MPK9QFXQ6",
+  "strategy": "manual-commit",
+  "branch": "feat/native-analyzer-engine",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/Fixture/Analyzer/WrittenAutoloadMaps.php",
+    "tests/Unit/Analyzer/NativeAnalyzer/AutoloadIndexTest.php",
+    "tests/Unit/Analyzer/NativeAnalyzer/Emitter/DeclarationEmitterTest.php",
+    "tests/Unit/Analyzer/NativeAnalyzer/Emitter/UsageEmitterTest.php",
+    "tests/Unit/Analyzer/NativeAnalyzer/TraitFlatteningTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 54,
+    "cache_creation_tokens": 39266,
+    "cache_read_tokens": 21149529,
+    "output_tokens": 21570,
+    "api_call_count": 27
+  }
+}
