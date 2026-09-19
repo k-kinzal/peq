@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M2VY0GVYJ0AAEFH8NHGZEJMC",
+  "strategy": "manual-commit",
+  "branch": "feat/native-analyzer-engine",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/Action/Inspect/InspectAction.php",
+    "src/Command/InspectCommand.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 7670,
+    "cache_creation_tokens": 8908860,
+    "cache_read_tokens": 787614030,
+    "output_tokens": 1693838,
+    "api_call_count": 1570
+  }
+}
