@@ -166,4 +166,21 @@ final class CallableEmitterTest extends TestCase
 
         self::assertSame([], CallableEmitter::promotedProperty($param, ParsedSnippet::scopeIn(null, null)));
     }
+
+    public function testSignatureRecordsTheTypesADeclarationCommitsTo(): void
+    {
+        $declaration = ParsedSnippet::method("<?php\nclass Written { public function total(): \\App\\Money {} }\n");
+        $declared = ParsedSnippet::writtenBy('App\Invoice', 'total');
+        $recorded = CallableEmitter::signature($declaration, $declared, ParsedSnippet::scopeIn('App\Invoice', null), ParsedSnippet::writtenAt());
+
+        self::assertSame(['App\Invoice::total -[declaration-type-return]-> App\Money'], GraphSpelling::of($recorded));
+    }
+
+    public function testSignatureRecordsNothingForASignatureThatNamesOnlyBuiltinTypes(): void
+    {
+        $declaration = ParsedSnippet::method("<?php\nclass Written { public function total(int \$amount): string {} }\n");
+        $declared = ParsedSnippet::writtenBy('App\Invoice', 'total');
+
+        self::assertSame([], CallableEmitter::signature($declaration, $declared, ParsedSnippet::scopeIn('App\Invoice', null), ParsedSnippet::writtenAt()));
+    }
 }

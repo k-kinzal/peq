@@ -82,6 +82,11 @@ final class AnalyzerKindTest extends TestCase
         self::assertSame(class_exists((string) AnalyzerKind::PhpStan->requires()), AnalyzerKind::PhpStan->isAvailable());
     }
 
+    public function testIsAvailableHoldsForAnAnalyzerThisCheckoutHasInstalled(): void
+    {
+        self::assertTrue(AnalyzerKind::PhpStan->isAvailable(), 'This checkout installs PHPStan, so the analyzer built on it can run here.');
+    }
+
     public function testAvailableLeavesOutAKindThisInstallationCannotRun(): void
     {
         self::assertSame(
@@ -100,6 +105,11 @@ final class AnalyzerKindTest extends TestCase
         self::assertSame(AnalyzerKind::available()[0], AnalyzerKind::preferred());
     }
 
+    public function testPreferredIsTheReferenceEngineWhereItIsInstalled(): void
+    {
+        self::assertSame(AnalyzerKind::PhpStan, AnalyzerKind::preferred(), 'This checkout installs PHPStan, so it is what an unasked-for analyzer means here.');
+    }
+
     public function testSpellAvailableWritesTheKindsTheCommandLineWillTake(): void
     {
         self::assertSame(
@@ -111,5 +121,10 @@ final class AnalyzerKindTest extends TestCase
     public function testSpellAvailableLeavesOutAKindThisInstallationCannotRun(): void
     {
         self::assertStringNotContainsString('nonesuch', AnalyzerKind::spellAvailable());
+    }
+
+    public function testSpellAvailableWritesEveryKindThisCheckoutCanRun(): void
+    {
+        self::assertSame('phpstan|native|debug', AnalyzerKind::spellAvailable());
     }
 }

@@ -197,4 +197,16 @@ final class TraitFlatteningTest extends TestCase
             array_map(static fn (TraitMethod $offered): string => $offered->declaringTrait, TraitFlattening::offersOf(ParsedSnippet::declarationIn($index, 'App\Taker'), 'shared', $index)),
         );
     }
+
+    public function testMethodWrittenFindsTheMethodAClassWrites(): void
+    {
+        $written = TraitFlattening::methodWritten(ParsedSnippet::classLike("<?php\nclass Taker { public function written(): void {} }\n"), 'WRITTEN');
+
+        self::assertSame('written', $written?->name->toString());
+    }
+
+    public function testMethodWrittenFindsNothingForANameTheClassDoesNotWrite(): void
+    {
+        self::assertNull(TraitFlattening::methodWritten(ParsedSnippet::classLike("<?php\nclass Taker { public function written(): void {} }\n"), 'other'));
+    }
 }
