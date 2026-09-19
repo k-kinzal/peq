@@ -7,8 +7,11 @@ A CLI tool that analyzes PHP code dependencies and visualizes the blast radius o
 
 ## Requirements
 
-- PHP 8.1 or higher
-- `ext-ast` PHP extension
+- PHP 8.3, 8.4 or 8.5 to run peq
+
+The code peq reads is a separate question from the runtime peq runs on: peq analyzes
+sources written for PHP 7.1 up to 8.5 on any of those runtimes. See
+[Analyzed PHP version](#analyzed-php-version).
 
 ## Installation
 
