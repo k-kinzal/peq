@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M2XQPHXQAKE2H4YCEPY5Z6AT",
+  "strategy": "manual-commit",
+  "branch": "feat/output-format",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/Unit/Reporter/DotReporter/DotCursorTest.php",
+    "tests/Unit/Reporter/JsonReporter/JsonCursorTest.php",
+    "tests/Unit/Reporter/TableReporter/TableCursorTest.php",
+    "tests/Unit/Reporter/TreeReporter/TreeCursorTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 172,
+    "cache_creation_tokens": 29369,
+    "cache_read_tokens": 34099931,
+    "output_tokens": 18427,
+    "api_call_count": 86
+  }
+}

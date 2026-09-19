@@ -1,0 +1,49 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M2XQPHXQAKE2H4YCEPY5Z6AT",
+  "session_id": "6728408c-a969-4214-b59b-f2c868faf3e5",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-19T21:03:34.487839Z",
+  "branch": "feat/output-format",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/Unit/Reporter/DotReporter/DotCursorTest.php",
+    "tests/Unit/Reporter/JsonReporter/JsonCursorTest.php",
+    "tests/Unit/Reporter/TableReporter/TableCursorTest.php",
+    "tests/Unit/Reporter/TreeReporter/TreeCursorTest.php"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5",
+  "turn_id": "424c072ccb02",
+  "checkpoint_transcript_start": 846,
+  "transcript_lines_at_start": 846,
+  "compact_transcript_start": 200,
+  "token_usage": {
+    "input_tokens": 172,
+    "cache_creation_tokens": 29369,
+    "cache_read_tokens": 34099931,
+    "output_tokens": 18427,
+    "api_call_count": 86
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-19T21:03:34.331009Z",
+    "agent_lines": 548,
+    "agent_removed": 39,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 548,
+    "total_lines_changed": 587,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
