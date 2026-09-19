@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Analyzer\Graph\NodeId;
 
-use App\Analyzer\Graph\IdentifierAssert;
 use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\NodeId;
+use App\Analyzer\Graph\QualifiedName;
 
 /**
  * Unique identifier for a function node in the dependency graph.
@@ -16,54 +16,41 @@ use App\Analyzer\Graph\NodeId;
  * the analyzed codebase.
  *
  * @implements NodeId<FunctionNode>
- *
- * @property string $fullQualifiedName Alias for fullQualifiedName()
  */
 final class FunctionNodeId implements NodeId
 {
-    use IdentifierAssert;
+    /**
+     * The precomputed string form of this identifier.
+     */
+    private readonly string $stringValue;
 
     /**
      * @param string $namespace    The namespace of the function (must be a valid PHP namespace)
      * @param string $functionName The function name (must be a valid PHP identifier)
      */
-    private readonly string $stringValue;
-
     public function __construct(
         public readonly string $namespace,
         public readonly string $functionName,
     ) {
         if ($namespace !== '') {
-            self::assertNamespace($namespace);
+            assert(QualifiedName::isNamespace($namespace), 'The namespace must be one PHP would accept');
         }
-        self::assertIdentifier($functionName);
+        assert(QualifiedName::isIdentifier($functionName), 'The name must be one PHP would accept for a single symbol');
         $this->stringValue = $namespace === '' ? $functionName : $namespace.'\\'.$functionName;
     }
 
-    public function __toString(): string
-    {
-        return $this->toString();
-    }
-
-    public function __get(string $name): mixed
-    {
-        return match ($name) {
-            'fullQualifiedName' => $this->fullQualifiedName(),
-            default => throw new \LogicException("Undefined property: {$name}"),
-        };
-    }
-
     /**
-     * Returns the fully qualified function name.
+     * Builds the identifier from a fully qualified name.
      *
-     * Combines namespace and function name with a backslash separator
-     * (e.g., "App\Helpers\formatDate").
+     * @param string $fullName The fully qualified function name, as analysis reported it
      *
-     * @return string The fully qualified function name
+     * @return self The identifier for that function
      */
-    public function fullQualifiedName(): string
+    public static function of(string $fullName): self
     {
-        return $this->stringValue;
+        $name = new QualifiedName($fullName);
+
+        return new self($name->namespace, $name->shortName);
     }
 
     /**

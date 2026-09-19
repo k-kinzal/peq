@@ -5,46 +5,47 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\Graph\NodeId;
 
 use App\Analyzer\Graph\NodeId\ConstantNodeId;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(ConstantNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[Small]
 final class ConstantNodeIdTest extends TestCase
 {
-    #[Test]
-    public function testConstruct(): void
+    public function testToStringJoinsTheParts(): void
     {
-        $id = new ConstantNodeId('App\Service', 'MyClass', 'MY_CONSTANT');
-
-        self::assertSame('App\Service', $id->namespace);
-        self::assertSame('MyClass', $id->className);
-        self::assertSame('MY_CONSTANT', $id->constantName);
+        self::assertSame('App\Domain\Invoice::MAX_ITEMS', (new ConstantNodeId('App\Domain', 'Invoice', 'MAX_ITEMS'))->toString());
     }
 
-    #[Test]
-    public function testFullQualifiedName(): void
+    public function testToStringOmitsTheSeparatorWithoutANamespace(): void
     {
-        $id = new ConstantNodeId('App\Service', 'MyClass', 'MY_CONSTANT');
-
-        self::assertSame('App\Service\MyClass::MY_CONSTANT', $id->fullQualifiedName());
+        self::assertSame('Invoice::MAX_ITEMS', (new ConstantNodeId('', 'Invoice', 'MAX_ITEMS'))->toString());
     }
 
-    #[Test]
-    public function testToString(): void
+    public function testOfSplitsAFullyQualifiedName(): void
     {
-        $id = new ConstantNodeId('App\Service', 'MyClass', 'MY_CONSTANT');
+        $id = ConstantNodeId::of('App\Domain\Invoice', 'MAX_ITEMS');
 
-        self::assertSame('App\Service\MyClass::MY_CONSTANT', $id->toString());
-        self::assertSame('App\Service\MyClass::MY_CONSTANT', (string) $id);
+        self::assertSame('App\Domain', $id->namespace);
+        self::assertSame('Invoice', $id->className);
     }
 
-    #[Test]
-    public function testMagicGet(): void
+    public function testOfBuildsTheSameIdentifierAsTheConstructor(): void
     {
-        $id = new ConstantNodeId('App', 'Test', 'CONST');
+        self::assertSame(
+            (new ConstantNodeId('App\Domain', 'Invoice', 'MAX_ITEMS'))->toString(),
+            ConstantNodeId::of('App\Domain\Invoice', 'MAX_ITEMS')->toString(),
+        );
+    }
 
-        self::assertSame('App\Test::CONST', $id->fullQualifiedName);
+    public function testOfLeavesTheNamespaceEmptyForAGlobalName(): void
+    {
+        self::assertSame('', ConstantNodeId::of('Invoice', 'MAX_ITEMS')->namespace);
     }
 }

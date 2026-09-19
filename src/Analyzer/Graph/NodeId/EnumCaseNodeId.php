@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Analyzer\Graph\NodeId;
 
-use App\Analyzer\Graph\IdentifierAssert;
 use App\Analyzer\Graph\Node\EnumCaseNode;
 use App\Analyzer\Graph\NodeId;
+use App\Analyzer\Graph\QualifiedName;
 
 /**
  * Unique identifier for an enum case node in the dependency graph.
@@ -16,58 +16,46 @@ use App\Analyzer\Graph\NodeId;
  * within the analyzed codebase.
  *
  * @implements NodeId<ENumCaseNode>
- *
- * @property string $fullQualifiedName Alias for fullQualifiedName()
  */
 final class EnumCaseNodeId implements NodeId
 {
-    use IdentifierAssert;
+    /**
+     * The precomputed string form of this identifier.
+     */
+    private readonly string $stringValue;
 
     /**
      * @param string $namespace The namespace of the enum containing the case (must be a valid PHP namespace)
      * @param string $enumName  The enum name containing the case (must be a valid PHP identifier)
      * @param string $caseName  The case name (must be a valid PHP identifier)
      */
-    private readonly string $stringValue;
-
     public function __construct(
         public readonly string $namespace,
         public readonly string $enumName,
         public readonly string $caseName,
     ) {
         if ($namespace !== '') {
-            self::assertNamespace($namespace);
+            assert(QualifiedName::isNamespace($namespace), 'The namespace must be one PHP would accept');
         }
-        self::assertIdentifier($enumName);
-        self::assertIdentifier($caseName);
+        assert(QualifiedName::isIdentifier($enumName), 'The name must be one PHP would accept for a single symbol');
+        assert(QualifiedName::isIdentifier($caseName), 'The name must be one PHP would accept for a single symbol');
         $prefix = $namespace === '' ? $enumName : $namespace.'\\'.$enumName;
         $this->stringValue = $prefix.'::'.$caseName;
     }
 
-    public function __toString(): string
-    {
-        return $this->toString();
-    }
-
-    public function __get(string $name): mixed
-    {
-        return match ($name) {
-            'fullQualifiedName' => $this->fullQualifiedName(),
-            default => throw new \LogicException("Undefined property: {$name}"),
-        };
-    }
-
     /**
-     * Returns the fully qualified enum case name.
+     * Builds the identifier from the fully qualified name of the declaring enum.
      *
-     * Combines namespace, enum name, and case name with appropriate separators
-     * (e.g., "App\Enums\Status::Pending").
+     * @param string $ownerName The fully qualified enum name, as analysis reported it
+     * @param string $caseName  The name of the enum case
      *
-     * @return string The fully qualified enum case name
+     * @return self The identifier for that enum case
      */
-    public function fullQualifiedName(): string
+    public static function of(string $ownerName, string $caseName): self
     {
-        return $this->stringValue;
+        $owner = new QualifiedName($ownerName);
+
+        return new self($owner->namespace, $owner->shortName, $caseName);
     }
 
     /**

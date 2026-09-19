@@ -4,157 +4,85 @@ declare(strict_types=1);
 
 namespace App\Analyzer\PhpStanAnalyzer;
 
-use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
-use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
 use PHPStan\DependencyInjection\Container;
 use PHPStan\DependencyInjection\ContainerFactory as PhpStanContainerFactory;
-use PHPStan\PharAutoloader;
+use RuntimeException;
 use Symfony\Component\Yaml\Yaml;
 
 /**
- * Factory for creating PHPStan container with custom configuration.
+ * Builds a PHPStan container that runs peq's collectors.
+ *
+ * PHPStan's container is compiled from configuration files and cannot be extended
+ * once built, so registering a collector means handing PHPStan a configuration file
+ * that declares it. That file is generated for the run and thrown away afterwards,
+ * which is why a scratch directory is involved: Nette's dependency injection derives
+ * its own cache location from the configuration path, so the configuration cannot
+ * simply live next to the analysed project.
+ *
+ * @visibility namespace
  */
 final class ContainerFactory
 {
-    private static bool $phpStanAutoloaderInitialized = false;
+    /**
+     * Analysis level of the generated configuration.
+     *
+     * Collectors run at every level, and level 0 leaves out the type-checking rules
+     * peq has no use for, so nothing is spent on diagnostics that are discarded.
+     */
+    private const COLLECTOR_ONLY_LEVEL = 0;
 
     /**
-     * Creates a PHPStan container with the necessary configuration.
+     * @param PhpStanAutoloader $autoloader Makes PHPStan loadable when peq runs from a PHAR
+     */
+    public function __construct(
+        private readonly PhpStanAutoloader $autoloader = new PhpStanAutoloader(),
+    ) {}
+
+    /**
+     * Builds a container whose analysis reports what the given collectors gathered.
      *
-     * @param string[] $files List of files to analyze
+     * The configuration is written into the directory PHPStan works in, under a name
+     * derived from its contents. PHPStan compiles a container class for each
+     * configuration path it is given and loads it once per process, so an analysis
+     * with the same collectors as an earlier one — in the next command, or in the
+     * next test of a suite — starts from the class that one compiled instead of
+     * compiling, loading and keeping another. The name carries the contents because
+     * PHPStan also remembers what it read from a path for the rest of the process,
+     * so a path must never be reused for a different configuration.
+     *
+     * @param list<string>       $files      The files the analysis will cover
+     * @param list<class-string> $collectors The collectors the analysis runs
      *
      * @return Container The configured PHPStan container
+     *
+     * @throws RuntimeException If the working directory cannot be determined, if PHPStan
+     *                          is not loadable, or if the generated configuration cannot be written
      */
-    public function create(array $files): Container
+    public function create(array $files, array $collectors): Container
     {
-        $this->ensurePhpStanAutoloader();
+        $this->autoloader->ensureRegistered();
 
-        $cwd = getcwd();
-        if ($cwd === false) {
-            throw new \RuntimeException('Unable to determine current working directory');
+        $workingDirectory = getcwd();
+        if ($workingDirectory === false) {
+            throw new RuntimeException('Unable to determine current working directory');
         }
-        $containerFactory = new PhpStanContainerFactory($cwd);
 
-        // We need to create a configuration file that registers our collector.
-        // PHPStan ContainerFactory expects a list of config files.
-        // However, since we want to inject our own collector, we might need to do it dynamically
-        // or ensure the config loads it.
-        // Since we are running programmatically, we can try to add the collector to the container
-        // or use a temporary config file.
-
-        // A better approach for programmatic usage without a physical config file for the collector
-        // is to rely on PHPStan's ability to accept config files.
-        // But here we want to be self-contained.
-
-        // Let's try to create a container and then see if we can register the collector.
-        // PHPStan's container is compiled, so we can't easily add services at runtime unless we use a config file.
-
-        // Strategy: Create a temporary directory and put the neon file inside it.
-        // This avoids Nette DI trying to create a cache directory "inside" the config file path.
-
-        $tempDir = sys_get_temp_dir().'/peq-phpstan-'.uniqid();
-        mkdir($tempDir);
-        $tempConfig = $tempDir.'/phpstan.neon';
-
-        $content = [
-            'services' => [
-                [
-                    'class' => DependencyCollector::class,
-                    'tags' => ['phpstan.collector'],
-                ],
-                [
-                    'class' => InClassMethodCollector::class,
-                    'tags' => ['phpstan.collector'],
-                ],
-            ],
+        $neon = Yaml::dump([
+            'services' => array_map(
+                static fn (string $collector): array => ['class' => $collector, 'tags' => ['phpstan.collector']],
+                $collectors,
+            ),
             'parameters' => [
                 'customRulesetUsed' => true,
-                'level' => 0, // Collectors work at all levels; level 0 skips unused type-checking rules
-                'tmpDir' => $tempDir.'/tmp',
+                'level' => self::COLLECTOR_ONLY_LEVEL,
             ],
             'includes' => [],
-        ];
+        ], 4);
+        $directory = WorkingDirectory::shared();
+        $configuration = $directory->write('phpstan-'.md5($neon).'.neon', $neon);
 
-        file_put_contents($tempConfig, $this->generateNeon($content));
-
-        try {
-            // create(string $tempDirectory, array $additionalConfigFiles, array $analysedPaths, ...)
-            return $containerFactory->create($tempDir, [$tempConfig], $files);
-        } catch (\Throwable $e) {
-            echo 'ContainerFactory error: '.$e->getMessage()."\n";
-
-            throw $e;
-        } finally {
-            // Recursive delete
-            $this->deleteDirectory($tempDir);
-        }
-    }
-
-    private function deleteDirectory(string $dir): void
-    {
-        if (!file_exists($dir)) {
-            return;
-        }
-        $files = scandir($dir);
-        if ($files === false) {
-            return;
-        }
-        $files = array_diff($files, ['.', '..']);
-        foreach ($files as $file) {
-            (is_dir("{$dir}/{$file}")) ? $this->deleteDirectory("{$dir}/{$file}") : unlink("{$dir}/{$file}");
-        }
-        rmdir($dir);
-    }
-
-    /**
-     * Generates NEON format string from array.
-     * Simple implementation to avoid dependency on symfony/yaml if not strictly needed,
-     * but we have symfony/yaml in composer.json.
-     *
-     * @param array<string, mixed> $content
-     */
-    private function generateNeon(array $content): string
-    {
-        // We use symfony/yaml as it is available
-        return Yaml::dump($content, 4);
-    }
-
-    /**
-     * When running inside a PHAR, PHPStan's PharAutoloader constructs nested
-     * phar://phar://... paths that PHP cannot resolve. This method extracts the
-     * bundled phpstan.phar to a temp directory and registers its autoloader.
-     */
-    private function ensurePhpStanAutoloader(): void
-    {
-        if (self::$phpStanAutoloaderInitialized || \Phar::running() === '') {
-            return;
-        }
-        self::$phpStanAutoloaderInitialized = true;
-
-        $pharPhpstan = \Phar::running().'/vendor/phpstan/phpstan/phpstan.phar';
-        if (!file_exists($pharPhpstan)) {
-            throw new \RuntimeException('phpstan.phar not found inside the PHAR archive');
-        }
-
-        $peqPhar = \Phar::running(false);
-        $cacheKey = md5($peqPhar.'@'.filemtime($peqPhar));
-        $cacheDir = sys_get_temp_dir().'/peq-phpstan-'.$cacheKey;
-        $extractedPhar = $cacheDir.'/phpstan.phar';
-
-        if (!file_exists($extractedPhar)) {
-            if (!is_dir($cacheDir)) {
-                mkdir($cacheDir, 0o777, true);
-            }
-            copy($pharPhpstan, $extractedPhar);
-        }
-
-        // Remove the broken PharAutoloader and register one from the extracted PHAR
-        // @phpstan-ignore phpstanApi.classConstant
-        if (class_exists(PharAutoloader::class, false)) {
-            // @phpstan-ignore phpstanApi.classConstant
-            spl_autoload_unregister([PharAutoloader::class, 'loadClass']);
-        }
-
-        require_once 'phar://'.$extractedPhar.'/vendor/autoload.php';
+        return (new PhpStanContainerFactory($workingDirectory))
+            ->create($directory->path, [$configuration], $files)
+        ;
     }
 }

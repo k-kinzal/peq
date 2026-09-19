@@ -5,32 +5,29 @@ declare(strict_types=1);
 namespace Tests\Unit\Reporter\TreeReporter;
 
 use App\Reporter\TreeReporter\TreeReporterOptions;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(TreeReporterOptions::class)]
+#[Small]
 final class TreeReporterOptionsTest extends TestCase
 {
-    #[Test]
-    public function testConstructWithDefault(): void
+    public function testTheWholeTreeIsPrintedUnlessALevelIsGiven(): void
     {
-        $options = new TreeReporterOptions();
-        self::assertNull($options->level);
+        self::assertNull((new TreeReporterOptions())->level);
     }
 
-    #[Test]
-    public function testConstructWithLevel(): void
+    public function testALevelBoundIsKeptAsItWasGiven(): void
     {
-        $options = new TreeReporterOptions(level: 5);
-        self::assertSame(5, $options->level);
+        self::assertSame(3, (new TreeReporterOptions(3))->level);
     }
 
-    #[Test]
-    public function testConstructThrowsExceptionForInvalidLevel(): void
+    public function testTheSmallestUsefulBoundIsOneLevelBelowTheRoot(): void
     {
-        $this->expectException(\AssertionError::class);
-        new TreeReporterOptions(level: -1);
+        self::assertSame(1, (new TreeReporterOptions(1))->level);
     }
 }

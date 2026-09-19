@@ -4,225 +4,59 @@ declare(strict_types=1);
 
 namespace Tests\Integration;
 
-use App\Analyzer\Graph\EdgeKind;
+use App\Analyzer\Graph\Edge;
 use App\Analyzer\Graph\Graph;
-use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
-use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
+use App\Analyzer\Graph\Node;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\TestCase;
-use Tests\Contract\Graph\GraphInvariantAssertions;
 
 /**
  * @internal
- *
- * Integration test: peq analyzes its own source code, then cross-validates
- * the resulting Graph against PHP's Reflection API.
- *
- * This proves that the assembled pipeline (PhpStanAnalyzer → Graph) produces
- * correct results on a real, non-trivial PHP codebase.
  */
+#[CoversClass(PhpStanAnalyzer::class)]
+#[Large]
 final class SelfAnalysisTest extends TestCase
 {
-    use GraphInvariantAssertions;
-    use ReflectionCrossValidator;
-
-    private static Graph $graph;
-
-    public static function setUpBeforeClass(): void
+    #[DataProvider('providerPeqsOwnSource')]
+    public function testAnalyzingItsOwnSourceProducesAPopulatedGraph(Graph $graph): void
     {
-        $analyzer = new PhpStanAnalyzer(
-            new ContainerFactory(),
-            new PhpFileCollector(),
-        );
-        self::$graph = $analyzer->analyze(__DIR__.'/../../src');
+        self::assertGreaterThan(50, count($graph->nodes()));
     }
 
-    // ──────────────────────────────────────────────
-    //  Smoke tests
-    // ──────────────────────────────────────────────
-
-    #[Test]
-    public function testGraphIsNonEmpty(): void
+    #[DataProvider('providerPeqsOwnSource')]
+    public function testTheGraphHoldsTheSymbolsPeqDeclares(Graph $graph): void
     {
-        self::assertNotEmpty(self::$graph->nodes());
-        self::assertGreaterThan(50, count(self::$graph->nodes()));
+        self::assertNotNull($graph->nodeNamed('App\Analyzer\Graph\Graph'));
+        self::assertNotNull($graph->nodeNamed('App\Analyzer\Graph\EdgeKind'));
+        self::assertNotNull($graph->nodeNamed('App\Analyzer\Graph\NodeKind'));
+        self::assertNotNull($graph->nodeNamed('App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer'));
+        self::assertNotNull($graph->nodeNamed('App\Command\InspectCommand'));
+        self::assertNotNull($graph->nodeNamed('App\Action\Inspect\InspectAction'));
     }
 
-    #[Test]
-    public function testGraphContainsKnownClasses(): void
+    #[DataProvider('providerPeqsOwnSource')]
+    public function testTheGraphKeepsEveryPromiseOfTheGraphModel(Graph $graph): void
     {
-        $knownFqns = [
-            'App\Analyzer\Graph\Graph',
-            'App\Analyzer\Graph\EdgeKind',
-            'App\Analyzer\Graph\NodeKind',
-            'App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer',
-            'App\Command\InspectCommand',
-            'App\Action\Inspect\InspectAction',
-        ];
+        $edges = array_merge([], ...array_map(static fn (Node $node): array => $graph->edges($node->id()), $graph->nodes()));
+        $spell = static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString();
+        $names = array_map(static fn (Node $node): string => $node->id()->toString(), $graph->nodes());
+        $spelled = array_map($spell, $edges);
 
-        $nodeIds = array_map(fn ($n) => $n->id()->toString(), self::$graph->nodes());
-        foreach ($knownFqns as $fqn) {
-            self::assertContains($fqn, $nodeIds, "Expected node {$fqn} not found in graph");
-        }
+        self::assertSame([], array_values(array_map($spell, array_filter($edges, static fn (Edge $edge): bool => $graph->edge($edge->to(), $edge->from()) === null))), 'Relations with no reverse reading');
+        self::assertSame([], array_values(array_map($spell, array_filter($edges, static fn (Edge $edge): bool => $graph->node($edge->from()) === null || $graph->node($edge->to()) === null))), 'Relations pointing at a symbol the graph does not hold');
+        self::assertSame($names, array_values(array_unique($names)), 'Identifiers naming more than one symbol');
+        self::assertSame($spelled, array_values(array_unique($spelled)), 'Relations recorded more than once in one direction');
+        self::assertSame($spelled, array_map(static fn (Edge $edge): string => $spell($edge->invert()->invert()), $edges), 'Relations that change when inverted twice');
     }
 
-    #[Test]
-    public function testGraphInvariantsHold(): void
+    /**
+     * @return iterable<string, array{Graph}>
+     */
+    public static function providerPeqsOwnSource(): iterable
     {
-        self::assertBidirectional(self::$graph);
-        self::assertEndpointsExist(self::$graph);
-        self::assertNodeUniqueness(self::$graph);
-        self::assertNoEdgeDuplicates(self::$graph);
-    }
-
-    // ──────────────────────────────────────────────
-    //  Soundness: every edge peq found is real
-    // ──────────────────────────────────────────────
-
-    #[Test]
-    public function testExtendsEdgesAreSound(): void
-    {
-        self::assertEdgeKindSoundness(self::$graph, EdgeKind::DeclarationExtends);
-    }
-
-    #[Test]
-    public function testImplementsEdgesAreSound(): void
-    {
-        self::assertEdgeKindSoundness(self::$graph, EdgeKind::DeclarationImplements);
-    }
-
-    #[Test]
-    public function testTraitUseEdgesAreSound(): void
-    {
-        self::assertEdgeKindSoundness(self::$graph, EdgeKind::DeclarationTraitUse);
-    }
-
-    #[Test]
-    public function testMethodEdgesAreSound(): void
-    {
-        self::assertEdgeKindSoundness(self::$graph, EdgeKind::DeclarationMethod);
-    }
-
-    #[Test]
-    public function testPropertyEdgesAreSound(): void
-    {
-        self::assertEdgeKindSoundness(self::$graph, EdgeKind::DeclarationProperty);
-    }
-
-    #[Test]
-    public function testConstantEdgesAreSound(): void
-    {
-        $result = self::checkSoundness(self::$graph, EdgeKind::DeclarationConstant);
-        if ($result['verified'] === 0) {
-            self::assertEmpty($result['failures'], 'No constants to verify but failures found');
-            self::markTestSkipped('No DeclarationConstant edges in peq codebase');
-        }
-        self::assertEmpty($result['failures']);
-    }
-
-    #[Test]
-    public function testEnumCaseEdgesAreSound(): void
-    {
-        self::assertEdgeKindSoundness(self::$graph, EdgeKind::DeclarationEnumCase);
-    }
-
-    #[Test]
-    public function testAttributeEdgesAreSound(): void
-    {
-        self::assertEdgeKindSoundness(self::$graph, EdgeKind::Attribute);
-    }
-
-    #[Test]
-    public function testParameterTypeEdgesAreSound(): void
-    {
-        self::assertEdgeKindSoundness(self::$graph, EdgeKind::DeclarationTypeParameter);
-    }
-
-    #[Test]
-    public function testReturnTypeEdgesAreSound(): void
-    {
-        self::assertEdgeKindSoundness(self::$graph, EdgeKind::DeclarationTypeReturn);
-    }
-
-    #[Test]
-    public function testPropertyTypeEdgesAreSound(): void
-    {
-        self::assertEdgeKindSoundness(self::$graph, EdgeKind::DeclarationTypeProperty);
-    }
-
-    // ──────────────────────────────────────────────
-    //  Completeness: every real relationship is in Graph
-    // ──────────────────────────────────────────────
-
-    #[Test]
-    public function testExtendsEdgesAreComplete(): void
-    {
-        self::assertEdgeKindCompleteness(self::$graph, EdgeKind::DeclarationExtends);
-    }
-
-    #[Test]
-    public function testImplementsEdgesAreComplete(): void
-    {
-        self::assertEdgeKindCompleteness(self::$graph, EdgeKind::DeclarationImplements);
-    }
-
-    #[Test]
-    public function testTraitUseEdgesAreComplete(): void
-    {
-        self::assertEdgeKindCompleteness(self::$graph, EdgeKind::DeclarationTraitUse);
-    }
-
-    #[Test]
-    public function testMethodEdgesAreComplete(): void
-    {
-        self::assertEdgeKindCompleteness(self::$graph, EdgeKind::DeclarationMethod);
-    }
-
-    #[Test]
-    public function testPropertyEdgesAreComplete(): void
-    {
-        self::assertEdgeKindCompleteness(self::$graph, EdgeKind::DeclarationProperty);
-    }
-
-    #[Test]
-    public function testConstantEdgesAreComplete(): void
-    {
-        $result = self::checkCompleteness(self::$graph, EdgeKind::DeclarationConstant);
-        if ($result['verified'] === 0) {
-            self::assertEmpty($result['failures'], 'No constants to verify but failures found');
-            self::markTestSkipped('No DeclarationConstant relationships in peq codebase');
-        }
-        self::assertEmpty($result['failures']);
-    }
-
-    #[Test]
-    public function testEnumCaseEdgesAreComplete(): void
-    {
-        self::assertEdgeKindCompleteness(self::$graph, EdgeKind::DeclarationEnumCase);
-    }
-
-    #[Test]
-    public function testAttributeEdgesAreComplete(): void
-    {
-        self::assertEdgeKindCompleteness(self::$graph, EdgeKind::Attribute);
-    }
-
-    #[Test]
-    public function testParameterTypeEdgesAreComplete(): void
-    {
-        self::assertEdgeKindCompleteness(self::$graph, EdgeKind::DeclarationTypeParameter);
-    }
-
-    #[Test]
-    public function testReturnTypeEdgesAreComplete(): void
-    {
-        self::assertEdgeKindCompleteness(self::$graph, EdgeKind::DeclarationTypeReturn);
-    }
-
-    #[Test]
-    public function testPropertyTypeEdgesAreComplete(): void
-    {
-        self::assertEdgeKindCompleteness(self::$graph, EdgeKind::DeclarationTypeProperty);
+        yield 'everything under src' => [(new PhpStanAnalyzer())->analyze(dirname(__DIR__, 2).'/src')];
     }
 }

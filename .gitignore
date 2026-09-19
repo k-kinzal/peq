@@ -186,3 +186,6 @@ dist/
 .clinerules
 .qodo
 .mcp.json
+
+/.deptrac.cache
+/phpbench.json

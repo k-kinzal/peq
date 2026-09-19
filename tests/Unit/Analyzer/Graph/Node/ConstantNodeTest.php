@@ -8,35 +8,52 @@ use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node\ConstantNode;
 use App\Analyzer\Graph\NodeId\ConstantNodeId;
 use App\Analyzer\Graph\NodeKind;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(ConstantNode::class)]
+#[UsesClass(FileMeta::class)]
+#[UsesClass(ConstantNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[Small]
 final class ConstantNodeTest extends TestCase
 {
-    #[Test]
-    public function testConstruct(): void
+    public function testIdReturnsTheIdentifierItWasBuiltWith(): void
     {
-        $id = new ConstantNodeId('App', 'MyClass', 'MY_CONSTANT');
-        $meta = new FileMeta('/path/to/file.php', 10, 5);
+        $id = new ConstantNodeId('App\Domain', 'Invoice', 'MAX_ITEMS');
 
-        $node = new ConstantNode($id, true, $meta);
-
-        self::assertSame($id, $node->id());
-        self::assertSame(NodeKind::Constant, $node->kind());
-        self::assertSame($meta, $node->meta());
-        self::assertTrue($node->resolved());
+        self::assertSame($id, (new ConstantNode($id))->id());
     }
 
-    #[Test]
-    public function testConstructWithDefaults(): void
+    public function testKindReportsTheSymbolItStandsFor(): void
     {
-        $id = new ConstantNodeId('App', 'MyClass', 'MY_CONSTANT');
-        $node = new ConstantNode($id);
+        self::assertSame(NodeKind::Constant, (new ConstantNode(new ConstantNodeId('App\Domain', 'Invoice', 'MAX_ITEMS')))->kind());
+    }
 
-        self::assertNull($node->meta());
-        self::assertFalse($node->resolved());
+    public function testResolvedReportsWhatAnalysisEstablished(): void
+    {
+        self::assertTrue((new ConstantNode(new ConstantNodeId('App\Domain', 'Invoice', 'MAX_ITEMS'), true))->resolved());
+    }
+
+    public function testResolvedIsFalseUntilAnalysisEstablishesOtherwise(): void
+    {
+        self::assertFalse((new ConstantNode(new ConstantNodeId('App\Domain', 'Invoice', 'MAX_ITEMS')))->resolved());
+    }
+
+    public function testMetaReturnsWhereTheSymbolIsDeclared(): void
+    {
+        $meta = new FileMeta('/project/src/Invoice.php', 10, 5);
+
+        self::assertSame($meta, (new ConstantNode(new ConstantNodeId('App\Domain', 'Invoice', 'MAX_ITEMS'), true, $meta))->meta());
+    }
+
+    public function testMetaIsNullForASymbolWithNoKnownLocation(): void
+    {
+        self::assertNull((new ConstantNode(new ConstantNodeId('App\Domain', 'Invoice', 'MAX_ITEMS')))->meta());
     }
 }

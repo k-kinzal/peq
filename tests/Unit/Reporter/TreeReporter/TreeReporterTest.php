@@ -4,201 +4,214 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Reporter\TreeReporter;
 
-use App\Analyzer\Graph\Edge\FunctionCallEdge;
+use App\Analyzer\Graph\Direction;
+use App\Analyzer\Graph\Edge\Declaration\MethodEdge;
+use App\Analyzer\Graph\Edge\Usage\MethodCallEdge;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Graph;
-use App\Analyzer\Graph\Node\FunctionNode;
-use App\Analyzer\Graph\NodeId\FunctionNodeId;
+use App\Analyzer\Graph\Node\ClassNode;
+use App\Analyzer\Graph\Node\MethodNode;
+use App\Analyzer\Graph\NodeId\ClassNodeId;
+use App\Analyzer\Graph\NodeId\MethodNodeId;
+use App\Reporter\Traversal\DepthFirstTraversal;
 use App\Reporter\TreeReporter\TreeReporter;
 use App\Reporter\TreeReporter\TreeReporterOptions;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
  * @internal
  */
+#[CoversClass(TreeReporter::class)]
+#[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\EdgeKind::class)]
+#[UsesClass(MethodEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Inverse\DeclaredInEdge::class)]
+#[UsesClass(MethodCallEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Inverse\UsedByEdge::class)]
+#[UsesClass(FileMeta::class)]
+#[UsesClass(Graph::class)]
+#[UsesClass(ClassNodeId::class)]
+#[UsesClass(MethodNodeId::class)]
+#[UsesClass(ClassNode::class)]
+#[UsesClass(MethodNode::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(DepthFirstTraversal::class)]
+#[UsesClass(\App\Reporter\Traversal\DepthFirstWalk::class)]
+#[UsesClass(\App\Reporter\TreeReporter\LineRenderer::class)]
+#[UsesClass(\App\Reporter\TreeReporter\TreeCursor::class)]
+#[UsesClass(TreeReporterOptions::class)]
+#[Small]
 final class TreeReporterTest extends TestCase
 {
-    #[Test]
-    public function testReportOutputsTreeStructure(): void
+    #[DataProvider('providerInvoiceGraph')]
+    public function testReportWritesTheRootSymbolWithoutAnyPrefix(Graph $graph): void
     {
-        $graph = new Graph();
-        $nodeA = new FunctionNode(new FunctionNodeId('App', 'A'));
-        $nodeB = new FunctionNode(new FunctionNodeId('App', 'B'));
-
-        $graph->addNode($nodeA);
-        $graph->addNode($nodeB);
-        $graph->addEdge(new FunctionCallEdge($nodeA, $nodeB, new FileMeta('file.php', 1, 1)));
-
-        $output = $this->createMock(OutputInterface::class);
-        $output->expects(self::exactly(2))
-            ->method('writeln')
-            ->willReturnCallback(function (string $line) {
-                static $calls = 0;
-
-                /** @var int $calls */
-                ++$calls;
-                if ($calls === 1) {
-                    self::assertSame('App\A', $line);
-                } elseif ($calls === 2) {
-                    self::assertSame('└── App\B', $line);
-                }
-            })
+        $output = new BufferedOutput();
+        (new TreeReporter(new TreeReporterOptions(), new DepthFirstTraversal(Direction::Uses)))
+            ->report($graph, ClassNodeId::of('App\Domain\Invoice'), $output)
         ;
 
-        $reporter = new TreeReporter(new TreeReporterOptions());
-        $reporter->report($graph, $nodeA->id, $output);
+        self::assertStringStartsWith("App\\Domain\\Invoice\n", $output->fetch());
     }
 
-    #[Test]
-    public function testReportRespectsLevelOption(): void
+    #[DataProvider('providerInvoiceGraph')]
+    public function testReportDrawsTheWholeTreeBelowTheRoot(Graph $graph): void
     {
-        $graph = new Graph();
-        $nodeA = new FunctionNode(new FunctionNodeId('App', 'A'));
-        $nodeB = new FunctionNode(new FunctionNodeId('App', 'B'));
-
-        $graph->addNode($nodeA);
-        $graph->addNode($nodeB);
-        $graph->addEdge(new FunctionCallEdge($nodeA, $nodeB, new FileMeta('file.php', 1, 1)));
-
-        $output = $this->createMock(OutputInterface::class);
-        $output->expects(self::once())
-            ->method('writeln')
-            ->with('App\A')
+        $output = new BufferedOutput();
+        (new TreeReporter(new TreeReporterOptions(), new DepthFirstTraversal(Direction::Uses)))
+            ->report($graph, ClassNodeId::of('App\Domain\Invoice'), $output)
         ;
 
-        $reporter = new TreeReporter(new TreeReporterOptions(level: 0));
-        $reporter->report($graph, $nodeA->id, $output);
+        self::assertSame(
+            "App\\Domain\\Invoice\n"
+            ."├── App\\Domain\\Invoice::total\n"
+            ."│   └── App\\Domain\\Money::add\n"
+            ."└── App\\Domain\\Invoice::lines\n",
+            $output->fetch(),
+        );
     }
 
-    #[Test]
-    public function testReportHandlesRecursion(): void
+    #[DataProvider('providerInvoiceGraph')]
+    public function testReportStopsAtTheLevelTheConfigurationBounds(Graph $graph): void
     {
-        $graph = new Graph();
-        $nodeA = new FunctionNode(new FunctionNodeId('App', 'A'));
-        $nodeB = new FunctionNode(new FunctionNodeId('App', 'B'));
-        $nodeC = new FunctionNode(new FunctionNodeId('App', 'C'));
-
-        $graph->addNode($nodeA);
-        $graph->addNode($nodeB);
-        $graph->addNode($nodeC);
-
-        $graph->addEdge(new FunctionCallEdge($nodeA, $nodeB, new FileMeta('file.php', 1, 1)));
-        $graph->addEdge(new FunctionCallEdge($nodeB, $nodeC, new FileMeta('file.php', 1, 1)));
-        $graph->addEdge(new FunctionCallEdge($nodeC, $nodeA, new FileMeta('file.php', 1, 1)));
-
-        $output = $this->createMock(OutputInterface::class);
-        $output->expects(self::exactly(4))
-            ->method('writeln')
-            ->willReturnCallback(function (string $line) {
-                static $calls = 0;
-
-                /** @var int $calls */
-                ++$calls;
-                if ($calls === 1) {
-                    self::assertSame('App\A', $line);
-                } elseif ($calls === 2) {
-                    self::assertSame('└── App\B', $line);
-                } elseif ($calls === 3) {
-                    self::assertSame('    └── App\C', $line);
-                } elseif ($calls === 4) {
-                    self::assertSame('        └── App\A (recursive)', $line);
-                }
-            })
+        $output = new BufferedOutput();
+        (new TreeReporter(new TreeReporterOptions(level: 1), new DepthFirstTraversal(Direction::Uses)))
+            ->report($graph, ClassNodeId::of('App\Domain\Invoice'), $output)
         ;
 
-        $reporter = new TreeReporter(new TreeReporterOptions());
-        $reporter->report($graph, $nodeA->id, $output);
+        self::assertSame(
+            "App\\Domain\\Invoice\n"
+            ."├── App\\Domain\\Invoice::total\n"
+            ."└── App\\Domain\\Invoice::lines\n",
+            $output->fetch(),
+        );
+    }
+
+    #[DataProvider('providerInvoiceGraph')]
+    public function testReportReadsTheGraphTheWayItsTraversalDoes(Graph $graph): void
+    {
+        $output = new BufferedOutput();
+        (new TreeReporter(new TreeReporterOptions(), new DepthFirstTraversal(Direction::UsedBy)))
+            ->report($graph, MethodNodeId::of('App\Domain\Money', 'add'), $output)
+        ;
+
+        self::assertSame(
+            "App\\Domain\\Money::add\n"
+            ."└── App\\Domain\\Invoice::total\n"
+            ."    └── App\\Domain\\Invoice\n",
+            $output->fetch(),
+        );
+    }
+
+    #[DataProvider('providerCyclicGraph')]
+    public function testReportMarksASymbolThatClosesACycle(Graph $graph): void
+    {
+        $output = new BufferedOutput();
+        (new TreeReporter(new TreeReporterOptions(), new DepthFirstTraversal(Direction::Uses)))
+            ->report($graph, MethodNodeId::of('App\Domain\Invoice', 'total'), $output)
+        ;
+
+        self::assertStringContainsString('(recursive)', $output->fetch());
     }
 
     /**
-     * Diamond dependency: A→B, A→C, B→D, C→D.
-     * D should be expanded once via B, then shown as (*) via C.
+     * @return iterable<string, array{Graph}>
      */
-    #[Test]
-    public function testReportDeduplicatesDiamondDependency(): void
+    public static function providerCyclicGraph(): iterable
     {
+        $meta = new FileMeta('/project/src/Domain/Invoice.php', 12, 1);
+        $total = new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true, $meta);
+        $add = new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true, $meta);
         $graph = new Graph();
-        $nodeA = new FunctionNode(new FunctionNodeId('App', 'A'));
-        $nodeB = new FunctionNode(new FunctionNodeId('App', 'B'));
-        $nodeC = new FunctionNode(new FunctionNodeId('App', 'C'));
-        $nodeD = new FunctionNode(new FunctionNodeId('App', 'D'));
+        $graph->addNodes([$total, $add]);
+        $graph->addEdges([
+            new MethodCallEdge($total, $add, $meta),
+            new MethodCallEdge($add, $total, $meta),
+        ]);
 
-        $graph->addNode($nodeA);
-        $graph->addNode($nodeB);
-        $graph->addNode($nodeC);
-        $graph->addNode($nodeD);
+        yield 'App\Domain\Invoice::total and App\Domain\Money::add call each other' => [$graph];
+    }
 
-        $meta = new FileMeta('file.php', 1, 1);
-        $graph->addEdge(new FunctionCallEdge($nodeA, $nodeB, $meta));
-        $graph->addEdge(new FunctionCallEdge($nodeA, $nodeC, $meta));
-        $graph->addEdge(new FunctionCallEdge($nodeB, $nodeD, $meta));
-        $graph->addEdge(new FunctionCallEdge($nodeC, $nodeD, $meta));
-
-        $lines = [];
-        $output = $this->createMock(OutputInterface::class);
-        $output->method('writeln')
-            ->willReturnCallback(function (string $line) use (&$lines) {
-                $lines[] = $line;
-            })
+    #[DataProvider('providerSharedDependencyGraph')]
+    public function testReportMarksASymbolItAlreadyExpandedElsewhere(Graph $graph): void
+    {
+        $output = new BufferedOutput();
+        (new TreeReporter(new TreeReporterOptions(), new DepthFirstTraversal(Direction::Uses)))
+            ->report($graph, ClassNodeId::of('App\Domain\Invoice'), $output)
         ;
 
-        $reporter = new TreeReporter(new TreeReporterOptions());
-        $reporter->report($graph, $nodeA->id, $output);
-
-        self::assertSame('App\A', $lines[0]);
-        self::assertSame('├── App\B', $lines[1]);
-        self::assertSame('│   └── App\D', $lines[2]);
-        self::assertSame('└── App\C', $lines[3]);
-        self::assertSame('    └── App\D (*)', $lines[4]);
-        self::assertCount(5, $lines);
+        self::assertStringContainsString('(*)', $output->fetch());
     }
 
     /**
-     * Shared subtree: A→B→D→E, A→C→D→E.
-     * D and E should only be expanded once (via B). Via C, D shows (*) and E is not visited.
+     * @return iterable<string, array{Graph}>
      */
-    #[Test]
-    public function testReportDeduplicatesSharedSubtree(): void
+    public static function providerSharedDependencyGraph(): iterable
     {
+        $meta = new FileMeta('/project/src/Domain/Invoice.php', 12, 1);
+        $invoice = new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true, $meta);
+        $total = new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true, $meta);
+        $lines = new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'lines'), true, $meta);
+        $add = new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true, $meta);
         $graph = new Graph();
-        $nodeA = new FunctionNode(new FunctionNodeId('App', 'A'));
-        $nodeB = new FunctionNode(new FunctionNodeId('App', 'B'));
-        $nodeC = new FunctionNode(new FunctionNodeId('App', 'C'));
-        $nodeD = new FunctionNode(new FunctionNodeId('App', 'D'));
-        $nodeE = new FunctionNode(new FunctionNodeId('App', 'E'));
+        $graph->addNodes([$invoice, $total, $lines, $add]);
+        $graph->addEdges([
+            new MethodEdge($invoice, $total, $meta),
+            new MethodEdge($invoice, $lines, $meta),
+            new MethodCallEdge($total, $add, $meta),
+            new MethodCallEdge($lines, $add, $meta),
+        ]);
 
-        $graph->addNode($nodeA);
-        $graph->addNode($nodeB);
-        $graph->addNode($nodeC);
-        $graph->addNode($nodeD);
-        $graph->addNode($nodeE);
+        yield 'App\Domain\Invoice::total and lines both call App\Domain\Money::add' => [$graph];
+    }
 
-        $meta = new FileMeta('file.php', 1, 1);
-        $graph->addEdge(new FunctionCallEdge($nodeA, $nodeB, $meta));
-        $graph->addEdge(new FunctionCallEdge($nodeA, $nodeC, $meta));
-        $graph->addEdge(new FunctionCallEdge($nodeB, $nodeD, $meta));
-        $graph->addEdge(new FunctionCallEdge($nodeC, $nodeD, $meta));
-        $graph->addEdge(new FunctionCallEdge($nodeD, $nodeE, $meta));
-
-        $lines = [];
-        $output = $this->createMock(OutputInterface::class);
-        $output->method('writeln')
-            ->willReturnCallback(function (string $line) use (&$lines) {
-                $lines[] = $line;
-            })
+    #[DataProvider('providerInvoiceGraph')]
+    public function testReportWritesNothingForASymbolTheGraphDoesNotHold(Graph $graph): void
+    {
+        $output = new BufferedOutput();
+        (new TreeReporter(new TreeReporterOptions(), new DepthFirstTraversal(Direction::Uses)))
+            ->report($graph, ClassNodeId::of('App\Domain\Missing'), $output)
         ;
 
-        $reporter = new TreeReporter(new TreeReporterOptions());
-        $reporter->report($graph, $nodeA->id, $output);
+        self::assertSame('', $output->fetch());
+    }
 
-        self::assertSame('App\A', $lines[0]);
-        self::assertSame('├── App\B', $lines[1]);
-        self::assertSame('│   └── App\D', $lines[2]);
-        self::assertSame('│       └── App\E', $lines[3]);
-        self::assertSame('└── App\C', $lines[4]);
-        self::assertSame('    └── App\D (*)', $lines[5]);
-        self::assertCount(6, $lines);
+    #[DataProvider('providerInvoiceGraph')]
+    public function testReportCanBeRunTwiceWithTheSameReporter(Graph $graph): void
+    {
+        $reporter = new TreeReporter(new TreeReporterOptions(), new DepthFirstTraversal(Direction::Uses));
+
+        $first = new BufferedOutput();
+        $reporter->report($graph, ClassNodeId::of('App\Domain\Invoice'), $first);
+        $second = new BufferedOutput();
+        $reporter->report($graph, ClassNodeId::of('App\Domain\Invoice'), $second);
+
+        self::assertSame($first->fetch(), $second->fetch());
+    }
+
+    /**
+     * @return iterable<string, array{Graph}>
+     */
+    public static function providerInvoiceGraph(): iterable
+    {
+        $meta = new FileMeta('/project/src/Domain/Invoice.php', 12, 1);
+        $invoice = new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true, $meta);
+        $total = new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true, $meta);
+        $lines = new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'lines'), true, $meta);
+        $add = new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true, $meta);
+        $graph = new Graph();
+        $graph->addNodes([$invoice, $total, $lines, $add]);
+        $graph->addEdges([
+            new MethodEdge($invoice, $total, $meta),
+            new MethodEdge($invoice, $lines, $meta),
+            new MethodCallEdge($total, $add, $meta),
+        ]);
+
+        yield 'App\Domain\Invoice declares total and lines, and total calls App\Domain\Money::add' => [$graph];
     }
 }

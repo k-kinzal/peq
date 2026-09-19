@@ -6,105 +6,79 @@ namespace Tests\Unit\Config;
 
 use App\Config\ConfigException;
 use App\Config\DebugAnalyzerConfig;
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\Attributes\Test;
+use App\Config\RawConfig;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(DebugAnalyzerConfig::class)]
+#[UsesClass(RawConfig::class)]
+#[Small]
 final class DebugAnalyzerConfigTest extends TestCase
 {
-    #[Test]
-    public function testConstruct(): void
+    public function testTheDepthDefaultsToAGraphDeepEnoughToRead(): void
     {
-        $config = new DebugAnalyzerConfig(depth: 10, seed: 12345);
-
-        self::assertSame(10, $config->depth);
-        self::assertSame(12345, $config->seed);
+        self::assertSame(5, (new DebugAnalyzerConfig())->depth);
     }
 
-    #[Test]
-    public function testConstructWithDefaults(): void
+    public function testAGeneratedGraphIsFreshUnlessASeedIsGiven(): void
     {
-        $config = new DebugAnalyzerConfig();
-
-        self::assertSame(5, $config->depth);
-        self::assertNull($config->seed);
+        self::assertNull((new DebugAnalyzerConfig())->seed);
     }
 
     /**
-     * @param array<string, mixed> $input
-     * @param array<string, mixed> $expected
+     * @throws ConfigException
      */
-    #[Test]
-    #[DataProvider('providerFromArray')]
-    public function testFromArray(array $input, array $expected): void
+    public function testFromRawReadsBothSettings(): void
     {
-        $config = DebugAnalyzerConfig::fromArray($input);
+        $settings = DebugAnalyzerConfig::fromRaw(new RawConfig(['depth' => 9, 'seed' => 42]));
 
-        self::assertSame($expected['depth'], $config->depth);
-        self::assertSame($expected['seed'], $config->seed);
+        self::assertSame(9, $settings->depth);
+        self::assertSame(42, $settings->seed);
     }
 
     /**
-     * @return array<string, array{array<string, mixed>, array<string, mixed>}>
+     * @throws ConfigException
      */
-    public static function providerFromArray(): array
+    public function testFromRawReadsSettingsASourceCouldOnlyCarryAsText(): void
     {
-        return [
-            'minimal_required' => [
-                [
-                    'depth' => 5,
-                ],
-                [
-                    'depth' => 5,
-                    'seed' => null,
-                ],
-            ],
-            'full_options' => [
-                [
-                    'depth' => 10,
-                    'seed' => 12345,
-                ],
-                [
-                    'depth' => 10,
-                    'seed' => 12345,
-                ],
-            ],
-        ];
+        $settings = DebugAnalyzerConfig::fromRaw(new RawConfig(['depth' => '9', 'seed' => '42']));
+
+        self::assertSame(9, $settings->depth);
+        self::assertSame(42, $settings->seed);
     }
 
     /**
-     * @param array<string, mixed> $input
+     * @throws ConfigException
      */
-    #[Test]
-    #[DataProvider('providerFromArrayWithInvalidData')]
-    public function testFromArrayWithInvalidData(array $input): void
+    public function testFromRawFallsBackToTheDefaultsForSettingsLeftOut(): void
+    {
+        $settings = DebugAnalyzerConfig::fromRaw(new RawConfig([]));
+
+        self::assertSame(5, $settings->depth);
+        self::assertNull($settings->seed);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testFromRawAcceptsASeedOfZero(): void
+    {
+        self::assertSame(0, DebugAnalyzerConfig::fromRaw(new RawConfig(['seed' => 0]))->seed);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testFromRawRejectsADepthThatIsNotAPositiveNumberOfLevels(): void
     {
         $this->expectException(ConfigException::class);
-        DebugAnalyzerConfig::fromArray($input);
-    }
+        $this->expectExceptionMessage('Invalid configuration "depth"');
 
-    /**
-     * @return array<string, array<array<string, mixed>>>
-     */
-    public static function providerFromArrayWithInvalidData(): array
-    {
-        return [
-            'missing_depth' => [[
-                'seed' => 123,
-            ]],
-            'invalid_depth_type' => [[
-                'depth' => 'string',
-            ]],
-            'invalid_depth_value' => [[
-                'depth' => 0,
-            ]],
-            'invalid_seed_type' => [[
-                'depth' => 5,
-                'seed' => 'string',
-            ]],
-        ];
+        DebugAnalyzerConfig::fromRaw(new RawConfig(['depth' => 0]));
     }
 }

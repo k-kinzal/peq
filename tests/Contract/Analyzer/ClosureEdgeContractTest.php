@@ -4,21 +4,18 @@ declare(strict_types=1);
 
 namespace Tests\Contract\Analyzer;
 
-use App\Analyzer\Graph\EdgeKind;
-use App\Analyzer\Graph\Graph;
-use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
-use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
+use App\Analyzer\Graph\Edge;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * Contract: when DependencyCollector defers to InClassMethodCollector for
- * closure content inside class methods, each usage expression produces
- * exactly one edge — not zero (lost) and not two (duplicated)
  */
+#[CoversClass(PhpStanAnalyzer::class)]
+#[Large]
 final class ClosureEdgeContractTest extends TestCase
 {
     #[Test]
@@ -40,9 +37,13 @@ final class ClosureEdgeContractTest extends TestCase
             }
             PHP;
 
-        $graph = self::analyzeCode($code);
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        self::assertEdgeCount($graph, 'Subject::run', 'Dep', EdgeKind::Instantiation, 1);
+        self::assertSame(['Tests\Contract\Analyzer\Closure\Subject::run -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep'], array_values(array_filter($relations, static fn (string $relation): bool => $relation === 'Tests\Contract\Analyzer\Closure\Subject::run -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep')));
     }
 
     #[Test]
@@ -66,9 +67,13 @@ final class ClosureEdgeContractTest extends TestCase
             }
             PHP;
 
-        $graph = self::analyzeCode($code);
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        self::assertEdgeCount($graph, 'Subject::run', 'Dep::make', EdgeKind::StaticCall, 1);
+        self::assertSame(['Tests\Contract\Analyzer\Closure\Subject::run -[static-call]-> Tests\Contract\Analyzer\Closure\Dep::make'], array_values(array_filter($relations, static fn (string $relation): bool => $relation === 'Tests\Contract\Analyzer\Closure\Subject::run -[static-call]-> Tests\Contract\Analyzer\Closure\Dep::make')));
     }
 
     #[Test]
@@ -92,63 +97,12 @@ final class ClosureEdgeContractTest extends TestCase
             }
             PHP;
 
-        $graph = self::analyzeCode($code);
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
 
-        self::assertEdgeCount($graph, 'Subject::run', 'Dep', EdgeKind::Instantiation, 1);
-    }
-
-    // ------------------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------------------
-
-    private static function analyzeCode(string $phpCode): Graph
-    {
-        $tmpDir = sys_get_temp_dir().'/peq_closure_'.uniqid();
-        mkdir($tmpDir, 0o777, true);
-        file_put_contents($tmpDir.'/Test.php', $phpCode);
-
-        try {
-            $analyzer = new PhpStanAnalyzer(new ContainerFactory(), new PhpFileCollector());
-
-            return $analyzer->analyze($tmpDir);
-        } finally {
-            @unlink($tmpDir.'/Test.php');
-            @rmdir($tmpDir);
-        }
-    }
-
-    private static function assertEdgeCount(
-        Graph $graph,
-        string $fromSuffix,
-        string $toSuffix,
-        EdgeKind $kind,
-        int $expected,
-    ): void {
-        $count = 0;
-        foreach ($graph->nodes() as $node) {
-            if (!str_ends_with($node->id()->toString(), $fromSuffix)) {
-                continue;
-            }
-            foreach ($graph->edges($node->id()) as $edge) {
-                if ($edge->kind() === $kind
-                    && str_ends_with($edge->to()->toString(), $toSuffix)
-                ) {
-                    ++$count;
-                }
-            }
-        }
-
-        self::assertSame(
-            $expected,
-            $count,
-            sprintf(
-                'Expected %d edge(s) [%s] from *%s to *%s, got %d',
-                $expected,
-                $kind->value,
-                $fromSuffix,
-                $toSuffix,
-                $count,
-            ),
-        );
+        self::assertSame(['Tests\Contract\Analyzer\Closure\Subject::run -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep'], array_values(array_filter($relations, static fn (string $relation): bool => $relation === 'Tests\Contract\Analyzer\Closure\Subject::run -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep')));
     }
 }

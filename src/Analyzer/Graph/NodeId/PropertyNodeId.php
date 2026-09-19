@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Analyzer\Graph\NodeId;
 
-use App\Analyzer\Graph\IdentifierAssert;
 use App\Analyzer\Graph\Node\PropertyNode;
 use App\Analyzer\Graph\NodeId;
+use App\Analyzer\Graph\QualifiedName;
 
 /**
  * Unique identifier for a property node in the dependency graph.
@@ -16,58 +16,46 @@ use App\Analyzer\Graph\NodeId;
  * within the analyzed codebase.
  *
  * @implements NodeId<PropertyNode>
- *
- * @property string $fullQualifiedName Alias for fullQualifiedName()
  */
 final class PropertyNodeId implements NodeId
 {
-    use IdentifierAssert;
+    /**
+     * The precomputed string form of this identifier.
+     */
+    private readonly string $stringValue;
 
     /**
      * @param string $namespace    The namespace of the class containing the property (must be a valid PHP namespace)
      * @param string $className    The class name containing the property (must be a valid PHP identifier)
      * @param string $propertyName The property name (must be a valid PHP identifier)
      */
-    private readonly string $stringValue;
-
     public function __construct(
         public readonly string $namespace,
         public readonly string $className,
         public readonly string $propertyName,
     ) {
         if ($namespace !== '') {
-            self::assertNamespace($namespace);
+            assert(QualifiedName::isNamespace($namespace), 'The namespace must be one PHP would accept');
         }
-        self::assertIdentifier($className);
-        self::assertIdentifier($propertyName);
+        assert(QualifiedName::isIdentifier($className), 'The name must be one PHP would accept for a single symbol');
+        assert(QualifiedName::isIdentifier($propertyName), 'The name must be one PHP would accept for a single symbol');
         $prefix = $namespace === '' ? $className : $namespace.'\\'.$className;
         $this->stringValue = $prefix.'::'.$propertyName;
     }
 
-    public function __toString(): string
-    {
-        return $this->toString();
-    }
-
-    public function __get(string $name): mixed
-    {
-        return match ($name) {
-            'fullQualifiedName' => $this->fullQualifiedName(),
-            default => throw new \LogicException("Undefined property: {$name}"),
-        };
-    }
-
     /**
-     * Returns the fully qualified property name.
+     * Builds the identifier from the fully qualified name of the declaring class.
      *
-     * Combines namespace, class name, and property name with appropriate separators
-     * (e.g., "App\Domain\User::username").
+     * @param string $ownerName    The fully qualified class name, as analysis reported it
+     * @param string $propertyName The name of the property
      *
-     * @return string The fully qualified property name
+     * @return self The identifier for that property
      */
-    public function fullQualifiedName(): string
+    public static function of(string $ownerName, string $propertyName): self
     {
-        return $this->stringValue;
+        $owner = new QualifiedName($ownerName);
+
+        return new self($owner->namespace, $owner->shortName, $propertyName);
     }
 
     /**

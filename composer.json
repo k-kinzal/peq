@@ -1,26 +1,22 @@
 {
     "name": "k-kinzal/peq",
-    "description": "A CLI application using Symfony Console.",
+    "description": "A CLI tool that analyzes PHP code dependencies and visualizes the blast radius of changes.",
+    "license": "MIT",
     "type": "project",
-    "bin": [
-        "bin/console"
-    ],
-    "autoload": {
-        "psr-4": {
-            "App\\": "src/"
-        },
-        "files": [
-            "src/functions.php"
-        ]
+    "homepage": "https://github.com/k-kinzal/peq",
+    "support": {
+        "source": "https://github.com/k-kinzal/peq",
+        "issues": "https://github.com/k-kinzal/peq/issues"
     },
-    "autoload-dev": {
-        "psr-4": {
-            "Tests\\": "tests/"
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/k-kinzal/php-ai-toolkit.git",
+            "no-api": true
         }
-    },
+    ],
     "require": {
         "php": "^8.1",
-        "fakerphp/faker": "^1.24",
         "phpstan/phpstan": "^2.0",
         "symfony/config": "^6.4 || ^7.0",
         "symfony/console": "^6.4 || ^7.0",
@@ -30,39 +26,44 @@
         "symfony/yaml": "^6.4 || ^7.0"
     },
     "require-dev": {
-        "friendsofphp/php-cs-fixer": "^3.0",
-        "phpunit/phpunit": "^10.0 || ^11.0 || ^12.0",
         "bamarni/composer-bin-plugin": "^1.8",
-        "vimeo/psalm": "^5.0 || ^6.0",
-        "mikey179/vfsstream": "^1.6",
-        "phpstan/phpstan-symfony": "^2.0",
-        "phpstan/phpstan-strict-rules": "^2.0",
-        "phpstan/phpstan-deprecation-rules": "^2.0",
-        "phpstan/phpstan-phpunit": "^2.0",
-        "dg/bypass-finals": "^1.9",
+        "deptrac/deptrac": "^4.4",
+        "friendsofphp/php-cs-fixer": "^3.0",
         "giorgiosironi/eris": "^1.0",
-        "phpbench/phpbench": "^1.2"
+        "k-kinzal/php-ai-toolkit": "dev-main",
+        "mikey179/vfsstream": "^1.6",
+        "phpbench/phpbench": "^1.2",
+        "phpcompatibility/php-compatibility": "^10.0@alpha",
+        "phpstan/phpstan-strict-rules": "^2.0",
+        "phpunit/phpunit": "^10.5.46",
+        "squizlabs/php_codesniffer": "^4.0"
     },
-    "scripts": {
-        "post-install-cmd": [
-            "@composer bin box require --dev humbug/box"
-        ],
-        "post-update-cmd": [
-            "@composer bin box require --dev humbug/box"
-        ],
-        "format": "php-cs-fixer fix .",
-        "lint:php-cs-fixer": "php-cs-fixer fix --diff --dry-run .",
-        "lint:phpstan": "phpstan analyze --memory-limit=1G",
-        "lint": [
-            "@lint:php-cs-fixer",
-            "@lint:phpstan"
-        ],
-        "test": "phpunit",
-        "test:unit": "phpunit --testsuite unit",
-        "test:integration": "phpunit --testsuite integration",
-        "test:contract": "phpunit --testsuite contract",
-        "bench": "phpbench run --report=aggregate",
-        "compile": "box compile"
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        },
+        "classmap": [
+            "tests/Fixture/Sample/",
+            "tests/Fixture/Source/"
+        ]
+    },
+    "bin": [
+        "bin/console"
+    ],
+    "config": {
+        "allow-plugins": {
+            "bamarni/composer-bin-plugin": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        },
+        "sort-packages": true,
+        "platform": {
+            "php": "8.1.0"
+        }
     },
     "extra": {
         "bamarni-bin": {
@@ -71,12 +72,40 @@
             "forward-command": true
         }
     },
-    "config": {
-        "platform": {
-            "php": "8.1.0"
-        },
-        "allow-plugins": {
-            "bamarni/composer-bin-plugin": true
-        }
+    "scripts": {
+        "bench": "phpbench run --report=aggregate",
+        "bench:quick": "phpbench run --report=aggregate --warmup=1 --iterations=3 --retry-threshold=10",
+        "compat": "phpcs",
+        "compile": "box compile",
+        "deptrac": "deptrac analyse --config-file=deptrac.yaml",
+        "docgen": "docgen --exclude='tests/Fixture/*' --coverage=build/coverage-xml",
+        "docgen:diff": "@docgen --diff=main --serve",
+        "docgen:fresh": "@docgen --no-cache",
+        "docgen:serve": "@docgen --serve",
+        "doctest": "phpunit --testsuite doctest",
+        "format": "php-cs-fixer fix --allow-risky=yes",
+        "format:check": "php-cs-fixer fix --dry-run --diff --allow-risky=yes",
+        "lint": [
+            "@format:check",
+            "@phpstan",
+            "@compat",
+            "@loc-guard",
+            "@tree-guard",
+            "@deptrac"
+        ],
+        "loc-guard": "loc-guard --config=loc.yaml",
+        "phpstan": "phpstan analyse --memory-limit=512M",
+        "post-install-cmd": [
+            "@composer bin box require --dev humbug/box"
+        ],
+        "post-update-cmd": [
+            "@composer bin box require --dev humbug/box"
+        ],
+        "test": "phpunit --exclude-group=pbt",
+        "test:contract": "phpunit --testsuite contract --exclude-group=pbt",
+        "test:integration": "phpunit --testsuite integration --exclude-group=pbt",
+        "test:pbt": "phpunit --group=pbt",
+        "test:unit": "phpunit --testsuite unit --exclude-group=pbt",
+        "tree-guard": "tree-guard --config=tree.yaml"
     }
 }

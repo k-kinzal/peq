@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!-- NOTE: You do not have permission to overwrite this file. Please ask a human operator to perform the changes for you. -->
+<ruleset name="php-compatibility">
+    <description>Checks compatibility with the declared PHP support range.</description>
+
+    <file>bin</file>
+    <file>config</file>
+    <file>src</file>
+
+    <config name="testVersion" value="8.1-"/>
+
+    <rule ref="PHPCompatibility"/>
+</ruleset>

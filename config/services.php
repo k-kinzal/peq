@@ -6,6 +6,7 @@ namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
 use App\Action\Inspect\InspectAction;
 use App\Command\InspectCommand;
+use App\Reporter\ReporterFactory;
 
 return function (ContainerConfigurator $container): void {
     $services = $container->services()
@@ -16,6 +17,7 @@ return function (ContainerConfigurator $container): void {
     ;
 
     $services->set(InspectAction::class);
+    $services->set(ReporterFactory::class);
     $services->set(InspectCommand::class)
         ->tag('console.command')
     ;

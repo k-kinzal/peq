@@ -8,35 +8,52 @@ use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node\PropertyNode;
 use App\Analyzer\Graph\NodeId\PropertyNodeId;
 use App\Analyzer\Graph\NodeKind;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(PropertyNode::class)]
+#[UsesClass(FileMeta::class)]
+#[UsesClass(PropertyNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[Small]
 final class PropertyNodeTest extends TestCase
 {
-    #[Test]
-    public function testConstruct(): void
+    public function testIdReturnsTheIdentifierItWasBuiltWith(): void
     {
-        $id = new PropertyNodeId('App', 'MyClass', 'myProperty');
-        $meta = new FileMeta('/path/to/file.php', 10, 5);
+        $id = new PropertyNodeId('App\Domain', 'Invoice', 'lines');
 
-        $node = new PropertyNode($id, true, $meta);
-
-        self::assertSame($id, $node->id());
-        self::assertSame(NodeKind::Property, $node->kind());
-        self::assertSame($meta, $node->meta());
-        self::assertTrue($node->resolved());
+        self::assertSame($id, (new PropertyNode($id))->id());
     }
 
-    #[Test]
-    public function testConstructWithDefaults(): void
+    public function testKindReportsTheSymbolItStandsFor(): void
     {
-        $id = new PropertyNodeId('App', 'MyClass', 'myProperty');
-        $node = new PropertyNode($id);
+        self::assertSame(NodeKind::Property, (new PropertyNode(new PropertyNodeId('App\Domain', 'Invoice', 'lines')))->kind());
+    }
 
-        self::assertNull($node->meta());
-        self::assertFalse($node->resolved());
+    public function testResolvedReportsWhatAnalysisEstablished(): void
+    {
+        self::assertTrue((new PropertyNode(new PropertyNodeId('App\Domain', 'Invoice', 'lines'), true))->resolved());
+    }
+
+    public function testResolvedIsFalseUntilAnalysisEstablishesOtherwise(): void
+    {
+        self::assertFalse((new PropertyNode(new PropertyNodeId('App\Domain', 'Invoice', 'lines')))->resolved());
+    }
+
+    public function testMetaReturnsWhereTheSymbolIsDeclared(): void
+    {
+        $meta = new FileMeta('/project/src/Invoice.php', 10, 5);
+
+        self::assertSame($meta, (new PropertyNode(new PropertyNodeId('App\Domain', 'Invoice', 'lines'), true, $meta))->meta());
+    }
+
+    public function testMetaIsNullForASymbolWithNoKnownLocation(): void
+    {
+        self::assertNull((new PropertyNode(new PropertyNodeId('App\Domain', 'Invoice', 'lines')))->meta());
     }
 }

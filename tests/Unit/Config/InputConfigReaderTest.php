@@ -4,200 +4,168 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Config;
 
-use App\Config\ConfigException;
+use App\Action\Inspect\InspectAction;
+use App\Command\InspectCommand;
 use App\Config\InputConfigReader;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputDefinition;
-use Symfony\Component\Console\Input\InputOption;
 
 /**
  * @internal
  */
+#[CoversClass(InputConfigReader::class)]
+#[UsesClass(InspectCommand::class)]
+#[Small]
 final class InputConfigReaderTest extends TestCase
 {
-    #[Test]
-    public function testReadReturnsOnlyExplicitlyProvidedValues(): void
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadReportsTheOptionsTheUserTyped(): void
     {
-        $definition = new InputDefinition([
-            new InputArgument('target', InputArgument::OPTIONAL),
-            new InputArgument('path', InputArgument::OPTIONAL),
-            new InputOption('direction', 'D', InputOption::VALUE_REQUIRED),
-            new InputOption('level', 'L', InputOption::VALUE_REQUIRED),
-        ]);
-
-        $input = new ArrayInput([
-            'path' => '/project/path',
+        $config = (new InputConfigReader(new ArrayInput([
+            'target' => 'App\Domain\Invoice',
             '--direction' => 'used-by',
-            '--level' => 5,
-        ], $definition);
-
-        $reader = new InputConfigReader($input);
-        $config = $reader->read();
-
-        self::assertSame('used-by', $config['direction']);
-        self::assertSame(5, $config['level']);
-        self::assertSame('/project/path', $config['basePath']);
-        self::assertArrayNotHasKey('target', $config);
-    }
-
-    #[Test]
-    public function testReadOmitsUnspecifiedOptions(): void
-    {
-        $definition = new InputDefinition([
-            new InputArgument('target', InputArgument::OPTIONAL),
-            new InputArgument('path', InputArgument::OPTIONAL),
-            new InputOption('direction', 'D', InputOption::VALUE_REQUIRED),
-            new InputOption('type', null, InputOption::VALUE_REQUIRED),
-            new InputOption('include', 'I', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED),
-            new InputOption('exclude', 'E', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED),
-        ]);
-
-        $input = new ArrayInput([], $definition);
-
-        $reader = new InputConfigReader($input);
-        $config = $reader->read();
-
-        self::assertSame([], $config);
-    }
-
-    #[Test]
-    public function testReadMapsPathToBasePath(): void
-    {
-        $definition = new InputDefinition([
-            new InputArgument('path', InputArgument::REQUIRED),
-        ]);
-
-        $input = new ArrayInput([
-            'path' => '/some/path',
-        ], $definition);
-
-        $reader = new InputConfigReader($input);
-        $config = $reader->read();
-
-        self::assertSame('/some/path', $config['basePath']);
-        self::assertArrayNotHasKey('path', $config);
-    }
-
-    #[Test]
-    public function testReadMapsIncludeAndExcludeToPluralForm(): void
-    {
-        $definition = new InputDefinition([
-            new InputArgument('path', InputArgument::OPTIONAL),
-            new InputOption('include', 'I', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED),
-            new InputOption('exclude', 'E', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED),
-        ]);
-
-        $input = new ArrayInput([
-            '--include' => ['src/**'],
-            '--exclude' => ['vendor/**'],
-        ], $definition);
-
-        $reader = new InputConfigReader($input);
-        $config = $reader->read();
-
-        self::assertSame(['src/**'], $config['includes']);
-        self::assertSame(['vendor/**'], $config['excludes']);
-    }
-
-    #[Test]
-    public function testReadParsesDebugOptions(): void
-    {
-        $definition = new InputDefinition([
-            new InputArgument('path', InputArgument::OPTIONAL),
-            new InputOption('debug-depth', null, InputOption::VALUE_REQUIRED),
-            new InputOption('debug-seed', null, InputOption::VALUE_REQUIRED),
-        ]);
-
-        $input = new ArrayInput([
-            '--debug-depth' => '5',
-            '--debug-seed' => '123',
-        ], $definition);
-
-        $reader = new InputConfigReader($input);
-        $config = $reader->read();
-
-        self::assertArrayHasKey('debug', $config);
-
-        /** @var array{depth: int, seed: int} $debug */
-        $debug = $config['debug'];
-        self::assertSame(5, $debug['depth']);
-        self::assertSame(123, $debug['seed']);
-    }
-
-    #[Test]
-    public function testReadReverseOptionSetsDirectionToUsedBy(): void
-    {
-        $definition = new InputDefinition([
-            new InputArgument('path', InputArgument::OPTIONAL),
-            new InputOption('reverse', 'R', InputOption::VALUE_NONE),
-            new InputOption('direction', 'D', InputOption::VALUE_REQUIRED),
-        ]);
-
-        $input = new ArrayInput([
-            '--reverse' => true,
-        ], $definition);
-
-        $reader = new InputConfigReader($input);
-        $config = $reader->read();
-
-        self::assertSame('used-by', $config['direction']);
-    }
-
-    #[Test]
-    public function testReadWithoutReverseDoesNotEmitDirection(): void
-    {
-        $definition = new InputDefinition([
-            new InputArgument('path', InputArgument::OPTIONAL),
-            new InputOption('reverse', 'R', InputOption::VALUE_NONE),
-            new InputOption('direction', 'D', InputOption::VALUE_REQUIRED),
-        ]);
-
-        $input = new ArrayInput([], $definition);
-
-        $reader = new InputConfigReader($input);
-        $config = $reader->read();
-
-        self::assertArrayNotHasKey('direction', $config);
-    }
-
-    #[Test]
-    public function testReadValidatesLevel(): void
-    {
-        $definition = new InputDefinition([
-            new InputArgument('path', InputArgument::OPTIONAL),
-            new InputOption('level', 'L', InputOption::VALUE_REQUIRED),
-        ]);
-
-        $input = new ArrayInput([
-            '--level' => 'invalid',
-        ], $definition);
-
-        $reader = new InputConfigReader($input);
-
-        $this->expectException(ConfigException::class);
-        $this->expectExceptionMessage('Invalid level: invalid. Level must be a positive integer.');
-
-        $reader->read();
-    }
-
-    #[Test]
-    public function testReadParsesValidLevel(): void
-    {
-        $definition = new InputDefinition([
-            new InputArgument('path', InputArgument::OPTIONAL),
-            new InputOption('level', 'L', InputOption::VALUE_REQUIRED),
-        ]);
-
-        $input = new ArrayInput([
             '--level' => '5',
-        ], $definition);
+        ], (new InspectCommand(new InspectAction()))->getDefinition())))->read();
 
-        $reader = new InputConfigReader($input);
-        $config = $reader->read();
+        self::assertSame('used-by', $config['direction'] ?? null);
+        self::assertSame('5', $config['level'] ?? null);
+    }
 
-        self::assertSame(5, $config['level']);
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadLeavesOutAnOptionTheUserDidNotType(): void
+    {
+        self::assertArrayNotHasKey('direction', (new InputConfigReader(new ArrayInput(['target' => 'App\Domain\Invoice'], (new InspectCommand(new InspectAction()))->getDefinition())))->read());
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadReportsThePathArgumentAsTheBasePath(): void
+    {
+        self::assertSame('/project', (new InputConfigReader(new ArrayInput(['target' => 'App\Domain\Invoice', 'path' => '/project'], (new InspectCommand(new InspectAction()))->getDefinition())))->read()['basePath'] ?? null);
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadLeavesOutTheSymbolBeingInspected(): void
+    {
+        self::assertArrayNotHasKey('target', (new InputConfigReader(new ArrayInput(['target' => 'App\Invoice'], (new InspectCommand(new InspectAction()))->getDefinition())))->read());
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadReportsIncludeAndExcludeUnderTheirPluralNames(): void
+    {
+        $config = (new InputConfigReader(new ArrayInput([
+            'target' => 'App\Domain\Invoice',
+            '--include' => ['src'],
+            '--exclude' => ['vendor', 'build'],
+        ], (new InspectCommand(new InspectAction()))->getDefinition())))->read();
+
+        self::assertSame(['src'], $config['includes'] ?? null);
+        self::assertSame(['vendor', 'build'], $config['excludes'] ?? null);
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadReportsDebugOptionsInsideTheDebugGroup(): void
+    {
+        $config = (new InputConfigReader(new ArrayInput([
+            'target' => 'App\Domain\Invoice',
+            '--debug-depth' => '9',
+            '--debug-seed' => '42',
+        ], (new InspectCommand(new InspectAction()))->getDefinition())))->read();
+
+        self::assertSame(['depth' => '9', 'seed' => '42'], $config['debug'] ?? null);
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadLeavesTheDebugGroupOutWhenNoDebugOptionIsTyped(): void
+    {
+        self::assertArrayNotHasKey('debug', (new InputConfigReader(new ArrayInput(['target' => 'App\Domain\Invoice', '--type' => 'debug'], (new InspectCommand(new InspectAction()))->getDefinition())))->read());
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadTreatsReverseAsAskingForTheOppositeDirection(): void
+    {
+        self::assertSame('used-by', (new InputConfigReader(new ArrayInput(['target' => 'App\Domain\Invoice', '--reverse' => true], (new InspectCommand(new InspectAction()))->getDefinition())))->read()['direction'] ?? null);
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadReportsTheAnalyzerTheUserAskedFor(): void
+    {
+        self::assertSame('debug', (new InputConfigReader(new ArrayInput(['target' => 'App\Domain\Invoice', '--type' => 'debug'], (new InspectCommand(new InspectAction()))->getDefinition())))->read()['type'] ?? null);
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadReportsALevelExactlyAsItWasTypedRatherThanJudgingIt(): void
+    {
+        self::assertSame('nonsense', (new InputConfigReader(new ArrayInput(['target' => 'App\Domain\Invoice', '--level' => 'nonsense'], (new InspectCommand(new InspectAction()))->getDefinition())))->read()['level'] ?? null);
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testOptionReadsWhatTheUserTypedForOneOption(): void
+    {
+        $reader = new InputConfigReader(new ArrayInput(['target' => 'App\Domain\Invoice', '--direction' => 'used-by'], (new InspectCommand(new InspectAction()))->getDefinition()));
+
+        self::assertSame('used-by', $reader->option('direction'));
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testOptionReadsARepeatedOptionAsAListOfValues(): void
+    {
+        $reader = new InputConfigReader(new ArrayInput(['target' => 'App\Domain\Invoice', '--exclude' => ['vendor', 'build']], (new InspectCommand(new InspectAction()))->getDefinition()));
+
+        self::assertSame(['vendor', 'build'], $reader->option('exclude'));
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testOptionReadsAnOptionTheUserLeftOutAsNothing(): void
+    {
+        self::assertNull((new InputConfigReader(new ArrayInput(['target' => 'App\Domain\Invoice'], (new InspectCommand(new InspectAction()))->getDefinition())))->option('direction'));
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReportedReadsAValueAnOptionCanCarry(): void
+    {
+        self::assertSame('uses', (new InputConfigReader(new ArrayInput(['target' => 'App\Domain\Invoice'], (new InspectCommand(new InspectAction()))->getDefinition())))->reported('direction', 'uses'));
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReportedRejectsAValueNoSettingCanBe(): void
+    {
+        $this->expectException(\App\Config\ConfigException::class);
+        $this->expectExceptionMessageMatches('/expected a setting/');
+
+        (new InputConfigReader(new ArrayInput(['target' => 'App\Domain\Invoice'], (new InspectCommand(new InspectAction()))->getDefinition())))->reported('direction', new stdClass());
     }
 }

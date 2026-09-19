@@ -5,45 +5,47 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\Graph\NodeId;
 
 use App\Analyzer\Graph\NodeId\InterfaceNodeId;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(InterfaceNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[Small]
 final class InterfaceNodeIdTest extends TestCase
 {
-    #[Test]
-    public function testConstruct(): void
+    public function testToStringJoinsTheParts(): void
     {
-        $id = new InterfaceNodeId('App\Service', 'MyInterface');
-
-        self::assertSame('App\Service', $id->namespace);
-        self::assertSame('MyInterface', $id->interfaceName);
+        self::assertSame('App\Domain\Payable', (new InterfaceNodeId('App\Domain', 'Payable'))->toString());
     }
 
-    #[Test]
-    public function testFullQualifiedName(): void
+    public function testToStringOmitsTheSeparatorWithoutANamespace(): void
     {
-        $id = new InterfaceNodeId('App\Service', 'MyInterface');
-
-        self::assertSame('App\Service\MyInterface', $id->fullQualifiedName());
+        self::assertSame('Payable', (new InterfaceNodeId('', 'Payable'))->toString());
     }
 
-    #[Test]
-    public function testToString(): void
+    public function testOfSplitsAFullyQualifiedName(): void
     {
-        $id = new InterfaceNodeId('App\Service', 'MyInterface');
+        $id = InterfaceNodeId::of('App\Domain\Payable');
 
-        self::assertSame('App\Service\MyInterface', $id->toString());
-        self::assertSame('App\Service\MyInterface', (string) $id);
+        self::assertSame('App\Domain', $id->namespace);
+        self::assertSame('Payable', $id->interfaceName);
     }
 
-    #[Test]
-    public function testMagicGet(): void
+    public function testOfBuildsTheSameIdentifierAsTheConstructor(): void
     {
-        $id = new InterfaceNodeId('App', 'Test');
+        self::assertSame(
+            (new InterfaceNodeId('App\Domain', 'Payable'))->toString(),
+            InterfaceNodeId::of('App\Domain\Payable')->toString(),
+        );
+    }
 
-        self::assertSame('App\Test', $id->fullQualifiedName);
+    public function testOfLeavesTheNamespaceEmptyForAGlobalName(): void
+    {
+        self::assertSame('', InterfaceNodeId::of('Payable')->namespace);
     }
 }

@@ -8,35 +8,52 @@ use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node\TraitNode;
 use App\Analyzer\Graph\NodeId\TraitNodeId;
 use App\Analyzer\Graph\NodeKind;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(TraitNode::class)]
+#[UsesClass(FileMeta::class)]
+#[UsesClass(TraitNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[Small]
 final class TraitNodeTest extends TestCase
 {
-    #[Test]
-    public function testConstruct(): void
+    public function testIdReturnsTheIdentifierItWasBuiltWith(): void
     {
-        $id = new TraitNodeId('App', 'MyTrait');
-        $meta = new FileMeta('/path/to/file.php', 10, 5);
+        $id = new TraitNodeId('App\Domain', 'Timestamped');
 
-        $node = new TraitNode($id, true, $meta);
-
-        self::assertSame($id, $node->id());
-        self::assertSame(NodeKind::Trait, $node->kind());
-        self::assertSame($meta, $node->meta());
-        self::assertTrue($node->resolved());
+        self::assertSame($id, (new TraitNode($id))->id());
     }
 
-    #[Test]
-    public function testConstructWithDefaults(): void
+    public function testKindReportsTheSymbolItStandsFor(): void
     {
-        $id = new TraitNodeId('App', 'MyTrait');
-        $node = new TraitNode($id);
+        self::assertSame(NodeKind::Trait, (new TraitNode(new TraitNodeId('App\Domain', 'Timestamped')))->kind());
+    }
 
-        self::assertNull($node->meta());
-        self::assertFalse($node->resolved());
+    public function testResolvedReportsWhatAnalysisEstablished(): void
+    {
+        self::assertTrue((new TraitNode(new TraitNodeId('App\Domain', 'Timestamped'), true))->resolved());
+    }
+
+    public function testResolvedIsFalseUntilAnalysisEstablishesOtherwise(): void
+    {
+        self::assertFalse((new TraitNode(new TraitNodeId('App\Domain', 'Timestamped')))->resolved());
+    }
+
+    public function testMetaReturnsWhereTheSymbolIsDeclared(): void
+    {
+        $meta = new FileMeta('/project/src/Invoice.php', 10, 5);
+
+        self::assertSame($meta, (new TraitNode(new TraitNodeId('App\Domain', 'Timestamped'), true, $meta))->meta());
+    }
+
+    public function testMetaIsNullForASymbolWithNoKnownLocation(): void
+    {
+        self::assertNull((new TraitNode(new TraitNodeId('App\Domain', 'Timestamped')))->meta());
     }
 }

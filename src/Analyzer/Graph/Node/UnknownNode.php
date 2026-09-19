@@ -6,6 +6,7 @@ namespace App\Analyzer\Graph\Node;
 
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node;
+use App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\NodeId\UnknownNodeId;
 use App\Analyzer\Graph\NodeKind;
 
@@ -28,6 +29,29 @@ final class UnknownNode implements Node
         public readonly bool $resolved = false,
         public readonly ?FileMeta $meta = null,
     ) {}
+
+    /**
+     * Returns a placeholder standing in for a symbol the graph has not seen yet.
+     *
+     * An edge may name a symbol before analysis reaches its declaration, or name
+     * one that lives outside the analyzed sources. The graph records this
+     * placeholder for it so that the edge is never left dangling, and replaces the
+     * placeholder as soon as the real node arrives.
+     *
+     * @param NodeId<Node> $id The identifier the edge refers to
+     *
+     * @example A referenced but unseen symbol stands in for itself
+     *     $named = \App\Analyzer\Graph\NodeId\ClassNodeId::of('App\\Domain\\Invoice');
+     *     \App\Analyzer\Graph\Node\UnknownNode::standingInFor($named)->kind() // => \App\Analyzer\Graph\NodeKind::Unknown
+     *
+     * @return self An unresolved placeholder for that identifier
+     */
+    public static function standingInFor(NodeId $id): self
+    {
+        return new self(
+            id: $id instanceof UnknownNodeId ? $id : new UnknownNodeId($id->toString()),
+        );
+    }
 
     /**
      * {@inheritdoc}

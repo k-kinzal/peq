@@ -7,102 +7,341 @@ namespace Tests\Unit\Config;
 use App\Config\ConfigException;
 use App\Config\YamlConfigLoader;
 use org\bovigo\vfs\vfsStream;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 
 /**
  * @internal
  */
+#[CoversClass(YamlConfigLoader::class)]
+#[UsesClass(\App\Config\RawConfig::class)]
+#[Small]
 final class YamlConfigLoaderTest extends TestCase
 {
-    #[Test]
-    public function testReadReturnsConfigFromYamlFile(): void
+    /**
+     * @throws ConfigException
+     */
+    public function testReadReportsTheSettingsTheFileHolds(): void
     {
-        $yaml = <<<'YAML'
-            basePath: /project/path
-            direction: uses
-            level: 3
-            includes:
-              - src/**/*.php
-              - lib/**/*.php
-            excludes:
-              - vendor/**
-            YAML;
-
         $root = vfsStream::setup('config');
-        vfsStream::newFile('.peq.yaml')
-            ->at($root)
-            ->setContent($yaml)
-        ;
+        vfsStream::newFile('.peq.yaml')->at($root)->setContent(
+            "basePath: /project\ndirection: uses\nlevel: 3\nexcludes:\n  - vendor\n",
+        );
 
-        $reader = new YamlConfigLoader(vfsStream::url('config/.peq.yaml'));
-        $config = $reader->read();
+        $config = (new YamlConfigLoader(vfsStream::url('config/.peq.yaml')))->read();
 
-        self::assertSame('/project/path', $config['basePath']);
-        self::assertSame('uses', $config['direction']);
-        self::assertSame(3, $config['level']);
-        self::assertSame(['src/**/*.php', 'lib/**/*.php'], $config['includes']);
-        self::assertSame(['vendor/**'], $config['excludes']);
+        self::assertSame('/project', $config['basePath'] ?? null);
+        self::assertSame('uses', $config['direction'] ?? null);
+        self::assertSame(3, $config['level'] ?? null);
+        self::assertSame(['vendor'], $config['excludes'] ?? null);
     }
 
-    #[Test]
-    public function testReadReturnsEmptyArrayWhenFileDoesNotExist(): void
+    /**
+     * @throws ConfigException
+     */
+    public function testReadReportsNothingWhenTheProjectHasNoConfigurationFile(): void
     {
-        $reader = new YamlConfigLoader(vfsStream::url('config/nonexistent.yaml'));
-        $config = $reader->read();
+        vfsStream::setup('config');
 
-        self::assertSame([], $config);
+        self::assertSame([], (new YamlConfigLoader(vfsStream::url('config/absent.yaml')))->read());
     }
 
-    #[Test]
-    public function testReadThrowsExceptionWhenYamlParsingFails(): void
+    /**
+     * @throws ConfigException
+     */
+    public function testReadReportsNothingForAFileThatIsEmpty(): void
     {
-        $invalidYaml = "basePath: /path\n  invalid: indentation\n bad: yaml";
-
         $root = vfsStream::setup('config');
-        vfsStream::newFile('invalid.yaml')
-            ->at($root)
-            ->setContent($invalidYaml)
-        ;
+        vfsStream::newFile('empty.yaml')->at($root)->setContent("\n");
+
+        self::assertSame([], (new YamlConfigLoader(vfsStream::url('config/empty.yaml')))->read());
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testReadRejectsAFileThatCannotBeParsed(): void
+    {
+        $root = vfsStream::setup('config');
+        vfsStream::newFile('invalid.yaml')->at($root)->setContent("basePath: /path\n  invalid: indentation\n bad: yaml");
 
         $this->expectException(ConfigException::class);
         $this->expectExceptionMessageMatches('/Failed to parse YAML/');
 
-        $reader = new YamlConfigLoader(vfsStream::url('config/invalid.yaml'));
-        $reader->read();
+        (new YamlConfigLoader(vfsStream::url('config/invalid.yaml')))->read();
     }
 
-    #[Test]
-    public function testReadThrowsExceptionWhenContentIsNotArray(): void
+    /**
+     * @throws ConfigException
+     */
+    public function testReadRejectsAFileHoldingSomethingOtherThanSettings(): void
     {
-        $scalarYaml = 'just a string';
-
         $root = vfsStream::setup('config');
-        vfsStream::newFile('scalar.yaml')
-            ->at($root)
-            ->setContent($scalarYaml)
-        ;
+        vfsStream::newFile('scalar.yaml')->at($root)->setContent('just a string');
 
         $this->expectException(ConfigException::class);
         $this->expectExceptionMessageMatches('/Invalid configuration format/');
 
-        $reader = new YamlConfigLoader(vfsStream::url('config/scalar.yaml'));
-        $reader->read();
+        (new YamlConfigLoader(vfsStream::url('config/scalar.yaml')))->read();
     }
 
-    #[Test]
-    public function testReadThrowsExceptionWhenFileCannotBeRead(): void
+    /**
+     * @throws ConfigException
+     */
+    public function testReadRejectsAFileWhoseSettingsAreUnnamed(): void
     {
         $root = vfsStream::setup('config');
-        $file = vfsStream::newFile('unreadable.yaml', 0o000)
-            ->at($root)
-            ->setContent('foo: bar')
-        ;
+        vfsStream::newFile('list.yaml')->at($root)->setContent("- vendor\n- build\n");
+
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessageMatches('/every setting must be named/');
+
+        (new YamlConfigLoader(vfsStream::url('config/list.yaml')))->read();
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testReadRejectsAFileItCannotOpen(): void
+    {
+        $root = vfsStream::setup('config');
+        $file = vfsStream::newFile('unreadable.yaml', 0o000)->at($root)->setContent('basePath: /project');
 
         $this->expectException(ConfigException::class);
         $this->expectExceptionMessageMatches('/Failed to read configuration file/');
 
-        $reader = new YamlConfigLoader($file->url());
-        $reader->read();
+        (new YamlConfigLoader($file->url()))->read();
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testContentsReadsWhatTheFileHolds(): void
+    {
+        $root = vfsStream::setup('config');
+        vfsStream::newFile('.peq.yaml')->at($root)->setContent("basePath: /project\n");
+
+        self::assertSame("basePath: /project\n", (new YamlConfigLoader(vfsStream::url('config/.peq.yaml')))->contents());
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testContentsRejectsAFileItCannotOpen(): void
+    {
+        $root = vfsStream::setup('config');
+        $file = vfsStream::newFile('locked.yaml', 0o000)->at($root)->setContent('basePath: /project');
+
+        $this->expectException(ConfigException::class);
+
+        (new YamlConfigLoader($file->url()))->contents();
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testParseReadsWhatTheContentsDescribe(): void
+    {
+        self::assertSame(['basePath' => '/project'], (new YamlConfigLoader('/unused'))->parse("basePath: /project\n"));
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testParseReadsNothingFromEmptyContents(): void
+    {
+        self::assertNull((new YamlConfigLoader('/unused'))->parse("\n"));
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testParseRejectsContentsItCannotRead(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessageMatches('/Failed to parse YAML/');
+
+        (new YamlConfigLoader('/unused'))->parse("basePath: /path\n  invalid: indentation\n bad: yaml");
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testSettingsReadsWhatTheContentsDescribedAsSettings(): void
+    {
+        $settings = (new YamlConfigLoader('/unused'))->settings(['basePath' => '/project', 'level' => 3]);
+
+        self::assertSame(['basePath' => '/project', 'level' => 3], $settings);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testSettingsReadsNothingFromAFileThatDescribedNothing(): void
+    {
+        self::assertSame([], (new YamlConfigLoader('/unused'))->settings(null));
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testSettingsRejectsContentsDescribingSomethingOtherThanSettings(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessageMatches('/expected named settings/');
+
+        (new YamlConfigLoader('/unused'))->settings('just a string');
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testSettingsRejectsSettingsThatAreUnnamed(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessageMatches('/every setting must be named/');
+
+        (new YamlConfigLoader('/unused'))->settings(['unnamed']);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testFieldReadsASingleValueAsItWasWritten(): void
+    {
+        self::assertSame(3, (new YamlConfigLoader('/unused'))->field('level', 3));
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testFieldReadsAListOfValuesAsAList(): void
+    {
+        self::assertSame(['vendor', 'build'], (new YamlConfigLoader('/unused'))->field('excludes', ['vendor', 'build']));
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testFieldReadsNamedValuesAsAGroup(): void
+    {
+        self::assertSame(['depth' => 3], (new YamlConfigLoader('/unused'))->field('debug', ['depth' => 3]));
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testFieldRejectsAValueNoSettingCanBeWrittenAs(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessageMatches('/expected a setting/');
+
+        (new YamlConfigLoader('/unused'))->field('level', new stdClass());
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testGroupReadsTheSettingsAGroupHolds(): void
+    {
+        $group = (new YamlConfigLoader('/unused'))->group('debug', ['depth' => 3, 'seed' => 42]);
+
+        self::assertSame(['depth' => 3, 'seed' => 42], $group);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testGroupRejectsASettingThatIsUnnamed(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessageMatches('/every setting must be named/');
+
+        (new YamlConfigLoader('/unused'))->group('debug', [3]);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testGroupRejectsAGroupNestedInsideAGroup(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessageMatches('/expected a list of settings/');
+
+        (new YamlConfigLoader('/unused'))->group('debug', ['nested' => ['depth' => 3]]);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testValuesReadsAListOfSettings(): void
+    {
+        self::assertSame(['vendor'], (new YamlConfigLoader('/unused'))->values('excludes', ['vendor']));
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testValuesRejectsNamedEntriesWhereAListIsMeant(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessageMatches('/expected a list of settings/');
+
+        (new YamlConfigLoader('/unused'))->values('excludes', ['first' => 'vendor']);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testLeafReadsASingleValue(): void
+    {
+        self::assertSame('uses', (new YamlConfigLoader('/unused'))->leaf('direction', 'uses'));
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testLeafRejectsAValueNoSettingCanBe(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessageMatches('/expected a setting/');
+
+        (new YamlConfigLoader('/unused'))->leaf('direction', new stdClass());
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testGroupNamesTheSettingItRejectsByItsGroupAndName(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Invalid configuration "debug.depth"');
+
+        (new YamlConfigLoader('/unused'))->group('debug', ['depth' => ['deep' => 3]]);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testGroupNamesAListSettingItRejectsByItsGroupAndName(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Invalid configuration "debug.seed"');
+
+        (new YamlConfigLoader('/unused'))->group('debug', ['seed' => [[42]]]);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testGroupNamesASingleSettingItRejectsByItsGroupAndName(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Invalid configuration "debug.seed"');
+
+        (new YamlConfigLoader('/unused'))->group('debug', ['seed' => new stdClass()]);
     }
 }

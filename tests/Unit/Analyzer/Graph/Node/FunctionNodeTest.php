@@ -8,35 +8,52 @@ use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\NodeId\FunctionNodeId;
 use App\Analyzer\Graph\NodeKind;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(FunctionNode::class)]
+#[UsesClass(FileMeta::class)]
+#[UsesClass(FunctionNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[Small]
 final class FunctionNodeTest extends TestCase
 {
-    #[Test]
-    public function testConstruct(): void
+    public function testIdReturnsTheIdentifierItWasBuiltWith(): void
     {
-        $id = new FunctionNodeId('App', 'myFunction');
-        $meta = new FileMeta('/path/to/file.php', 10, 5);
+        $id = new FunctionNodeId('App\Domain', 'formatMoney');
 
-        $node = new FunctionNode($id, true, $meta);
-
-        self::assertSame($id, $node->id());
-        self::assertSame(NodeKind::Function, $node->kind());
-        self::assertSame($meta, $node->meta());
-        self::assertTrue($node->resolved());
+        self::assertSame($id, (new FunctionNode($id))->id());
     }
 
-    #[Test]
-    public function testConstructWithDefaults(): void
+    public function testKindReportsTheSymbolItStandsFor(): void
     {
-        $id = new FunctionNodeId('App', 'myFunction');
-        $node = new FunctionNode($id);
+        self::assertSame(NodeKind::Function, (new FunctionNode(new FunctionNodeId('App\Domain', 'formatMoney')))->kind());
+    }
 
-        self::assertNull($node->meta());
-        self::assertFalse($node->resolved());
+    public function testResolvedReportsWhatAnalysisEstablished(): void
+    {
+        self::assertTrue((new FunctionNode(new FunctionNodeId('App\Domain', 'formatMoney'), true))->resolved());
+    }
+
+    public function testResolvedIsFalseUntilAnalysisEstablishesOtherwise(): void
+    {
+        self::assertFalse((new FunctionNode(new FunctionNodeId('App\Domain', 'formatMoney')))->resolved());
+    }
+
+    public function testMetaReturnsWhereTheSymbolIsDeclared(): void
+    {
+        $meta = new FileMeta('/project/src/Invoice.php', 10, 5);
+
+        self::assertSame($meta, (new FunctionNode(new FunctionNodeId('App\Domain', 'formatMoney'), true, $meta))->meta());
+    }
+
+    public function testMetaIsNullForASymbolWithNoKnownLocation(): void
+    {
+        self::assertNull((new FunctionNode(new FunctionNodeId('App\Domain', 'formatMoney')))->meta());
     }
 }

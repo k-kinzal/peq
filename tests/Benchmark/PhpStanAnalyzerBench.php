@@ -4,34 +4,42 @@ declare(strict_types=1);
 
 namespace Tests\Benchmark;
 
-use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
-use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use PhpBench\Attributes\BeforeMethods;
 use PhpBench\Attributes\Iterations;
 use PhpBench\Attributes\Revs;
 
 /**
+ * Measures a whole analysis run, the way a user experiences it.
+ *
+ * This is the number that matters at the command line; the step breakdown says where
+ * it comes from.
+ *
  * @internal
  */
 final class PhpStanAnalyzerBench
 {
-    private string $srcPath = '';
+    /**
+     * The source tree the measurement analyses.
+     */
+    private string $sourcePath = '';
 
+    /**
+     * Names the source tree to analyse.
+     */
     public function setUp(): void
     {
-        $this->srcPath = dirname(__DIR__, 2).'/src';
+        $this->sourcePath = dirname(__DIR__, 2).'/src';
     }
 
+    /**
+     * Measures one analysis run from the outside.
+     */
     #[BeforeMethods('setUp')]
     #[Revs(1)]
     #[Iterations(3)]
     public function benchAnalyze(): void
     {
-        $analyzer = new PhpStanAnalyzer(
-            new ContainerFactory(),
-            new PhpFileCollector(),
-        );
-        $analyzer->analyze($this->srcPath);
+        (new PhpStanAnalyzer())->analyze($this->sourcePath);
     }
 }

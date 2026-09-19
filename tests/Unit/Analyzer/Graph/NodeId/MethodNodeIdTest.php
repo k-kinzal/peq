@@ -5,46 +5,47 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\Graph\NodeId;
 
 use App\Analyzer\Graph\NodeId\MethodNodeId;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(MethodNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[Small]
 final class MethodNodeIdTest extends TestCase
 {
-    #[Test]
-    public function testConstruct(): void
+    public function testToStringJoinsTheParts(): void
     {
-        $id = new MethodNodeId('App\Service', 'MyClass', 'myMethod');
-
-        self::assertSame('App\Service', $id->namespace);
-        self::assertSame('MyClass', $id->className);
-        self::assertSame('myMethod', $id->methodName);
+        self::assertSame('App\Domain\Invoice::total', (new MethodNodeId('App\Domain', 'Invoice', 'total'))->toString());
     }
 
-    #[Test]
-    public function testFullQualifiedName(): void
+    public function testToStringOmitsTheSeparatorWithoutANamespace(): void
     {
-        $id = new MethodNodeId('App\Service', 'MyClass', 'myMethod');
-
-        self::assertSame('App\Service\MyClass::myMethod', $id->fullQualifiedName());
+        self::assertSame('Invoice::total', (new MethodNodeId('', 'Invoice', 'total'))->toString());
     }
 
-    #[Test]
-    public function testToString(): void
+    public function testOfSplitsAFullyQualifiedName(): void
     {
-        $id = new MethodNodeId('App\Service', 'MyClass', 'myMethod');
+        $id = MethodNodeId::of('App\Domain\Invoice', 'total');
 
-        self::assertSame('App\Service\MyClass::myMethod', $id->toString());
-        self::assertSame('App\Service\MyClass::myMethod', (string) $id);
+        self::assertSame('App\Domain', $id->namespace);
+        self::assertSame('Invoice', $id->className);
     }
 
-    #[Test]
-    public function testMagicGet(): void
+    public function testOfBuildsTheSameIdentifierAsTheConstructor(): void
     {
-        $id = new MethodNodeId('App', 'Test', 'method');
+        self::assertSame(
+            (new MethodNodeId('App\Domain', 'Invoice', 'total'))->toString(),
+            MethodNodeId::of('App\Domain\Invoice', 'total')->toString(),
+        );
+    }
 
-        self::assertSame('App\Test::method', $id->fullQualifiedName);
+    public function testOfLeavesTheNamespaceEmptyForAGlobalName(): void
+    {
+        self::assertSame('', MethodNodeId::of('Invoice', 'total')->namespace);
     }
 }

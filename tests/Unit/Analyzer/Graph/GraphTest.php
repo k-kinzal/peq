@@ -4,561 +4,314 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\Graph;
 
-use App\Analyzer\Graph\Edge\DeclarationExtendsEdge;
-use App\Analyzer\Graph\Edge\DeclarationMethodEdge;
-use App\Analyzer\Graph\Edge\FunctionCallEdge;
-use App\Analyzer\Graph\Edge\InstanceofEdge;
-use App\Analyzer\Graph\Edge\InstantiationEdge;
-use App\Analyzer\Graph\Edge\MethodCallEdge;
-use App\Analyzer\Graph\Edge\PropertyAccessEdge;
+use App\Analyzer\Graph\Edge\Declaration\MethodEdge;
+use App\Analyzer\Graph\Edge\Usage\MethodCallEdge;
+use App\Analyzer\Graph\Edge\Usage\StaticCallEdge;
 use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node\ClassNode;
-use App\Analyzer\Graph\Node\FunctionNode;
-use App\Analyzer\Graph\Node\GraphInterfaceNode;
 use App\Analyzer\Graph\Node\MethodNode;
-use App\Analyzer\Graph\Node\PropertyNode;
-use App\Analyzer\Graph\Node\UnknownNode;
 use App\Analyzer\Graph\NodeId\ClassNodeId;
-use App\Analyzer\Graph\NodeId\FunctionNodeId;
-use App\Analyzer\Graph\NodeId\InterfaceNodeId;
 use App\Analyzer\Graph\NodeId\MethodNodeId;
-use App\Analyzer\Graph\NodeId\PropertyNodeId;
-use App\Analyzer\Graph\NodeId\UnknownNodeId;
 use App\Analyzer\Graph\NodeKind;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(Graph::class)]
+#[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
+#[UsesClass(MethodEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Inverse\DeclaredInEdge::class)]
+#[UsesClass(MethodCallEdge::class)]
+#[UsesClass(StaticCallEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Inverse\UsedByEdge::class)]
+#[UsesClass(FileMeta::class)]
+#[UsesClass(ClassNodeId::class)]
+#[UsesClass(MethodNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\NodeId\UnknownNodeId::class)]
+#[UsesClass(ClassNode::class)]
+#[UsesClass(MethodNode::class)]
+#[UsesClass(\App\Analyzer\Graph\Node\UnknownNode::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[Small]
 final class GraphTest extends TestCase
 {
-    #[Test]
-    public function testAddNodeAddsNodeToGraph(): void
+    public function testNodeFindsWhatWasRecordedUnderThatIdentifier(): void
     {
         $graph = new Graph();
-        $node = new ClassNode(id: new ClassNodeId('App\Service', 'MyClass'));
-
+        $node = new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true);
         $graph->addNode($node);
 
-        self::assertSame($node, $graph->node($node->id));
+        self::assertSame($node, $graph->node(ClassNodeId::of('App\Domain\Invoice')));
     }
 
-    #[Test]
-    public function testAddNodeReplacesUnknownNode(): void
+    public function testNodeFindsNothingForAnIdentifierNeverRecorded(): void
     {
-        $graph = new Graph();
-        $nodeId = new ClassNodeId('App\Service', 'MyClass');
-
-        $unknownNode = new UnknownNode(id: new UnknownNodeId('App\Service\MyClass'));
-        $graph->addNode($unknownNode);
-
-        $concreteNode = new ClassNode(id: new ClassNodeId('App\Service', 'MyClass'));
-        $graph->addNode($concreteNode);
-
-        $result = $graph->node($nodeId);
-        self::assertSame($concreteNode, $result);
-        self::assertSame(NodeKind::Klass, $result->kind());
+        self::assertNull((new Graph())->node(ClassNodeId::of('App\Domain\Invoice')));
     }
 
-    #[Test]
-    public function testAddNodeThrowsExceptionWhenNodeAlreadyExists(): void
+    public function testNodeNamedFindsASymbolByTheNameItIsWrittenAs(): void
     {
         $graph = new Graph();
-        $node = new ClassNode(id: new ClassNodeId('App\Service', 'MyClass'));
+        $node = new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true);
         $graph->addNode($node);
 
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Node already exists.');
-
-        $graph->addNode($node);
+        self::assertSame($node, $graph->nodeNamed('App\Domain\Invoice::total'));
     }
 
-    #[Test]
-    public function testAddNodesAddsMultipleNodes(): void
+    public function testNodeNamedFindsNothingForANameTheGraphDoesNotHold(): void
     {
-        $graph = new Graph();
-        $node1 = new ClassNode(id: new ClassNodeId('App\Service', 'ClassA'));
-        $node2 = new ClassNode(id: new ClassNodeId('App\Service', 'ClassB'));
-        $node3 = new GraphInterfaceNode(id: new InterfaceNodeId('App\Service', 'InterfaceA'));
-
-        $nodes = [$node1, $node2, $node3];
-
-        $graph->addNodes($nodes);
-
-        self::assertNotNull($graph->node($node1->id));
-        self::assertNotNull($graph->node($node2->id));
-        self::assertNotNull($graph->node($node3->id));
+        self::assertNull((new Graph())->nodeNamed('App\Domain\Invoice'));
     }
 
-    #[Test]
-    public function testAddEdgeCreatesEdge(): void
+    public function testAddNodeIgnoresASecondDescriptionOfTheSameSymbol(): void
     {
         $graph = new Graph();
-        $fromId = new ClassNodeId('App\Service', 'ClassA');
-        $toId = new ClassNodeId('App\Service', 'ClassB');
-        $edge = new DeclarationExtendsEdge(
-            from: new ClassNode(id: $fromId, resolved: true, meta: new FileMeta('', 1, 1)),
-            to: new ClassNode(id: $toId, resolved: true, meta: new FileMeta('', 1, 1)),
-            meta: new FileMeta('/path/to/file.php', 10, 5)
-        );
+        $first = new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true);
+        $graph->addNode($first);
+        $graph->addNode(new ClassNode(ClassNodeId::of('App\Domain\Invoice'), false));
 
+        self::assertSame($first, $graph->nodeNamed('App\Domain\Invoice'));
+    }
+
+    public function testAddNodeReplacesAPlaceholderWithTheRealSymbol(): void
+    {
+        $graph = new Graph();
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
+        $graph->addNode(new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true));
+
+        self::assertSame(NodeKind::Method, $graph->nodeNamed('App\Domain\Money::add')?->kind());
+    }
+
+    public function testAddNodesRecordsEveryNodeItIsGiven(): void
+    {
+        $graph = new Graph();
+        $graph->addNodes([
+            new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true),
+            new ClassNode(ClassNodeId::of('App\Domain\Money'), true),
+        ]);
+
+        self::assertCount(2, $graph->nodes());
+    }
+
+    public function testNodesReportsEverySymbolRecordedOnce(): void
+    {
+        $graph = new Graph();
+        $graph->addNodes([
+            new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true),
+            new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true),
+        ]);
+
+        self::assertCount(1, $graph->nodes());
+    }
+
+    public function testAddEdgeMakesTheRelationReadableFromItsSource(): void
+    {
+        $graph = new Graph();
+        $edge = new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1));
         $graph->addEdge($edge);
 
-        $result = $graph->edge($fromId, $toId);
-        self::assertNotNull($result);
-        self::assertSame(EdgeKind::DeclarationExtends, $result->kind());
+        self::assertSame($edge, $graph->edge($edge->from(), $edge->to(), EdgeKind::MethodCall));
     }
 
-    #[Test]
-    public function testAddEdgeCreatesUnknownNodesForMissingNodes(): void
+    public function testAddEdgeMakesTheRelationReadableFromItsTargetToo(): void
     {
         $graph = new Graph();
-        $fromId = new MethodNodeId('App\Service', 'ClassA', 'method');
-        $toId = new MethodNodeId('App\Service', 'ClassB', 'method');
-        $edge = new MethodCallEdge(
-            from: new MethodNode(id: $fromId, resolved: true, meta: new FileMeta('', 1, 1)),
-            to: new MethodNode(id: $toId, resolved: true, meta: new FileMeta('', 1, 1)),
-            meta: new FileMeta('/path/to/file.php', 15, 10)
-        );
-
+        $edge = new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1));
         $graph->addEdge($edge);
 
-        $fromNode = $graph->node($fromId);
-        $toNode = $graph->node($toId);
-        self::assertNotNull($fromNode);
-        self::assertNotNull($toNode);
-        self::assertSame(NodeKind::Unknown, $fromNode->kind());
-        self::assertSame(NodeKind::Unknown, $toNode->kind());
-        self::assertSame(NodeKind::Unknown, $toNode->kind());
+        self::assertSame(EdgeKind::UsedBy, $graph->edge($edge->to(), $edge->from())?->kind());
     }
 
-    #[Test]
-    public function testAddEdgePreservesUnknownNodeId(): void
+    public function testAddEdgeRecordsPlaceholdersForSymbolsNotSeenYet(): void
     {
         $graph = new Graph();
-        $fromId = new UnknownNodeId('App\UnknownClass');
-        $toId = new UnknownNodeId('App\AnotherUnknown');
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
 
-        $edge = new StubEdge(
-            from: new UnknownNode($fromId),
-            to: new UnknownNode($toId),
-            meta: new FileMeta('/path/to/file.php', 1, 1)
-        );
+        self::assertSame(NodeKind::Unknown, $graph->nodeNamed('App\Domain\Money::add')?->kind());
+    }
 
+    public function testAddNodeKeepsTheRelationsRecordedWhileTheSymbolWasAPlaceholder(): void
+    {
+        $graph = new Graph();
+        $edge = new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1));
+        $graph->addEdge($edge);
+        $graph->addNode(new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true));
+
+        self::assertCount(1, $graph->edges(MethodNodeId::of('App\Domain\Money', 'add')));
+    }
+
+    public function testAddEdgeRecordsAPlaceholderForTheSymbolARelationStartsAt(): void
+    {
+        $graph = new Graph();
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
+
+        self::assertSame(NodeKind::Unknown, $graph->nodeNamed('App\Domain\Invoice::total')?->kind());
+    }
+
+    public function testAddEdgeKeepsTwoRelationsThatDifferOnlyInWhereTheyStart(): void
+    {
+        $graph = new Graph();
+        $called = new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true);
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), $called, new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Receipt', 'total'), true), $called, new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
+
+        self::assertCount(2, $graph->authoredEdges());
+    }
+
+    public function testAddEdgeKeepsTwoRelationsThatDifferOnlyInWhereTheyPointAt(): void
+    {
+        $graph = new Graph();
+        $caller = new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true);
+        $graph->addEdge(new MethodCallEdge($caller, new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
+        $graph->addEdge(new MethodCallEdge($caller, new MethodNode(MethodNodeId::of('App\Domain\Money', 'subtract'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
+
+        self::assertCount(2, $graph->authoredEdges());
+    }
+
+    public function testAddEdgeKeepsTwoRelationsThatDifferOnlyInTheirKind(): void
+    {
+        $graph = new Graph();
+        $caller = new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true);
+        $called = new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true);
+        $graph->addEdge(new MethodCallEdge($caller, $called, new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
+        $graph->addEdge(new StaticCallEdge($caller, $called, new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
+
+        self::assertCount(2, $graph->authoredEdges());
+    }
+
+    public function testAddEdgeRecordsTheSameRelationOnlyOnce(): void
+    {
+        $graph = new Graph();
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
+
+        self::assertCount(1, $graph->edges(MethodNodeId::of('App\Domain\Invoice', 'total')));
+    }
+
+    public function testAddEdgesRecordsEveryRelationItIsGiven(): void
+    {
+        $graph = new Graph();
+        $graph->addEdges([
+            new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)),
+            new MethodEdge(new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true), new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)),
+        ]);
+
+        self::assertCount(2, $graph->authoredEdges());
+        self::assertSame(EdgeKind::UsedBy, $graph->edge(MethodNodeId::of('App\Domain\Money', 'add'), MethodNodeId::of('App\Domain\Invoice', 'total'))?->kind());
+        self::assertSame(EdgeKind::DeclaredIn, $graph->edge(MethodNodeId::of('App\Domain\Invoice', 'total'), ClassNodeId::of('App\Domain\Invoice'))?->kind());
+    }
+
+    public function testEdgesReportsBothReadingsRecordedForASymbol(): void
+    {
+        $graph = new Graph();
+        $graph->addEdge(new MethodEdge(new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true), new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
+
+        self::assertCount(1, $graph->edges(MethodNodeId::of('App\Domain\Invoice', 'total')));
+    }
+
+    public function testEdgesReportsNothingForASymbolWithNoRelations(): void
+    {
+        self::assertSame([], (new Graph())->edges(ClassNodeId::of('App\Domain\Invoice')));
+    }
+
+    public function testEdgeCanBeAskedWithoutNamingAKind(): void
+    {
+        $graph = new Graph();
+        $edge = new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1));
         $graph->addEdge($edge);
 
-        $fromNode = $graph->node($fromId);
-        $toNode = $graph->node($toId);
-
-        self::assertNotNull($fromNode);
-        self::assertNotNull($toNode);
-        self::assertSame(NodeKind::Unknown, $fromNode->kind());
-        self::assertSame(NodeKind::Unknown, $toNode->kind());
-
-        self::assertSame($fromId, $fromNode->id());
-        self::assertSame($toId, $toNode->id());
+        self::assertSame($edge, $graph->edge($edge->from(), $edge->to()));
     }
 
-    #[Test]
-    public function testAddEdgeCreatesBidirectionalEdge(): void
+    public function testEdgeFindsNothingForAKindThatWasNeverRecorded(): void
     {
         $graph = new Graph();
-        $fromId = new MethodNodeId('App\Service', 'ClassA', 'method');
-        $toId = new MethodNodeId('App\Service', 'ClassB', 'method');
-        $edge = new MethodCallEdge(
-            from: new MethodNode(id: $fromId, resolved: true, meta: new FileMeta('', 1, 1)),
-            to: new MethodNode(id: $toId, resolved: true, meta: new FileMeta('', 1, 1)),
-            meta: new FileMeta('/path/to/file.php', 20, 15)
-        );
-
+        $edge = new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1));
         $graph->addEdge($edge);
 
-        $forwardEdge = $graph->edge($fromId, $toId);
-        $reverseEdge = $graph->edge($toId, $fromId);
-
-        self::assertNotNull($forwardEdge);
-        self::assertNotNull($reverseEdge);
-        self::assertSame(EdgeKind::MethodCall, $forwardEdge->kind());
-        self::assertSame(EdgeKind::UsedBy, $reverseEdge->kind());
+        self::assertNull($graph->edge($edge->from(), $edge->to(), EdgeKind::StaticCall));
     }
 
-    #[Test]
-    public function testAddEdgesAddsMultipleEdges(): void
+    public function testAuthoredEdgesLeavesOutTheDerivedReadings(): void
     {
         $graph = new Graph();
-        $meta = new FileMeta('/path/to/file.php', 25, 20);
-        $fromId1 = new MethodNodeId('App\Service', 'ClassA', 'method');
-        $toId1 = new MethodNodeId('App\Service', 'ClassB', 'method');
-        $fromId2 = new MethodNodeId('App\Service', 'ClassB', 'method');
-        $toId2 = new PropertyNodeId('App\Service', 'ClassC', 'prop');
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
 
-        $edges = [
-            new MethodCallEdge(from: new MethodNode(id: $fromId1, resolved: true, meta: new FileMeta('', 1, 1)), to: new MethodNode(id: $toId1, resolved: true, meta: new FileMeta('', 1, 1)), meta: $meta),
-            new PropertyAccessEdge(from: new MethodNode(id: $fromId2, resolved: true, meta: new FileMeta('', 1, 1)), to: new PropertyNode(id: $toId2, resolved: true, meta: new FileMeta('', 1, 1)), meta: $meta),
-        ];
-
-        $graph->addEdges($edges);
-
-        self::assertNotNull($graph->edge($fromId1, $toId1));
-        self::assertNotNull($graph->edge($fromId2, $toId2));
+        self::assertCount(1, $graph->authoredEdges());
+        self::assertInstanceOf(MethodCallEdge::class, $graph->authoredEdges()[0]);
     }
 
-    #[Test]
-    public function testNodeReturnsNodeWhenExists(): void
+    public function testAuthoredEdgesIsEmptyForAGraphWithNoRelations(): void
+    {
+        self::assertSame([], (new Graph())->authoredEdges());
+    }
+
+    public function testMergeHoldsEverySymbolOfBothGraphs(): void
+    {
+        $first = new Graph();
+        $first->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
+        $second = new Graph();
+        $second->addEdge(new MethodEdge(new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true), new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
+
+        $merged = $first->merge($second);
+
+        $names = array_map(static fn (\App\Analyzer\Graph\Node $node): string => $node->id()->toString(), $merged->nodes());
+        sort($names);
+
+        self::assertSame(['App\Domain\Invoice', 'App\Domain\Invoice::total', 'App\Domain\Money::add'], $names);
+    }
+
+    public function testMergeDerivesTheReverseReadingsAgainRatherThanCarryingThem(): void
+    {
+        $first = new Graph();
+        $first->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
+
+        $merged = $first->merge(new Graph());
+
+        self::assertCount(1, $merged->authoredEdges());
+        self::assertCount(1, $merged->edges(MethodNodeId::of('App\Domain\Money', 'add')));
+    }
+
+    public function testMergeLeavesBothGraphsItWasBuiltFromUntouched(): void
+    {
+        $first = new Graph();
+        $first->addNode(new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true));
+        $second = new Graph();
+        $second->addNode(new ClassNode(ClassNodeId::of('App\Domain\Money'), true));
+
+        $first->merge($second);
+
+        self::assertNull($first->nodeNamed('App\Domain\Money'));
+        self::assertNull($second->nodeNamed('App\Domain\Invoice'));
+    }
+
+    public function testMergingAGraphWithItselfChangesNothing(): void
     {
         $graph = new Graph();
-        $node = new ClassNode(id: new ClassNodeId('App\Service', 'MyClass'));
-        $graph->addNode($node);
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
 
-        $result = $graph->node($node->id);
+        $merged = $graph->merge($graph);
 
-        self::assertSame($node, $result);
+        self::assertCount(count($graph->nodes()), $merged->nodes());
+        self::assertCount(count($graph->authoredEdges()), $merged->authoredEdges());
     }
 
-    #[Test]
-    public function testNodeReturnsNullWhenNotExists(): void
+    public function testMergeKeepsSymbolsThatHaveNoRelationsOnEitherSide(): void
     {
-        $graph = new Graph();
-        $nodeId = new ClassNodeId('App\Service', 'NonExistent');
-
-        $result = $graph->node($nodeId);
-
-        self::assertNull($result);
-    }
-
-    #[Test]
-    public function testEdgeReturnsEdgeWhenExists(): void
-    {
-        $graph = new Graph();
-        $fromId = new MethodNodeId('App\Service', 'ClassA', 'method');
-        $toId = new MethodNodeId('App\Service', 'ClassB', 'method');
-        $edge = new MethodCallEdge(
-            from: new MethodNode(id: $fromId, resolved: true, meta: new FileMeta('', 1, 1)),
-            to: new MethodNode(id: $toId, resolved: true, meta: new FileMeta('', 1, 1)),
-            meta: new FileMeta('/path/to/file.php', 30, 25)
-        );
-        $graph->addEdge($edge);
-
-        $result = $graph->edge($fromId, $toId);
-
-        self::assertNotNull($result);
-        self::assertSame($fromId, $result->from());
-        self::assertSame($toId, $result->to());
-        self::assertSame(EdgeKind::MethodCall, $result->kind());
-    }
-
-    #[Test]
-    public function testEdgeReturnsNullWhenNotExists(): void
-    {
-        $graph = new Graph();
-        $fromId = new ClassNodeId('App\Service', 'ClassA');
-        $toId = new ClassNodeId('App\Service', 'NonExistent');
-
-        $result = $graph->edge($fromId, $toId);
-
-        self::assertNull($result);
-    }
-
-    #[Test]
-    public function testEdgesReturnsEdgesFromNode(): void
-    {
-        $graph = new Graph();
-        $fromId = new MethodNodeId('App\Service', 'ClassA', 'method');
-        $toId1 = new MethodNodeId('App\Service', 'ClassB', 'method');
-        $toId2 = new PropertyNodeId('App\Service', 'ClassC', 'prop');
-        $meta = new FileMeta('/path/to/file.php', 35, 30);
-
-        $graph->addEdge(new MethodCallEdge(from: new MethodNode(id: $fromId, resolved: true, meta: new FileMeta('', 1, 1)), to: new MethodNode(id: $toId1, resolved: true, meta: new FileMeta('', 1, 1)), meta: $meta));
-        $graph->addEdge(new PropertyAccessEdge(from: new MethodNode(id: $fromId, resolved: true, meta: new FileMeta('', 1, 1)), to: new PropertyNode(id: $toId2, resolved: true, meta: new FileMeta('', 1, 1)), meta: $meta));
-
-        $result = $graph->edges($fromId);
-
-        self::assertCount(2, $result);
-    }
-
-    #[Test]
-    public function testEdgesReturnsEmptyArrayWhenNoEdges(): void
-    {
-        $graph = new Graph();
-        $nodeId = new ClassNodeId('App\Service', 'ClassA');
-
-        $result = $graph->edges($nodeId);
-
-        self::assertEmpty($result);
-    }
-
-    #[Test]
-    public function testMergeWithEmptyGraphsReturnsEmptyGraph(): void
-    {
-        $graph1 = new Graph();
-        $graph2 = new Graph();
-
-        $merged = $graph1->merge($graph2);
-
-        self::assertCount(0, $merged->nodes());
-    }
-
-    #[Test]
-    public function testMergeWithEmptyGraphReturnsCopy(): void
-    {
-        $graph1 = new Graph();
-        $node = new ClassNode(id: new ClassNodeId('App\Service', 'ClassA'));
-        $graph1->addNode($node);
-
-        $graph2 = new Graph();
-        $merged = $graph1->merge($graph2);
-
-        self::assertCount(1, $merged->nodes());
-        self::assertSame(NodeKind::Klass, $merged->node($node->id)?->kind());
-    }
-
-    #[Test]
-    public function testMergeCombinesDistinctNodes(): void
-    {
-        $graph1 = new Graph();
-        $node1 = new ClassNode(id: new ClassNodeId('App\Service', 'ClassA'));
-        $graph1->addNode($node1);
-
-        $graph2 = new Graph();
-        $node2 = new ClassNode(id: new ClassNodeId('App\Service', 'ClassB'));
-        $graph2->addNode($node2);
-
-        $merged = $graph1->merge($graph2);
-
-        self::assertCount(2, $merged->nodes());
-        self::assertNotNull($merged->node($node1->id));
-        self::assertNotNull($merged->node($node2->id));
-    }
-
-    #[Test]
-    public function testMergeCombinesDistinctEdges(): void
-    {
-        $graph1 = new Graph();
-        $fromId1 = new MethodNodeId('App\Service', 'ClassA', 'method');
-        $toId1 = new MethodNodeId('App\Service', 'ClassB', 'method');
-        $meta = new FileMeta('/path/to/file.php', 10, 5);
-        $graph1->addEdge(new MethodCallEdge(from: new MethodNode(id: $fromId1, resolved: true, meta: new FileMeta('', 1, 1)), to: new MethodNode(id: $toId1, resolved: true, meta: new FileMeta('', 1, 1)), meta: $meta));
-
-        $graph2 = new Graph();
-        $fromId2 = new MethodNodeId('App\Service', 'ClassB', 'method');
-        $toId2 = new PropertyNodeId('App\Service', 'ClassC', 'prop');
-        $graph2->addEdge(new PropertyAccessEdge(from: new MethodNode(id: $fromId2, resolved: true, meta: new FileMeta('', 1, 1)), to: new PropertyNode(id: $toId2, resolved: true, meta: new FileMeta('', 1, 1)), meta: $meta));
-
-        $merged = $graph1->merge($graph2);
-
-        self::assertNotNull($merged->edge($fromId1, $toId1));
-        self::assertNotNull($merged->edge($fromId2, $toId2));
-        self::assertCount(3, $merged->nodes());
-    }
-
-    #[Test]
-    public function testMergeReplacesUnknownNodeWithConcreteNode(): void
-    {
-        $graph1 = new Graph();
-        $nodeId = new ClassNodeId('App\Service', 'ClassA');
-        $unknownNode = new UnknownNode(id: new UnknownNodeId('App\Service\ClassA'));
-        $graph1->addNode($unknownNode);
-
-        $graph2 = new Graph();
-        $concreteNode = new ClassNode(id: new ClassNodeId('App\Service', 'ClassA'));
-        $graph2->addNode($concreteNode);
-
-        $merged = $graph1->merge($graph2);
-
-        $node = $merged->node($nodeId);
-        self::assertNotNull($node);
-        self::assertSame(NodeKind::Klass, $node->kind());
-    }
-
-    #[Test]
-    public function testMergeDoesNotModifyOriginalGraphs(): void
-    {
-        $graph1 = new Graph();
-        $node1 = new ClassNode(id: new ClassNodeId('App\Service', 'ClassA'));
-        $graph1->addNode($node1);
-
-        $graph2 = new Graph();
-        $node2 = new ClassNode(id: new ClassNodeId('App\Service', 'ClassB'));
-        $graph2->addNode($node2);
-
-        $merged = $graph1->merge($graph2);
-
-        self::assertCount(1, $graph1->nodes());
-        self::assertCount(1, $graph2->nodes());
-        self::assertNotNull($graph1->node($node1->id));
-        self::assertNull($graph1->node($node2->id));
-        self::assertNull($graph2->node($node1->id));
-        self::assertNotNull($graph2->node($node2->id));
-
-        self::assertCount(2, $merged->nodes());
-    }
-
-    #[Test]
-    public function testMergeHandlesBidirectionalEdgesCorrectly(): void
-    {
-        $graph1 = new Graph();
-        $fromId = new MethodNodeId('App\Service', 'ClassA', 'method');
-        $toId = new MethodNodeId('App\Service', 'ClassB', 'method');
-        $meta = new FileMeta('/path/to/file.php', 15, 10);
-        $graph1->addEdge(new MethodCallEdge(from: new MethodNode(id: $fromId, resolved: true, meta: new FileMeta('', 1, 1)), to: new MethodNode(id: $toId, resolved: true, meta: new FileMeta('', 1, 1)), meta: $meta));
-
-        $graph2 = new Graph();
-        $merged = $graph1->merge($graph2);
-
-        $forwardEdge = $merged->edge($fromId, $toId);
-        self::assertNotNull($forwardEdge);
-        self::assertSame(EdgeKind::MethodCall, $forwardEdge->kind());
-
-        $reverseEdge = $merged->edge($toId, $fromId);
-        self::assertNotNull($reverseEdge);
-        self::assertSame(EdgeKind::UsedBy, $reverseEdge->kind());
-    }
-
-    #[Test]
-    public function testMergeWithSameEdgeDoesNotDuplicate(): void
-    {
-        $meta = new FileMeta('/path/to/file.php', 20, 15);
-        $fromId = new MethodNodeId('App\Service', 'ClassA', 'method');
-        $toId = new MethodNodeId('App\Service', 'ClassB', 'method');
-
-        $graph1 = new Graph();
-        $graph1->addEdge(new MethodCallEdge(from: new MethodNode(id: $fromId, resolved: true, meta: new FileMeta('', 1, 1)), to: new MethodNode(id: $toId, resolved: true, meta: new FileMeta('', 1, 1)), meta: $meta));
-
-        $graph2 = new Graph();
-        $graph2->addEdge(new MethodCallEdge(from: new MethodNode(id: $fromId, resolved: true, meta: new FileMeta('', 1, 1)), to: new MethodNode(id: $toId, resolved: true, meta: new FileMeta('', 1, 1)), meta: $meta));
-
-        $merged = $graph1->merge($graph2);
-
-        self::assertCount(2, $merged->nodes());
-        $edges = $merged->edges($fromId);
-        self::assertCount(1, $edges);
-        self::assertSame(EdgeKind::MethodCall, $edges[0]->kind());
-    }
-
-    #[Test]
-    public function testAddEdgeDeduplicatesIdenticalEdges(): void
-    {
-        $graph = new Graph();
-        $fromId = new MethodNodeId('App\Service', 'ClassA', 'method');
-        $toId = new MethodNodeId('App\Service', 'ClassB', 'method');
-        $meta = new FileMeta('/path/to/file.php', 10, 5);
-
-        $edge1 = new MethodCallEdge(from: new MethodNode(id: $fromId, resolved: true, meta: new FileMeta('', 1, 1)), to: new MethodNode(id: $toId, resolved: true, meta: new FileMeta('', 1, 1)), meta: $meta);
-        $edge2 = new MethodCallEdge(from: new MethodNode(id: $fromId, resolved: true, meta: new FileMeta('', 1, 1)), to: new MethodNode(id: $toId, resolved: true, meta: new FileMeta('', 1, 1)), meta: $meta);
-
-        $graph->addEdge($edge1);
-        $graph->addEdge($edge2);
-
-        self::assertCount(1, $graph->edges($fromId));
-        self::assertCount(1, $graph->edges($toId));
-    }
-
-    #[Test]
-    public function testAddEdgePreservesDifferentKindsBetweenSameNodes(): void
-    {
-        $graph = new Graph();
-        $fromId = new MethodNodeId('App\Service', 'ClassA', 'method');
-        $toId = new ClassNodeId('App\Service', 'ClassB');
-        $meta = new FileMeta('/path/to/file.php', 10, 5);
-
-        $graph->addEdge(new InstantiationEdge(from: new MethodNode(id: $fromId, resolved: true, meta: new FileMeta('', 1, 1)), to: new ClassNode(id: $toId, resolved: true, meta: new FileMeta('', 1, 1)), meta: $meta));
-        $graph->addEdge(new InstanceofEdge(from: new MethodNode(id: $fromId, resolved: true, meta: new FileMeta('', 1, 1)), to: new ClassNode(id: $toId, resolved: true, meta: new FileMeta('', 1, 1)), meta: $meta));
-
-        self::assertCount(2, $graph->edges($fromId));
-    }
-
-    #[Test]
-    public function testMergeFiltersDeclaredInEdges(): void
-    {
-        $graph1 = new Graph();
-        $from = new MethodNode(new MethodNodeId('App', 'MyClass', 'method'));
-        $to = new ClassNode(new ClassNodeId('App', 'MyClass'));
-        $declarationEdge = new DeclarationMethodEdge($to, $from, new FileMeta('/path/to/file.php', 10, 5));
-        $graph1->addEdge($declarationEdge);
-
-        self::assertNotNull($graph1->edge($to->id, $from->id));
-        self::assertNotNull($graph1->edge($from->id, $to->id));
-
-        $graph2 = new Graph();
-        $merged = $graph1->merge($graph2);
-
-        self::assertNotNull($merged->edge($to->id, $from->id));
-        self::assertNotNull($merged->edge($from->id, $to->id));
-    }
-
-    #[Test]
-    public function testMergeFiltersUsedByEdges(): void
-    {
-        $graph1 = new Graph();
-        $from = new FunctionNode(new FunctionNodeId('App', 'caller'));
-        $to = new FunctionNode(new FunctionNodeId('App', 'callee'));
-        $callEdge = new FunctionCallEdge($from, $to, new FileMeta('/path/to/file.php', 10, 5));
-        $graph1->addEdge($callEdge);
-
-        self::assertNotNull($graph1->edge($from->id, $to->id));
-        self::assertNotNull($graph1->edge($to->id, $from->id));
-
-        $graph2 = new Graph();
-        $merged = $graph1->merge($graph2);
-
-        self::assertNotNull($merged->edge($from->id, $to->id));
-        self::assertNotNull($merged->edge($to->id, $from->id));
-    }
-
-    #[Test]
-    public function testEdgeWithKindReturnsSpecificEdge(): void
-    {
-        $graph = new Graph();
-        $fromId = new MethodNodeId('App\Service', 'ClassA', 'method');
-        $toId = new ClassNodeId('App\Service', 'ClassB');
-        $meta = new FileMeta('/path/to/file.php', 10, 5);
-
-        $graph->addEdge(new InstantiationEdge(from: new MethodNode(id: $fromId, resolved: true, meta: new FileMeta('', 1, 1)), to: new ClassNode(id: $toId, resolved: true, meta: new FileMeta('', 1, 1)), meta: $meta));
-        $graph->addEdge(new InstanceofEdge(from: new MethodNode(id: $fromId, resolved: true, meta: new FileMeta('', 1, 1)), to: new ClassNode(id: $toId, resolved: true, meta: new FileMeta('', 1, 1)), meta: $meta));
-
-        $instantiation = $graph->edge($fromId, $toId, EdgeKind::Instantiation);
-        $instanceof = $graph->edge($fromId, $toId, EdgeKind::Instanceof);
-        $nonExistent = $graph->edge($fromId, $toId, EdgeKind::FunctionCall);
-
-        self::assertNotNull($instantiation);
-        self::assertSame(EdgeKind::Instantiation, $instantiation->kind());
-        self::assertNotNull($instanceof);
-        self::assertSame(EdgeKind::Instanceof, $instanceof->kind());
-        self::assertNull($nonExistent);
-    }
-
-    #[Test]
-    public function testEdgeWithoutKindReturnsFirstMatch(): void
-    {
-        $graph = new Graph();
-        $fromId = new MethodNodeId('App\Service', 'ClassA', 'method');
-        $toId = new ClassNodeId('App\Service', 'ClassB');
-        $meta = new FileMeta('/path/to/file.php', 10, 5);
-
-        $graph->addEdge(new InstantiationEdge(from: new MethodNode(id: $fromId, resolved: true, meta: new FileMeta('', 1, 1)), to: new ClassNode(id: $toId, resolved: true, meta: new FileMeta('', 1, 1)), meta: $meta));
-        $graph->addEdge(new InstanceofEdge(from: new MethodNode(id: $fromId, resolved: true, meta: new FileMeta('', 1, 1)), to: new ClassNode(id: $toId, resolved: true, meta: new FileMeta('', 1, 1)), meta: $meta));
-
-        $result = $graph->edge($fromId, $toId);
-
-        self::assertNotNull($result);
-        self::assertSame(EdgeKind::Instantiation, $result->kind());
-    }
-
-    #[Test]
-    public function testMergeThrowsOnDuplicateConcreteNode(): void
-    {
-        $graph1 = new Graph();
-        $graph1->addNode(new ClassNode(id: new ClassNodeId('App\Service', 'ClassA')));
-
-        $graph2 = new Graph();
-        $graph2->addNode(new ClassNode(id: new ClassNodeId('App\Service', 'ClassA')));
-
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Node already exists.');
-
-        $graph1->merge($graph2);
+        $first = new Graph();
+        $first->addNode(new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true));
+        $second = new Graph();
+        $second->addNode(new ClassNode(ClassNodeId::of('App\Domain\Money'), true));
+
+        $merged = $first->merge($second);
+
+        self::assertNotNull($merged->nodeNamed('App\Domain\Invoice'));
+        self::assertNotNull($merged->nodeNamed('App\Domain\Money'));
     }
 }

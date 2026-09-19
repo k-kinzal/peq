@@ -5,45 +5,47 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\Graph\NodeId;
 
 use App\Analyzer\Graph\NodeId\FunctionNodeId;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(FunctionNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[Small]
 final class FunctionNodeIdTest extends TestCase
 {
-    #[Test]
-    public function testConstruct(): void
+    public function testToStringJoinsTheParts(): void
     {
-        $id = new FunctionNodeId('App\Service', 'myFunction');
-
-        self::assertSame('App\Service', $id->namespace);
-        self::assertSame('myFunction', $id->functionName);
+        self::assertSame('App\Domain\formatMoney', (new FunctionNodeId('App\Domain', 'formatMoney'))->toString());
     }
 
-    #[Test]
-    public function testFullQualifiedName(): void
+    public function testToStringOmitsTheSeparatorWithoutANamespace(): void
     {
-        $id = new FunctionNodeId('App\Service', 'myFunction');
-
-        self::assertSame('App\Service\myFunction', $id->fullQualifiedName());
+        self::assertSame('formatMoney', (new FunctionNodeId('', 'formatMoney'))->toString());
     }
 
-    #[Test]
-    public function testToString(): void
+    public function testOfSplitsAFullyQualifiedName(): void
     {
-        $id = new FunctionNodeId('App\Service', 'myFunction');
+        $id = FunctionNodeId::of('App\Domain\formatMoney');
 
-        self::assertSame('App\Service\myFunction', $id->toString());
-        self::assertSame('App\Service\myFunction', (string) $id);
+        self::assertSame('App\Domain', $id->namespace);
+        self::assertSame('formatMoney', $id->functionName);
     }
 
-    #[Test]
-    public function testMagicGet(): void
+    public function testOfBuildsTheSameIdentifierAsTheConstructor(): void
     {
-        $id = new FunctionNodeId('App', 'test');
+        self::assertSame(
+            (new FunctionNodeId('App\Domain', 'formatMoney'))->toString(),
+            FunctionNodeId::of('App\Domain\formatMoney')->toString(),
+        );
+    }
 
-        self::assertSame('App\test', $id->fullQualifiedName);
+    public function testOfLeavesTheNamespaceEmptyForAGlobalName(): void
+    {
+        self::assertSame('', FunctionNodeId::of('formatMoney')->namespace);
     }
 }

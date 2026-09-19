@@ -5,46 +5,47 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\Graph\NodeId;
 
 use App\Analyzer\Graph\NodeId\EnumCaseNodeId;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(EnumCaseNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[Small]
 final class EnumCaseNodeIdTest extends TestCase
 {
-    #[Test]
-    public function testConstruct(): void
+    public function testToStringJoinsTheParts(): void
     {
-        $id = new EnumCaseNodeId('App\Service', 'MyEnum', 'CASE_ONE');
-
-        self::assertSame('App\Service', $id->namespace);
-        self::assertSame('MyEnum', $id->enumName);
-        self::assertSame('CASE_ONE', $id->caseName);
+        self::assertSame('App\Domain\InvoiceState::OPEN', (new EnumCaseNodeId('App\Domain', 'InvoiceState', 'OPEN'))->toString());
     }
 
-    #[Test]
-    public function testFullQualifiedName(): void
+    public function testToStringOmitsTheSeparatorWithoutANamespace(): void
     {
-        $id = new EnumCaseNodeId('App\Service', 'MyEnum', 'CASE_ONE');
-
-        self::assertSame('App\Service\MyEnum::CASE_ONE', $id->fullQualifiedName());
+        self::assertSame('InvoiceState::OPEN', (new EnumCaseNodeId('', 'InvoiceState', 'OPEN'))->toString());
     }
 
-    #[Test]
-    public function testToString(): void
+    public function testOfSplitsAFullyQualifiedName(): void
     {
-        $id = new EnumCaseNodeId('App\Service', 'MyEnum', 'CASE_ONE');
+        $id = EnumCaseNodeId::of('App\Domain\InvoiceState', 'OPEN');
 
-        self::assertSame('App\Service\MyEnum::CASE_ONE', $id->toString());
-        self::assertSame('App\Service\MyEnum::CASE_ONE', (string) $id);
+        self::assertSame('App\Domain', $id->namespace);
+        self::assertSame('InvoiceState', $id->enumName);
     }
 
-    #[Test]
-    public function testMagicGet(): void
+    public function testOfBuildsTheSameIdentifierAsTheConstructor(): void
     {
-        $id = new EnumCaseNodeId('App', 'Test', 'CASE');
+        self::assertSame(
+            (new EnumCaseNodeId('App\Domain', 'InvoiceState', 'OPEN'))->toString(),
+            EnumCaseNodeId::of('App\Domain\InvoiceState', 'OPEN')->toString(),
+        );
+    }
 
-        self::assertSame('App\Test::CASE', $id->fullQualifiedName);
+    public function testOfLeavesTheNamespaceEmptyForAGlobalName(): void
+    {
+        self::assertSame('', EnumCaseNodeId::of('InvoiceState', 'OPEN')->namespace);
     }
 }

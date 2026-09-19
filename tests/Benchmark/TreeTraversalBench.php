@@ -4,16 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Benchmark;
 
+use App\Analyzer\Graph\Direction;
 use App\Analyzer\Graph\Graph;
-use App\Analyzer\Graph\Node;
-use App\Analyzer\Graph\NodeId;
-use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
-use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
-use App\Reporter\Traversal\DependencyTraversal;
-use App\Reporter\Traversal\DependsTraversal;
+use App\Reporter\Traversal\DepthFirstTraversal;
 use App\Reporter\TreeReporter\TreeReporter;
 use App\Reporter\TreeReporter\TreeReporterOptions;
+use Generator;
 use PhpBench\Attributes\BeforeMethods;
 use PhpBench\Attributes\Iterations;
 use PhpBench\Attributes\ParamProviders;
@@ -21,50 +18,43 @@ use PhpBench\Attributes\Revs;
 use Symfony\Component\Console\Output\NullOutput;
 
 /**
- * Benchmarks tree traversal with realistic targets.
+ * Measures reporting the tree of a symbol with many transitive relations.
  *
- * Uses a heavy node (InspectCommand, many transitive dependencies)
- * to expose the combinatorial explosion in the traversal.
+ * The cost of a report grows with how much of the graph it reaches, not with how big
+ * the graph is, so the interesting numbers come from a symbol whose branches fan out
+ * and from raising the level bound on it.
  *
  * @internal
  */
 final class TreeTraversalBench
 {
+    /**
+     * The graph of peq's own sources, once analysed.
+     */
     private ?Graph $graph = null;
 
-    /** @var array<string, NodeId<Node>> */
-    private array $symbols = [];
-
+    /**
+     * Analyses peq's own sources once, so that only reporting is measured.
+     */
     public function setUp(): void
     {
-        $srcPath = dirname(__DIR__, 2).'/src';
-        $analyzer = new PhpStanAnalyzer(
-            new ContainerFactory(),
-            new PhpFileCollector(),
-        );
-        $this->graph = $analyzer->analyze($srcPath);
-
-        $targets = [
-            'App\Command\InspectCommand',
-            'App\Analyzer\Graph\Graph',
-        ];
-        foreach ($this->graph->nodes() as $node) {
-            if (in_array($node->id()->toString(), $targets, true)) {
-                $this->symbols[$node->id()->toString()] = $node->id();
-            }
-        }
+        $this->graph = (new PhpStanAnalyzer())
+            ->analyze(dirname(__DIR__, 2).'/src')
+        ;
     }
 
     /**
-     * @return \Generator<string, array{target: string, level: ?int}>
+     * Names the symbols and level bounds worth measuring.
+     *
+     * @return Generator<string, array{target: string, level: null|int}> One case per measurement
      */
-    public function provideTraversalParams(): \Generator
+    public function provideTraversalParams(): Generator
     {
         yield 'Graph L=3' => ['target' => 'App\Analyzer\Graph\Graph', 'level' => 3];
 
         yield 'Graph L=5' => ['target' => 'App\Analyzer\Graph\Graph', 'level' => 5];
 
-        yield 'Graph L=∞' => ['target' => 'App\Analyzer\Graph\Graph', 'level' => null];
+        yield 'Graph unbounded' => ['target' => 'App\Analyzer\Graph\Graph', 'level' => null];
 
         yield 'InspectCommand L=3' => ['target' => 'App\Command\InspectCommand', 'level' => 3];
 
@@ -72,42 +62,48 @@ final class TreeTraversalBench
     }
 
     /**
-     * @param array{target: string, level: ?int} $params
+     * Measures reporting what a symbol depends on.
+     *
+     * @param array{target: string, level: null|int} $params The symbol and level bound to measure
      */
     #[BeforeMethods('setUp')]
     #[ParamProviders('provideTraversalParams')]
     #[Revs(1)]
     #[Iterations(3)]
-    public function benchTraverseDependencies(array $params): void
+    public function benchReportDependencies(array $params): void
     {
-        assert($this->graph instanceof Graph);
-        $symbol = $this->symbols[$params['target']] ?? null;
-        assert($symbol instanceof NodeId);
-
-        $reporter = new TreeReporter(
-            options: new TreeReporterOptions(level: $params['level']),
-            traversal: new DependencyTraversal(),
-        );
-        $reporter->report($this->graph, $symbol, new NullOutput());
+        $this->report($params, Direction::Uses);
     }
 
     /**
-     * @param array{target: string, level: ?int} $params
+     * Measures reporting what depends on a symbol.
+     *
+     * @param array{target: string, level: null|int} $params The symbol and level bound to measure
      */
     #[BeforeMethods('setUp')]
     #[ParamProviders('provideTraversalParams')]
     #[Revs(1)]
     #[Iterations(3)]
-    public function benchTraverseDependsOn(array $params): void
+    public function benchReportDependents(array $params): void
     {
-        assert($this->graph instanceof Graph);
-        $symbol = $this->symbols[$params['target']] ?? null;
-        assert($symbol instanceof NodeId);
+        $this->report($params, Direction::UsedBy);
+    }
 
-        $reporter = new TreeReporter(
-            options: new TreeReporterOptions(level: $params['level']),
-            traversal: new DependsTraversal(),
-        );
-        $reporter->report($this->graph, $symbol, new NullOutput());
+    /**
+     * Writes one report to nowhere, so that only the work is measured.
+     *
+     * @param array{target: string, level: null|int} $params    The symbol and level bound to measure
+     * @param Direction                              $direction Which way the graph is read
+     */
+    public function report(array $params, Direction $direction): void
+    {
+        $symbol = $this->graph?->nodeNamed($params['target']);
+        if ($this->graph === null || $symbol === null) {
+            return;
+        }
+
+        (new TreeReporter(new TreeReporterOptions(level: $params['level']), new DepthFirstTraversal($direction)))
+            ->report($this->graph, $symbol->id(), new NullOutput())
+        ;
     }
 }

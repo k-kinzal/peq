@@ -4,69 +4,75 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\Graph;
 
+use App\Analyzer\Graph\Direction;
 use App\Analyzer\Graph\EdgeKind;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(EdgeKind::class)]
+#[Small]
 final class EdgeKindTest extends TestCase
 {
-    #[Test]
-    #[DataProvider('provideInvertCases')]
-    public function testInvertReturnsExpectedEdgeKind(EdgeKind $edgeKind, EdgeKind $expected): void
+    #[DataProvider('providerAuthoredKinds')]
+    public function testDirectionReadsAnAuthoredRelationAwayFromItsSubject(EdgeKind $kind): void
     {
-        $result = $edgeKind->invert();
-
-        self::assertSame($expected, $result);
+        self::assertSame(Direction::Uses, $kind->direction());
     }
 
     /**
-     * @return array<string, array{EdgeKind, EdgeKind}>
+     * @return iterable<string, array{EdgeKind}>
      */
-    public static function provideInvertCases(): array
+    public static function providerAuthoredKinds(): iterable
     {
-        return [
-            'FunctionCall inverts to UsedBy' => [EdgeKind::FunctionCall, EdgeKind::UsedBy],
-            'MethodCall inverts to UsedBy' => [EdgeKind::MethodCall, EdgeKind::UsedBy],
-            'StaticCall inverts to UsedBy' => [EdgeKind::StaticCall, EdgeKind::UsedBy],
-            'Instantiation inverts to UsedBy' => [EdgeKind::Instantiation, EdgeKind::UsedBy],
-            'PropertyAccess inverts to UsedBy' => [EdgeKind::PropertyAccess, EdgeKind::UsedBy],
-            'StaticPropertyAccess inverts to UsedBy' => [EdgeKind::StaticPropertyAccess, EdgeKind::UsedBy],
-            'ConstFetch inverts to UsedBy' => [EdgeKind::ConstFetch, EdgeKind::UsedBy],
-            'DeclarationTraitUse inverts to DeclaredIn' => [EdgeKind::DeclarationTraitUse, EdgeKind::DeclaredIn],
-            'DeclarationExtends inverts to DeclaredIn' => [EdgeKind::DeclarationExtends, EdgeKind::DeclaredIn],
-            'DeclarationImplements inverts to DeclaredIn' => [EdgeKind::DeclarationImplements, EdgeKind::DeclaredIn],
-            'DeclarationMethod inverts to DeclaredIn' => [EdgeKind::DeclarationMethod, EdgeKind::DeclaredIn],
-            'DeclarationProperty inverts to DeclaredIn' => [EdgeKind::DeclarationProperty, EdgeKind::DeclaredIn],
-            'DeclarationConstant inverts to DeclaredIn' => [EdgeKind::DeclarationConstant, EdgeKind::DeclaredIn],
-            'DeclarationTypeParameter inverts to DeclaredIn' => [EdgeKind::DeclarationTypeParameter, EdgeKind::DeclaredIn],
-            'DeclarationTypeReturn inverts to DeclaredIn' => [EdgeKind::DeclarationTypeReturn, EdgeKind::DeclaredIn],
-            'DeclarationTypeProperty inverts to DeclaredIn' => [EdgeKind::DeclarationTypeProperty, EdgeKind::DeclaredIn],
-            'DeclarationEnumCase inverts to DeclaredIn' => [EdgeKind::DeclarationEnumCase, EdgeKind::DeclaredIn],
-            'Attribute inverts to UsedBy' => [EdgeKind::Attribute, EdgeKind::UsedBy],
-            'Instanceof inverts to UsedBy' => [EdgeKind::Instanceof, EdgeKind::UsedBy],
-            'Catch inverts to UsedBy' => [EdgeKind::Catch, EdgeKind::UsedBy],
-        ];
+        foreach (EdgeKind::cases() as $kind) {
+            if ($kind !== EdgeKind::UsedBy && $kind !== EdgeKind::DeclaredIn) {
+                yield $kind->value => [$kind];
+            }
+        }
     }
 
-    #[Test]
-    public function testInvertThrowsExceptionForUsedBy(): void
+    #[DataProvider('providerDerivedKinds')]
+    public function testDirectionReadsADerivedRelationTowardsItsSubject(EdgeKind $kind): void
     {
-        $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('Cannot reverse a reversed edge');
-
-        EdgeKind::UsedBy->invert();
+        self::assertSame(Direction::UsedBy, $kind->direction());
     }
 
-    #[Test]
-    public function testInvertThrowsExceptionForDeclaredIn(): void
+    /**
+     * @return iterable<string, array{EdgeKind}>
+     */
+    public static function providerDerivedKinds(): iterable
     {
-        $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('Cannot reverse a reversed edge');
+        yield 'used-by' => [EdgeKind::UsedBy];
 
-        EdgeKind::DeclaredIn->invert();
+        yield 'declared-in' => [EdgeKind::DeclaredIn];
+    }
+
+    public function testDirectionIsAnsweredForEveryKindThereIs(): void
+    {
+        $answered = array_map(static fn (EdgeKind $kind): string => $kind->direction()->value, EdgeKind::cases());
+
+        self::assertCount(count(EdgeKind::cases()), $answered);
+    }
+
+    public function testOnlyTwoKindsAreDerivedRatherThanWritten(): void
+    {
+        $derived = array_filter(
+            EdgeKind::cases(),
+            static fn (EdgeKind $kind): bool => $kind->direction() === Direction::UsedBy,
+        );
+
+        self::assertSame([EdgeKind::UsedBy, EdgeKind::DeclaredIn], array_values($derived));
+    }
+
+    public function testEveryKindIsSpelledExactlyOnce(): void
+    {
+        $values = array_map(static fn (EdgeKind $kind): string => $kind->value, EdgeKind::cases());
+
+        self::assertSame($values, array_values(array_unique($values)));
     }
 }

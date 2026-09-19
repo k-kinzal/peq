@@ -5,124 +5,112 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\PhpStanAnalyzer\Processor;
 
 use App\Analyzer\PhpStanAnalyzer\Processor\TypeResolver;
+use PhpParser\Node;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\IntersectionType;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\UnionType;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(TypeResolver::class)]
+#[UsesClass(\App\Analyzer\Graph\FileMeta::class)]
+#[UsesClass(\App\Analyzer\Graph\NodeId\ClassNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\Node\ClassNode::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(\App\Analyzer\PhpStanAnalyzer\Processor\TypeReference::class)]
+#[Small]
 final class TypeResolverTest extends TestCase
 {
-    #[Test]
-    public function testNullReturnsEmpty(): void
+    /**
+     * @param list<string> $expected
+     */
+    #[DataProvider('providerTypeReferencesAndTheNamesTheyMention')]
+    public function testResolveNamesReadsEveryNameAWrittenTypeMentions(?Node $type, array $expected): void
     {
-        self::assertSame([], TypeResolver::resolveNames(null));
+        self::assertSame($expected, array_map(static fn (Name $name): string => $name->toString(), TypeResolver::resolveNames($type)));
     }
 
-    #[Test]
-    public function testIdentifierReturnsEmpty(): void
+    /**
+     * @return iterable<string, array{null|Node, list<string>}>
+     */
+    public static function providerTypeReferencesAndTheNamesTheyMention(): iterable
     {
-        $id = new Identifier('int');
-        self::assertSame([], TypeResolver::resolveNames($id));
+        yield 'no type at all' => [null, []];
+
+        yield 'a single name' => [new Name('App\Domain\Money'), ['App\Domain\Money']];
+
+        yield 'a builtin keyword' => [new Identifier('int'), []];
+
+        yield 'a nullable name' => [new NullableType(new Name('App\Domain\Money')), ['App\Domain\Money']];
+
+        yield 'a union' => [
+            new UnionType([new Name('App\Domain\Money'), new Name('App\Domain\Invoice')]),
+            ['App\Domain\Money', 'App\Domain\Invoice'],
+        ];
+
+        yield 'an intersection' => [
+            new IntersectionType([new Name('App\Domain\Payable'), new Name('App\Domain\Refundable')]),
+            ['App\Domain\Payable', 'App\Domain\Refundable'],
+        ];
+
+        yield 'a disjunctive normal form type' => [
+            new UnionType([new IntersectionType([new Name('App\Domain\Payable'), new Name('App\Domain\Refundable')]), new Identifier('null')]),
+            ['App\Domain\Payable', 'App\Domain\Refundable'],
+        ];
     }
 
-    #[Test]
-    public function testSimpleNameReturnsSingleElement(): void
+    public function testReferencesLeavesOutNamesPhpResolvesItself(): void
     {
-        $name = new Name('App\Foo');
-        $result = TypeResolver::resolveNames($name);
+        $type = new Identifier('int');
+        $type->setAttribute('startLine', 4);
 
-        self::assertCount(1, $result);
-        self::assertSame('App\Foo', $result[0]->toString());
+        self::assertSame([], TypeResolver::references($type, '/project/src/Invoice.php'));
     }
 
-    #[Test]
-    public function testFullyQualifiedName(): void
+    public function testReferencesReportsTheClassLikeAWrittenTypeNames(): void
     {
-        $name = new Name\FullyQualified('App\Bar');
-        $result = TypeResolver::resolveNames($name);
+        $type = new Name('App\Domain\Money');
+        $type->setAttribute('startLine', 4);
+        $references = TypeResolver::references($type, '/project/src/Invoice.php');
 
-        self::assertCount(1, $result);
-        self::assertSame('App\Bar', $result[0]->toString());
+        self::assertCount(1, $references);
+        self::assertSame('App\Domain\Money', $references[0]->node->id()->toString());
+        self::assertFalse($references[0]->node->resolved());
     }
 
-    #[Test]
-    public function testNullableTypeUnwraps(): void
+    public function testReferencesReportsWhereEachNameIsWritten(): void
     {
-        $nullable = new NullableType(new Name('App\Foo'));
-        $result = TypeResolver::resolveNames($nullable);
+        $type = new Name('App\Domain\Money');
+        $type->setAttribute('startLine', 4);
+        $references = TypeResolver::references($type, '/project/src/Invoice.php');
 
-        self::assertCount(1, $result);
-        self::assertSame('App\Foo', $result[0]->toString());
+        self::assertSame('/project/src/Invoice.php', $references[0]->meta->path);
+        self::assertSame(4, $references[0]->meta->line);
+        self::assertSame(1, $references[0]->meta->column);
     }
 
-    #[Test]
-    public function testNullableBuiltinReturnsEmpty(): void
+    public function testReferencesReportsOneEntryPerNameOfAUnion(): void
     {
-        $nullable = new NullableType(new Identifier('int'));
-        self::assertSame([], TypeResolver::resolveNames($nullable));
+        $money = new Name('App\Domain\Money');
+        $money->setAttribute('startLine', 4);
+        $invoice = new Name('App\Domain\Invoice');
+        $invoice->setAttribute('startLine', 5);
+        $references = TypeResolver::references(new UnionType([$money, $invoice, new Identifier('null')]), '/project/src/Invoice.php');
+
+        self::assertSame(['App\Domain\Money', 'App\Domain\Invoice'], array_map(static fn (\App\Analyzer\PhpStanAnalyzer\Processor\TypeReference $reference): string => $reference->node->id()->toString(), $references));
+        self::assertSame([4, 5], array_map(static fn (\App\Analyzer\PhpStanAnalyzer\Processor\TypeReference $reference): int => $reference->meta->line, $references));
     }
 
-    #[Test]
-    public function testUnionTypeCollectsAllNames(): void
+    public function testReferencesReportsNothingWhenNoTypeWasWritten(): void
     {
-        $union = new UnionType([
-            new Name('App\Foo'),
-            new Identifier('null'),
-            new Name('App\Bar'),
-        ]);
-        $result = TypeResolver::resolveNames($union);
-
-        self::assertCount(2, $result);
-        $names = array_map(fn (Name $n) => $n->toString(), $result);
-        self::assertSame(['App\Foo', 'App\Bar'], $names);
-    }
-
-    #[Test]
-    public function testIntersectionTypeCollectsAllNames(): void
-    {
-        $intersection = new IntersectionType([
-            new Name('App\Foo'),
-            new Name('App\Bar'),
-        ]);
-        $result = TypeResolver::resolveNames($intersection);
-
-        self::assertCount(2, $result);
-        $names = array_map(fn (Name $n) => $n->toString(), $result);
-        self::assertSame(['App\Foo', 'App\Bar'], $names);
-    }
-
-    #[Test]
-    public function testDnfTypeNestedIntersectionInsideUnion(): void
-    {
-        // DNF: (A&B)|C
-        $dnf = new UnionType([
-            new IntersectionType([
-                new Name('App\A'),
-                new Name('App\B'),
-            ]),
-            new Name('App\C'),
-        ]);
-        $result = TypeResolver::resolveNames($dnf);
-
-        self::assertCount(3, $result);
-        $names = array_map(fn (Name $n) => $n->toString(), $result);
-        self::assertSame(['App\A', 'App\B', 'App\C'], $names);
-    }
-
-    #[Test]
-    public function testUnionOfOnlyBuiltinsReturnsEmpty(): void
-    {
-        $union = new UnionType([
-            new Identifier('int'),
-            new Identifier('string'),
-            new Identifier('null'),
-        ]);
-        self::assertSame([], TypeResolver::resolveNames($union));
+        self::assertSame([], TypeResolver::references(null, '/project/src/Invoice.php'));
     }
 }

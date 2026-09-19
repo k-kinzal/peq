@@ -1,0 +1,102 @@
+# NOTE: You do not have permission to overwrite this file. Please ask a human operator to perform the changes for you.
+deptrac:
+  paths:
+    - ./src
+  exclude_files:
+    - '#.*/tests?/.*#'
+    - '#.*/vendor/.*#'
+
+  layers:
+    - name: Command
+      collectors:
+        - type: directory
+          value: src/Command/.*
+
+    - name: Action
+      collectors:
+        - type: directory
+          value: src/Action/.*
+
+    - name: Analyzer
+      collectors:
+        - type: directory
+          value: src/Analyzer/[^/]*\.php$
+
+    - name: PhpStanAnalyzer
+      collectors:
+        - type: directory
+          value: src/Analyzer/PhpStanAnalyzer/.*
+
+    - name: DebugAnalyzer
+      collectors:
+        - type: directory
+          value: src/Analyzer/DebugAnalyzer/.*
+
+    - name: Graph
+      collectors:
+        - type: directory
+          value: src/Analyzer/Graph/.*
+
+    - name: Reporter
+      collectors:
+        - type: directory
+          value: src/Reporter/[^/]*\.php$
+
+    - name: Traversal
+      collectors:
+        - type: directory
+          value: src/Reporter/Traversal/.*
+
+    - name: TreeReporter
+      collectors:
+        - type: directory
+          value: src/Reporter/TreeReporter/.*
+
+    - name: Config
+      collectors:
+        - type: directory
+          value: src/Config/.*
+
+  ruleset:
+    Command:
+      - Action
+      - Config
+      - Reporter
+
+    Action:
+      - Analyzer
+      - PhpStanAnalyzer
+      - DebugAnalyzer
+      - Graph
+      - Config
+
+    Analyzer:
+      - Graph
+
+    PhpStanAnalyzer:
+      - Analyzer
+      - Graph
+
+    DebugAnalyzer:
+      - Analyzer
+      - Graph
+
+    Graph: ~
+
+    Reporter:
+      - Graph
+      - Config
+      - Traversal
+      - TreeReporter
+
+    Traversal:
+      - Reporter
+      - Graph
+
+    TreeReporter:
+      - Reporter
+      - Traversal
+      - Graph
+
+    Config:
+      - Graph

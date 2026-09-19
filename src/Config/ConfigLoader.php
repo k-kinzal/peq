@@ -7,15 +7,21 @@ namespace App\Config;
 /**
  * Orchestrates configuration loading from multiple sources.
  *
- * This class implements a strategy pattern for configuration loading, merging
- * data from multiple ConfigReader sources in the order they are provided.
- * Later readers override values from earlier readers, allowing a priority-based
- * configuration cascade (e.g., defaults < file config < environment < CLI args).
+ * Readers are consulted in the order they are given and each one overlays what the
+ * previous ones reported, which is what makes the documented cascade — defaults,
+ * then the configuration file, then the environment, then the command line — hold.
+ * The overlay reaches individual settings rather than whole groups, so passing
+ * `--debug-seed` on the command line does not discard a `debug.depth` written in
+ * the configuration file.
+ *
+ * @phpstan-import-type ConfigField from ConfigReader
+ * @phpstan-import-type ConfigFields from ConfigReader
+ * @phpstan-import-type ConfigGroup from ConfigReader
  */
 final class ConfigLoader
 {
     /**
-     * @param ConfigReader[] $readers Array of configuration readers to merge, in priority order
+     * @param list<ConfigReader> $readers The readers to consult, from lowest to highest priority
      */
     public function __construct(
         private readonly array $readers,
@@ -24,21 +30,87 @@ final class ConfigLoader
     /**
      * Loads and merges configuration from all registered readers.
      *
-     * Iterates through all readers in order, merging their configuration data.
-     * Later readers override earlier ones for any conflicting keys. The merged
-     * data is then validated and converted to a Config object.
+     * @return Config A configuration whose every field was read as the type it needs to be
      *
-     * @return Config A validated configuration object
-     *
-     * @throws ConfigException If the merged configuration fails validation
+     * @throws ConfigException If a reader fails, or if the merged data cannot be read as a configuration
      */
     public function load(): Config
     {
-        $config = [];
+        $merged = [];
         foreach ($this->readers as $reader) {
-            $config = array_merge($config, $reader->read());
+            $merged = self::overlay($merged, $reader->read());
         }
 
-        return Config::fromArray($config);
+        return Config::fromArray($merged);
+    }
+
+    /**
+     * Overlays what one source reported on top of what earlier sources reported.
+     *
+     * A setting reported by the later source wins. Two groups of named settings are
+     * combined setting by setting, because a source that mentions one setting of a
+     * group is not saying anything about the rest of it. A list, on the other hand,
+     * is one value: a source that reports `excludes` replaces the whole list rather
+     * than adding to it, so a narrower configuration can always be narrower.
+     *
+     * @param ConfigFields $base    What earlier sources reported
+     * @param ConfigFields $overlay What this source reported
+     *
+     * @return ConfigFields The combined data
+     */
+    public static function overlay(array $base, array $overlay): array
+    {
+        foreach ($overlay as $key => $value) {
+            $existing = $base[$key] ?? null;
+            if (self::isNamedGroup($existing) && self::isNamedGroup($value)) {
+                $base[$key] = self::overlayGroup($existing, $value);
+
+                continue;
+            }
+            $base[$key] = $value;
+        }
+
+        return $base;
+    }
+
+    /**
+     * Overlays one group of named settings on top of another.
+     *
+     * A group holds single settings and lists of them, never further groups, so a
+     * setting reported by the later source replaces the one below it and the rest of
+     * the group is kept.
+     *
+     * @param ConfigGroup $base    What earlier sources reported for the group
+     * @param ConfigGroup $overlay What this source reported for it
+     *
+     * @return ConfigGroup The combined group
+     */
+    public static function overlayGroup(array $base, array $overlay): array
+    {
+        return array_merge($base, $overlay);
+    }
+
+    /**
+     * Reports whether a value is a group of named settings rather than a single value.
+     *
+     * @param null|ConfigField $value The value to classify
+     *
+     * @return bool True when the value is a non-empty array with only string keys
+     *
+     * @phpstan-assert-if-true ConfigGroup $value
+     */
+    public static function isNamedGroup(array|bool|float|int|string|null $value): bool
+    {
+        if (!is_array($value) || $value === []) {
+            return false;
+        }
+
+        foreach (array_keys($value) as $key) {
+            if (!is_string($key)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

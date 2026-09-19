@@ -80,17 +80,24 @@ enum EdgeKind: string
     case DeclaredIn = 'declared-in';
 
     /**
-     * Inverts the edge kind to create a reverse relationship.
+     * Returns the direction in which this kind of relation is read.
      *
-     * Usage edges (function calls, property access, etc.) invert to UsedBy.
-     * Declaration edges invert to DeclaredIn.
-     * UsedBy and DeclaredIn edges cannot be inverted and will throw an exception.
+     * Every kind written in source code — a call, an access, a declaration —
+     * reads away from its subject and therefore belongs to Direction::Uses.
+     * The two kinds generated for the opposite direction, UsedBy and DeclaredIn,
+     * read towards their subject and belong to Direction::UsedBy.
      *
-     * @return self The inverted edge kind
+     * This is a total function: adding a case to this enum without classifying
+     * it here is a compile-time-visible omission rather than a silent default.
      *
-     * @throws \LogicException If attempting to invert a UsedBy or DeclaredIn edge
+     * @example A relation written in source code reads away from its subject
+     *     \App\Analyzer\Graph\EdgeKind::MethodCall->direction() // => \App\Analyzer\Graph\Direction::Uses
+     * @example A derived relation reads towards it
+     *     \App\Analyzer\Graph\EdgeKind::UsedBy->direction() // => \App\Analyzer\Graph\Direction::UsedBy
+     *
+     * @return Direction The direction this kind belongs to
      */
-    public function invert(): self
+    public function direction(): Direction
     {
         return match ($this) {
             self::FunctionCall,
@@ -99,8 +106,7 @@ enum EdgeKind: string
             self::Instantiation,
             self::PropertyAccess,
             self::StaticPropertyAccess,
-            self::ConstFetch => self::UsedBy,
-
+            self::ConstFetch,
             self::DeclarationTraitUse,
             self::DeclarationExtends,
             self::DeclarationImplements,
@@ -110,14 +116,13 @@ enum EdgeKind: string
             self::DeclarationEnumCase,
             self::DeclarationTypeParameter,
             self::DeclarationTypeReturn,
-            self::DeclarationTypeProperty => self::DeclaredIn,
-
+            self::DeclarationTypeProperty,
             self::Attribute,
             self::Instanceof,
-            self::Catch => self::UsedBy,
+            self::Catch => Direction::Uses,
 
             self::UsedBy,
-            self::DeclaredIn => throw new \LogicException('Cannot reverse a reversed edge'),
+            self::DeclaredIn => Direction::UsedBy,
         };
     }
 }

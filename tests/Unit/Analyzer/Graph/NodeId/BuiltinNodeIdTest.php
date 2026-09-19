@@ -5,55 +5,47 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\Graph\NodeId;
 
 use App\Analyzer\Graph\NodeId\BuiltinNodeId;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(BuiltinNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[Small]
 final class BuiltinNodeIdTest extends TestCase
 {
-    #[Test]
-    public function testConstruct(): void
+    public function testToStringJoinsTheParts(): void
     {
-        $id = new BuiltinNodeId('Builtin', 'StringType');
-
-        self::assertSame('Builtin', $id->namespace);
-        self::assertSame('StringType', $id->name);
+        self::assertSame('App\Domain\Money', (new BuiltinNodeId('App\Domain', 'Money'))->toString());
     }
 
-    #[Test]
-    public function testFullQualifiedName(): void
+    public function testToStringOmitsTheSeparatorWithoutANamespace(): void
     {
-        $id = new BuiltinNodeId('Builtin', 'StringType');
-
-        self::assertSame('Builtin\StringType', $id->fullQualifiedName());
+        self::assertSame('Money', (new BuiltinNodeId('', 'Money'))->toString());
     }
 
-    #[Test]
-    public function testToString(): void
+    public function testOfSplitsAFullyQualifiedName(): void
     {
-        $id = new BuiltinNodeId('Builtin', 'StringType');
+        $id = BuiltinNodeId::of('App\Domain\Money');
 
-        self::assertSame('Builtin\StringType', $id->toString());
-        self::assertSame('Builtin\StringType', (string) $id);
+        self::assertSame('App\Domain', $id->namespace);
+        self::assertSame('Money', $id->name);
     }
 
-    #[Test]
-    public function testMagicGetReturnsFullQualifiedName(): void
+    public function testOfBuildsTheSameIdentifierAsTheConstructor(): void
     {
-        $id = new BuiltinNodeId('Builtin', 'string');
-        self::assertSame('Builtin\string', $id->fullQualifiedName);
+        self::assertSame(
+            (new BuiltinNodeId('App\Domain', 'Money'))->toString(),
+            BuiltinNodeId::of('App\Domain\Money')->toString(),
+        );
     }
 
-    #[Test]
-    public function testMagicGetThrowsExceptionForUndefinedProperty(): void
+    public function testOfLeavesTheNamespaceEmptyForAGlobalName(): void
     {
-        $id = new BuiltinNodeId('Builtin', 'string');
-        $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('Undefined property: undefined');
-
-        /** @phpstan-ignore property.notFound */
-        $unused = $id->undefined;
+        self::assertSame('', BuiltinNodeId::of('Money')->namespace);
     }
 }

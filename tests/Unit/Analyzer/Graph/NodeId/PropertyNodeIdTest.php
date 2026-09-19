@@ -5,46 +5,47 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\Graph\NodeId;
 
 use App\Analyzer\Graph\NodeId\PropertyNodeId;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(PropertyNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[Small]
 final class PropertyNodeIdTest extends TestCase
 {
-    #[Test]
-    public function testConstruct(): void
+    public function testToStringJoinsTheParts(): void
     {
-        $id = new PropertyNodeId('App\Service', 'MyClass', 'myProperty');
-
-        self::assertSame('App\Service', $id->namespace);
-        self::assertSame('MyClass', $id->className);
-        self::assertSame('myProperty', $id->propertyName);
+        self::assertSame('App\Domain\Invoice::lines', (new PropertyNodeId('App\Domain', 'Invoice', 'lines'))->toString());
     }
 
-    #[Test]
-    public function testFullQualifiedName(): void
+    public function testToStringOmitsTheSeparatorWithoutANamespace(): void
     {
-        $id = new PropertyNodeId('App\Service', 'MyClass', 'myProperty');
-
-        self::assertSame('App\Service\MyClass::myProperty', $id->fullQualifiedName());
+        self::assertSame('Invoice::lines', (new PropertyNodeId('', 'Invoice', 'lines'))->toString());
     }
 
-    #[Test]
-    public function testToString(): void
+    public function testOfSplitsAFullyQualifiedName(): void
     {
-        $id = new PropertyNodeId('App\Service', 'MyClass', 'myProperty');
+        $id = PropertyNodeId::of('App\Domain\Invoice', 'lines');
 
-        self::assertSame('App\Service\MyClass::myProperty', $id->toString());
-        self::assertSame('App\Service\MyClass::myProperty', (string) $id);
+        self::assertSame('App\Domain', $id->namespace);
+        self::assertSame('Invoice', $id->className);
     }
 
-    #[Test]
-    public function testMagicGet(): void
+    public function testOfBuildsTheSameIdentifierAsTheConstructor(): void
     {
-        $id = new PropertyNodeId('App', 'Test', 'prop');
+        self::assertSame(
+            (new PropertyNodeId('App\Domain', 'Invoice', 'lines'))->toString(),
+            PropertyNodeId::of('App\Domain\Invoice', 'lines')->toString(),
+        );
+    }
 
-        self::assertSame('App\Test::prop', $id->fullQualifiedName);
+    public function testOfLeavesTheNamespaceEmptyForAGlobalName(): void
+    {
+        self::assertSame('', PropertyNodeId::of('Invoice', 'lines')->namespace);
     }
 }

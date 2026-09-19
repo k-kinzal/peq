@@ -5,105 +5,138 @@ declare(strict_types=1);
 namespace Tests\Unit\Config;
 
 use App\Config\EnvConfigReader;
-use PHPUnit\Framework\Attributes\Test;
+use Override;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[CoversClass(EnvConfigReader::class)]
+#[Small]
 final class EnvConfigReaderTest extends TestCase
 {
-    #[Test]
-    public function testReadReturnsConfigFromEnvironmentVariables(): void
+    #[Override]
+    protected function tearDown(): void
     {
-        putenv('PEQ_BASE_PATH=/env/path');
-        putenv('PEQ_DIRECTION=used-by');
-        putenv('PEQ_LEVEL=10');
+        putenv('PEQ_TEST_BASE_PATH');
+        putenv('PEQ_TEST_DIRECTION');
+        putenv('PEQ_TEST_LEVEL');
+        putenv('PEQ_TEST_EXCLUDES');
+        putenv('PEQ_TEST_INCLUDES');
+        putenv('PEQ_TEST_DEBUG_DEPTH');
+        putenv('PEQ_TEST_DEBUG_SEED');
+        putenv('PEQ_TEST_');
+        putenv('OTHER_TEST_BASE_PATH');
 
-        $reader = new EnvConfigReader('PEQ_');
-        $config = $reader->read();
-
-        self::assertSame('/env/path', $config['basePath']);
-        self::assertSame('used-by', $config['direction']);
-        self::assertSame(10, $config['level']);
-
-        putenv('PEQ_BASE_PATH');
-        putenv('PEQ_DIRECTION');
-        putenv('PEQ_LEVEL');
+        parent::tearDown();
     }
 
-    #[Test]
-    public function testReadIgnoresVariablesWithoutPrefix(): void
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadTurnsAScreamingSnakeCaseNameIntoTheSettingItNames(): void
     {
-        putenv('OTHER_VAR=value');
-        putenv('PEQ_BASE_PATH=/test');
+        putenv('PEQ_TEST_BASE_PATH=/env/path');
 
-        $reader = new EnvConfigReader('PEQ_');
-        $config = $reader->read();
-
-        self::assertArrayNotHasKey('otherVar', $config);
-        self::assertArrayHasKey('basePath', $config);
-
-        putenv('OTHER_VAR');
-        putenv('PEQ_BASE_PATH');
+        self::assertSame('/env/path', (new EnvConfigReader('PEQ_TEST_'))->read()['basePath'] ?? null);
     }
 
-    #[Test]
-    public function testReadWithCustomPrefix(): void
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadReportsANumberAsTheTextTheEnvironmentHolds(): void
     {
-        putenv('CUSTOM_BASE_PATH=/custom/path');
+        putenv('PEQ_TEST_LEVEL=10');
 
-        $reader = new EnvConfigReader('CUSTOM_');
-        $config = $reader->read();
-
-        self::assertSame('/custom/path', $config['basePath']);
-
-        putenv('CUSTOM_BASE_PATH');
+        self::assertSame('10', (new EnvConfigReader('PEQ_TEST_'))->read()['level'] ?? null);
     }
 
-    #[Test]
-    public function testReadParsesDebugOptions(): void
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadSplitsACommaSeparatedListIntoItsEntries(): void
     {
-        putenv('PEQ_DEBUG_DEPTH=5');
-        putenv('PEQ_DEBUG_SEED=123');
+        putenv('PEQ_TEST_EXCLUDES=vendor, build ,tests');
 
-        $reader = new EnvConfigReader('PEQ_');
-        $config = $reader->read();
-
-        self::assertArrayHasKey('debug', $config);
-
-        /** @var array{depth: string, seed: string} $debug */
-        $debug = $config['debug'];
-        self::assertSame('5', $debug['depth']);
-        self::assertSame('123', $debug['seed']);
-
-        putenv('PEQ_DEBUG_DEPTH');
-        putenv('PEQ_DEBUG_SEED');
+        self::assertSame(['vendor', 'build', 'tests'], (new EnvConfigReader('PEQ_TEST_'))->read()['excludes'] ?? null);
     }
 
-    #[Test]
-    public function testReadHandlesExcludesCorrectly(): void
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadTurnsAnEmptyListIntoNoEntriesRatherThanOneEmptyEntry(): void
     {
-        putenv('PEQ_EXCLUDES=vendor,tests,.git');
+        putenv('PEQ_TEST_INCLUDES=');
 
-        $reader = new EnvConfigReader('PEQ_');
-        $config = $reader->read();
-
-        self::assertSame(['vendor', 'tests', '.git'], $config['excludes']);
-
-        putenv('PEQ_EXCLUDES');
+        self::assertSame([], (new EnvConfigReader('PEQ_TEST_'))->read()['includes'] ?? null);
     }
 
-    #[Test]
-    public function testReadHandlesIncludesCorrectly(): void
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadReportsDebugVariablesInsideTheDebugGroup(): void
     {
-        putenv('PEQ_INCLUDES=src,lib');
+        putenv('PEQ_TEST_DEBUG_DEPTH=9');
+        putenv('PEQ_TEST_DEBUG_SEED=42');
 
-        $reader = new EnvConfigReader('PEQ_');
-        $config = $reader->read();
+        self::assertSame(['depth' => '9', 'seed' => '42'], (new EnvConfigReader('PEQ_TEST_'))->read()['debug'] ?? null);
+    }
 
-        self::assertSame(['src', 'lib'], $config['includes']);
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadLeavesTheDebugGroupOutWhenNoDebugVariableIsSet(): void
+    {
+        putenv('PEQ_TEST_DIRECTION=used-by');
 
-        putenv('PEQ_INCLUDES');
+        self::assertArrayNotHasKey('debug', (new EnvConfigReader('PEQ_TEST_'))->read());
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadIgnoresVariablesWithoutTheConfiguredPrefix(): void
+    {
+        putenv('OTHER_TEST_BASE_PATH=/other');
+        putenv('PEQ_TEST_BASE_PATH=/mine');
+
+        $config = (new EnvConfigReader('PEQ_TEST_'))->read();
+
+        self::assertSame('/mine', $config['basePath'] ?? null);
+        self::assertArrayNotHasKey('otherTestBasePath', $config);
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadIgnoresAVariableThatIsNothingButThePrefix(): void
+    {
+        putenv('PEQ_TEST_=stray');
+
+        self::assertArrayNotHasKey('', (new EnvConfigReader('PEQ_TEST_'))->read());
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadReportsNothingWhenNoVariableCarriesThePrefix(): void
+    {
+        self::assertSame([], (new EnvConfigReader('PEQ_TEST_ABSENT_'))->read());
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadReportsEverySettingTheEnvironmentHolds(): void
+    {
+        putenv('PEQ_TEST_BASE_PATH=/env/path');
+        putenv('PEQ_TEST_LEVEL=10');
+
+        $config = (new EnvConfigReader('PEQ_TEST_'))->read();
+
+        self::assertSame('/env/path', $config['basePath'] ?? null);
+        self::assertSame('10', $config['level'] ?? null);
     }
 }

@@ -4,92 +4,53 @@ declare(strict_types=1);
 
 namespace Tests\Benchmark;
 
-use App\Analyzer\Graph\Edge;
-use App\Analyzer\Graph\Graph;
-use App\Analyzer\Graph\Node;
+use App\Analyzer\AnalysisFailedException;
 use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
 use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
+use App\Analyzer\PhpStanAnalyzer\CollectorReport;
 use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
+use App\Analyzer\PhpStanAnalyzer\GraphBuilder;
 use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
+use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use PhpBench\Attributes\BeforeMethods;
 use PhpBench\Attributes\Iterations;
 use PhpBench\Attributes\Revs;
-use PHPStan\Analyser\Analyser as PhpStanAnalyser;
 
 /**
+ * Measures assembling a graph out of what an analysis reported.
+ *
+ * This is the step whose cost grows with the size of the codebase rather than with
+ * the cost of understanding it, so it is the one to watch when the graph model
+ * changes.
+ *
  * @internal
  */
 final class GraphBuildingBench
 {
-    /** @var list<Edge|Node> */
-    private array $items = [];
+    /**
+     * What the collectors reported for peq's own sources.
+     */
+    private ?CollectorReport $report = null;
 
+    /**
+     * Runs the analysis once so that only assembly is measured.
+     *
+     * @throws AnalysisFailedException If the container holds no analyser
+     */
     public function setUp(): void
     {
-        $srcPath = dirname(__DIR__, 2).'/src';
-        $collector = new PhpFileCollector();
-        $files = $collector->collect([$srcPath]);
-
-        $factory = new ContainerFactory();
-        $container = $factory->create($files);
-
-        /** @phpstan-ignore phpstanApi.classConstant */
-        $analyser = $container->getByType(PhpStanAnalyser::class);
-
-        /** @phpstan-ignore phpstanApi.method */
-        $result = $analyser->analyse($files, null, null, false, $files);
-
-        /** @phpstan-ignore phpstanApi.method */
-        $collectedData = $result->getCollectedData();
-
-        $this->items = [];
-        foreach ($collectedData as $data) {
-            $this->collectItems($data, DependencyCollector::class, $this->items);
-            $this->collectItems($data, InClassMethodCollector::class, $this->items);
-        }
+        $files = (new PhpFileCollector())->collect([dirname(__DIR__, 2).'/src']);
+        $this->report = (new PhpStanAnalyzer())->collect((new ContainerFactory())->create($files, [DependencyCollector::class, InClassMethodCollector::class]), $files);
     }
 
+    /**
+     * Measures assembling the whole graph.
+     */
     #[BeforeMethods('setUp')]
     #[Revs(5)]
     #[Iterations(5)]
     public function benchBuildGraph(): void
     {
-        $graph = new Graph();
-
-        foreach ($this->items as $item) {
-            if ($item instanceof Node) {
-                try {
-                    $graph->addNode($item);
-                } catch (\InvalidArgumentException) {
-                }
-            }
-        }
-
-        foreach ($this->items as $item) {
-            if ($item instanceof Edge) {
-                $graph->addEdge($item);
-            }
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     * @param class-string         $collectorClass
-     * @param list<Edge|Node>      $items
-     */
-    private function collectItems(array $data, string $collectorClass, array &$items): void
-    {
-        if (!isset($data[$collectorClass]) || !is_array($data[$collectorClass])) {
-            return;
-        }
-
-        foreach ($data[$collectorClass] as $nodeItems) {
-            if (is_array($nodeItems)) {
-                /** @var list<Edge|Node> $nodeItems */
-                foreach ($nodeItems as $item) {
-                    $items[] = $item;
-                }
-            }
-        }
+        (new GraphBuilder())->build(($this->report ?? new CollectorReport([]))->symbols());
     }
 }

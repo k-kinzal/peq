@@ -4,42 +4,46 @@ declare(strict_types=1);
 
 namespace Tests\Contract\Analyzer;
 
-use App\Analyzer\Graph\Graph;
-use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
-use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
+use App\Analyzer\Graph\Edge;
+use App\Analyzer\Graph\Node;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
+use Generator;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Tests\Contract\Graph\GraphInvariantAssertions;
 
 /**
  * @internal
- *
- * Contract tests verifying that the PhpStanAnalyzer produces graphs satisfying
- * all structural invariants (bidirectionality, endpoint existence, node uniqueness,
- * no edge duplicates) across a variety of PHP code patterns
  */
+#[CoversClass(PhpStanAnalyzer::class)]
+#[Large]
 final class PhpStanAnalyzerInvariantContractTest extends TestCase
 {
-    use GraphInvariantAssertions;
-
-    #[DataProvider('provideCodeVariants')]
+    #[DataProvider('providerCodeVariants')]
     #[Test]
     public function testGraphInvariants(string $label, string $phpCode): void
     {
-        $graph = self::analyzeCode($phpCode);
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $phpCode);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+        $edges = array_merge([], ...array_map(static fn (Node $node): array => $graph->edges($node->id()), $graph->nodes()));
+        $spelled = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $edges);
+        $names = array_map(static fn (Node $node): string => $node->id()->toString(), $graph->nodes());
 
-        self::assertBidirectional($graph);
-        self::assertEndpointsExist($graph);
-        self::assertNodeUniqueness($graph);
-        self::assertNoEdgeDuplicates($graph);
+        self::assertNotSame([], $edges, "[{$label}]");
+        self::assertSame([], array_values(array_filter($edges, static fn (Edge $edge): bool => $graph->edge($edge->to(), $edge->from()) === null)), "[{$label}] relations with no reverse reading");
+        self::assertSame([], array_values(array_filter($edges, static fn (Edge $edge): bool => $graph->node($edge->from()) === null || $graph->node($edge->to()) === null)), "[{$label}] relations pointing outside the graph");
+        self::assertSame($names, array_values(array_unique($names)), "[{$label}] identifiers naming more than one symbol");
+        self::assertSame($spelled, array_values(array_unique($spelled)), "[{$label}] relations recorded twice");
     }
 
     /**
-     * @return \Generator<string, array{string, string}>
+     * @return Generator<string, array{string, string}>
      */
-    public static function provideCodeVariants(): \Generator
+    public static function providerCodeVariants(): Generator
     {
         yield 'simple class with one method and one instantiation' => [
             'simple',
@@ -175,21 +179,5 @@ final class PhpStanAnalyzerInvariantContractTest extends TestCase
                 }
                 PHP,
         ];
-    }
-
-    private static function analyzeCode(string $phpCode): Graph
-    {
-        $tmpDir = sys_get_temp_dir().'/peq_contract_'.uniqid();
-        mkdir($tmpDir, 0o777, true);
-        file_put_contents($tmpDir.'/Test.php', $phpCode);
-
-        try {
-            $analyzer = new PhpStanAnalyzer(new ContainerFactory(), new PhpFileCollector());
-
-            return $analyzer->analyze($tmpDir);
-        } finally {
-            @unlink($tmpDir.'/Test.php');
-            @rmdir($tmpDir);
-        }
     }
 }

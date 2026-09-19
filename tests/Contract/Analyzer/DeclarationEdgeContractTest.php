@@ -4,31 +4,25 @@ declare(strict_types=1);
 
 namespace Tests\Contract\Analyzer;
 
-use App\Analyzer\Graph\EdgeKind;
-use App\Analyzer\Graph\Graph;
-use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
-use App\Analyzer\PhpStanAnalyzer\PhpFileCollector;
+use App\Analyzer\Graph\Edge;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
+use Generator;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * Contract tests verifying that the analyzer correctly detects declaration-level
- * dependency edges (extends, implements, trait use, attributes, and type declarations)
  */
+#[CoversClass(PhpStanAnalyzer::class)]
+#[Large]
 final class DeclarationEdgeContractTest extends TestCase
 {
-    // ---------------------------------------------------------------
-    // Extends
-    // ---------------------------------------------------------------
-
-    #[Test]
     public function testExtendsContract(): void
     {
-        $code = <<<'PHP'
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, <<<'PHP'
             <?php
             declare(strict_types=1);
             namespace Tests\Contract\Analyzer\Generated;
@@ -36,26 +30,20 @@ final class DeclarationEdgeContractTest extends TestCase
             class Dep {}
 
             class Subject extends Dep {}
-            PHP;
+            PHP);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
 
-        $graph = self::analyzeCode($code);
-        self::assertEdgeExists(
-            $graph,
-            'Subject',
-            'Dep',
-            EdgeKind::DeclarationExtends,
-            'Contract violated: DeclarationExtends edge missing for class extends',
+        self::assertContains(
+            'Tests\Contract\Analyzer\Generated\Subject -[declaration-extends]-> Tests\Contract\Analyzer\Generated\Dep',
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
         );
     }
 
-    // ---------------------------------------------------------------
-    // Implements
-    // ---------------------------------------------------------------
-
-    #[Test]
     public function testImplementsContract(): void
     {
-        $code = <<<'PHP'
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, <<<'PHP'
             <?php
             declare(strict_types=1);
             namespace Tests\Contract\Analyzer\Generated;
@@ -63,26 +51,20 @@ final class DeclarationEdgeContractTest extends TestCase
             interface DepInterface {}
 
             class Subject implements DepInterface {}
-            PHP;
+            PHP);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
 
-        $graph = self::analyzeCode($code);
-        self::assertEdgeExists(
-            $graph,
-            'Subject',
-            'DepInterface',
-            EdgeKind::DeclarationImplements,
-            'Contract violated: DeclarationImplements edge missing for class implements',
+        self::assertContains(
+            'Tests\Contract\Analyzer\Generated\Subject -[declaration-implements]-> Tests\Contract\Analyzer\Generated\DepInterface',
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
         );
     }
 
-    // ---------------------------------------------------------------
-    // Trait use
-    // ---------------------------------------------------------------
-
-    #[Test]
     public function testTraitUseContract(): void
     {
-        $code = <<<'PHP'
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, <<<'PHP'
             <?php
             declare(strict_types=1);
             namespace Tests\Contract\Analyzer\Generated;
@@ -92,43 +74,36 @@ final class DeclarationEdgeContractTest extends TestCase
             class Subject {
                 use DepTrait;
             }
-            PHP;
+            PHP);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
 
-        $graph = self::analyzeCode($code);
-        self::assertEdgeExists(
-            $graph,
-            'Subject',
-            'DepTrait',
-            EdgeKind::DeclarationTraitUse,
-            'Contract violated: DeclarationTraitUse edge missing for trait use',
+        self::assertContains(
+            'Tests\Contract\Analyzer\Generated\Subject -[declaration-trait-use]-> Tests\Contract\Analyzer\Generated\DepTrait',
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
         );
     }
 
-    // ---------------------------------------------------------------
-    // Attribute — multiple targets
-    // ---------------------------------------------------------------
-
-    #[DataProvider('provideAttributeTargetVariations')]
-    #[Test]
-    public function testAttributeContract(string $label, string $code, string $fromSuffix): void
+    #[DataProvider('providerAttributeTargets')]
+    public function testAttributeContract(string $code, string $relation): void
     {
-        $graph = self::analyzeCode($code);
-        self::assertEdgeExists(
-            $graph,
-            $fromSuffix,
-            'DepAttr',
-            EdgeKind::Attribute,
-            "Contract violated [{$label}]: Attribute edge missing",
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, $code);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+
+        self::assertContains(
+            $relation,
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
         );
     }
 
     /**
-     * @return \Generator<string, array{string, string, string}>
+     * @return Generator<string, array{string, string}>
      */
-    public static function provideAttributeTargetVariations(): \Generator
+    public static function providerAttributeTargets(): Generator
     {
-        yield 'class' => [
-            'class',
+        yield 'on a class' => [
             <<<'PHP'
                 <?php
                 declare(strict_types=1);
@@ -140,11 +115,10 @@ final class DeclarationEdgeContractTest extends TestCase
                 #[DepAttr]
                 class Subject {}
                 PHP,
-            'Subject',
+            'Tests\Contract\Analyzer\Generated\Subject -[attribute]-> Tests\Contract\Analyzer\Generated\DepAttr',
         ];
 
-        yield 'method' => [
-            'method',
+        yield 'on a method' => [
             <<<'PHP'
                 <?php
                 declare(strict_types=1);
@@ -158,11 +132,10 @@ final class DeclarationEdgeContractTest extends TestCase
                     public function testMethod(): void {}
                 }
                 PHP,
-            'Subject::testMethod',
+            'Tests\Contract\Analyzer\Generated\Subject::testMethod -[attribute]-> Tests\Contract\Analyzer\Generated\DepAttr',
         ];
 
-        yield 'property' => [
-            'property',
+        yield 'on a property' => [
             <<<'PHP'
                 <?php
                 declare(strict_types=1);
@@ -176,11 +149,10 @@ final class DeclarationEdgeContractTest extends TestCase
                     public string $prop = '';
                 }
                 PHP,
-            'Subject::prop',
+            'Tests\Contract\Analyzer\Generated\Subject::prop -[attribute]-> Tests\Contract\Analyzer\Generated\DepAttr',
         ];
 
-        yield 'parameter' => [
-            'parameter',
+        yield 'on a parameter' => [
             <<<'PHP'
                 <?php
                 declare(strict_types=1);
@@ -193,11 +165,10 @@ final class DeclarationEdgeContractTest extends TestCase
                     public function testMethod(#[DepAttr] string $x): void {}
                 }
                 PHP,
-            'Subject::testMethod',
+            'Tests\Contract\Analyzer\Generated\Subject::testMethod -[attribute]-> Tests\Contract\Analyzer\Generated\DepAttr',
         ];
 
-        yield 'constant' => [
-            'constant',
+        yield 'on a constant' => [
             <<<'PHP'
                 <?php
                 declare(strict_types=1);
@@ -211,109 +182,15 @@ final class DeclarationEdgeContractTest extends TestCase
                     public const FOO = 'bar';
                 }
                 PHP,
-            'Subject::FOO',
+            'Tests\Contract\Analyzer\Generated\Subject::FOO -[attribute]-> Tests\Contract\Analyzer\Generated\DepAttr',
         ];
     }
 
-    // ---------------------------------------------------------------
-    // Parameter type — with variations
-    // ---------------------------------------------------------------
-
-    #[DataProvider('provideParameterTypeVariations')]
-    #[Test]
-    public function testParameterTypeContract(string $label, string $code): void
+    #[DataProvider('providerTypeShapes')]
+    public function testParameterTypeContract(string $type): void
     {
-        $graph = self::analyzeCode($code);
-        self::assertEdgeExists(
-            $graph,
-            'Subject::testMethod',
-            'Dep',
-            EdgeKind::DeclarationTypeParameter,
-            "Contract violated [{$label}]: DeclarationTypeParameter edge missing",
-        );
-    }
-
-    /**
-     * @return \Generator<string, array{string, string}>
-     */
-    public static function provideParameterTypeVariations(): \Generator
-    {
-        yield 'simple' => ['simple', self::makeParameterTypeCode('Dep')];
-
-        yield 'nullable' => ['nullable', self::makeParameterTypeCode('?Dep')];
-
-        yield 'union' => ['union', self::makeParameterTypeCode('Dep|null')];
-
-        yield 'intersection' => ['intersection', self::makeParameterTypeCode('Dep&\Stringable')];
-    }
-
-    // ---------------------------------------------------------------
-    // Return type — with variations
-    // ---------------------------------------------------------------
-
-    #[DataProvider('provideReturnTypeVariations')]
-    #[Test]
-    public function testReturnTypeContract(string $label, string $code): void
-    {
-        $graph = self::analyzeCode($code);
-        self::assertEdgeExists(
-            $graph,
-            'Subject::testMethod',
-            'Dep',
-            EdgeKind::DeclarationTypeReturn,
-            "Contract violated [{$label}]: DeclarationTypeReturn edge missing",
-        );
-    }
-
-    /**
-     * @return \Generator<string, array{string, string}>
-     */
-    public static function provideReturnTypeVariations(): \Generator
-    {
-        yield 'simple' => ['simple', self::makeReturnTypeCode('Dep')];
-
-        yield 'nullable' => ['nullable', self::makeReturnTypeCode('?Dep')];
-
-        yield 'union' => ['union', self::makeReturnTypeCode('Dep|null')];
-
-        yield 'intersection' => ['intersection', self::makeReturnTypeCode('Dep&\Stringable')];
-    }
-
-    // ---------------------------------------------------------------
-    // Property type — with variations
-    // ---------------------------------------------------------------
-
-    #[DataProvider('providePropertyTypeVariations')]
-    #[Test]
-    public function testPropertyTypeContract(string $label, string $code): void
-    {
-        $graph = self::analyzeCode($code);
-        self::assertEdgeExists(
-            $graph,
-            'Subject::prop',
-            'Dep',
-            EdgeKind::DeclarationTypeProperty,
-            "Contract violated [{$label}]: DeclarationTypeProperty edge missing",
-        );
-    }
-
-    /**
-     * @return \Generator<string, array{string, string}>
-     */
-    public static function providePropertyTypeVariations(): \Generator
-    {
-        yield 'simple' => ['simple', self::makePropertyTypeCode('Dep')];
-
-        yield 'nullable' => ['nullable', self::makePropertyTypeCode('?Dep')];
-
-        yield 'union' => ['union', self::makePropertyTypeCode('Dep|null')];
-
-        yield 'intersection' => ['intersection', self::makePropertyTypeCode('Dep&\Stringable')];
-    }
-
-    private static function makeParameterTypeCode(string $typeHint): string
-    {
-        return <<<PHP
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, <<<PHP
             <?php
             declare(strict_types=1);
             namespace Tests\\Contract\\Analyzer\\Generated;
@@ -323,91 +200,84 @@ final class DeclarationEdgeContractTest extends TestCase
             }
 
             class Subject {
-                public function testMethod({$typeHint} \$x): void {}
+                public function testMethod({$type} \$x): void {}
             }
-            PHP;
-    }
+            PHP);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
 
-    private static function makeReturnTypeCode(string $typeHint): string
-    {
-        return <<<PHP
-            <?php
-            declare(strict_types=1);
-            namespace Tests\\Contract\\Analyzer\\Generated;
-
-            class Dep implements \\Stringable {
-                public function __toString(): string { return ''; }
-            }
-
-            class Subject {
-                public function testMethod(): {$typeHint} { return new Dep(); }
-            }
-            PHP;
-    }
-
-    private static function makePropertyTypeCode(string $typeHint): string
-    {
-        return <<<PHP
-            <?php
-            declare(strict_types=1);
-            namespace Tests\\Contract\\Analyzer\\Generated;
-
-            class Dep implements \\Stringable {
-                public function __toString(): string { return ''; }
-            }
-
-            class Subject {
-                public {$typeHint} \$prop;
-            }
-            PHP;
-    }
-
-    // ---------------------------------------------------------------
-    // Helpers
-    // ---------------------------------------------------------------
-
-    private static function analyzeCode(string $phpCode): Graph
-    {
-        $tmpDir = sys_get_temp_dir().'/peq_contract_'.uniqid();
-        mkdir($tmpDir, 0o777, true);
-        file_put_contents($tmpDir.'/Test.php', $phpCode);
-
-        try {
-            $analyzer = new PhpStanAnalyzer(new ContainerFactory(), new PhpFileCollector());
-
-            return $analyzer->analyze($tmpDir);
-        } finally {
-            @unlink($tmpDir.'/Test.php');
-            @rmdir($tmpDir);
-        }
-    }
-
-    private function assertEdgeExists(
-        Graph $graph,
-        string $fromSuffix,
-        string $toSuffix,
-        EdgeKind $kind,
-        string $msg,
-    ): void {
-        foreach ($graph->nodes() as $node) {
-            if (!str_ends_with($node->id()->toString(), $fromSuffix)) {
-                continue;
-            }
-
-            foreach ($graph->edges($node->id()) as $edge) {
-                if ($edge->kind() === $kind && str_ends_with($edge->to()->toString(), $toSuffix)) {
-                    $this->addToAssertionCount(1);
-
-                    return;
-                }
-            }
-        }
-
-        self::fail(
-            $msg."\nNodes: ".implode(', ', array_map(
-                fn ($n) => $n->id()->toString(),
-                $graph->nodes(),
-            )),
+        self::assertContains(
+            'Tests\Contract\Analyzer\Generated\Subject::testMethod -[declaration-type-parameter]-> Tests\Contract\Analyzer\Generated\Dep',
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            "Parameter typed {$type}",
         );
+    }
+
+    #[DataProvider('providerTypeShapes')]
+    public function testReturnTypeContract(string $type): void
+    {
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, <<<PHP
+            <?php
+            declare(strict_types=1);
+            namespace Tests\\Contract\\Analyzer\\Generated;
+
+            class Dep implements \\Stringable {
+                public function __toString(): string { return ''; }
+            }
+
+            class Subject {
+                public function testMethod(): {$type} { return new Dep(); }
+            }
+            PHP);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+
+        self::assertContains(
+            'Tests\Contract\Analyzer\Generated\Subject::testMethod -[declaration-type-return]-> Tests\Contract\Analyzer\Generated\Dep',
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            "Return typed {$type}",
+        );
+    }
+
+    #[DataProvider('providerTypeShapes')]
+    public function testPropertyTypeContract(string $type): void
+    {
+        $file = sys_get_temp_dir().'/'.uniqid('peq-snippet-', true).'.php';
+        file_put_contents($file, <<<PHP
+            <?php
+            declare(strict_types=1);
+            namespace Tests\\Contract\\Analyzer\\Generated;
+
+            class Dep implements \\Stringable {
+                public function __toString(): string { return ''; }
+            }
+
+            class Subject {
+                public {$type} \$prop;
+            }
+            PHP);
+        $graph = (new PhpStanAnalyzer())->analyze($file);
+        unlink($file);
+
+        self::assertContains(
+            'Tests\Contract\Analyzer\Generated\Subject::prop -[declaration-type-property]-> Tests\Contract\Analyzer\Generated\Dep',
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            "Property typed {$type}",
+        );
+    }
+
+    /**
+     * @return Generator<string, array{string}>
+     */
+    public static function providerTypeShapes(): Generator
+    {
+        yield 'simple' => ['Dep'];
+
+        yield 'nullable' => ['?Dep'];
+
+        yield 'union' => ['Dep|null'];
+
+        yield 'intersection' => ['Dep&\Stringable'];
     }
 }
