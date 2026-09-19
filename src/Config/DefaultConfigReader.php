@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Config;
 
+use Override;
+
 /**
  * Provides default configuration values.
  *
@@ -22,6 +24,7 @@ final class DefaultConfigReader implements ConfigReader
      *
      * @return ConfigFields The default settings
      */
+    #[Override]
     public function read(): array
     {
         return [

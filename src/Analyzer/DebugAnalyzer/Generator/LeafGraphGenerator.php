@@ -21,13 +21,13 @@ use App\Analyzer\Graph\NodeId\EnumCaseNodeId;
  *
  * @visibility parent
  */
-final class LeafGraphGenerator
+final readonly class LeafGraphGenerator
 {
     /**
      * @param NodeGenerator $nodes The source of the nodes these graphs hold
      */
     public function __construct(
-        private readonly NodeGenerator $nodes,
+        private NodeGenerator $nodes,
     ) {}
 
     /**

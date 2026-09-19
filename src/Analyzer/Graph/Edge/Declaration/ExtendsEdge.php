@@ -11,11 +11,12 @@ use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\Node\GraphInterfaceNode;
+use Override;
 
 /**
  * Represents an inheritance relationship (extends) between classes or interfaces.
  */
-final class ExtendsEdge extends AuthoredEdge
+final readonly class ExtendsEdge extends AuthoredEdge
 {
     /**
      * @param ClassNode|GraphInterfaceNode $from The node the relation starts at
@@ -36,6 +37,7 @@ final class ExtendsEdge extends AuthoredEdge
      *
      * @return EdgeKind Always EdgeKind::DeclarationExtends
      */
+    #[Override]
     public function kind(): EdgeKind
     {
         return EdgeKind::DeclarationExtends;
@@ -46,6 +48,7 @@ final class ExtendsEdge extends AuthoredEdge
      *
      * @return Edge A DeclaredInEdge carrying this edge, which inverts back into it
      */
+    #[Override]
     public function invert(): Edge
     {
         return new DeclaredInEdge($this);

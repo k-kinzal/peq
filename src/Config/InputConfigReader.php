@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Config;
 
 use App\Analyzer\Graph\Direction;
+use Override;
 use Symfony\Component\Console\Input\InputInterface;
 
 /**
@@ -22,13 +23,13 @@ use Symfony\Component\Console\Input\InputInterface;
  * @phpstan-import-type ConfigLeaf from ConfigReader
  * @phpstan-import-type ConfigFields from ConfigReader
  */
-final class InputConfigReader implements ConfigReader
+final readonly class InputConfigReader implements ConfigReader
 {
     /**
      * @param InputInterface $input The console input to read from
      */
     public function __construct(
-        private readonly InputInterface $input,
+        private InputInterface $input,
     ) {}
 
     /**
@@ -36,6 +37,7 @@ final class InputConfigReader implements ConfigReader
      *
      * @return ConfigFields The settings the user typed, as they were typed
      */
+    #[Override]
     public function read(): array
     {
         $config = [];

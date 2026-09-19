@@ -28,7 +28,7 @@ final class RandomSource
      *
      * @var list<string>
      */
-    private const WORDS = [
+    private const array WORDS = [
         'alias', 'amet', 'animi', 'aut', 'beatae', 'culpa', 'dolor', 'eius',
         'enim', 'error', 'fugit', 'harum', 'illum', 'ipsum', 'iure', 'magni',
         'minus', 'nemo', 'nihil', 'odio', 'omnis', 'porro', 'quia', 'quod',
@@ -41,12 +41,12 @@ final class RandomSource
     /**
      * The constant the seed is mixed with, so that seed zero has a state to start from.
      */
-    private const MIX = 0x9E3779B9;
+    private const int MIX = 0x9E3779B9;
 
     /**
      * The mask keeping the state to 32 bits.
      */
-    private const MASK = 0xFFFFFFFF;
+    private const int MASK = 0xFFFFFFFF;
 
     /**
      * The current state of the sequence, never zero.

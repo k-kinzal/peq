@@ -25,13 +25,13 @@ use BackedEnum;
  *
  * @visibility namespace
  */
-final class RawConfig
+final readonly class RawConfig
 {
     /**
      * @param ConfigFields $values The field values a source reported
      */
     public function __construct(
-        private readonly array $values,
+        private array $values,
     ) {}
 
     /**

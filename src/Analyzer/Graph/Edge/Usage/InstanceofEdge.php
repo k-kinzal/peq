@@ -14,11 +14,12 @@ use App\Analyzer\Graph\Node\EnumNode;
 use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\Node\GraphInterfaceNode;
 use App\Analyzer\Graph\Node\MethodNode;
+use Override;
 
 /**
  * Represents an instanceof check relationship.
  */
-final class InstanceofEdge extends AuthoredEdge
+final readonly class InstanceofEdge extends AuthoredEdge
 {
     /**
      * @param FunctionNode|MethodNode               $from The node the relation starts at
@@ -38,6 +39,7 @@ final class InstanceofEdge extends AuthoredEdge
      *
      * @return EdgeKind Always EdgeKind::Instanceof
      */
+    #[Override]
     public function kind(): EdgeKind
     {
         return EdgeKind::Instanceof;
@@ -48,6 +50,7 @@ final class InstanceofEdge extends AuthoredEdge
      *
      * @return Edge A UsedByEdge carrying this edge, which inverts back into it
      */
+    #[Override]
     public function invert(): Edge
     {
         return new UsedByEdge($this);

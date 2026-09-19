@@ -8,6 +8,7 @@ use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId\ConstantNodeId;
 use App\Analyzer\Graph\NodeKind;
+use Override;
 
 /**
  * Represents a constant node in the dependency graph.
@@ -15,7 +16,7 @@ use App\Analyzer\Graph\NodeKind;
  * Encapsulates information about a PHP class constant including its identifier,
  * file location metadata, and whether it has been fully resolved during analysis.
  */
-final class ConstantNode implements Node
+final readonly class ConstantNode implements Node
 {
     /**
      * @param ConstantNodeId $id       Unique identifier for this constant
@@ -23,14 +24,15 @@ final class ConstantNode implements Node
      * @param null|FileMeta  $meta     File location metadata (null if not available)
      */
     public function __construct(
-        public readonly ConstantNodeId $id,
-        public readonly bool $resolved = false,
-        public readonly ?FileMeta $meta = null,
+        public ConstantNodeId $id,
+        public bool $resolved = false,
+        public ?FileMeta $meta = null,
     ) {}
 
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function id(): ConstantNodeId
     {
         return $this->id;
@@ -39,6 +41,7 @@ final class ConstantNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function kind(): NodeKind
     {
         return NodeKind::Constant;
@@ -47,6 +50,7 @@ final class ConstantNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function resolved(): bool
     {
         return $this->resolved;
@@ -55,6 +59,7 @@ final class ConstantNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function meta(): ?FileMeta
     {
         return $this->meta;

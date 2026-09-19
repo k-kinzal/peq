@@ -10,6 +10,7 @@ use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\InverseEdge;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId;
+use Override;
 
 /**
  * The opposite reading of a usage relation: "is used by".
@@ -19,13 +20,13 @@ use App\Analyzer\Graph\NodeId;
  * inverts straight back into it, so no usage kind is lost by making the reverse
  * direction available.
  */
-final class UsedByEdge implements InverseEdge
+final readonly class UsedByEdge implements InverseEdge
 {
     /**
      * @param Edge $usage The usage relation this edge is the opposite reading of
      */
     public function __construct(
-        private readonly Edge $usage,
+        private Edge $usage,
     ) {}
 
     /**
@@ -33,6 +34,7 @@ final class UsedByEdge implements InverseEdge
      *
      * @return NodeId<Node> The used node identifier
      */
+    #[Override]
     public function from(): NodeId
     {
         return $this->usage->to();
@@ -43,6 +45,7 @@ final class UsedByEdge implements InverseEdge
      *
      * @return NodeId<Node> The using node identifier
      */
+    #[Override]
     public function to(): NodeId
     {
         return $this->usage->from();
@@ -53,6 +56,7 @@ final class UsedByEdge implements InverseEdge
      *
      * @return EdgeKind Always EdgeKind::UsedBy
      */
+    #[Override]
     public function kind(): EdgeKind
     {
         return EdgeKind::UsedBy;
@@ -63,6 +67,7 @@ final class UsedByEdge implements InverseEdge
      *
      * @return FileMeta The location of the usage this edge reverses
      */
+    #[Override]
     public function meta(): FileMeta
     {
         return $this->usage->meta();
@@ -82,6 +87,7 @@ final class UsedByEdge implements InverseEdge
      *
      * @return Edge The original usage edge, with its original kind intact
      */
+    #[Override]
     public function invert(): Edge
     {
         return $this->usage;

@@ -11,11 +11,12 @@ use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node\EnumCaseNode;
 use App\Analyzer\Graph\Node\EnumNode;
+use Override;
 
 /**
  * Represents an enum case declaration relationship within an enum.
  */
-final class EnumCaseEdge extends AuthoredEdge
+final readonly class EnumCaseEdge extends AuthoredEdge
 {
     /**
      * @param EnumNode     $from The node the relation starts at
@@ -35,6 +36,7 @@ final class EnumCaseEdge extends AuthoredEdge
      *
      * @return EdgeKind Always EdgeKind::DeclarationEnumCase
      */
+    #[Override]
     public function kind(): EdgeKind
     {
         return EdgeKind::DeclarationEnumCase;
@@ -45,6 +47,7 @@ final class EnumCaseEdge extends AuthoredEdge
      *
      * @return Edge A DeclaredInEdge carrying this edge, which inverts back into it
      */
+    #[Override]
     public function invert(): Edge
     {
         return new DeclaredInEdge($this);

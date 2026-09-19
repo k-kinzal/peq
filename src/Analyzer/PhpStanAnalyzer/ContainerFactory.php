@@ -21,7 +21,7 @@ use Symfony\Component\Yaml\Yaml;
  *
  * @visibility namespace
  */
-final class ContainerFactory
+final readonly class ContainerFactory
 {
     /**
      * Analysis level of the generated configuration.
@@ -29,13 +29,13 @@ final class ContainerFactory
      * Collectors run at every level, and level 0 leaves out the type-checking rules
      * peq has no use for, so nothing is spent on diagnostics that are discarded.
      */
-    private const COLLECTOR_ONLY_LEVEL = 0;
+    private const int COLLECTOR_ONLY_LEVEL = 0;
 
     /**
      * @param PhpStanAutoloader $autoloader Makes PHPStan loadable when peq runs from a PHAR
      */
     public function __construct(
-        private readonly PhpStanAutoloader $autoloader = new PhpStanAutoloader(),
+        private PhpStanAutoloader $autoloader = new PhpStanAutoloader(),
     ) {}
 
     /**

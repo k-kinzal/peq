@@ -8,6 +8,7 @@ use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId\EnumCaseNodeId;
 use App\Analyzer\Graph\NodeKind;
+use Override;
 
 /**
  * Represents an enum case node in the dependency graph.
@@ -15,7 +16,7 @@ use App\Analyzer\Graph\NodeKind;
  * Encapsulates information about a PHP enum case including its identifier,
  * file location metadata, and whether it has been fully resolved during analysis.
  */
-final class EnumCaseNode implements Node
+final readonly class EnumCaseNode implements Node
 {
     /**
      * @param EnumCaseNodeId $id       Unique identifier for this enum case
@@ -23,14 +24,15 @@ final class EnumCaseNode implements Node
      * @param null|FileMeta  $meta     File location metadata (null if not available)
      */
     public function __construct(
-        public readonly EnumCaseNodeId $id,
-        public readonly bool $resolved = false,
-        public readonly ?FileMeta $meta = null,
+        public EnumCaseNodeId $id,
+        public bool $resolved = false,
+        public ?FileMeta $meta = null,
     ) {}
 
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function id(): EnumCaseNodeId
     {
         return $this->id;
@@ -39,6 +41,7 @@ final class EnumCaseNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function kind(): NodeKind
     {
         return NodeKind::EnumCase;
@@ -47,6 +50,7 @@ final class EnumCaseNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function resolved(): bool
     {
         return $this->resolved;
@@ -55,6 +59,7 @@ final class EnumCaseNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function meta(): ?FileMeta
     {
         return $this->meta;

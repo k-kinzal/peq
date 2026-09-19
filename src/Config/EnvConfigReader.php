@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Config;
 
+use Override;
+
 /**
  * Reads configuration from environment variables.
  *
@@ -20,23 +22,23 @@ namespace App\Config;
  *
  * @phpstan-import-type ConfigFields from ConfigReader
  */
-final class EnvConfigReader implements ConfigReader
+final readonly class EnvConfigReader implements ConfigReader
 {
     /**
      * Settings whose environment form is a comma-separated list.
      */
-    private const LIST_KEYS = ['includes', 'excludes'];
+    private const array LIST_KEYS = ['includes', 'excludes'];
 
     /**
      * Name prefix marking a variable as belonging to the debug group.
      */
-    private const DEBUG_PREFIX = 'debug_';
+    private const string DEBUG_PREFIX = 'debug_';
 
     /**
      * @param string $prefix The prefix marking an environment variable as configuration
      */
     public function __construct(
-        private readonly string $prefix = 'PEQ_',
+        private string $prefix = 'PEQ_',
     ) {}
 
     /**
@@ -44,6 +46,7 @@ final class EnvConfigReader implements ConfigReader
      *
      * @return ConfigFields The settings found, as the environment spells them
      */
+    #[Override]
     public function read(): array
     {
         $config = [];

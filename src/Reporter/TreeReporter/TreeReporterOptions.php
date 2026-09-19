@@ -11,13 +11,13 @@ namespace App\Reporter\TreeReporter;
  * configuration it comes from: a positive number of levels below the root symbol,
  * or null for the whole tree.
  */
-final class TreeReporterOptions
+final readonly class TreeReporterOptions
 {
     /**
      * @param null|int $level Deepest level below the root to print, or null for the whole tree
      */
     public function __construct(
-        public readonly ?int $level = null,
+        public ?int $level = null,
     ) {
         assert($level === null || $level > 0, 'A printed level bound must be a positive number of levels');
     }

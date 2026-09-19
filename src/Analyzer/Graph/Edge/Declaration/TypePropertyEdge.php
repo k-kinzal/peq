@@ -15,11 +15,12 @@ use App\Analyzer\Graph\Node\EnumNode;
 use App\Analyzer\Graph\Node\GraphInterfaceNode;
 use App\Analyzer\Graph\Node\PropertyNode;
 use App\Analyzer\Graph\Node\TraitNode;
+use Override;
 
 /**
  * Represents a property type declaration relationship.
  */
-final class TypePropertyEdge extends AuthoredEdge
+final readonly class TypePropertyEdge extends AuthoredEdge
 {
     /**
      * @param PropertyNode                                                $from The node the relation starts at
@@ -39,6 +40,7 @@ final class TypePropertyEdge extends AuthoredEdge
      *
      * @return EdgeKind Always EdgeKind::DeclarationTypeProperty
      */
+    #[Override]
     public function kind(): EdgeKind
     {
         return EdgeKind::DeclarationTypeProperty;
@@ -49,6 +51,7 @@ final class TypePropertyEdge extends AuthoredEdge
      *
      * @return Edge A DeclaredInEdge carrying this edge, which inverts back into it
      */
+    #[Override]
     public function invert(): Edge
     {
         return new DeclaredInEdge($this);

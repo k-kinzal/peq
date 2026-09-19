@@ -16,22 +16,22 @@ namespace App\Analyzer\Graph;
  * about the name and not about the node it might become: a builtin never has a
  * declaration to point at.
  */
-final class QualifiedName
+final readonly class QualifiedName
 {
     /**
      * The grammar of a single name segment, as the PHP manual writes it.
      */
-    private const IDENTIFIER_PATTERN = '/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/';
+    private const string IDENTIFIER_PATTERN = '/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/';
 
     /**
      * The grammar of a namespace: identifier segments joined by single separators.
      */
-    private const NAMESPACE_PATTERN = '/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*(\\\[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*)*$/';
+    private const string NAMESPACE_PATTERN = '/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*(\\\[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*)*$/';
 
     /**
      * Names PHP resolves itself, which therefore have no declaration in any codebase.
      */
-    private const BUILTIN_NAMES = [
+    private const array BUILTIN_NAMES = [
         'self', 'static', 'parent',
         'int', 'string', 'float', 'bool', 'array', 'iterable', 'callable',
         'void', 'object', 'mixed', 'null', 'false', 'true', 'never',
@@ -40,12 +40,12 @@ final class QualifiedName
     /**
      * The namespace part, empty when the name is not namespaced.
      */
-    public readonly string $namespace;
+    public string $namespace;
 
     /**
      * The last segment of the name.
      */
-    public readonly string $shortName;
+    public string $shortName;
 
     /**
      * @example Splitting a namespaced name
@@ -58,7 +58,7 @@ final class QualifiedName
      * @param string $fullName The name as analysis reported it
      */
     public function __construct(
-        public readonly string $fullName,
+        public string $fullName,
     ) {
         $lastSeparator = strrpos($fullName, '\\');
         $this->namespace = $lastSeparator === false ? '' : substr($fullName, 0, $lastSeparator);

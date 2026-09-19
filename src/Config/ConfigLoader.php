@@ -18,13 +18,13 @@ namespace App\Config;
  * @phpstan-import-type ConfigFields from ConfigReader
  * @phpstan-import-type ConfigGroup from ConfigReader
  */
-final class ConfigLoader
+final readonly class ConfigLoader
 {
     /**
      * @param list<ConfigReader> $readers The readers to consult, from lowest to highest priority
      */
     public function __construct(
-        private readonly array $readers,
+        private array $readers,
     ) {}
 
     /**

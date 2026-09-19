@@ -18,7 +18,7 @@ use App\Analyzer\Graph\Direction;
  *
  * @phpstan-import-type ConfigFields from ConfigReader
  */
-final class Config
+final readonly class Config
 {
     /**
      * @param string              $basePath  The base path for the PHP project to analyze
@@ -30,13 +30,13 @@ final class Config
      * @param DebugAnalyzerConfig $debug     Settings for the synthetic graph of the debug analyzer
      */
     public function __construct(
-        public readonly string $basePath,
-        public readonly Direction $direction,
-        public readonly ?int $level = null,
-        public readonly array $includes = [],
-        public readonly array $excludes = [],
-        public readonly AnalyzerKind $analyzer = AnalyzerKind::PhpStan,
-        public readonly DebugAnalyzerConfig $debug = new DebugAnalyzerConfig(),
+        public string $basePath,
+        public Direction $direction,
+        public ?int $level = null,
+        public array $includes = [],
+        public array $excludes = [],
+        public AnalyzerKind $analyzer = AnalyzerKind::PhpStan,
+        public DebugAnalyzerConfig $debug = new DebugAnalyzerConfig(),
     ) {
         assert($this->basePath !== '', 'A base path must name a location');
         assert($this->level === null || $this->level > 0, 'A reported level bound must be a positive number of levels');

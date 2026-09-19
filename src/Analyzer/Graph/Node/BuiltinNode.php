@@ -8,6 +8,7 @@ use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId\BuiltinNodeId;
 use App\Analyzer\Graph\NodeKind;
+use Override;
 
 /**
  * Represents a builtin type node in the dependency graph.
@@ -16,7 +17,7 @@ use App\Analyzer\Graph\NodeKind;
  * including their identifier and resolution status. Builtin types typically
  * do not have file metadata as they are part of the PHP language itself.
  */
-final class BuiltinNode implements Node
+final readonly class BuiltinNode implements Node
 {
     /**
      * @param BuiltinNodeId $id       Unique identifier for this builtin type
@@ -24,14 +25,15 @@ final class BuiltinNode implements Node
      * @param null|FileMeta $meta     File location metadata (typically null for builtin types)
      */
     public function __construct(
-        public readonly BuiltinNodeId $id,
-        public readonly bool $resolved = false,
-        public readonly ?FileMeta $meta = null,
+        public BuiltinNodeId $id,
+        public bool $resolved = false,
+        public ?FileMeta $meta = null,
     ) {}
 
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function id(): BuiltinNodeId
     {
         return $this->id;
@@ -40,6 +42,7 @@ final class BuiltinNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function kind(): NodeKind
     {
         return NodeKind::Builtin;
@@ -48,6 +51,7 @@ final class BuiltinNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function resolved(): bool
     {
         return $this->resolved;
@@ -56,6 +60,7 @@ final class BuiltinNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function meta(): ?FileMeta
     {
         return $this->meta;

@@ -39,15 +39,15 @@ use App\Analyzer\Graph\NodeKind;
  *
  * @visibility parent
  */
-final class NodeGenerator
+final readonly class NodeGenerator
 {
     /**
      * @param NodeIdGenerator $ids    The source of identifiers and source locations
      * @param RandomSource    $random The random source resolution flags are drawn from
      */
     public function __construct(
-        private readonly NodeIdGenerator $ids,
-        private readonly RandomSource $random,
+        private NodeIdGenerator $ids,
+        private RandomSource $random,
     ) {}
 
     /**

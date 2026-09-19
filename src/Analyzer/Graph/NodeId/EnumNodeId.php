@@ -7,6 +7,7 @@ namespace App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\Node\EnumNode;
 use App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\QualifiedName;
+use Override;
 
 /**
  * Unique identifier for an enum node in the dependency graph.
@@ -17,20 +18,20 @@ use App\Analyzer\Graph\QualifiedName;
  *
  * @implements NodeId<EnumNode>
  */
-final class EnumNodeId implements NodeId
+final readonly class EnumNodeId implements NodeId
 {
     /**
      * The precomputed string form of this identifier.
      */
-    private readonly string $stringValue;
+    private string $stringValue;
 
     /**
      * @param string $namespace The namespace of the enum (must be a valid PHP namespace)
      * @param string $enumName  The enum name (must be a valid PHP identifier)
      */
     public function __construct(
-        public readonly string $namespace,
-        public readonly string $enumName,
+        public string $namespace,
+        public string $enumName,
     ) {
         if ($namespace !== '') {
             assert(QualifiedName::isNamespace($namespace), 'The namespace must be one PHP would accept');
@@ -58,6 +59,7 @@ final class EnumNodeId implements NodeId
      *
      * @return string The fully qualified enum name
      */
+    #[Override]
     public function toString(): string
     {
         return $this->stringValue;

@@ -9,6 +9,7 @@ use App\Analyzer\Analyzer;
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
 use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
+use Override;
 use PHPStan\Analyser\Analyser as PhpStanAnalyser;
 use PHPStan\Analyser\Error;
 use PHPStan\DependencyInjection\Container;
@@ -24,7 +25,7 @@ use PHPStan\Parser\PathRoutingParser;
  * PHPStan's internals is deliberate — its resolved types are the reason the graph
  * can tell a call to one class from a call to another of the same method name.
  */
-final class PhpStanAnalyzer implements Analyzer
+final readonly class PhpStanAnalyzer implements Analyzer
 {
     /**
      * The identifier PHPStan gives an error that stands for a failure of its own.
@@ -32,7 +33,7 @@ final class PhpStanAnalyzer implements Analyzer
      * Every other error is a diagnostic about the analysed code, which a dependency
      * graph has no use for.
      */
-    private const INTERNAL_ERROR = 'phpstan.internal';
+    private const string INTERNAL_ERROR = 'phpstan.internal';
 
     /**
      * @param list<string>       $includes         File path patterns to include in analysis
@@ -43,12 +44,12 @@ final class PhpStanAnalyzer implements Analyzer
      * @param list<class-string> $collectors       The collectors the graph is assembled from: declarations and method bodies unless narrowed
      */
     public function __construct(
-        private readonly array $includes = [],
-        private readonly array $excludes = [],
-        private readonly ContainerFactory $containerFactory = new ContainerFactory(),
-        private readonly PhpFileCollector $fileCollector = new PhpFileCollector(),
-        private readonly GraphBuilder $graphBuilder = new GraphBuilder(),
-        private readonly array $collectors = [DependencyCollector::class, InClassMethodCollector::class],
+        private array $includes = [],
+        private array $excludes = [],
+        private ContainerFactory $containerFactory = new ContainerFactory(),
+        private PhpFileCollector $fileCollector = new PhpFileCollector(),
+        private GraphBuilder $graphBuilder = new GraphBuilder(),
+        private array $collectors = [DependencyCollector::class, InClassMethodCollector::class],
     ) {}
 
     /**
@@ -64,6 +65,7 @@ final class PhpStanAnalyzer implements Analyzer
      * @throws AnalysisFailedException If PHPStan cannot be configured to run the collectors,
      *                                 or if it could not finish analysing one of the files
      */
+    #[Override]
     public function analyze(string $path): Graph
     {
         $realPath = realpath($path);

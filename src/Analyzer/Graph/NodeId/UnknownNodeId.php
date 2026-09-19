@@ -6,6 +6,7 @@ namespace App\Analyzer\Graph\NodeId;
 
 use App\Analyzer\Graph\Node\UnknownNode;
 use App\Analyzer\Graph\NodeId;
+use Override;
 
 /**
  * Unique identifier for an unknown node in the dependency graph.
@@ -16,13 +17,13 @@ use App\Analyzer\Graph\NodeId;
  *
  * @implements NodeId<UnknownNode>
  */
-final class UnknownNodeId implements NodeId
+final readonly class UnknownNodeId implements NodeId
 {
     /**
      * @param string $name The name of the unknown node (must not be empty)
      */
     public function __construct(
-        public readonly string $name,
+        public string $name,
     ) {
         assert($name !== '');
     }
@@ -32,6 +33,7 @@ final class UnknownNodeId implements NodeId
      *
      * @return string The name of the unknown node
      */
+    #[Override]
     public function toString(): string
     {
         return $this->name;

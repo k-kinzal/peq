@@ -8,6 +8,7 @@ use App\Analyzer\Graph\Edge;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\PhpStanAnalyzer\Processor\InClassMethodNodeProcessor;
 use App\Analyzer\PhpStanAnalyzer\ReparsedSource;
+use Override;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
 use PHPStan\Node\InClassMethodNode;
@@ -24,13 +25,13 @@ use PHPStan\Node\InClassMethodNode;
  *
  * @visibility parent
  */
-final class InClassMethodCollector implements Collector
+final readonly class InClassMethodCollector implements Collector
 {
     /**
      * @param ReparsedSource $source The files read as written, remembered for this run
      */
     public function __construct(
-        private readonly ReparsedSource $source = new ReparsedSource(),
+        private ReparsedSource $source = new ReparsedSource(),
     ) {}
 
     /**
@@ -38,6 +39,7 @@ final class InClassMethodCollector implements Collector
      *
      * @return class-string<InClassMethodNode> The class of the node kind this collector reads
      */
+    #[Override]
     public function getNodeType(): string
     {
         return InClassMethodNode::class;
@@ -55,6 +57,7 @@ final class InClassMethodCollector implements Collector
      *
      * @return null|list<Edge|Node> The relations found, or null when there are none
      */
+    #[Override]
     public function processNode(\PhpParser\Node $node, Scope $scope): ?array
     {
         $items = InClassMethodNodeProcessor::process($node, $scope, $this->source);

@@ -7,6 +7,7 @@ namespace App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\Node\ConstantNode;
 use App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\QualifiedName;
+use Override;
 
 /**
  * Unique identifier for a constant node in the dependency graph.
@@ -17,12 +18,12 @@ use App\Analyzer\Graph\QualifiedName;
  *
  * @implements NodeId<ConstantNode>
  */
-final class ConstantNodeId implements NodeId
+final readonly class ConstantNodeId implements NodeId
 {
     /**
      * The precomputed string form of this identifier.
      */
-    private readonly string $stringValue;
+    private string $stringValue;
 
     /**
      * @param string $namespace    The namespace of the class containing the constant (must be a valid PHP namespace)
@@ -30,9 +31,9 @@ final class ConstantNodeId implements NodeId
      * @param string $constantName The constant name (must be a valid PHP identifier)
      */
     public function __construct(
-        public readonly string $namespace,
-        public readonly string $className,
-        public readonly string $constantName,
+        public string $namespace,
+        public string $className,
+        public string $constantName,
     ) {
         if ($namespace !== '') {
             assert(QualifiedName::isNamespace($namespace), 'The namespace must be one PHP would accept');
@@ -63,6 +64,7 @@ final class ConstantNodeId implements NodeId
      *
      * @return string The fully qualified constant name
      */
+    #[Override]
     public function toString(): string
     {
         return $this->stringValue;

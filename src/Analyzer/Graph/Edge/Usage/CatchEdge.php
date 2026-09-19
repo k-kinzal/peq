@@ -13,11 +13,12 @@ use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\Node\GraphInterfaceNode;
 use App\Analyzer\Graph\Node\MethodNode;
+use Override;
 
 /**
  * Represents a caught exception relationship.
  */
-final class CatchEdge extends AuthoredEdge
+final readonly class CatchEdge extends AuthoredEdge
 {
     /**
      * @param FunctionNode|MethodNode      $from The node the relation starts at
@@ -37,6 +38,7 @@ final class CatchEdge extends AuthoredEdge
      *
      * @return EdgeKind Always EdgeKind::Catch
      */
+    #[Override]
     public function kind(): EdgeKind
     {
         return EdgeKind::Catch;
@@ -47,6 +49,7 @@ final class CatchEdge extends AuthoredEdge
      *
      * @return Edge A UsedByEdge carrying this edge, which inverts back into it
      */
+    #[Override]
     public function invert(): Edge
     {
         return new UsedByEdge($this);

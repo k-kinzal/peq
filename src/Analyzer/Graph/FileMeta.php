@@ -11,12 +11,12 @@ namespace App\Analyzer\Graph;
  * including the file path, line number, and column position. This metadata is useful
  * for error reporting, code navigation, and debugging purposes.
  */
-final class FileMeta
+final readonly class FileMeta
 {
     /**
      * The filename extracted from the path.
      */
-    public readonly string $name;
+    public string $name;
 
     /**
      * @param string $path   Full path to the source file
@@ -24,9 +24,9 @@ final class FileMeta
      * @param int    $column Column position in the line (1-indexed)
      */
     public function __construct(
-        public readonly string $path,
-        public readonly int $line,
-        public readonly int $column,
+        public string $path,
+        public int $line,
+        public int $column,
     ) {
         assert($this->line > 0);
         assert($this->column > 0);
