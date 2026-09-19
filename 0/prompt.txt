@@ -1,0 +1,7 @@
+<task-notification>
+<task-id>bamu76acy</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-ab-Projects-peq/01cc4fc0-ff2c-443e-9ffd-2e7e15c18ee7/tasks/bamu76acy.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the test suite baseline" completed (exit code 0)</summary>
+</task-notification>

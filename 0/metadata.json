@@ -1,0 +1,57 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M2WXE8C7ME5AFB3R0FQRTKCG",
+  "session_id": "01cc4fc0-ff2c-443e-9ffd-2e7e15c18ee7",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-19T13:24:41.131796Z",
+  "branch": "feat/php-version-support-range",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".peq.yaml",
+    "renovate.json",
+    "src/Config/PhpVersion.php"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5",
+  "turn_id": "31c55a978ead",
+  "checkpoint_transcript_start": 507,
+  "transcript_lines_at_start": 507,
+  "compact_transcript_start": 112,
+  "token_usage": {
+    "input_tokens": 270,
+    "cache_creation_tokens": 158200,
+    "cache_read_tokens": 43001289,
+    "output_tokens": 90000,
+    "api_call_count": 135
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-19T13:24:41.008423Z",
+    "agent_lines": 179,
+    "agent_removed": 3,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 179,
+    "total_lines_changed": 182,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 7,
+      "user_lines_removed": 6,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "README.md": 5,
+        "composer.json": 2
+      },
+      "user_removed_per_file": {
+        ".github/workflows/ci.yaml": 2,
+        "README.md": 2,
+        "composer.json": 2
+      }
+    }
+  ]
+}

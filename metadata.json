@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M2WXE8C7ME5AFB3R0FQRTKCG",
+  "strategy": "manual-commit",
+  "branch": "feat/php-version-support-range",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".peq.yaml",
+    "renovate.json",
+    "src/Config/PhpVersion.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 270,
+    "cache_creation_tokens": 158200,
+    "cache_read_tokens": 43001289,
+    "output_tokens": 90000,
+    "api_call_count": 135
+  }
+}
