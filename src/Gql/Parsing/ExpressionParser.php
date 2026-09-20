@@ -190,7 +190,7 @@ final class ExpressionParser
         $token = $tokens->current();
         $single = match (true) {
             $token->isSymbol('=') => BinaryOperator::Equal,
-            $token->isSymbol('<>'), $token->isSymbol('!=') => BinaryOperator::NotEqual,
+            $token->isSymbol('<>') => BinaryOperator::NotEqual,
             $token->isSymbol('<=') => BinaryOperator::LessOrEqual,
             $token->isSymbol('>=') => BinaryOperator::GreaterOrEqual,
             $token->isSymbol('<') => BinaryOperator::Less,

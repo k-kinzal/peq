@@ -27,13 +27,18 @@ final class Lexer
 {
     /**
      * The operators written as two characters, longest-match first.
+     *
+     * GQL spells inequality `<>` and nothing else. The `!=` that most languages also
+     * accept is deliberately not here: a reader who writes it is told it cannot be
+     * written, which is a smaller surprise than learning later that peq accepts a
+     * spelling the language does not.
      */
-    private const PAIRS = ['<>', '!=', '<=', '>=', '||'];
+    private const PAIRS = ['<>', '<=', '>=', '||'];
 
     /**
      * The operators and punctuation written as one character.
      */
-    private const SINGLES = ['(', ')', '[', ']', '{', '}', ',', '.', ':', '=', '<', '>', '+', '-', '*', '/', '|', '&', '!', '%', '$'];
+    private const SINGLES = ['(', ')', '[', ']', '{', '}', ',', '.', ':', '=', '<', '>', '+', '-', '*', '/', '|', '&', '!', '%'];
 
     /**
      * @param SourceCursor $cursor The place in the query text reading continues from

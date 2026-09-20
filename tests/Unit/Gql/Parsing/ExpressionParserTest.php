@@ -130,8 +130,6 @@ final class ExpressionParserTest extends TestCase
 
         yield 'inequality' => ['a <> b', '(a <> b)'];
 
-        yield 'inequality the other way it is written' => ['a != b', '(a <> b)'];
-
         yield 'ordering' => ['a <= b', '(a <= b)'];
 
         yield 'the other ordering' => ['a >= b', '(a >= b)'];
