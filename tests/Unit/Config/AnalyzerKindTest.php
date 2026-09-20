@@ -9,12 +9,14 @@ use App\Config\PhpVersion;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
 #[CoversClass(AnalyzerKind::class)]
+#[UsesClass(PhpVersion::class)]
 #[Small]
 final class AnalyzerKindTest extends TestCase
 {

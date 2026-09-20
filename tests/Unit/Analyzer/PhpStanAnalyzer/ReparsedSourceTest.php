@@ -5,17 +5,20 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\PhpStanAnalyzer;
 
 use App\Analyzer\PhpStanAnalyzer\ReparsedSource;
+use App\Analyzer\SourceParser;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Return_;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
 #[CoversClass(ReparsedSource::class)]
+#[UsesClass(SourceParser::class)]
 #[Small]
 final class ReparsedSourceTest extends TestCase
 {

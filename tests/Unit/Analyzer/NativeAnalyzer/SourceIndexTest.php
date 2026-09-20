@@ -10,6 +10,7 @@ use App\Analyzer\NativeAnalyzer\AutoloadIndex;
 use App\Analyzer\NativeAnalyzer\ClassLikeDeclaration;
 use App\Analyzer\NativeAnalyzer\ParsedSource;
 use App\Analyzer\NativeAnalyzer\SourceIndex;
+use App\Analyzer\SourceParser;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -24,6 +25,7 @@ use Tests\Fixture\Analyzer\ParsedSnippet;
 #[UsesClass(AutoloadIndex::class)]
 #[UsesClass(ClassLikeDeclaration::class)]
 #[UsesClass(ParsedSource::class)]
+#[UsesClass(SourceParser::class)]
 #[Small]
 final class SourceIndexTest extends TestCase
 {

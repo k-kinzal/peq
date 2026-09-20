@@ -11,6 +11,7 @@ use App\Analyzer\NativeAnalyzer\AutoloadIndex;
 use App\Analyzer\NativeAnalyzer\ClassLikeDeclaration;
 use App\Analyzer\NativeAnalyzer\ParsedSource;
 use App\Analyzer\NativeAnalyzer\SourceIndex;
+use App\Analyzer\SourceParser;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Name;
 use PhpParser\NodeFinder;
@@ -38,6 +39,7 @@ use Tests\Fixture\Analyzer\ParsedSnippet;
 #[UsesClass(\App\Analyzer\Graph\Node\MethodNode::class)]
 #[UsesClass(\App\Analyzer\Graph\Node\UnknownNode::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(SourceParser::class)]
 #[Small]
 final class AnalysisScopeTest extends TestCase
 {

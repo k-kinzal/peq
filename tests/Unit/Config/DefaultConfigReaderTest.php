@@ -7,6 +7,7 @@ namespace Tests\Unit\Config;
 use App\Config\Config;
 use App\Config\DefaultConfigReader;
 use App\Config\OutputFormat;
+use App\Config\PhpVersion;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -21,6 +22,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(\App\Config\RawConfig::class)]
 #[UsesClass(\App\Config\AnalyzerKind::class)]
 #[UsesClass(OutputFormat::class)]
+#[UsesClass(PhpVersion::class)]
 #[Small]
 final class DefaultConfigReaderTest extends TestCase
 {
@@ -51,7 +53,7 @@ final class DefaultConfigReaderTest extends TestCase
     public function testReadNamesThePhpVersionTheAnalysedSourcesAreReadAs(): void
     {
         self::assertSame(
-            \App\Config\PhpVersion::host()->toString(),
+            PhpVersion::host()->toString(),
             (new DefaultConfigReader())->read()['phpVersion'] ?? null,
         );
     }

@@ -6,6 +6,7 @@ namespace Tests\Unit\Analyzer\NativeAnalyzer;
 
 use App\Analyzer\NativeAnalyzer\TraitFlattening;
 use App\Analyzer\NativeAnalyzer\TraitMethod;
+use App\Analyzer\SourceParser;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -22,6 +23,7 @@ use Tests\Fixture\Analyzer\ParsedSnippet;
 #[UsesClass(\App\Analyzer\NativeAnalyzer\ClassLikeDeclaration::class)]
 #[UsesClass(\App\Analyzer\NativeAnalyzer\ParsedSource::class)]
 #[UsesClass(TraitMethod::class)]
+#[UsesClass(SourceParser::class)]
 #[Small]
 final class TraitFlatteningTest extends TestCase
 {
