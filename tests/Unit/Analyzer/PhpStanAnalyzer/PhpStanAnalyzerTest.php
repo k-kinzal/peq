@@ -109,11 +109,20 @@ final class PhpStanAnalyzerTest extends TestCase
 
     public function testAnalyzeLeavesOutWhatTheExcludePatternsFilter(): void
     {
-        $graph = (new PhpStanAnalyzer([], ['Sample']))
+        $graph = (new PhpStanAnalyzer(['Sample', 'Source'], ['Sample']))
             ->analyze(dirname(__DIR__, 3).'/Fixture')
         ;
 
         self::assertNull($graph->nodeNamed('Tests\Fixture\Sample\ComplexClass'));
+    }
+
+    public function testAnalyzeKeepsWhatNoExcludePatternFilters(): void
+    {
+        $graph = (new PhpStanAnalyzer(['Sample', 'Source']))
+            ->analyze(dirname(__DIR__, 3).'/Fixture')
+        ;
+
+        self::assertNotNull($graph->nodeNamed('Tests\Fixture\Sample\ComplexClass'));
     }
 
     public function testAnalyzeReportsASymbolItReadAsResolved(): void
