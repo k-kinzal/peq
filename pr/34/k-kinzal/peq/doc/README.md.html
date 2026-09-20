@@ -27,19 +27,20 @@
 <nav class="crumbs"><a href="../../../k-kinzal/peq/index.html">k-kinzal/peq</a><span class="crumb-sep">::</span><span class="crumb-current">README.md</span></nav>
 <div class="topbar-tools">
 <input type="search" id="search" placeholder="Search… ( / )" autocomplete="off" spellcheck="false">
-<span class="diff-range" title="Comparing f53c2edf to working tree">f53c2edf <span class="diff-arrow">→</span> working tree</span><div class="diff-modes" id="diff-modes" role="group" aria-label="Diff display mode"><button type="button" class="diff-mode" data-diff-mode="off" title="Documentation of the head revision, without diff marks">Off</button><button type="button" class="diff-mode" data-diff-mode="inline" title="Every page with additions and removals marked">Diff</button><button type="button" class="diff-mode" data-diff-mode="changes" title="Only what the head revision added, changed, or removed">Changes</button></div><a class="repo-link" href="https://github.com/k-kinzal/peq" title="Repository: https://github.com/k-kinzal/peq" rel="noreferrer">github.com</a>
+<span class="diff-range" title="Comparing ef4aa754 to working tree">ef4aa754 <span class="diff-arrow">→</span> working tree</span><div class="diff-modes" id="diff-modes" role="group" aria-label="Diff display mode"><button type="button" class="diff-mode" data-diff-mode="off" title="Documentation of the head revision, without diff marks">Off</button><button type="button" class="diff-mode" data-diff-mode="inline" title="Every page with additions and removals marked">Diff</button><button type="button" class="diff-mode" data-diff-mode="changes" title="Only what the head revision added, changed, or removed">Changes</button></div><a class="repo-link" href="https://github.com/k-kinzal/peq" title="Repository: https://github.com/k-kinzal/peq" rel="noreferrer">github.com</a>
 <button id="theme-toggle" title="Toggle theme">◐</button>
 </div>
 </header>
 <div class="search-results" id="search-results" hidden></div>
 <main class="content">
-<p class="diff-empty" id="diff-empty" data-changes="Nothing on this page changed between f53c2edf and working tree." data-off="This page documents what f53c2edf had and working tree no longer has. Switch to Diff to read it." hidden></p>
+<p class="diff-empty" id="diff-empty" data-changes="Nothing on this page changed between ef4aa754 and working tree." data-off="This page documents what ef4aa754 had and working tree no longer has. Switch to Diff to read it." hidden></p>
 <div class="symbol-head"><h1><span class="chip chip-kind k-document">document</span>peq</h1><div class="symbol-meta"><span class="src-link">README.md</span></div></div>
 <section class="readme" data-diff="same"><div class="doc-block" data-diff="same"><h2>peq</h2>
 </div><div class="doc-block" data-diff="same"><p><a href="https://github.com/k-kinzal/peq/actions"><span class="md-target" title="https://github.com/k-kinzal/peq/actions/workflows/ci.yaml/badge.svg">GitHub Actions</span></a> <a href="https://opensource.org/licenses/MIT"><span class="md-target" title="https://img.shields.io/badge/License-MIT-yellow.svg">License: MIT</span></a></p>
 </div><div class="doc-block" data-diff="same"><p>A CLI tool that analyzes PHP code dependencies and visualizes the blast radius of changes. Provides tree output for humans, enabling safe modification of PHP code by understanding what breaks when a class, method, or function changes.</p>
 </div><div class="doc-block" data-diff="same"><h3>Requirements</h3>
-</div><div class="doc-block" data-diff="same"><ul><li>PHP 8.1 or higher</li></ul>
+</div><div class="doc-block" data-diff="same"><ul><li>PHP 8.3, 8.4 or 8.5 to run peq</li></ul>
+</div><div class="doc-block" data-diff="same"><p>The code peq reads is a separate question from the runtime peq runs on: peq analyzes sources written for PHP 5.6 up to 8.5 on any of those runtimes. See <a href="#analyzed-php-version">Analyzed PHP version</a>.</p>
 </div><div class="doc-block" data-diff="same"><h3>Installation</h3>
 </div><div class="doc-block" data-diff="same"><p>Download the PHAR from <a href="https://github.com/k-kinzal/peq/releases">GitHub Releases</a>:</p>
 </div><div class="doc-block" data-diff="same"><pre class="code-block"><code>curl -Lo peq.phar https://github.com/k-kinzal/peq/releases/latest/download/peq.phar
@@ -66,6 +67,8 @@ Options:
   -O, --output=OUTPUT        Output format: tree|json|dot|table (default: tree)
   -I, --include=INCLUDE      Include patterns (multiple values allowed)
   -E, --exclude=EXCLUDE      Exclude patterns (multiple values allowed)
+      --php-version=PHP-VERSION    PHP version the analyzed sources are read as
+                                   (default: the version peq runs on)
       --type=TYPE            Analyzer type (phpstan|native|debug)
       --memory-limit=MEMORY-LIMIT  Memory limit (e.g. 1G, 256M)
   -h, --help                 Display help for the given command
@@ -112,7 +115,7 @@ App\Domain\Invoice::lines</code></pre>
 </div><div class="doc-block" data-diff="same"><p>A tree has to pick one path to each symbol and mark the rest, so a branch that stops says why: <code>(recursive)</code> for a cycle, <code>(*)</code> for a symbol expanded elsewhere. The JSON says the same thing in a <code>truncated</code> field and the table in the symbol cell. A digraph needs neither, because an arrow arriving twice at the same box is what it is for.</p>
 </div><div class="doc-block" data-diff="same"><h3>Analyzers</h3>
 </div><div class="doc-block" data-diff="same"><p>Two analyzers read real sources, and they are built to describe the same graph:</p>
-</div><div class="doc-block" data-diff="same"><div class="table-wrap"><table><thead><tr><th><code>--type</code></th><th>What it does</th><th>Where it is available</th></tr></thead><tbody><tr><td><code>phpstan</code></td><td>Runs PHPStan over the sources and assembles the graph from what its collectors report. The reference engine.</td><td>Installed from source or via Composer</td></tr><tr><td><code>native</code></td><td>Reads the sources directly with a parser, resolving names the way PHP does. Between 13x and 59x faster.</td><td>Everywhere, including the released PHAR</td></tr></tbody></table></div>
+</div><div class="doc-block" data-diff="same"><div class="table-wrap"><table><thead><tr><th><code>--type</code></th><th>What it does</th><th>Sources it reads</th><th>Where it is available</th></tr></thead><tbody><tr><td><code>phpstan</code></td><td>Runs PHPStan over the sources and assembles the graph from what its collectors report. The reference engine.</td><td>PHP 7.1 – 8.5</td><td>Installed from source or via Composer</td></tr><tr><td><code>native</code></td><td>Reads the sources directly with a parser, resolving names the way PHP does. Between 13x and 59x faster.</td><td>PHP 5.6 – 8.5</td><td>Everywhere, including the released PHAR</td></tr></tbody></table></div>
 </div><div class="doc-block" data-diff="same"><pre class="code-block"><code>peq &#039;App\Domain\Invoice::total&#039; src --type=native</code></pre>
 </div><div class="doc-block" data-diff="same"><p><strong>The released PHAR carries only <code>native</code>.</strong> Bundling a static analyser to run a parser is most of the download for none of the answers: the PHAR is 7.2MB where PHPStan alone is 47MB. <code>--type</code> there offers <code>native|debug</code> and refuses anything else — the choice a build can make is the choice it is asked to make. Installed from source or via Composer, <code>--type=phpstan</code> is there and remains the default.</p>
 </div><div class="doc-block" data-diff="same"><p>The two are not asked to agree by inspection. <code>native</code> is checked against <code>phpstan</code> by comparing the graphs they build of the same sources, reduced to a canonical form: a corpus of scenarios written to exercise every kind of symbol and relation the graph model has, peq&#039;s own sources, and programs drawn at random by a property test that shrinks any disagreement to the one expression that causes it.</p>
@@ -120,17 +123,27 @@ App\Domain\Invoice::lines</code></pre>
 </div><div class="doc-block" data-diff="same"><pre class="code-block"><code>composer test:equivalence</code></pre>
 </div><div class="doc-block" data-diff="same"><p>Two differences remain, both of them places where the reference engine has no answer to agree with:</p>
 </div><div class="doc-block" data-diff="same"><ul><li>A file PHP itself would refuse is left out by both engines, silently.</li><li>A <code>class</code> declared inside a method body makes PHPStan raise an internal error, which peq reports as a failed analysis; <code>native</code> reads it.</li></ul>
+</div><div class="doc-block" data-diff="same"><h3>Analyzed PHP version</h3>
+</div><div class="doc-block" data-diff="same"><p>The PHP version peq runs on and the PHP version the analyzed code is written for are two different things. peq needs PHP 8.3 or newer to run, and reads sources written for PHP 5.6 through 8.5 — the range depending on the engine, as the table above says.</p>
+</div><div class="doc-block" data-diff="same"><p>By default peq reads sources as the version it runs on. Tell it otherwise when the code is older:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>peq &#039;Legacy\Invoice::total&#039; . --php-version=5.6 --type=native</code></pre>
+</div><div class="doc-block" data-diff="same"><p>Getting this right matters, because the version decides what a source is allowed to say. <code>match</code> is a method name in PHP 7 and a keyword in PHP 8; <code>$text{0}</code> is a string offset up to PHP 7.4 and a syntax error after it; <code>$invoice =&amp; new Invoice()</code> is PHP 5 and nothing later; an enum is PHP 8.1 and nothing earlier. A file the chosen version cannot read is left out of the graph the way a file PHP itself would refuse is, so a symbol that should be there and is not is the sign to check the version — which is what peq says when it cannot find one:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>Symbol &quot;Legacy\Invoice::total&quot; is not in the dependency graph, which was read as PHP 8.5.
+Check the spelling, the analyzed path, the include and exclude patterns, and the PHP
+version the sources are written for.</code></pre>
 </div><div class="doc-block" data-diff="same"><h3>Configuration</h3>
 </div><div class="doc-block" data-diff="same"><p>Create a <code>.peq.yaml</code> file in your project root to set default options:</p>
 </div><div class="doc-block" data-diff="same"><pre class="code-block"><code>type: native
 output: tree
+phpVersion: &#039;7.4&#039;
 excludes:
   - vendor
   - vendor-bin
   - .git
   - tests</code></pre>
+</div><div class="doc-block" data-diff="same"><p>Quote the version: unquoted, YAML reads <code>8.10</code> as the number <code>8.1</code>, which is a different PHP version.</p>
 </div><div class="doc-block" data-diff="same"><p>Configuration is resolved by merging 4 layers (later layers override earlier ones):</p>
-</div><div class="doc-block" data-diff="same"><ol><li>Default values</li><li>Environment variables (<code>PEQ_*</code>)</li><li>YAML config file (<code>.peq.yaml</code>)</li><li>CLI options</li></ol>
+</div><div class="doc-block" data-diff="same"><ol><li>Default values</li><li>Environment variables (<code>PEQ_*</code>, for example <code>PEQ_PHP_VERSION=7.4</code>)</li><li>YAML config file (<code>.peq.yaml</code>)</li><li>CLI options</li></ol>
 </div><div class="doc-block" data-diff="same"><h3>License</h3>
 </div><div class="doc-block" data-diff="same"><p>This project is licensed under the MIT License - see the LICENSE file for details.</p>
 </div></section>
