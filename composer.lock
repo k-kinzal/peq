@@ -1958,43 +1958,43 @@
         },
         {
             "name": "deptrac/deptrac",
-            "version": "4.4.0",
+            "version": "4.7.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/deptrac/deptrac.git",
-                "reference": "3058cb1b5908a25711ccc0f4c96b64e6fd704114"
+                "reference": "060c7edca50331129c866e6c5d5687edfea03c5f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/deptrac/deptrac/zipball/3058cb1b5908a25711ccc0f4c96b64e6fd704114",
-                "reference": "3058cb1b5908a25711ccc0f4c96b64e6fd704114",
+                "url": "https://api.github.com/repos/deptrac/deptrac/zipball/060c7edca50331129c866e6c5d5687edfea03c5f",
+                "reference": "060c7edca50331129c866e6c5d5687edfea03c5f",
                 "shasum": ""
             },
             "require": {
                 "composer/xdebug-handler": "^3.0",
-                "jetbrains/phpstorm-stubs": "2024.3",
+                "jetbrains/phpstorm-stubs": "2024.3 || 2025.3 || 2026.1 || v2026.2",
                 "nikic/php-parser": "^5",
-                "php": "^8.1",
+                "php": "^8.2",
                 "phpdocumentor/graphviz": "^2.1",
-                "phpdocumentor/type-resolver": "^1.9.0",
-                "phpstan/phpdoc-parser": "^1.5.0|^2.1.0",
+                "phpdocumentor/type-resolver": "^1.9.0 || ^2.0.0",
+                "phpstan/phpdoc-parser": "^1.5.0 || ^2.1.0",
                 "phpstan/phpstan": "^2.0",
                 "psr/container": "^2.0",
                 "psr/event-dispatcher": "^1.0",
-                "symfony/config": "^6.4|^7.0",
-                "symfony/console": "^6.4|^7.0",
-                "symfony/dependency-injection": "^6.4|^7.0",
-                "symfony/event-dispatcher": "^6.4|^7.0",
+                "symfony/config": "^6.4 || ^7.4 || ^8.0",
+                "symfony/console": "^6.4 || ^7.4 || ^8.0",
+                "symfony/dependency-injection": "^6.4 || ^7.4 || ^8.0",
+                "symfony/event-dispatcher": "^6.4 || ^7.4 || ^8.0",
                 "symfony/event-dispatcher-contracts": "^3.4",
-                "symfony/filesystem": "^6.4|^7.0",
-                "symfony/finder": "^6.4|^7.0",
-                "symfony/yaml": "^6.4|^7.0"
+                "symfony/filesystem": "^6.4 || ^7.4 || ^8.0",
+                "symfony/finder": "^6.4 || ^7.4 || ^8.0",
+                "symfony/yaml": "^6.4 || ^7.4 || ^8.0"
             },
             "require-dev": {
                 "bamarni/composer-bin-plugin": "^1.8",
                 "ergebnis/composer-normalize": "^2.45",
                 "ext-libxml": "*",
-                "symfony/stopwatch": "^6.4"
+                "symfony/stopwatch": "^6.4 || ^7.4 || ^8.0"
             },
             "suggest": {
                 "ext-dom": "For using the JUnit output formatter"
@@ -2037,9 +2037,9 @@
             ],
             "support": {
                 "issues": "https://github.com/deptrac/deptrac/issues",
-                "source": "https://github.com/deptrac/deptrac/tree/4.4.0"
+                "source": "https://github.com/deptrac/deptrac/tree/4.7.2"
             },
-            "time": "2025-12-08T08:14:18+00:00"
+            "time": "2026-09-15T09:46:07+00:00"
         },
         {
             "name": "doctrine/annotations",
