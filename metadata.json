@@ -1,0 +1,44 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M2Y9GNQFMHVZK3FET1VSV8KJ",
+  "strategy": "manual-commit",
+  "branch": "feat/php-version-support-range",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "README.md",
+    "src/Action/Inspect/InspectAction.php",
+    "src/Action/Inspect/SymbolNotFoundException.php",
+    "src/Analyzer/NativeAnalyzer/NativeAnalyzer.php",
+    "src/Analyzer/NativeAnalyzer/SourceIndex.php",
+    "src/Analyzer/PhpStanAnalyzer/PhpStanAnalyzer.php",
+    "src/Analyzer/PhpStanAnalyzer/ReparsedSource.php",
+    "src/Config/AnalyzerKind.php",
+    "src/Config/Config.php",
+    "src/Config/PhpVersion.php",
+    "src/Config/RawConfig.php",
+    "tests/Contract/Analyzer/TargetPhpVersionContractTest.php",
+    "tests/Unit/Action/Inspect/SymbolNotFoundExceptionTest.php",
+    "tests/Unit/Analyzer/PhpStanAnalyzer/PhpStanAnalyzerTest.php",
+    "tests/Unit/Command/InspectCommandTest.php",
+    "tests/Unit/Config/AnalyzerKindTest.php",
+    "tests/Unit/Config/ConfigTest.php",
+    "tests/Unit/Config/PhpVersionTest.php",
+    "tests/Unit/Config/RawConfigTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 64,
+    "cache_creation_tokens": 16458,
+    "cache_read_tokens": 20456835,
+    "output_tokens": 11383,
+    "api_call_count": 32
+  }
+}
