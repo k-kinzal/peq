@@ -27,6 +27,7 @@
     },
     "require-dev": {
         "bamarni/composer-bin-plugin": "^1.8",
+        "behat/behat": "^3.29",
         "deptrac/deptrac": "^4.4",
         "friendsofphp/php-cs-fixer": "^3.0",
         "giorgiosironi/eris": "^1.0",
@@ -46,7 +47,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Tests\\": "tests/"
+            "Tests\\": "tests/",
+            "Spec\\": "spec/"
         },
         "classmap": [
             "tests/Fixture/Sample/",
@@ -97,23 +99,22 @@
         ],
         "loc-guard": "loc-guard --config=loc.yaml",
         "phpstan": "phpstan analyse --memory-limit=512M",
+        "spec": "behat --strict",
         "post-install-cmd": [
             "@composer bin box require --dev humbug/box"
         ],
         "post-update-cmd": [
             "@composer bin box require --dev humbug/box"
         ],
-        "test": [
-            "@test:reading",
-            "@test:analysis"
-        ],
-        "test:reading": "phpunit --testsuite unit,contract,property --exclude-group=pbt --do-not-fail-on-empty-test-suite",
-        "test:analysis": "phpunit --testsuite integration,doctest --exclude-group=pbt --do-not-fail-on-empty-test-suite",
+        "test": "phpunit --exclude-group=pbt",
         "test:equivalence": "phpunit tests/Equivalence",
         "test:contract": "phpunit --testsuite contract --exclude-group=pbt",
         "test:integration": "phpunit --testsuite integration --exclude-group=pbt",
         "test:pbt": "phpunit --group=pbt",
         "test:unit": "phpunit --testsuite unit --exclude-group=pbt",
         "tree-guard": "tree-guard --config=tree.yaml"
+    },
+    "scripts-descriptions": {
+        "spec": "Run the Behat specification of ISO/IEC 39075 (GQL) against the query engine."
     }
 }

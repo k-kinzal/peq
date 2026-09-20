@@ -101,6 +101,9 @@ jobs:
       - name: Check the architecture layers
         run: composer deptrac
 
+      - name: Check the GQL specification
+        run: composer spec
+
   mutation:
     name: Mutation testing
     runs-on: ubuntu-latest

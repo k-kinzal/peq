@@ -151,12 +151,12 @@ $ peq graph "MATCH (c:Class)-[:declaresMethod]->(m:Method WHERE m.visibility = '
 +----------------+------------------+
 ```
 
-The language is [GQL](https://www.iso.org/standard/76120.html), the ISO standard the
-SQL committee publishes, as the [Microsoft Fabric guide](https://learn.microsoft.com/fabric/graph/gql-language-guide)
-documents it. That choice is the point of the command: the reader it exists for is an
-agent deciding whether a change is safe, and an agent that has read about graph
-databases has read about GQL. A query language invented here would have to be
-explained in every prompt.
+The language is [GQL](https://www.iso.org/standard/76120.html), the ISO standard the SQL
+committee publishes. That choice is the point of the command: the reader it exists for
+is an agent deciding whether a change is safe, and an agent that has read about graph
+databases has read about GQL. A query language invented here would have to be explained
+in every prompt — which is why peq accepts no word the standard does not define, and
+[says so in a way you can run](#the-conformance-claim).
 
 ```
 Usage:
@@ -185,19 +185,26 @@ A symbol carries what it is, the families it belongs to, and whether analysis fo
 |--------|------------|
 | `Class`, `Interface`, `Trait`, `Enum` | and all of them also carry `ClassLike` |
 | `Method`, `Property`, `Constant`, `EnumCase` | and all of them also carry `Member` |
-| `Method`, `Function` | and both of them also carry `Callable` |
-| `Builtin`, `Unknown` | a PHP builtin, and a symbol outside the analyzed sources |
+| `Method`, `` `Function` `` | and both of them also carry `Callable` |
+| `Builtin`, `` `Unknown` `` | a PHP builtin, and a symbol outside the analyzed sources |
 | `Resolved`, `Unresolved` | whether analysis actually found it |
 
 The families are what make a pattern survive a new kind of symbol: `(:Callable)` covers
 methods and functions, and `(:ClassLike&!Interface)` covers the rest of a hierarchy
 without enumerating it.
 
+Six of these names spell words GQL reserves — `Function`, `Unknown`, `call`, and the
+properties `value`, `abstract` and `parameters` — so a query writes those in back
+quotes, as the standard says an identifier that spells a keyword is written. `--schema`
+reports every name the way a query has to write it, back quotes and all, so an agent
+copying from it never writes a pattern that will not parse. Back quotes inside a
+double-quoted shell argument are command substitution, so quote a query with `'`.
+
 A relation carries the word a sentence about code would use, and its family:
 
 | Labels | Written by |
 |--------|------------|
-| `functionCall`, `methodCall`, `staticCall` | and all three also carry `call` and `usage` |
+| `functionCall`, `methodCall`, `staticCall` | and all three also carry `` `call` `` and `usage` |
 | `instantiation`, `propertyAccess`, `staticPropertyAccess`, `constFetch`, `instanceOf`, `catches` | and all of them also carry `usage` |
 | `declaresMethod`, `declaresProperty`, `declaresConstant`, `declaresEnumCase` | and all four also carry `declares` and `declaration` |
 | `extends`, `implements`, `traitUse`, `attribute`, `propertyType` | and all of them also carry `declaration` |
@@ -221,16 +228,16 @@ line INT64
 column INT64
 visibility STRING
 static BOOL
-abstract BOOL
+`abstract` BOOL
 final BOOL
 readonly BOOL
 deprecated BOOL
 attributes LIST<STRING>
 type STRING
-value STRING
+`value` STRING
 signature STRING
 returnType STRING
-parameters LIST<STRING>
+`parameters` LIST<STRING>
 parameterTypes LIST<STRING>
 parameterCount INT64
 ```
@@ -249,7 +256,7 @@ it may write, instead of guessing. It answers as a result table like any other, 
 Which endpoints a change reaches, in a framework that routes by attribute:
 
 ```
-MATCH (m:Method)-[:call]->{1,4}(t:Method {name: 'save'})
+MATCH (m:Method)-[:`call`]->{1,4}(t:Method {name: 'save'})
 FILTER size(m.attributes) > 0
 RETURN DISTINCT m.owner AS controller, m.name AS action, m.attributes AS routes
 ORDER BY controller, action
@@ -259,10 +266,10 @@ What a page-level cache would have to cover — the reads a controller reaches, 
 where they are written:
 
 ```
-MATCH p = (c:Class WHERE c.name ENDS WITH 'Controller')
+MATCH p = (c:Class WHERE right(c.name, 10) = 'Controller')
           -[:declaresMethod]->(:Method)
-          -[:call]->{1,5}(read:Method)
-FILTER read.name STARTS WITH 'find' OR read.name STARTS WITH 'get'
+          -[:`call`]->{1,5}(read:Method)
+FILTER left(read.name, 4) = 'find' OR left(read.name, 3) = 'get'
 RETURN c.name AS controller, read.id AS reads, path_length(p) AS hops
 ORDER BY controller, hops
 ```
@@ -270,18 +277,18 @@ ORDER BY controller, hops
 Which of those reads already cache, and which do not:
 
 ```
-MATCH (m:Method)-[:call]->{1,3}(cache:Method)
-FILTER cache.owner ENDS WITH 'Cache'
+MATCH (m:Method)-[:`call`]->{1,3}(cache:Method)
+FILTER right(cache.owner, 5) = 'Cache'
 RETURN DISTINCT m.id AS cached
 UNION ALL
-MATCH (m:Method)-[:call]->{1,3}(:Method {name: 'query'})
+MATCH (m:Method)-[:`call`]->{1,3}(:Method {name: 'query'})
 RETURN DISTINCT m.id AS cached
 ```
 
 The blast radius of a change, counted rather than drawn:
 
 ```
-MATCH (t:Method {id: 'App\\Domain\\Money::add'})<-[:call]-{1,6}(caller:Method)
+MATCH (t:Method {id: 'App\\Domain\\Money::add'})<-[:`call`]-{1,6}(caller:Method)
 RETURN count(DISTINCT caller) AS reached, count(DISTINCT caller.owner) AS classes
 ```
 
@@ -298,7 +305,7 @@ The formats are the root command's, and mean for a table what they mean for a wa
 | `tree`     | The paths the query bound, drawn as one tree with their shared beginnings written once. Writes nothing unless the query bound a path. |
 
 ```console
-$ peq graph "MATCH p = (a:Method)-[:call]->{1,3}(b:Method) RETURN p" src --output=tree
+$ peq graph 'MATCH p = (a:Method)-[:`call`]->{1,3}(b:Method) RETURN p' src --output=tree
 App\Reporter\Query\DotWriter::report
 ├── staticCall ──> App\Reporter\Query\DotWriter::arrow
 │   └── staticCall ──> App\Reporter\Query\DotWriter::quoted
@@ -315,58 +322,107 @@ not be retried.
 
 ### What is and is not implemented
 
-Everything the language guide documents for reading a graph: `MATCH` and `OPTIONAL
-MATCH`, `LET`, `FILTER`, `ORDER BY`, `OFFSET`, `LIMIT`, `RETURN` with `DISTINCT` and
-`GROUP BY`; label expressions with `&`, `|`, `!` and parentheses; property and `WHERE`
+Everything ISO/IEC 39075 defines for reading a graph: `MATCH` and `OPTIONAL MATCH`,
+`LET`, `FILTER`, `ORDER BY`, `OFFSET`, `LIMIT`, `RETURN` with `DISTINCT` and `GROUP
+BY`; label expressions with `&`, `|`, `!`, `%` and parentheses; property and `WHERE`
 fillers; every arrow form and its shortcut; path variables, path modes (`WALK`,
 `TRAIL`, `SIMPLE`, `ACYCLIC`) and variable-length patterns over an edge or a
-parenthesised group; three-valued logic, `IS NULL`, `IN`, `CONTAINS`, `STARTS WITH`,
-`ENDS WITH`, `CASE`, and every aggregate, string, list, graph, temporal and generic
-function the expressions reference lists. The set operators the guide lists as not yet
-supported — `UNION DISTINCT`, `EXCEPT`, `INTERSECT`, `OTHERWISE` — are supported here.
+parenthesised group; three-valued logic, `IS NULL`, `IN`, `CASE`, and the functions the
+standard calls: `char_length`, `upper`, `lower`, `trim`, `left`, `right`, `size`,
+`elements`, `path_length`, `coalesce`, `nullif`, `zoned_datetime`, and the aggregates
+`count`, `sum`, `avg`, `min`, `max` and `collect_list`. The set operators the Fabric
+guide lists as not yet supported — `UNION DISTINCT`, `EXCEPT`, `INTERSECT`, `OTHERWISE`
+— are supported here.
 
-Two things are deliberately different:
+What peq accepts is GQL and nothing besides, which costs it some things that read well:
 
-- **A repetition written without an upper bound stops at `--hops`** (ten by default).
-  On a graph with cycles the alternative is unbounded work; the reference
-  implementation caps it at eight.
-- **A run of clauses with no `RETURN` shows everything it bound.** GQL would ask for
-  one; a reader exploring a codebase with `MATCH (m:Method WHERE m.deprecated)` should
-  be answered rather than corrected.
+- **`CONTAINS`, `STARTS WITH` and `ENDS WITH`** are in the Fabric documentation and in
+  no part of the standard — the reference's own reserved word table marks all three as
+  Fabric's extensions. A prefix is `left(s, n) = ...` and a suffix is `right(s, n) =
+  ...`, which is the standard's `<substring function>`.
+- **`nodes`, `edges`, `labels`, `string_join` and `to_json_string`** are functions the
+  standard never calls. `elements(p)` is how GQL takes a path apart, a pattern is how it
+  asks about labels, and `--output=json` is how peq writes a row out.
+- **A run of clauses ends in a `RETURN`.** `MATCH (m:Method WHERE m.deprecated)` alone
+  is not a GQL-program; `RETURN *` is how the language says "show me what that bound".
 
-Not implemented: everything that changes a graph (`INSERT`, `SET`, `REMOVE`,
-`DELETE`), sessions and transactions, procedures, and graph type DDL. peq answers
+One thing peq settles for itself, because the standard leaves it to be settled: **a
+repetition written without an upper bound stops at `--hops`** (ten by default). That is
+IL018, "the maximum value of the upper bound of a general qualifier", which ISO's
+implementation-defined artifact lists as the implementation's to choose. On a graph with
+cycles the alternative is unbounded work.
+
+Not implemented: everything that changes a graph (`INSERT`, `SET`, `REMOVE`, `DELETE`),
+sessions and transactions, procedures, `FINISH`, `NEXT`, and graph type DDL. peq answers
 questions about source code it has just read; a statement that could change the graph
 would be describing a codebase that does not exist. Each of those is refused by name
-under GQLSTATUS `42000`, not reported as a syntax error, so a caller can tell "you
-wrote this wrongly" from "peq does not do this".
+under GQLSTATUS `42000`, not reported as a syntax error, so a caller can tell "you wrote
+this wrongly" from "peq does not do this".
 
-### How the GQL claim is checked
+### The conformance claim
 
-"It is GQL" is a claim about a published language, so it is checked against the
-published language rather than asserted. Four contract suites under
-`tests/Contract/Gql/` do it, and they fail the build when they disagree:
+ISO/IEC 39075 publishes no executable test suite and recognises none, so there is no
+pass to point at. What its clause 24 asks for instead is a *claim*: 24.2 the class of
+conformance, 24.3 the optional features implemented, 24.5.3 any extension. `composer
+spec` runs that claim as a Behat specification under `spec/`.
 
-| What is checked | How | Where the truth comes from |
-|-----------------|-----|----------------------------|
-| peq reads the language | every complete query, expression and pattern the documentation prints is run through peq's reader | the [language guide](https://learn.microsoft.com/fabric/graph/gql-language-guide) and the [expressions reference](https://learn.microsoft.com/fabric/graph/gql-expressions), transcribed into `GqlSpecification` |
-| peq reads *only* the language | every upper-case word written as a literal in `src/Gql` is looked up in GQL's vocabulary, as are every function, aggregate and column type peq offers | the [reserved words reference](https://learn.microsoft.com/fabric/graph/gql-reference-reserved-terms), transcribed into `GqlReservedWords` |
-| peq reports the standard's statuses | every GQLSTATUS peq can produce is looked up, and its wording compared | ISO/IEC 39075's published condition artifact, transcribed into `GqlConditions` |
-| peq *means* what GQL means | the documented rules — three-valued logic, operator precedence, aggregate null handling, null ordering, numeric coercion, path modes, group lists — are written out as the behaviour they describe | the rules as the documentation states them |
+The claim is a register of all 228 optional features the standard defines, in
+`spec/features/conformance.feature`, and five steps make it checkable rather than
+asserted:
 
-Writing them found three things that were wrong, all now fixed: peq reported `42003`,
-which no part of ISO/IEC 39075 defines; it accepted `!=`, which GQL does not spell;
-and a summary over a group list collapsed the table, where the standard says
-horizontal aggregation takes precedence over vertical aggregation and the rows stay.
+| Step | What it settles |
+|------|-----------------|
+| every feature code is one ISO/IEC 39075 defines | the register invents no feature |
+| every feature is described the way the standard describes it | no code has drifted from what it names |
+| the register answers for every optional feature the standard defines | no feature is quietly omitted |
+| every feature the register claims is stated by a scenario of this suite | a claim costs a scenario; a register nothing exercises fails |
+| no scenario states a feature the register does not claim | the two cannot drift apart |
 
-Two divergences remain, and are divergences rather than bugs:
+Seven more steps settle the things a register cannot, each against something published
+rather than remembered — and the last of them is what makes the other six mean
+anything, because an artifact edited until it agreed with the code would let them all
+pass:
 
-- **peq reserves no word in its lexer**, so `(:Function)` and `` (:`Function`) `` both
-  work where strict GQL would require the backticks. This is what lets a property
-  called `end` or a label called `Enum` be written plainly, and it only ever accepts
-  more than GQL does, never less.
-- **`%`, the label wildcard**, is ISO GQL rather than something the Fabric guide
-  prints, so it is checked against the standard rather than against the guide.
+| Step | Read from |
+|------|-----------|
+| every GQLSTATUS peq reports is one the standard defines, worded as it words it | `conditions.xml` |
+| the words peq reserves are `<reserved word>` and `<pre-reserved word>`, in that order | `gql.bnf.xml` |
+| every upper-case word written anywhere in `src/Gql` is a word the grammar writes | `gql.bnf.xml` |
+| every function peq offers is a name the grammar writes a left parenthesis after | `gql.bnf.xml` |
+| everything peq settles for itself is something the standard left it to settle | `implementation-defined.xml` |
+| every subclause a scenario points at is one the standard numbers | `subclauses.txt` |
+| every artifact the steps above read is the file it arrived as | `SHA256SUMS` |
+
+The two grammar steps are the ones that do the most work: together they are what says
+peq implements GQL rather than a language that resembles it, because a word or a
+function of peq's own would have nowhere to be found. Everything else — graph pattern
+matching, linear composition, value expressions, lexical elements, and the statements
+peq refuses — is a scenario tagged with the subclause of the standard it states.
+
+peq claims **37 of the 228 optional features**, and the register says `no` against the
+other 191 rather than staying silent about them. It claims **no extension** under
+24.5.3. The statements the standard defines that peq does not run — sessions,
+transactions, catalog changes, data changes — are refused by name under GQLSTATUS
+`42000`, not reported as syntax errors, because a correctly written GQL-program that
+this implementation declines is not a program its author got wrong.
+
+Writing the specification found eight defects, all fixed here: peq reported `42003`,
+which no part of the standard defines; it worded `42001` and `42002` more briefly than
+the standard does; it accepted `!=`, which GQL does not spell; a summary over a group
+list collapsed the table, where the standard says horizontal aggregation takes
+precedence over vertical aggregation; it read a word the standard reserves as an
+ordinary name, so `(:Function)` parsed where GQL asks for `` (:`Function`) ``; it
+offered `CONTAINS`, `STARTS WITH` and `ENDS WITH`, which are Fabric's and not GQL's; it
+offered five functions the grammar never calls; and it answered a run of clauses that
+never said what to show. None of them was found by reading the code and wondering; each
+was found by a step that reads a published list and compares.
+
+The PHPUnit suites under `tests/Contract/Gql/` check the same engine against the
+[Microsoft Fabric GQL documentation](https://learn.microsoft.com/fabric/graph/gql-language-guide),
+which is a second reading of the same standard and useful for that reason. Where the two
+disagree, ISO/IEC 39075 decides — and where the documentation prints something Fabric
+added to GQL, the contract is that peq refuses it, so the disagreement is checked rather
+than described.
 
 ## Analyzers
 

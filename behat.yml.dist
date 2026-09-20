@@ -1,0 +1,8 @@
+default:
+  suites:
+    gql:
+      paths:
+        - '%paths.base%/spec/features'
+      contexts:
+        - Spec\Context\ProgramContext
+        - Spec\Context\ConformanceContext
