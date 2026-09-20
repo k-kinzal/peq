@@ -1,0 +1,39 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M2YM2XZ3NC74CZ7M5EYTRWS5",
+  "strategy": "manual-commit",
+  "branch": "feat/gql-graph",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "AGENTS.md",
+    "README.md",
+    "tests/Contract/Gql/GqlRefusalContractTest.php",
+    "tests/Contract/Gql/GqlSemanticsContractTest.php",
+    "tests/Contract/Gql/GqlSpecificationContractTest.php",
+    "tests/Contract/Gql/GqlStatusContractTest.php",
+    "tests/Contract/Gql/GqlVocabularyContractTest.php",
+    "tests/Fixture/Gql/AnsweredQuery.php",
+    "tests/Fixture/Gql/GqlConditions.php",
+    "tests/Fixture/Gql/GqlReservedWords.php",
+    "tests/Fixture/Gql/GqlSpecification.php",
+    "tests/Fixture/Gql/MatchedPattern.php",
+    "tests/Fixture/Gql/QueryVocabulary.php",
+    "tests/Fixture/Gql/SampleGraph.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 4,
+    "cache_creation_tokens": 1225,
+    "cache_read_tokens": 1615202,
+    "output_tokens": 829,
+    "api_call_count": 2
+  }
+}
