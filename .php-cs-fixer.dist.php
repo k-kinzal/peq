@@ -27,7 +27,7 @@ return (new Config())
     ->setUsingCache(true)
     ->setRules([
         '@PhpCsFixer' => true,
-        '@PHP81Migration' => true,
+        '@PHP83Migration' => true,
 
         'php_unit_test_class_requires_covers' => false,
         'phpdoc_to_comment' => false,
