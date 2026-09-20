@@ -40,6 +40,8 @@ use Symfony\Component\Console\Output\BufferedOutput;
 #[UsesClass(ClassNode::class)]
 #[UsesClass(MethodNode::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(\App\Reporter\Continuation::class)]
+#[UsesClass(\App\Reporter\Expansion::class)]
 #[UsesClass(DepthFirstTraversal::class)]
 #[UsesClass(\App\Reporter\Traversal\DepthFirstWalk::class)]
 #[UsesClass(\App\Reporter\TreeReporter\LineRenderer::class)]

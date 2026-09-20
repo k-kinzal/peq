@@ -57,6 +57,21 @@ deptrac:
         - type: directory
           value: src/Reporter/TreeReporter/.*
 
+    - name: JsonReporter
+      collectors:
+        - type: directory
+          value: src/Reporter/JsonReporter/.*
+
+    - name: DotReporter
+      collectors:
+        - type: directory
+          value: src/Reporter/DotReporter/.*
+
+    - name: TableReporter
+      collectors:
+        - type: directory
+          value: src/Reporter/TableReporter/.*
+
     - name: Config
       collectors:
         - type: directory
@@ -98,6 +113,9 @@ deptrac:
       - Config
       - Traversal
       - TreeReporter
+      - JsonReporter
+      - DotReporter
+      - TableReporter
 
     Traversal:
       - Reporter
@@ -106,6 +124,18 @@ deptrac:
     TreeReporter:
       - Reporter
       - Traversal
+      - Graph
+
+    JsonReporter:
+      - Reporter
+      - Graph
+
+    DotReporter:
+      - Reporter
+      - Graph
+
+    TableReporter:
+      - Reporter
       - Graph
 
     Config:

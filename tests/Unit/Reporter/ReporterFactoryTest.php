@@ -14,7 +14,12 @@ use App\Analyzer\Graph\Node\MethodNode;
 use App\Analyzer\Graph\NodeId\ClassNodeId;
 use App\Analyzer\Graph\NodeId\MethodNodeId;
 use App\Config\Config;
+use App\Config\OutputFormat;
+use App\Reporter\DotReporter\DotReporter;
+use App\Reporter\JsonReporter\JsonReporter;
+use App\Reporter\Reporter;
 use App\Reporter\ReporterFactory;
+use App\Reporter\TableReporter\TableReporter;
 use App\Reporter\TreeReporter\TreeReporter;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -42,6 +47,15 @@ use Symfony\Component\Console\Output\BufferedOutput;
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
 #[UsesClass(Config::class)]
 #[UsesClass(\App\Config\DebugAnalyzerConfig::class)]
+#[UsesClass(\App\Reporter\Continuation::class)]
+#[UsesClass(\App\Reporter\Expansion::class)]
+#[UsesClass(\App\Reporter\DotReporter\DotCursor::class)]
+#[UsesClass(\App\Reporter\DotReporter\StatementRenderer::class)]
+#[UsesClass(\App\Reporter\JsonReporter\JsonCursor::class)]
+#[UsesClass(\App\Reporter\TableReporter\TableCursor::class)]
+#[UsesClass(DotReporter::class)]
+#[UsesClass(JsonReporter::class)]
+#[UsesClass(TableReporter::class)]
 #[UsesClass(\App\Reporter\Traversal\DepthFirstTraversal::class)]
 #[UsesClass(\App\Reporter\Traversal\DepthFirstWalk::class)]
 #[UsesClass(\App\Reporter\TreeReporter\LineRenderer::class)]
@@ -51,9 +65,61 @@ use Symfony\Component\Console\Output\BufferedOutput;
 #[Small]
 final class ReporterFactoryTest extends TestCase
 {
-    public function testCreateBuildsTheTreeReporterTheProjectShipsWith(): void
+    public function testCreateBuildsTheTreeReporterWhenNoFormatIsAsked(): void
     {
         self::assertInstanceOf(TreeReporter::class, (new ReporterFactory())->create(new Config('.', Direction::Uses)));
+    }
+
+    /**
+     * @param class-string<Reporter> $expected
+     */
+    #[DataProvider('providerTheReporterEachFormatIsWrittenBy')]
+    public function testCreateBuildsTheReporterTheFormatNames(OutputFormat $format, string $expected): void
+    {
+        self::assertInstanceOf($expected, (new ReporterFactory())->create(new Config('.', Direction::Uses, output: $format)));
+    }
+
+    /**
+     * @return iterable<string, array{OutputFormat, class-string<Reporter>}>
+     */
+    public static function providerTheReporterEachFormatIsWrittenBy(): iterable
+    {
+        yield 'an indented tree' => [OutputFormat::Tree, TreeReporter::class];
+
+        yield 'a JSON document' => [OutputFormat::Json, JsonReporter::class];
+
+        yield 'a Graphviz digraph' => [OutputFormat::Dot, DotReporter::class];
+
+        yield 'a table of rows' => [OutputFormat::Table, TableReporter::class];
+    }
+
+    #[DataProvider('providerEveryFormatOverTheInvoiceGraph')]
+    public function testCreateAnswersEveryFormatWithAReporterThatWritesSomething(OutputFormat $format, Graph $graph): void
+    {
+        $output = new BufferedOutput();
+        (new ReporterFactory())
+            ->create(new Config('.', Direction::Uses, output: $format))
+            ->report($graph, ClassNodeId::of('App\Domain\Invoice'), $output)
+        ;
+
+        self::assertNotSame('', $output->fetch());
+    }
+
+    /**
+     * @return iterable<string, array{OutputFormat, Graph}>
+     */
+    public static function providerEveryFormatOverTheInvoiceGraph(): iterable
+    {
+        $meta = new FileMeta('/project/src/Domain/Invoice.php', 12, 1);
+        $invoice = new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true, $meta);
+        $total = new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true, $meta);
+        $graph = new Graph();
+        $graph->addNodes([$invoice, $total]);
+        $graph->addEdges([new MethodEdge($invoice, $total, $meta)]);
+
+        foreach (OutputFormat::cases() as $format) {
+            yield $format->value => [$format, $graph];
+        }
     }
 
     #[DataProvider('providerBothDirections')]

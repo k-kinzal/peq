@@ -6,6 +6,7 @@ namespace Tests\Unit\Config;
 
 use App\Config\Config;
 use App\Config\DefaultConfigReader;
+use App\Config\OutputFormat;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -19,6 +20,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(\App\Config\DebugAnalyzerConfig::class)]
 #[UsesClass(\App\Config\RawConfig::class)]
 #[UsesClass(\App\Config\AnalyzerKind::class)]
+#[UsesClass(OutputFormat::class)]
 #[Small]
 final class DefaultConfigReaderTest extends TestCase
 {
@@ -31,6 +33,7 @@ final class DefaultConfigReaderTest extends TestCase
 
         self::assertSame('.', $defaults['basePath'] ?? null);
         self::assertSame('uses', $defaults['direction'] ?? null);
+        self::assertSame('tree', $defaults['output'] ?? null);
         self::assertSame('phpstan', $defaults['type'] ?? null);
     }
 
@@ -62,6 +65,14 @@ final class DefaultConfigReaderTest extends TestCase
 
         self::assertSame([], $defaults['includes'] ?? null);
         self::assertSame([], $defaults['excludes'] ?? null);
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadWritesAReportForAPersonUntilToldOtherwise(): void
+    {
+        self::assertSame(OutputFormat::Tree, Config::fromArray((new DefaultConfigReader())->read())->output);
     }
 
     /**
