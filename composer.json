@@ -103,7 +103,12 @@
         "post-update-cmd": [
             "@composer bin box require --dev humbug/box"
         ],
-        "test": "phpunit --exclude-group=pbt",
+        "test": [
+            "@test:reading",
+            "@test:analysis"
+        ],
+        "test:reading": "phpunit --testsuite unit,contract,property --exclude-group=pbt --do-not-fail-on-empty-test-suite",
+        "test:analysis": "phpunit --testsuite integration,doctest --exclude-group=pbt --do-not-fail-on-empty-test-suite",
         "test:equivalence": "phpunit tests/Equivalence",
         "test:contract": "phpunit --testsuite contract --exclude-group=pbt",
         "test:integration": "phpunit --testsuite integration --exclude-group=pbt",
