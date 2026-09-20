@@ -19,15 +19,29 @@ final class SymbolNotFoundException extends Exception
     /**
      * Builds the exception for a symbol name that resolved to nothing.
      *
-     * @param string $target The symbol name that was asked about
+     * The PHP version the sources were read as is named when it is known, because a
+     * file written for another version is one the analysis cannot read at all: its
+     * symbols are absent from the graph rather than merely unreachable in it, and
+     * nothing else peq prints would say so.
+     *
+     * @param string      $target     The symbol name that was asked about
+     * @param null|string $phpVersion The PHP version the sources were read as, if one was settled
      *
      * @return self An exception naming the symbol and why it may be absent
      */
-    public static function forTarget(string $target): self
+    public static function forTarget(string $target, ?string $phpVersion = null): self
     {
+        if ($phpVersion === null) {
+            return new self(sprintf(
+                'Symbol "%s" is not in the dependency graph. Check the spelling, the analyzed path, and the include and exclude patterns.',
+                $target,
+            ));
+        }
+
         return new self(sprintf(
-            'Symbol "%s" is not in the dependency graph. Check the spelling, the analyzed path, and the include and exclude patterns.',
+            'Symbol "%s" is not in the dependency graph, which was read as PHP %s. Check the spelling, the analyzed path, the include and exclude patterns, and the PHP version the sources are written for.',
             $target,
+            $phpVersion,
         ));
     }
 }

@@ -9,6 +9,7 @@ use App\Config\AnalyzerKind;
 use App\Config\Config;
 use App\Config\ConfigException;
 use App\Config\DebugAnalyzerConfig;
+use App\Config\RawConfig;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -19,7 +20,7 @@ use PHPUnit\Framework\TestCase;
  */
 #[CoversClass(Config::class)]
 #[UsesClass(DebugAnalyzerConfig::class)]
-#[UsesClass(\App\Config\RawConfig::class)]
+#[UsesClass(RawConfig::class)]
 #[UsesClass(AnalyzerKind::class)]
 #[Small]
 final class ConfigTest extends TestCase
@@ -173,7 +174,64 @@ final class ConfigTest extends TestCase
     /**
      * @throws ConfigException
      */
-    public function testAPhpVersionTheAnalysisCannotReadIsRejectedLikeAnyOtherSetting(): void
+    public function testAPhpVersionNoAnalyzerReadsIsRejectedLikeAnyOtherSetting(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('phpVersion');
+
+        Config::fromArray([
+            'basePath' => '/project',
+            'direction' => 'uses',
+            'type' => 'native',
+            'phpVersion' => '5.5',
+        ]);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testPhpVersionForKeepsAVersionTheChosenAnalyzerReads(): void
+    {
+        self::assertSame(
+            70100,
+            Config::phpVersionFor(new RawConfig(['phpVersion' => '7.1']), AnalyzerKind::PhpStan)?->id,
+        );
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testPhpVersionForKeepsNothingWhenNoSourceNamedAVersion(): void
+    {
+        self::assertNull(Config::phpVersionFor(new RawConfig([]), AnalyzerKind::PhpStan));
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testPhpVersionForRejectsAVersionOlderThanTheChosenAnalyzerReads(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Invalid configuration "phpVersion": the phpstan analyzer reads sources written for PHP 7.1 and newer, got 5.6.');
+
+        Config::phpVersionFor(new RawConfig(['phpVersion' => '5.6']), AnalyzerKind::PhpStan);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testPhpVersionForKeepsAVersionOnlyTheOtherAnalyzerReads(): void
+    {
+        self::assertSame(
+            50600,
+            Config::phpVersionFor(new RawConfig(['phpVersion' => '5.6']), AnalyzerKind::Native)?->id,
+        );
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testFromArrayRejectsAPhpVersionTheChosenAnalyzerCannotRead(): void
     {
         $this->expectException(ConfigException::class);
         $this->expectExceptionMessage('phpVersion');

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Config;
 
 use App\Config\AnalyzerKind;
+use App\Config\PhpVersion;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
@@ -126,5 +127,20 @@ final class AnalyzerKindTest extends TestCase
     public function testSpellAvailableWritesEveryKindThisCheckoutCanRun(): void
     {
         self::assertSame('phpstan|native|debug', AnalyzerKind::spellAvailable());
+    }
+
+    public function testOldestPhpVersionOfTheEngineReadingSourcesDirectlyIsTheOldestPeqReads(): void
+    {
+        self::assertSame(PhpVersion::OLDEST_SUPPORTED, AnalyzerKind::Native->oldestPhpVersion()->id);
+    }
+
+    public function testOldestPhpVersionOfTheReferenceEngineIsTheOldestPhpStanAnalyses(): void
+    {
+        self::assertSame(70100, AnalyzerKind::PhpStan->oldestPhpVersion()->id);
+    }
+
+    public function testOldestPhpVersionOfTheEngineThatReadsNoSourceBindsNothing(): void
+    {
+        self::assertSame(PhpVersion::OLDEST_SUPPORTED, AnalyzerKind::Debug->oldestPhpVersion()->id);
     }
 }

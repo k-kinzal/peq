@@ -70,12 +70,21 @@ final readonly class Config
      *     \App\Config\Config::fromArray([
      *         'basePath' => '/project', 'direction' => 'uses', 'type' => 'nonesuch',
      *     ]) // throws \App\Config\ConfigException: type
+     * @example A PHP version is read against the analyzer that will read the sources
+     *     \App\Config\Config::fromArray([
+     *         'basePath' => '/project', 'direction' => 'uses', 'type' => 'native', 'phpVersion' => '5.6',
+     *     ])->phpVersion?->toString() // => '5.6'
+     * @example The same version with an analyzer that cannot read it is rejected
+     *     \App\Config\Config::fromArray([
+     *         'basePath' => '/project', 'direction' => 'uses', 'type' => 'phpstan', 'phpVersion' => '5.6',
+     *     ]) // throws \App\Config\ConfigException: phpVersion
      *
      * @throws ConfigException If any field is missing or cannot be read as its type
      */
     public static function fromArray(array $array): self
     {
         $raw = new RawConfig($array);
+        $analyzer = $raw->oneOf('type', AnalyzerKind::available());
 
         return new self(
             basePath: $raw->requiredString('basePath'),
@@ -83,9 +92,40 @@ final readonly class Config
             level: $raw->optionalPositiveInt('level'),
             includes: $raw->stringList('includes'),
             excludes: $raw->stringList('excludes'),
-            phpVersion: $raw->optionalPhpVersion('phpVersion'),
-            analyzer: $raw->oneOf('type', AnalyzerKind::available()),
+            phpVersion: self::phpVersionFor($raw, $analyzer),
+            analyzer: $analyzer,
             debug: DebugAnalyzerConfig::fromRaw($raw->nested('debug')),
         );
+    }
+
+    /**
+     * Reads the PHP version the sources are analysed as, for the analyzer that reads them.
+     *
+     * A version is a setting like any other until it meets the analyzer it was chosen
+     * with: the analyzer built on PHPStan reads nothing written before PHP 7.1, and a
+     * run asking it for an older one would otherwise fail deep inside the analysis
+     * with a message about PHPStan's configuration rather than about peq's.
+     *
+     * @param RawConfig    $raw      The merged configuration data
+     * @param AnalyzerKind $analyzer The analyzer that will read the sources
+     *
+     * @return null|PhpVersion The version, or null when no source named one
+     *
+     * @throws ConfigException If the version is not one the chosen analyzer reads
+     */
+    public static function phpVersionFor(RawConfig $raw, AnalyzerKind $analyzer): ?PhpVersion
+    {
+        $version = $raw->optionalPhpVersion('phpVersion');
+        $oldest = $analyzer->oldestPhpVersion();
+        if ($version !== null && $version->id < $oldest->id) {
+            throw new ConfigException(sprintf(
+                'Invalid configuration "phpVersion": the %s analyzer reads sources written for PHP %s and newer, got %s.',
+                $analyzer->value,
+                $oldest->toString(),
+                $version->toString(),
+            ));
+        }
+
+        return $version;
     }
 }

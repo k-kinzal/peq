@@ -172,7 +172,7 @@ final readonly class RawConfig
      * @example A setting the source left out reads as nothing
      *     (new \App\Config\RawConfig([]))->optionalPhpVersion('phpVersion') // => null
      * @example A version outside the supported range is a configuration error
-     *     (new \App\Config\RawConfig(['phpVersion' => '5.6']))->optionalPhpVersion('phpVersion') // throws \App\Config\ConfigException: phpVersion
+     *     (new \App\Config\RawConfig(['phpVersion' => '5.5']))->optionalPhpVersion('phpVersion') // throws \App\Config\ConfigException: phpVersion
      * @example A version written as a number is a configuration error
      *     (new \App\Config\RawConfig(['phpVersion' => 8.3]))->optionalPhpVersion('phpVersion') // throws \App\Config\ConfigException: phpVersion
      *

@@ -29,16 +29,13 @@ use PHPStan\Parser\PathRoutingParser;
 final readonly class PhpStanAnalyzer implements Analyzer
 {
     /**
-     * The identifiers PHPStan gives an error that leaves a file unread.
+     * The identifier PHPStan gives an error that stands for a failure of its own.
      *
-     * An internal error stands for a failure of PHPStan's own, and a parse error for
-     * a file whose syntax the analysed PHP version does not admit. Both mean the file
-     * contributed nothing, which is a different matter from the diagnostics about the
-     * analysed code that a dependency graph has no use for.
-     *
-     * @var list<string>
+     * Every other error is a diagnostic about the analysed code, which a dependency
+     * graph has no use for — including the syntax error of a file no PHP version
+     * would accept, which PHPStan reads past and so does peq.
      */
-    private const array UNREAD_FILE_ERRORS = ['phpstan.internal', 'phpstan.parse'];
+    private const string INTERNAL_ERROR = 'phpstan.internal';
 
     /**
      * @param list<string>       $includes         File path patterns to include in analysis
@@ -109,10 +106,10 @@ final readonly class PhpStanAnalyzer implements Analyzer
      * A file PHPStan could not finish is reported as a failure rather than left out:
      * a graph that quietly lacks a file would claim that nothing depends on what
      * that file declares, which is the one answer an impact analysis must never get
-     * wrong. PHPStan records such a failure next to the diagnostics peq discards, so
-     * those are read before the collected data is. A file whose syntax the analysed
-     * PHP version does not admit is one of them, which is how a version that does not
-     * match the sources announces itself instead of quietly emptying the graph.
+     * wrong. PHPStan records such a failure as an internal error next to the
+     * diagnostics peq discards, so those are read before the collected data is. The
+     * message names the PHP version the sources were read as, because a file the
+     * analysis could not get through is most often one written for another version.
      *
      * @param Container    $container The container the analysis runs in
      * @param list<string> $files     The files to analyse
@@ -142,7 +139,7 @@ final readonly class PhpStanAnalyzer implements Analyzer
         $result = $analyser->analyse($files, null, null, false, $files);
         $failures = array_values(array_filter(
             $result->getErrors(),
-            static fn (Error $error): bool => in_array($error->getIdentifier(), self::UNREAD_FILE_ERRORS, true),
+            static fn (Error $error): bool => $error->getIdentifier() === self::INTERNAL_ERROR,
         ));
         if ($failures !== []) {
             throw new AnalysisFailedException(implode(PHP_EOL, array_map(

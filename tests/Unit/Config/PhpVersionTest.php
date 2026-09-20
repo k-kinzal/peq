@@ -35,9 +35,14 @@ final class PhpVersionTest extends TestCase
         self::assertSame(80302, PhpVersion::tryFromString('8.3.2')?->id);
     }
 
-    public function testTryFromStringReportsNothingForAVersionOlderThanTheAnalysisReads(): void
+    public function testTryFromStringReportsNothingForAVersionOlderThanAnyAnalyzerReads(): void
     {
-        self::assertNull(PhpVersion::tryFromString('5.6'));
+        self::assertNull(PhpVersion::tryFromString('5.5'));
+    }
+
+    public function testTryFromStringReadsTheOldestVersionAnyAnalyzerStillReads(): void
+    {
+        self::assertSame(50600, PhpVersion::tryFromString('5.6')?->id);
     }
 
     public function testTryFromStringReportsNothingForAVersionNewerThanTheAnalysisReads(): void
@@ -45,14 +50,9 @@ final class PhpVersionTest extends TestCase
         self::assertNull(PhpVersion::tryFromString('9.0'));
     }
 
-    public function testTryFromStringReadsTheOldestVersionTheAnalysisStillReads(): void
-    {
-        self::assertSame(PhpVersion::OLDEST_SUPPORTED, PhpVersion::tryFromString('7.1')?->id);
-    }
-
     public function testTryFromStringReportsNothingForTheVersionJustBelowTheOldestRead(): void
     {
-        self::assertNull(PhpVersion::tryFromString('7.0.99'));
+        self::assertNull(PhpVersion::tryFromString('5.5.99'));
     }
 
     #[DataProvider('providerTextThatSpellsNoVersion')]
@@ -114,7 +114,7 @@ final class PhpVersionTest extends TestCase
 
     public function testOldestIsTheOldestVersionTheAnalysisReads(): void
     {
-        self::assertSame(70100, PhpVersion::oldest()->id);
+        self::assertSame(50600, PhpVersion::oldest()->id);
     }
 
     public function testNewestIsTheNewestVersionTheAnalysisReads(): void
@@ -148,7 +148,7 @@ final class PhpVersionTest extends TestCase
      */
     public static function providerEverySupportedMinorVersion(): iterable
     {
-        foreach (['7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'] as $version) {
+        foreach (['5.6', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'] as $version) {
             yield 'PHP '.$version => [$version];
         }
     }

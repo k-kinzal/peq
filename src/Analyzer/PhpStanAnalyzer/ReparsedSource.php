@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer\PhpStanAnalyzer;
 
+use App\Analyzer\SourceParser;
 use PhpParser\ErrorHandler\Collecting;
 use PhpParser\Node as PhpParserNode;
 use PhpParser\Node\Stmt;
@@ -16,8 +17,6 @@ use PhpParser\NodeFinder;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\Parser;
-use PhpParser\ParserFactory;
-use PhpParser\PhpVersion as PhpParserVersion;
 
 /**
  * The syntax tree of a file as it is written, read again from disk.
@@ -70,25 +69,16 @@ final class ReparsedSource
     ) {}
 
     /**
-     * Builds the parser that reads a file as the configured PHP version.
+     * The parser that reads a file as the configured PHP version, built once.
      *
-     * PHP-Parser reads a version it is told about rather than the one it runs on, so
-     * the same syntax that the analysis accepts is accepted here: a method named
-     * `match` in a PHP 7 source, a property hook in a PHP 8.4 one.
+     * Building it is not free, and a run reads many files with it.
      *
      * @return Parser The parser for the configured version, or for the version peq
      *                runs on when no version was configured
      */
     public function parser(): Parser
     {
-        if ($this->phpVersion === null) {
-            return (new ParserFactory())->createForHostVersion();
-        }
-
-        return (new ParserFactory())->createForVersion(PhpParserVersion::fromComponents(
-            intdiv($this->phpVersion, 10000),
-            intdiv($this->phpVersion, 100) % 100,
-        ));
+        return $this->parser ??= SourceParser::forVersion($this->phpVersion);
     }
 
     /**
@@ -112,10 +102,8 @@ final class ReparsedSource
             return $this->parsedFiles[$file] = null;
         }
 
-        $this->parser ??= $this->parser();
-
         $syntaxErrors = new Collecting();
-        $parsed = $this->parser->parse($contents, $syntaxErrors);
+        $parsed = $this->parser()->parse($contents, $syntaxErrors);
 
         if ($parsed === null || $syntaxErrors->hasErrors()) {
             return $this->parsedFiles[$file] = null;

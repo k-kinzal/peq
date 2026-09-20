@@ -180,11 +180,10 @@ final class PhpStanAnalyzerTest extends TestCase
         self::assertNotNull($graph->nodeNamed('Tests\Fixture\Target\Php71\Reader'));
     }
 
-    public function testAnalyzeReportsAFileThePhpVersionItWasGivenCannotParse(): void
+    public function testAnalyzeLeavesOutAFileThePhpVersionItWasGivenCannotRead(): void
     {
-        $this->expectException(AnalysisFailedException::class);
-        $this->expectExceptionMessageMatches('/as PHP 7\.1: Syntax error/');
+        $graph = (new PhpStanAnalyzer(phpVersion: 70100))->analyze(dirname(__DIR__, 3).'/Fixture/Target/Php81.php.inc');
 
-        (new PhpStanAnalyzer(phpVersion: 70100))->analyze(dirname(__DIR__, 3).'/Fixture/Target/Php81.php.inc');
+        self::assertSame([], $graph->nodes());
     }
 }

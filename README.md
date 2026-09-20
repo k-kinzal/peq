@@ -90,9 +90,12 @@ tomorrow:
 composer test:equivalence
 ```
 
-One difference remains, in the one place where the reference engine has no answer to
-agree with: a `class` declared inside a method body makes PHPStan raise an internal
-error, which peq reports as a failed analysis; `native` reads it.
+Two differences remain, both of them places where the reference engine has no answer
+to agree with:
+
+- A file PHP itself would refuse is left out by both engines, silently.
+- A `class` declared inside a method body makes PHPStan raise an internal error, which
+  peq reports as a failed analysis; `native` reads it.
 
 ## Analyzed PHP version
 
@@ -110,11 +113,15 @@ peq 'Legacy\Invoice::total' . --php-version=5.6 --type=native
 Getting this right matters, because the version decides what a source is allowed to
 say. `match` is a method name in PHP 7 and a keyword in PHP 8; `$text{0}` is a string
 offset up to PHP 7.4 and a syntax error after it; `$invoice =& new Invoice()` is PHP 5
-and nothing later; an enum is PHP 8.1 and nothing earlier. peq reports a file it could
-not read as the version it was told, rather than leaving it out of the graph:
+and nothing later; an enum is PHP 8.1 and nothing earlier. A file the chosen version
+cannot read is left out of the graph the way a file PHP itself would refuse is, so a
+symbol that should be there and is not is the sign to check the version — which is
+what peq says when it cannot find one:
 
 ```
-Reading /app/src/Invoice.php as PHP 7.1 failed: Syntax error, unexpected T_ENUM on line 5
+Symbol "Legacy\Invoice::total" is not in the dependency graph, which was read as PHP 8.5.
+Check the spelling, the analyzed path, the include and exclude patterns, and the PHP
+version the sources are written for.
 ```
 
 ## Configuration

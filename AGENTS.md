@@ -68,7 +68,7 @@ bin/                 # Entry point (console)
 - `composer lint` — run PHP CS Fixer + PHPStan (max level)
 - `composer format` — apply PHP CS Fixer
 - `composer compile` — build PHAR with Box after lint/tests pass
-- `bin/console Namespace\\Class::method /path -L 3 --exclude vendor` — inspect dependencies. Use `--direction=used-by` for reverse traversal, and `--type=native` for the faster engine
+- `bin/console Namespace\\Class::method /path -L 3 --exclude vendor` — inspect dependencies. Use `--direction=used-by` for reverse traversal, `--type=native` for the faster engine, and `--php-version` when the analyzed sources are older than the runtime
 
 ## Keeping the Two Engines Identical
 

@@ -16,11 +16,10 @@ use const PHP_VERSION_ID;
  * setting rather than an assumption: peq reads the sources as the version it was
  * told, and as the version it runs on only when it was told nothing.
  *
- * The range peq supports is the range its analysis engine supports. PHPStan accepts
- * an analysis target from PHP 7.1 to PHP 8.5 and nothing outside it, so those are
- * the versions peq guarantees — a PHP 5.6 or 7.0 source is read as far as it is also
- * valid PHP 7.1, which most of one is, but the constructs PHP 7.0 removed are not
- * something any version in the range can be asked to parse.
+ * The range peq supports is the range its parser reads: PHP 5.6 to PHP 8.5. Not every
+ * analyzer reads all of it — the one built on PHPStan is held to PHPStan's own lower
+ * bound of PHP 7.1 — so which versions a given run can be asked for is a question for
+ * AnalyzerKind, and this type is the range the product as a whole answers for.
  *
  * The version is held as PHP's own `PHP_VERSION_ID` number, which is what both the
  * analysis engine and the parser are configured with.
@@ -28,12 +27,12 @@ use const PHP_VERSION_ID;
 final readonly class PhpVersion
 {
     /**
-     * The oldest version an analysis can be asked for, as PHPStan's own lower bound.
+     * The oldest version peq reads sources as.
      */
-    public const int OLDEST_SUPPORTED = 70100;
+    public const int OLDEST_SUPPORTED = 50600;
 
     /**
-     * The newest version an analysis can be asked for, as PHPStan's own upper bound.
+     * The newest version peq reads sources as, as PHPStan's own upper bound.
      */
     public const int NEWEST_SUPPORTED = 80599;
 
@@ -51,8 +50,8 @@ final readonly class PhpVersion
     public function __construct(
         public int $id,
     ) {
-        assert($id >= self::OLDEST_SUPPORTED, 'A version to analyse must be one the analysis engine reads');
-        assert($id <= self::NEWEST_SUPPORTED, 'A version to analyse must be one the analysis engine reads');
+        assert($id >= self::OLDEST_SUPPORTED, 'A version to analyse must be one peq reads sources as');
+        assert($id <= self::NEWEST_SUPPORTED, 'A version to analyse must be one peq reads sources as');
     }
 
     /**
@@ -70,8 +69,8 @@ final readonly class PhpVersion
      *     \App\Config\PhpVersion::tryFromString('7.1')?->id // => 70100
      * @example A patch release is read as the version it belongs to
      *     \App\Config\PhpVersion::tryFromString('8.3.2')?->id // => 80302
-     * @example A version older than the analysis engine reads is not one to analyse
-     *     \App\Config\PhpVersion::tryFromString('5.6') // => null
+     * @example A version older than any analyzer reads is not one to analyse
+     *     \App\Config\PhpVersion::tryFromString('5.5') // => null
      * @example Text that spells no version at all names none either
      *     \App\Config\PhpVersion::tryFromString('latest') // => null
      */
@@ -95,7 +94,7 @@ final readonly class PhpVersion
      * @example A version spells the number PHP spells it with
      *     \App\Config\PhpVersion::parse('8.3') // => 80300
      * @example A version peq cannot analyse still spells a number
-     *     \App\Config\PhpVersion::parse('5.6') // => 50600
+     *     \App\Config\PhpVersion::parse('5.3') // => 50300
      */
     public static function parse(string $value): ?int
     {
@@ -107,15 +106,15 @@ final readonly class PhpVersion
     }
 
     /**
-     * The version peq itself runs on, as far as the analysis engine reads it.
+     * The version peq itself runs on, as far as it reads sources as one.
      *
      * This is what peq reads sources as when nothing says otherwise. A runtime newer
-     * than the engine analyses is reported as the newest the engine analyses, because
+     * than the newest version peq reads is reported as that newest version, because
      * the alternative is refusing to run on a PHP that peq itself supports. There is
-     * no bound in the other direction: peq needs PHP 8.3 to run at all, which the
-     * engine has read since long before.
+     * no bound in the other direction: peq needs PHP 8.3 to run at all, which is long
+     * past the oldest version it reads.
      *
-     * @return self The version peq runs on, as far as the analysis engine reads it
+     * @return self The version peq runs on, as far as it reads sources as one
      */
     public static function host(): self
     {
@@ -128,7 +127,7 @@ final readonly class PhpVersion
      * @return self The oldest supported version
      *
      * @example The oldest version peq analyses
-     *     \App\Config\PhpVersion::oldest()->toString() // => '7.1'
+     *     \App\Config\PhpVersion::oldest()->toString() // => '5.6'
      */
     public static function oldest(): self
     {

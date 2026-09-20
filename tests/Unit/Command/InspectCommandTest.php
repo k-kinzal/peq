@@ -107,13 +107,13 @@ final class InspectCommandTest extends TestCase
         self::assertStringContainsString('level', $tester->getDisplay());
     }
 
-    public function testExecuteReportsAFailureWhenThePhpVersionToAnalyseIsOutsideTheSupportedRange(): void
+    public function testExecuteReportsAFailureWhenThePhpVersionToAnalyseIsOneNoAnalyzerReads(): void
     {
         $tester = new CommandTester(new InspectCommand(new InspectAction()));
         $status = $tester->execute([
             'target' => 'App\Domain\Invoice',
             '--type' => 'debug',
-            '--php-version' => '5.6',
+            '--php-version' => '5.5',
             '--config' => __DIR__.'/absent.yaml',
         ]);
 
