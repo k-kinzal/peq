@@ -57,7 +57,7 @@ final class GqlExceptionTest extends TestCase
     public function testDescribeWritesTheCodeFirstBecauseThatIsThePartThatIsPromised(): void
     {
         self::assertSame(
-            '[42002] error: invalid reference: nothing binds "p" here',
+            '[42002] error: syntax error or access rule violation - invalid reference: nothing binds "p" here',
             GqlException::describe(StatusCode::InvalidReference, 'nothing binds "p" here'),
         );
     }
@@ -65,7 +65,8 @@ final class GqlExceptionTest extends TestCase
     public function testDescribeSaysWhereAConditionAboutAPlaceHappened(): void
     {
         self::assertSame(
-            '[42001] error: syntax error: expected a pattern at line 3, column 7 (found "RETRUN")',
+            '[42001] error: syntax error or access rule violation - invalid syntax: '
+            .'expected a pattern at line 3, column 7 (found "RETRUN")',
             GqlException::describe(StatusCode::SyntaxError, 'expected a pattern', 3, 7, '"RETRUN"'),
         );
     }

@@ -17,8 +17,15 @@ namespace App\Gql;
  * those need different next moves. A five-character code says which, without anyone
  * having to parse English.
  *
- * The codes follow the standard's own classes: `00` succeeded, `02` succeeded with
- * no rows, `22` the data was wrong for the operation, `42` the query was.
+ * Every code here is one ISO/IEC 39075 defines. The standard publishes its conditions
+ * as a digital artifact for implementers to report them by, and
+ * `tests/Fixture/Gql/GqlConditions.php` carries that list so a code peq invented
+ * would fail a test rather than reach a reader. A condition the standard gives no
+ * subclass for is reported under its class code, which is what the class codes are
+ * for: `42000` says the query was at fault without claiming to know a subcondition
+ * that does not exist.
+ *
+ * @see https://www.iso.org/standard/76120.html ISO/IEC 39075:2024, GQL
  */
 enum StatusCode: string
 {
@@ -28,14 +35,14 @@ enum StatusCode: string
     /** The query ran and produced no rows */
     case NoData = '02000';
 
-    /** A value was outside the range its operation accepts */
-    case OutOfRange = '22003';
-
     /** A division by zero was attempted */
     case DivisionByZero = '22012';
 
     /** A value was of a type the operation cannot accept */
     case InvalidType = '22G03';
+
+    /** The query named a function, an aggregate or a statement GQL does not define here */
+    case UnknownFeature = '42000';
 
     /** The query could not be read as GQL */
     case SyntaxError = '42001';
@@ -43,18 +50,17 @@ enum StatusCode: string
     /** The query named something that is not bound where it names it */
     case InvalidReference = '42002';
 
-    /** The query named a function or an option that does not exist */
-    case UnknownFeature = '42003';
-
     /**
      * Names the condition the code stands for, in the wording GQL uses.
      *
      * The standard pairs every code with a fixed phrase, and reporting that phrase
      * rather than an invented one is what makes two implementations of GQL
-     * recognisable as the same language when they fail.
+     * recognisable as the same language when they fail. A code that names a subclass
+     * is written as its class and its subclass joined by a dash, which is how both
+     * the standard's own artifact and the implementations that follow it read.
      *
      * @example A syntax error is reported under the standard's own wording
-     *     \App\Gql\StatusCode::SyntaxError->condition() // => 'error: syntax error'
+     *     \App\Gql\StatusCode::SyntaxError->condition() // => 'error: syntax error or access rule violation - invalid syntax'
      * @example So is a query that simply found nothing
      *     \App\Gql\StatusCode::NoData->condition() // => 'note: no data'
      *
@@ -65,12 +71,11 @@ enum StatusCode: string
         return match ($this) {
             self::Success => 'note: successful completion',
             self::NoData => 'note: no data',
-            self::OutOfRange => 'error: data exception - numeric value out of range',
             self::DivisionByZero => 'error: data exception - division by zero',
             self::InvalidType => 'error: data exception - invalid value type',
-            self::SyntaxError => 'error: syntax error',
-            self::InvalidReference => 'error: invalid reference',
-            self::UnknownFeature => 'error: unsupported feature',
+            self::UnknownFeature => 'error: syntax error or access rule violation',
+            self::SyntaxError => 'error: syntax error or access rule violation - invalid syntax',
+            self::InvalidReference => 'error: syntax error or access rule violation - invalid reference',
         };
     }
 
@@ -93,12 +98,11 @@ enum StatusCode: string
             self::Success,
             self::NoData => true,
 
-            self::OutOfRange,
             self::DivisionByZero,
             self::InvalidType,
+            self::UnknownFeature,
             self::SyntaxError,
-            self::InvalidReference,
-            self::UnknownFeature => false,
+            self::InvalidReference => false,
         };
     }
 }

@@ -42,7 +42,10 @@ final class StatusCodeTest extends TestCase
 
     public function testConditionUsesTheStandardsOwnWordingForASyntaxError(): void
     {
-        self::assertSame('error: syntax error', StatusCode::SyntaxError->condition());
+        self::assertSame(
+            'error: syntax error or access rule violation - invalid syntax',
+            StatusCode::SyntaxError->condition(),
+        );
     }
 
     public function testConditionSaysAQueryThatFoundNothingIsANote(): void
@@ -77,8 +80,6 @@ final class StatusCodeTest extends TestCase
      */
     public static function providerCodesThatFailed(): iterable
     {
-        yield 'a number out of range' => [StatusCode::OutOfRange];
-
         yield 'a division by zero' => [StatusCode::DivisionByZero];
 
         yield 'a value of the wrong type' => [StatusCode::InvalidType];

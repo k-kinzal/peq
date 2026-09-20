@@ -86,7 +86,7 @@ final class GqlException extends Exception
      * @param null|string $context     The text written there, if there is any to show
      *
      * @example A condition reads as its code, its standard wording and its own reason
-     *     \App\Gql\GqlException::describe(\App\Gql\StatusCode::InvalidReference, 'p is not bound here') // => '[42002] error: invalid reference: p is not bound here'
+     *     \App\Gql\GqlException::describe(\App\Gql\StatusCode::InvalidReference, 'p is not bound here') // => '[42002] error: syntax error or access rule violation - invalid reference: p is not bound here'
      *
      * @return string The one-line description
      */

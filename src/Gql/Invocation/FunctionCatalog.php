@@ -34,7 +34,7 @@ final class FunctionCatalog
      * @example A function is called by the name a query asks for it by
      *     \App\Gql\Invocation\FunctionCatalog::call('upper', [new \App\Gql\Datum\StringDatum('a')])->toText() // => 'A'
      * @example A name that belongs to nothing says so
-     *     \App\Gql\Invocation\FunctionCatalog::call('sqrt', []) // throws \App\Gql\GqlException: unsupported feature
+     *     \App\Gql\Invocation\FunctionCatalog::call('sqrt', []) // throws \App\Gql\GqlException: there is no function called
      * @example So does a call given the wrong number of arguments
      *     \App\Gql\Invocation\FunctionCatalog::call('upper', []) // throws \App\Gql\GqlException: syntax error
      *
