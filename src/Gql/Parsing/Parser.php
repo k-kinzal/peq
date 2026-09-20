@@ -109,6 +109,7 @@ final class Parser
             $blocks[] = $this->parseBlock();
         }
         if ($this->tokens->current()->kind !== TokenKind::End) {
+            StatementRefusal::reject($this->tokens);
             $this->tokens->fail('the end of the query');
         }
 
@@ -164,10 +165,12 @@ final class Parser
      *     $reader = \App\Gql\Parsing\TokenReader::of('OPTIONAL MATCH (p)');
      *     $parsed = (new \App\Gql\Parsing\Parser($reader))->parseClause();
      *     $parsed instanceof \App\Gql\Syntax\Clause\MatchClause ? $parsed->optional : null // => true
+     * @example A statement GQL defines and peq does not run is refused by name
+     *     (new \App\Gql\Parsing\Parser(\App\Gql\Parsing\TokenReader::of('DELETE (p)')))->parseClause() // throws \App\Gql\GqlException: does not run one
      *
      * @return Clause The clause
      *
-     * @throws GqlException If what is written is not a clause
+     * @throws GqlException If what is written is not a clause, or is one peq does not run
      */
     public function parseClause(): Clause
     {
@@ -189,6 +192,7 @@ final class Parser
         if ($this->tokens->atKeyword('RETURN')) {
             return $this->results->parse();
         }
+        StatementRefusal::reject($this->tokens);
 
         return $this->parsePage();
     }
