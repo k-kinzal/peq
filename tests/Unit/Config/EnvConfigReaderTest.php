@@ -23,6 +23,7 @@ final class EnvConfigReaderTest extends TestCase
         putenv('PEQ_TEST_BASE_PATH');
         putenv('PEQ_TEST_DIRECTION');
         putenv('PEQ_TEST_LEVEL');
+        putenv('PEQ_TEST_OUTPUT');
         putenv('PEQ_TEST_EXCLUDES');
         putenv('PEQ_TEST_INCLUDES');
         putenv('PEQ_TEST_DEBUG_DEPTH');
@@ -51,6 +52,16 @@ final class EnvConfigReaderTest extends TestCase
         putenv('PEQ_TEST_LEVEL=10');
 
         self::assertSame('10', (new EnvConfigReader('PEQ_TEST_'))->read()['level'] ?? null);
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadReportsTheFormatTheEnvironmentAsksFor(): void
+    {
+        putenv('PEQ_TEST_OUTPUT=dot');
+
+        self::assertSame('dot', (new EnvConfigReader('PEQ_TEST_'))->read()['output'] ?? null);
     }
 
     /**

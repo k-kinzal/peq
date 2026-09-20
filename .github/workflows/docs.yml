@@ -77,15 +77,28 @@ jobs:
         run: |
           set -euo pipefail
 
-          rsync -a --checksum --delete --exclude '/.git/' --exclude '/pr/' --exclude '/CNAME' ../build/docs/ ./
+          # Pull request previews publish to the same branch under pr/, so a rejected
+          # push is retried on top of the branch's current tip.
+          for attempt in 1 2 3 4 5; do
+            rsync -a --checksum --delete --exclude '/.git/' --exclude '/pr/' --exclude '/CNAME' ../build/docs/ ./
 
-          git add --all
-          if git diff --cached --quiet; then
-            echo "The ${DOCS_BRANCH} branch already serves this documentation."
-            exit 0
-          fi
+            git add --all
+            if git diff --cached --quiet; then
+              echo "The ${DOCS_BRANCH} branch already serves this documentation."
+              exit 0
+            fi
 
-          git -c user.name='github-actions[bot]' \
-            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-            commit --message "docs: generate from ${GITHUB_SHA}"
-          git push origin "HEAD:${DOCS_BRANCH}"
+            git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit --message "docs: generate from ${GITHUB_SHA}"
+            if git push origin "HEAD:${DOCS_BRANCH}"; then
+              exit 0
+            fi
+
+            echo "Push attempt ${attempt} was rejected because ${DOCS_BRANCH} moved; retrying on its current tip."
+            git fetch origin "${DOCS_BRANCH}"
+            git reset --hard FETCH_HEAD
+          done
+
+          echo "Could not publish the documentation to ${DOCS_BRANCH} after 5 attempts." >&2
+          exit 1

@@ -89,20 +89,33 @@ jobs:
         run: |
           set -euo pipefail
 
-          mkdir -p "pr/${PR_NUMBER}"
-          rsync -a --checksum --delete ../build/docs/ "pr/${PR_NUMBER}/"
-          touch .nojekyll
+          # Previews of several pull requests publish to the same branch at the same
+          # time, so a rejected push is retried on top of the branch's current tip.
+          for attempt in 1 2 3 4 5; do
+            mkdir -p "pr/${PR_NUMBER}"
+            rsync -a --checksum --delete ../build/docs/ "pr/${PR_NUMBER}/"
+            touch .nojekyll
 
-          git add --all
-          if git diff --cached --quiet; then
-            echo "The ${DOCS_BRANCH} branch already serves this preview."
-            exit 0
-          fi
+            git add --all
+            if git diff --cached --quiet; then
+              echo "The ${DOCS_BRANCH} branch already serves this preview."
+              exit 0
+            fi
 
-          git -c user.name='github-actions[bot]' \
-            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-            commit --message "docs: preview pull request #${PR_NUMBER} at ${HEAD_SHA}"
-          git push origin "HEAD:${DOCS_BRANCH}"
+            git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit --message "docs: preview pull request #${PR_NUMBER} at ${HEAD_SHA}"
+            if git push origin "HEAD:${DOCS_BRANCH}"; then
+              exit 0
+            fi
+
+            echo "Push attempt ${attempt} was rejected because ${DOCS_BRANCH} moved; retrying on its current tip."
+            git fetch origin "${DOCS_BRANCH}"
+            git reset --hard FETCH_HEAD
+          done
+
+          echo "Could not publish the preview to ${DOCS_BRANCH} after 5 attempts." >&2
+          exit 1
 
       - name: Comment the preview link on the pull request
         env:
@@ -146,18 +159,31 @@ jobs:
         run: |
           set -euo pipefail
 
-          rm -rf "pr/${PR_NUMBER}"
+          # Other previews may publish to the branch while this one is removed, so a
+          # rejected push is retried on top of the branch's current tip.
+          for attempt in 1 2 3 4 5; do
+            rm -rf "pr/${PR_NUMBER}"
 
-          git add --all
-          if git diff --cached --quiet; then
-            echo "The ${DOCS_BRANCH} branch carries no preview of this pull request."
-            exit 0
-          fi
+            git add --all
+            if git diff --cached --quiet; then
+              echo "The ${DOCS_BRANCH} branch carries no preview of this pull request."
+              exit 0
+            fi
 
-          git -c user.name='github-actions[bot]' \
-            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-            commit --message "docs: remove the preview of pull request #${PR_NUMBER}"
-          git push origin "HEAD:${DOCS_BRANCH}"
+            git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit --message "docs: remove the preview of pull request #${PR_NUMBER}"
+            if git push origin "HEAD:${DOCS_BRANCH}"; then
+              exit 0
+            fi
+
+            echo "Push attempt ${attempt} was rejected because ${DOCS_BRANCH} moved; retrying on its current tip."
+            git fetch origin "${DOCS_BRANCH}"
+            git reset --hard FETCH_HEAD
+          done
+
+          echo "Could not remove the preview from ${DOCS_BRANCH} after 5 attempts." >&2
+          exit 1
 
       - name: Note the removal on the pull request
         env:

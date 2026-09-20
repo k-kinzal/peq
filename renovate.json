@@ -1,15 +1,23 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": [
+    "Every Renovate pull request is merged automatically once the checks required by the main branch protection are green.",
+    "The renovate-approve GitHub App approves only pull requests whose body says 'Automerge: Enabled'; Renovate writes that line when automerge is on, so automerge must stay enabled for the approval to happen.",
+    "GitHub's native auto-merge (platformAutomerge) merges the pull request as soon as the branch protection of main is satisfied, so the required status checks configured there define what counts as green."
+  ],
   "extends": [
     "config:recommended"
   ],
   "constraints": {
     "php": ">=8.3"
   },
+  "automerge": true,
+  "automergeType": "pr",
+  "platformAutomerge": true,
   "packageRules": [
     {
       "description": "Symfony 8+ requires PHP >=8.4, incompatible with our PHP 8.3 minimum",
-      "matchPackagePatterns": ["^symfony/"],
+      "matchPackageNames": ["/^symfony//"],
       "allowedVersions": "<8.0.0"
     },
     {

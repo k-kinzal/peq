@@ -6,7 +6,8 @@ namespace App\Reporter\TreeReporter;
 
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node;
-use App\Analyzer\Graph\NodeKind;
+use App\Reporter\Continuation;
+use App\Reporter\Expansion;
 use App\Reporter\Traversal;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -14,12 +15,15 @@ use Symfony\Component\Console\Output\OutputInterface;
  * The position of one tree report as it is being written.
  *
  * A traversal hands nodes over one at a time in depth-first order and says nothing
- * about layout. Turning that stream into a tree needs memory: which branches are
- * still open above the current line, which node was the parent at each depth, which
- * identifiers are on the current path, and which ones were already expanded
- * somewhere else. That memory belongs to a single report, so it lives here rather
- * than in the reporter, and every decision it drives is a named method rather than
- * a captured variable.
+ * about layout. Turning that stream into a tree needs memory of two kinds. Where the
+ * walk stops — cycles, symbols already expanded, the level bound — is memory every
+ * format needs, and it is kept by the Expansion this cursor is given. Which branches
+ * are still open above the current line and which node was the parent at each depth
+ * is memory only a tree needs, and it is kept here.
+ *
+ * Both belong to a single report, so this cursor is created for one and thrown away
+ * with it, and every decision it drives is a named method rather than a captured
+ * variable.
  *
  * @visibility namespace
  */
@@ -36,14 +40,9 @@ final class TreeCursor
     private array $parents = [];
 
     /**
-     * @var list<string> The identifiers on the path from the root to the current line
+     * How far this report has already expanded the graph.
      */
-    private array $path = [];
-
-    /**
-     * @var array<string, true> The identifiers already expanded somewhere in this report
-     */
-    private array $expanded = [];
+    private readonly Expansion $expansion;
 
     /**
      * @param Graph           $graph        The graph being reported on
@@ -57,8 +56,10 @@ final class TreeCursor
         private readonly Traversal $traversal,
         private readonly LineRenderer $lineRenderer,
         private readonly OutputInterface $output,
-        private readonly ?int $level = null,
-    ) {}
+        ?int $level = null,
+    ) {
+        $this->expansion = new Expansion($level);
+    }
 
     /**
      * Writes one node and reports whether the tree should continue below it.
@@ -75,17 +76,11 @@ final class TreeCursor
      */
     public function visit(Node $node, int $depth): bool
     {
-        if ($this->level !== null && $depth > $this->level) {
+        $continuation = $this->expansion->reach($node, $depth);
+        if (!$continuation->reported()) {
             return false;
         }
 
-        while (count($this->path) > $depth) {
-            array_pop($this->path);
-        }
-
-        $nodeKey = $node->id()->toString();
-        $isRecursive = in_array($nodeKey, $this->path, true);
-        $isDuplicate = !$isRecursive && isset($this->expanded[$nodeKey]);
         $isLastChild = $this->isLastChild($node, $depth);
 
         $this->output->writeln($this->lineRenderer->render(
@@ -93,23 +88,14 @@ final class TreeCursor
             depth: $depth,
             continuationFlags: $this->continuations,
             isLastChild: $isLastChild,
-            isRecursive: $isRecursive,
-            isDuplicate: $isDuplicate,
+            isRecursive: $continuation === Continuation::Cycle,
+            isDuplicate: $continuation === Continuation::Repeat,
         ));
 
         $this->continuations[$depth] = !$isLastChild;
         $this->parents[$depth] = $node;
-        if (!$isRecursive) {
-            $this->path[] = $nodeKey;
-        }
 
-        if ($isRecursive || $isDuplicate || $this->isLeafKind($node->kind())) {
-            return false;
-        }
-
-        $this->expanded[$nodeKey] = true;
-
-        return true;
+        return $continuation->descends();
     }
 
     /**
@@ -144,33 +130,5 @@ final class TreeCursor
         }
 
         return $node->id()->toString() === end($siblings);
-    }
-
-    /**
-     * Reports whether a kind of node can have anything printed below it.
-     *
-     * A builtin type and an unresolved reference are both outside the analyzed
-     * sources, so the graph holds no relations for them to descend into.
-     *
-     * @param NodeKind $kind The kind of the node being written
-     *
-     * @return bool True when the node is a leaf of the printed tree
-     */
-    public function isLeafKind(NodeKind $kind): bool
-    {
-        return match ($kind) {
-            NodeKind::Builtin,
-            NodeKind::Unknown => true,
-
-            NodeKind::Klass,
-            NodeKind::Constant,
-            NodeKind::EnumCase,
-            NodeKind::Enum,
-            NodeKind::Function,
-            NodeKind::Interface,
-            NodeKind::Method,
-            NodeKind::Property,
-            NodeKind::Trait => false,
-        };
     }
 }

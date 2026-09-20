@@ -47,6 +47,7 @@ Options:
   -D, --direction=DIRECTION  Dependency direction: uses|used-by (default: uses)
   -R, --reverse              Shortcut for --direction used-by
   -L, --level=LEVEL          Limit depth of the dependency graph
+  -O, --output=OUTPUT        Output format: tree|json|dot|table (default: tree)
   -I, --include=INCLUDE      Include patterns (multiple values allowed)
   -E, --exclude=EXCLUDE      Exclude patterns (multiple values allowed)
       --php-version=PHP-VERSION    PHP version the analyzed sources are read as
@@ -56,6 +57,74 @@ Options:
   -h, --help                 Display help for the given command
   -V, --version              Display this application version
 ```
+
+## Output formats
+
+Every format describes the same walk — the same root, the same order, the same places
+the walk stops. They differ only in what they write down about it.
+
+| `--output` | What it writes | Who reads it |
+|------------|----------------|--------------|
+| `tree`     | An indented tree, the way `tree` draws a directory. The default. | A person at a terminal |
+| `json`     | One entry per symbol: its kind, whether analysis resolved it, the depth it sits at, the symbol it hangs under, the relations that led to it, and where it is declared. | A program or an agent |
+| `dot`      | A Graphviz digraph of the symbols the walk reached and every relation between them. | A renderer |
+| `table`    | One row per symbol: depth, symbol, kind and `file:line`. | A review |
+
+```console
+$ peq 'App\Domain\Invoice' src
+App\Domain\Invoice
+├── App\Domain\Invoice::total
+│   └── App\Domain\Money::add
+└── App\Domain\Invoice::lines
+```
+
+```console
+$ peq 'App\Domain\Invoice' src --output=table
++-------+---------------------------+--------+------------------------------------+
+| Depth | Symbol                    | Kind   | Location                           |
++-------+---------------------------+--------+------------------------------------+
+| 0     | App\Domain\Invoice        | class  | /project/src/Domain/Invoice.php:12 |
+| 1     | App\Domain\Invoice::total | method | /project/src/Domain/Invoice.php:19 |
+| 2     | App\Domain\Money::add     | method | /project/src/Domain/Money.php:24   |
+| 1     | App\Domain\Invoice::lines | method | /project/src/Domain/Invoice.php:31 |
++-------+---------------------------+--------+------------------------------------+
+```
+
+```json
+{
+  "direction": "uses",
+  "symbol": "App\\Domain\\Invoice",
+  "nodes": [
+    {
+      "id": "App\\Domain\\Invoice::total",
+      "kind": "method",
+      "resolved": true,
+      "depth": 1,
+      "parent": "App\\Domain\\Invoice",
+      "relations": ["declaration-method"],
+      "truncated": null,
+      "file": {"path": "/project/src/Domain/Invoice.php", "line": 19, "column": 5}
+    }
+  ]
+}
+```
+
+```console
+$ peq 'App\Domain\Invoice' src --output=json | jq -r '.nodes[] | select(.truncated == null) | .id'
+App\Domain\Invoice
+App\Domain\Invoice::total
+App\Domain\Money::add
+App\Domain\Invoice::lines
+```
+
+```bash
+peq 'App\Domain\Invoice' src --output=dot | dot -Tsvg -o invoice.svg
+```
+
+A tree has to pick one path to each symbol and mark the rest, so a branch that stops
+says why: `(recursive)` for a cycle, `(*)` for a symbol expanded elsewhere. The JSON
+says the same thing in a `truncated` field and the table in the symbol cell. A digraph
+needs neither, because an arrow arriving twice at the same box is what it is for.
 
 ## Analyzers
 
@@ -130,6 +199,7 @@ Create a `.peq.yaml` file in your project root to set default options:
 
 ```yaml
 type: native
+output: tree
 phpVersion: '7.4'
 excludes:
   - vendor

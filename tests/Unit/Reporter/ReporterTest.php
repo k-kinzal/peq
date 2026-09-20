@@ -13,7 +13,10 @@ use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\Node\MethodNode;
 use App\Analyzer\Graph\NodeId\ClassNodeId;
 use App\Analyzer\Graph\NodeId\MethodNodeId;
+use App\Reporter\DotReporter\DotReporter;
+use App\Reporter\JsonReporter\JsonReporter;
 use App\Reporter\Reporter;
+use App\Reporter\TableReporter\TableReporter;
 use App\Reporter\Traversal\DepthFirstTraversal;
 use App\Reporter\TreeReporter\TreeReporter;
 use App\Reporter\TreeReporter\TreeReporterOptions;
@@ -28,6 +31,9 @@ use Symfony\Component\Console\Output\BufferedOutput;
  * @internal
  */
 #[CoversClass(TreeReporter::class)]
+#[CoversClass(JsonReporter::class)]
+#[CoversClass(DotReporter::class)]
+#[CoversClass(TableReporter::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
 #[UsesClass(\App\Analyzer\Graph\EdgeKind::class)]
 #[UsesClass(MethodEdge::class)]
@@ -41,42 +47,52 @@ use Symfony\Component\Console\Output\BufferedOutput;
 #[UsesClass(ClassNode::class)]
 #[UsesClass(MethodNode::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(\App\Reporter\Continuation::class)]
+#[UsesClass(\App\Reporter\Expansion::class)]
+#[UsesClass(\App\Reporter\DotReporter\DotCursor::class)]
+#[UsesClass(\App\Reporter\DotReporter\StatementRenderer::class)]
+#[UsesClass(\App\Reporter\JsonReporter\JsonCursor::class)]
+#[UsesClass(\App\Reporter\TableReporter\TableCursor::class)]
 #[UsesClass(DepthFirstTraversal::class)]
 #[UsesClass(\App\Reporter\Traversal\DepthFirstWalk::class)]
 #[UsesClass(\App\Reporter\TreeReporter\LineRenderer::class)]
 #[UsesClass(\App\Reporter\TreeReporter\TreeCursor::class)]
+#[UsesClass(TreeReporterOptions::class)]
 #[Small]
 final class ReporterTest extends TestCase
 {
     #[DataProvider('providerEveryReporter')]
-    public function testReportWritesTheRequestedSymbolToTheGivenOutput(Reporter $reporter, Graph $graph): void
+    public function testReportWritesTheRequestedSymbolToTheGivenOutput(Reporter $reporter, string $spelling, Graph $graph): void
     {
         $output = new BufferedOutput();
         $reporter->report($graph, ClassNodeId::of('App\Domain\Invoice'), $output);
 
-        self::assertStringContainsString('App\Domain\Invoice', $output->fetch());
+        self::assertStringContainsString($spelling, $output->fetch());
     }
 
     #[DataProvider('providerEveryReporter')]
-    public function testReportWritesNowhereElseThanTheGivenOutput(Reporter $reporter, Graph $graph): void
+    public function testReportWritesNowhereElseThanTheGivenOutput(Reporter $reporter, string $spelling, Graph $graph): void
     {
         $output = new BufferedOutput();
         $this->expectOutputString('');
 
         $reporter->report($graph, ClassNodeId::of('App\Domain\Invoice'), $output);
+
+        self::assertStringContainsString($spelling, $output->fetch());
     }
 
     #[DataProvider('providerEveryReporter')]
-    public function testReportWritesNothingForASymbolTheGraphDoesNotHold(Reporter $reporter, Graph $graph): void
+    public function testReportWritesNothingForASymbolTheGraphDoesNotHold(Reporter $reporter, string $spelling, Graph $graph): void
     {
         $output = new BufferedOutput();
         $reporter->report($graph, ClassNodeId::of('App\Domain\Missing'), $output);
 
         self::assertSame('', $output->fetch());
+        self::assertNotSame('', $spelling);
     }
 
     /**
-     * @return iterable<string, array{Reporter, Graph}>
+     * @return iterable<string, array{Reporter, string, Graph}>
      */
     public static function providerEveryReporter(): iterable
     {
@@ -93,13 +109,54 @@ final class ReporterTest extends TestCase
             new MethodCallEdge($total, $add, $meta),
         ]);
 
+        $plain = 'App\Domain\Invoice';
+        $escaped = 'App\\\Domain\\\Invoice';
+
         yield 'the tree reporter reading away from the subject' => [
             new TreeReporter(new TreeReporterOptions(), new DepthFirstTraversal(Direction::Uses)),
+            $plain,
             $graph,
         ];
 
         yield 'the tree reporter reading towards the subject' => [
             new TreeReporter(new TreeReporterOptions(), new DepthFirstTraversal(Direction::UsedBy)),
+            $plain,
+            $graph,
+        ];
+
+        yield 'the JSON reporter reading away from the subject' => [
+            new JsonReporter(new DepthFirstTraversal(Direction::Uses)),
+            $escaped,
+            $graph,
+        ];
+
+        yield 'the JSON reporter reading towards the subject' => [
+            new JsonReporter(new DepthFirstTraversal(Direction::UsedBy)),
+            $escaped,
+            $graph,
+        ];
+
+        yield 'the digraph reporter reading away from the subject' => [
+            new DotReporter(new DepthFirstTraversal(Direction::Uses)),
+            $escaped,
+            $graph,
+        ];
+
+        yield 'the digraph reporter reading towards the subject' => [
+            new DotReporter(new DepthFirstTraversal(Direction::UsedBy)),
+            $escaped,
+            $graph,
+        ];
+
+        yield 'the table reporter reading away from the subject' => [
+            new TableReporter(new DepthFirstTraversal(Direction::Uses)),
+            $plain,
+            $graph,
+        ];
+
+        yield 'the table reporter reading towards the subject' => [
+            new TableReporter(new DepthFirstTraversal(Direction::UsedBy)),
+            $plain,
             $graph,
         ];
     }

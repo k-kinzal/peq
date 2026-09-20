@@ -15,7 +15,6 @@ use App\Analyzer\Graph\Node\MethodNode;
 use App\Analyzer\Graph\NodeId\BuiltinNodeId;
 use App\Analyzer\Graph\NodeId\ClassNodeId;
 use App\Analyzer\Graph\NodeId\MethodNodeId;
-use App\Analyzer\Graph\NodeKind;
 use App\Reporter\Traversal\DepthFirstTraversal;
 use App\Reporter\TreeReporter\LineRenderer;
 use App\Reporter\TreeReporter\TreeCursor;
@@ -45,6 +44,8 @@ use Symfony\Component\Console\Output\BufferedOutput;
 #[UsesClass(ClassNode::class)]
 #[UsesClass(MethodNode::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(\App\Reporter\Continuation::class)]
+#[UsesClass(\App\Reporter\Expansion::class)]
 #[UsesClass(DepthFirstTraversal::class)]
 #[UsesClass(LineRenderer::class)]
 #[Small]
@@ -59,6 +60,18 @@ final class TreeCursorTest extends TestCase
         $cursor->visit(new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true), 0);
 
         self::assertSame("App\\Domain\\Invoice\n", $output->fetch());
+    }
+
+    #[DataProvider('providerInvoiceGraph')]
+    public function testVisitWritesASymbolItHasNotMetBeforeWithNoMarkerAgainstIt(Graph $graph): void
+    {
+        $output = new BufferedOutput();
+        $cursor = new TreeCursor($graph, new DepthFirstTraversal(Direction::Uses), new LineRenderer(), $output);
+
+        $cursor->visit(new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true), 0);
+        $cursor->visit(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), 1);
+
+        self::assertSame("App\\Domain\\Invoice\n├── App\\Domain\\Invoice::total\n", $output->fetch());
     }
 
     #[DataProvider('providerInvoiceGraph')]
@@ -205,43 +218,5 @@ final class TreeCursorTest extends TestCase
         ]);
 
         yield 'App\Domain\Invoice declares total and lines, and total calls App\Domain\Money::add' => [$graph];
-    }
-
-    #[DataProvider('providerKindsWithNothingBelowThem')]
-    public function testIsLeafKindRecognisesASymbolOutsideTheAnalyzedSources(NodeKind $kind): void
-    {
-        $cursor = new TreeCursor(new Graph(), new DepthFirstTraversal(Direction::Uses), new LineRenderer(), new BufferedOutput());
-
-        self::assertTrue($cursor->isLeafKind($kind));
-    }
-
-    /**
-     * @return iterable<string, array{NodeKind}>
-     */
-    public static function providerKindsWithNothingBelowThem(): iterable
-    {
-        yield 'a builtin type' => [NodeKind::Builtin];
-
-        yield 'an unresolved symbol' => [NodeKind::Unknown];
-    }
-
-    #[DataProvider('providerKindsThatCanHaveRelations')]
-    public function testIsLeafKindRecognisesASymbolThatCanRelateToOthers(NodeKind $kind): void
-    {
-        $cursor = new TreeCursor(new Graph(), new DepthFirstTraversal(Direction::Uses), new LineRenderer(), new BufferedOutput());
-
-        self::assertFalse($cursor->isLeafKind($kind));
-    }
-
-    /**
-     * @return iterable<string, array{NodeKind}>
-     */
-    public static function providerKindsThatCanHaveRelations(): iterable
-    {
-        foreach (NodeKind::cases() as $kind) {
-            if ($kind !== NodeKind::Builtin && $kind !== NodeKind::Unknown) {
-                yield $kind->value => [$kind];
-            }
-        }
     }
 }

@@ -9,6 +9,7 @@ use App\Config\AnalyzerKind;
 use App\Config\Config;
 use App\Config\ConfigException;
 use App\Config\DebugAnalyzerConfig;
+use App\Config\OutputFormat;
 use App\Config\RawConfig;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
@@ -37,6 +38,7 @@ final class ConfigTest extends TestCase
             'includes' => ['src'],
             'excludes' => ['vendor'],
             'phpVersion' => '7.4',
+            'output' => 'json',
             'type' => 'phpstan',
             'debug' => ['depth' => 9, 'seed' => 42],
         ]);
@@ -47,6 +49,7 @@ final class ConfigTest extends TestCase
         self::assertSame(['src'], $config->includes);
         self::assertSame(['vendor'], $config->excludes);
         self::assertSame(70400, $config->phpVersion?->id);
+        self::assertSame(OutputFormat::Json, $config->output);
         self::assertSame(AnalyzerKind::PhpStan, $config->analyzer);
         self::assertSame(9, $config->debug->depth);
         self::assertSame(42, $config->debug->seed);
@@ -145,6 +148,32 @@ final class ConfigTest extends TestCase
         ]);
 
         self::assertSame('.', $config->basePath);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testFromArrayWritesAReportAsATreeWhenNoFormatIsNamed(): void
+    {
+        $config = Config::fromArray(['basePath' => '.', 'direction' => 'uses', 'type' => 'debug']);
+
+        self::assertSame(OutputFormat::Tree, $config->output);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testFromArrayRejectsAFormatNothingCanBeWrittenIn(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Invalid configuration "output"');
+
+        Config::fromArray(['basePath' => '.', 'direction' => 'uses', 'type' => 'debug', 'output' => 'ascii']);
+    }
+
+    public function testTheFormatDefaultsToTheTreeAPersonReads(): void
+    {
+        self::assertSame(OutputFormat::Tree, (new Config('.', Direction::Uses))->output);
     }
 
     public function testTheAnalyzerDefaultsToTheOneThatReadsRealSources(): void

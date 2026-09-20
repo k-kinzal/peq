@@ -35,6 +35,7 @@ final class DefaultConfigReader implements ConfigReader
             'basePath' => '.',
             'direction' => 'uses',
             'level' => null,
+            'output' => OutputFormat::Tree->value,
             'includes' => [],
             'excludes' => [],
             'phpVersion' => PhpVersion::host()->toString(),

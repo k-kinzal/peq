@@ -41,6 +41,7 @@ final class InspectCommandTest extends TestCase
         self::assertTrue($definition->hasOption('reverse'));
         self::assertTrue($definition->hasOption('include'));
         self::assertTrue($definition->hasOption('exclude'));
+        self::assertTrue($definition->hasOption('output'));
         self::assertTrue($definition->hasOption('php-version'));
         self::assertTrue($definition->hasOption('type'));
         self::assertTrue($definition->hasOption('debug-depth'));
@@ -62,6 +63,36 @@ final class InspectCommandTest extends TestCase
         ]);
 
         self::assertStringContainsString($root, $tester->getDisplay());
+    }
+
+    public function testExecuteWritesTheReportInTheFormatTheUserAsked(): void
+    {
+        $root = (new DebugAnalyzer(seed: 42, depth: 3))->analyze('/generated')->nodes()[0]->id()->toString();
+        $tester = new CommandTester(new InspectCommand(new InspectAction()));
+        $tester->execute([
+            'target' => $root,
+            '--type' => 'debug',
+            '--debug-seed' => '42',
+            '--debug-depth' => '3',
+            '--output' => 'json',
+            '--config' => __DIR__.'/absent.yaml',
+        ]);
+
+        self::assertJson($tester->getDisplay());
+    }
+
+    public function testExecuteReportsAFailureWhenTheFormatDoesNotExist(): void
+    {
+        $tester = new CommandTester(new InspectCommand(new InspectAction()));
+        $status = $tester->execute([
+            'target' => 'App\Domain\Invoice',
+            '--type' => 'debug',
+            '--output' => 'ascii',
+            '--config' => __DIR__.'/absent.yaml',
+        ]);
+
+        self::assertSame(Command::FAILURE, $status);
+        self::assertStringContainsString('output', $tester->getDisplay());
     }
 
     public function testExecuteSucceedsWhenTheSymbolWasFound(): void

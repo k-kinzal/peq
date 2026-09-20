@@ -12,10 +12,10 @@ use App\Analyzer\Graph\Direction;
  * This value object holds all configuration parameters for the dependency analysis,
  * including the target path, analysis direction, depth limits, and file filtering rules.
  * Every field is typed as narrowly as its meaning allows: the direction is the same
- * closed type the graph classifies its edges with, the analyzer is a closed kind, the
- * PHP version of the analysed sources is one the analysis is able to read, and the
- * debug settings always exist rather than existing only when the debug analyzer
- * happens to be selected.
+ * closed type the graph classifies its edges with, the analyzer and the output format
+ * are closed kinds, the PHP version of the analysed sources is one the analyzer is able
+ * to read, and the debug settings always exist rather than existing only when the debug
+ * analyzer happens to be selected.
  *
  * @phpstan-import-type ConfigFields from ConfigReader
  */
@@ -25,6 +25,7 @@ final readonly class Config
      * @param string              $basePath   The base path for the PHP project to analyze
      * @param Direction           $direction  Which way the dependency graph is read
      * @param null|int            $level      Deepest level to report, or null for the whole graph
+     * @param OutputFormat        $output     Which format the report is written in
      * @param list<string>        $includes   File path patterns to include in analysis
      * @param list<string>        $excludes   File path patterns to exclude from analysis
      * @param null|PhpVersion     $phpVersion The PHP version the analysed sources are read as, or
@@ -36,6 +37,7 @@ final readonly class Config
         public string $basePath,
         public Direction $direction,
         public ?int $level = null,
+        public OutputFormat $output = OutputFormat::Tree,
         public array $includes = [],
         public array $excludes = [],
         public ?PhpVersion $phpVersion = null,
@@ -54,6 +56,11 @@ final readonly class Config
      * option — arrives here typed, and a value that cannot honestly be read as its
      * type is reported as a configuration error naming the field.
      *
+     * The format a report is written in is the one field no caller has to supply. It
+     * has an answer that holds everywhere — a person at a terminal — where the base
+     * path, the direction and the analyzer each have to be decided, so a configuration
+     * that says nothing about it is read as asking for a tree rather than refused.
+     *
      * @param ConfigFields $array The merged configuration data
      *
      * @return self The configuration
@@ -66,6 +73,14 @@ final readonly class Config
      *     \App\Config\Config::fromArray([
      *         'basePath' => '/project', 'direction' => 'sideways', 'type' => 'native',
      *     ]) // throws \App\Config\ConfigException: direction
+     * @example A configuration that names no format is written as a tree
+     *     \App\Config\Config::fromArray([
+     *         'basePath' => '/project', 'direction' => 'uses', 'type' => 'native',
+     *     ])->output // => \App\Config\OutputFormat::Tree
+     * @example A format nothing can be written in is rejected by name
+     *     \App\Config\Config::fromArray([
+     *         'basePath' => '/project', 'direction' => 'uses', 'output' => 'ascii', 'type' => 'native',
+     *     ]) // throws \App\Config\ConfigException: output
      * @example An analyzer this build does not carry is rejected the same way
      *     \App\Config\Config::fromArray([
      *         'basePath' => '/project', 'direction' => 'uses', 'type' => 'nonesuch',
@@ -90,6 +105,7 @@ final readonly class Config
             basePath: $raw->requiredString('basePath'),
             direction: $raw->enum('direction', Direction::class),
             level: $raw->optionalPositiveInt('level'),
+            output: $raw->has('output') ? $raw->enum('output', OutputFormat::class) : OutputFormat::Tree,
             includes: $raw->stringList('includes'),
             excludes: $raw->stringList('excludes'),
             phpVersion: self::phpVersionFor($raw, $analyzer),

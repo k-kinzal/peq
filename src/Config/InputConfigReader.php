@@ -56,6 +56,9 @@ final readonly class InputConfigReader implements ConfigReader
         if ($this->input->hasParameterOption(['--level', '-L'])) {
             $config['level'] = $this->option('level');
         }
+        if ($this->input->hasParameterOption(['--output', '-O'])) {
+            $config['output'] = $this->option('output');
+        }
         if ($this->input->hasParameterOption(['--include', '-I'])) {
             $config['includes'] = $this->option('include');
         }
