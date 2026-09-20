@@ -11,6 +11,7 @@ use App\Gql\Syntax\Clause\FilterClause;
 use App\Gql\Syntax\Clause\LetClause;
 use App\Gql\Syntax\Clause\MatchClause;
 use App\Gql\Syntax\Clause\PageClause;
+use App\Gql\Syntax\Clause\ReturnClause;
 use App\Gql\Syntax\Clause\VariableBinding;
 use App\Gql\Syntax\Query;
 use App\Gql\Syntax\QueryBlock;
@@ -117,21 +118,34 @@ final class Parser
     }
 
     /**
-     * Reads one run of clauses.
+     * Reads one run of clauses, up to and including what it shows.
+     *
+     * GQL writes a linear query as an optional run of clauses followed by a result
+     * statement, and the result statement is not optional: `MATCH (p)` on its own is
+     * not a program, however clear what it was meant to ask. peq requires the RETURN
+     * for that reason rather than answering the question anyway — the value of a query
+     * language a reader already knows is spent the first time it accepts something the
+     * language does not.
      *
      * @example A run of clauses goes on as long as clauses do
      *     $reader = \App\Gql\Parsing\TokenReader::of('MATCH (p) FILTER p.line > 1 RETURN p');
      *     count((new \App\Gql\Parsing\Parser($reader))->parseBlock()->clauses) // => 3
+     * @example A run that never says what to show is not a query
+     *     (new \App\Gql\Parsing\Parser(\App\Gql\Parsing\TokenReader::of('MATCH (p)')))->parseBlock() // throws \App\Gql\GqlException: RETURN
      *
      * @return QueryBlock The run
      *
-     * @throws GqlException If what is written is not a run of clauses
+     * @throws GqlException If what is written is not a run of clauses ending in one
      */
     public function parseBlock(): QueryBlock
     {
         $clauses = [$this->parseClause()];
         while ($this->atClause()) {
             $clauses[] = $this->parseClause();
+        }
+        if (!$clauses[count($clauses) - 1] instanceof ReturnClause) {
+            StatementRefusal::reject($this->tokens);
+            $this->tokens->fail('a RETURN statement, which is what GQL shows a query\'s answer with');
         }
 
         return new QueryBlock($clauses);
@@ -236,7 +250,7 @@ final class Parser
 
         $bindings = [];
         do {
-            $name = $this->tokens->expectName();
+            $name = NameReader::variable($this->tokens);
             $this->tokens->expectSymbol('=');
             $bindings[] = new VariableBinding($name, $this->expressions->parse());
         } while ($this->tokens->acceptSymbol(','));

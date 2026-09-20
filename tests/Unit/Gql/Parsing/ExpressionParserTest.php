@@ -135,8 +135,6 @@ final class ExpressionParserTest extends TestCase
         yield 'the other ordering' => ['a >= b', '(a >= b)'];
 
         yield 'membership' => ['a IN [b]', '(a IN [b])'];
-
-        yield 'a substring' => ['a CONTAINS b', '(a CONTAINS b)'];
     }
 
     /**
@@ -154,10 +152,6 @@ final class ExpressionParserTest extends TestCase
     public static function providerTwoWordOperators(): iterable
     {
         yield 'a refused membership' => ['a NOT IN [b]', '(a NOT IN [b])'];
-
-        yield 'a prefix' => ['a STARTS WITH b', '(a STARTS WITH b)'];
-
-        yield 'a suffix' => ['a ENDS WITH b', '(a ENDS WITH b)'];
     }
 
     /**

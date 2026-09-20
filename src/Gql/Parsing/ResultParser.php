@@ -105,7 +105,7 @@ final class ResultParser
         $from = $this->tokens->position();
         $value = $this->expressions->parse();
         $written = $this->tokens->textSince($from);
-        $alias = $this->tokens->acceptKeyword('AS') ? $this->tokens->expectName() : null;
+        $alias = $this->tokens->acceptKeyword('AS') ? NameReader::identifier($this->tokens) : null;
 
         return new Projection($value, $alias, $written);
     }

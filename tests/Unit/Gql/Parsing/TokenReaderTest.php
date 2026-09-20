@@ -12,6 +12,7 @@ use App\Gql\Lexing\Token;
 use App\Gql\Lexing\TokenKind;
 use App\Gql\Lexing\TokenList;
 use App\Gql\Parsing\TokenReader;
+use App\Gql\ReservedWords;
 use App\Gql\StatusCode;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
@@ -30,6 +31,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(TokenList::class)]
 #[UsesClass(GqlException::class)]
 #[UsesClass(StatusCode::class)]
+#[UsesClass(ReservedWords::class)]
 #[Small]
 final class TokenReaderTest extends TestCase
 {
@@ -232,8 +234,19 @@ final class TokenReaderTest extends TestCase
     public function testFailSaysWhatWasWantedAndWhatWasWritten(): void
     {
         $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('expected an expression at line 1, column 1 (found "RETURN")');
+        $this->expectExceptionMessage('expected an expression at line 1, column 1 (found "firstName")');
 
-        TokenReader::of('RETURN')->fail('an expression');
+        TokenReader::of('firstName')->fail('an expression');
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testFailSaysThatAWordGqlReservesIsOne(): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('expected ")", and GQL reserves "VALUE", so it is not a name');
+
+        TokenReader::of('value')->fail('")"');
     }
 }

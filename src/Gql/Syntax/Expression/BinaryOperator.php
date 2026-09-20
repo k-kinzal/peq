@@ -54,15 +54,6 @@ enum BinaryOperator
     /** Whether a value is not among the values of a list */
     case NotIn;
 
-    /** Whether a string holds another string anywhere */
-    case Contains;
-
-    /** Whether a string begins with another string */
-    case StartsWith;
-
-    /** Whether a string ends with another string */
-    case EndsWith;
-
     /** Whether both sides are true */
     case And;
 
@@ -92,8 +83,7 @@ enum BinaryOperator
             self::Multiply, self::Divide => 2,
             self::Add, self::Subtract, self::Concatenate => 3,
             self::Equal, self::NotEqual, self::Less, self::LessOrEqual,
-            self::Greater, self::GreaterOrEqual, self::In, self::NotIn,
-            self::Contains, self::StartsWith, self::EndsWith => 4,
+            self::Greater, self::GreaterOrEqual, self::In, self::NotIn => 4,
             self::And => 6,
             self::Xor => 7,
             self::Or => 8,
@@ -106,7 +96,7 @@ enum BinaryOperator
      * @example An operator written as a symbol reads as that symbol
      *     \App\Gql\Syntax\Expression\BinaryOperator::NotEqual->spelling() // => '<>'
      * @example One written as words reads as those words
-     *     \App\Gql\Syntax\Expression\BinaryOperator::StartsWith->spelling() // => 'STARTS WITH'
+     *     \App\Gql\Syntax\Expression\BinaryOperator::NotIn->spelling() // => 'NOT IN'
      *
      * @return string The operator, as a query writes it
      */
@@ -126,9 +116,6 @@ enum BinaryOperator
             self::GreaterOrEqual => '>=',
             self::In => 'IN',
             self::NotIn => 'NOT IN',
-            self::Contains => 'CONTAINS',
-            self::StartsWith => 'STARTS WITH',
-            self::EndsWith => 'ENDS WITH',
             self::And => 'AND',
             self::Xor => 'XOR',
             self::Or => 'OR',

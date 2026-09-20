@@ -292,9 +292,9 @@ final class BlockExecutionTest extends TestCase
     /**
      * @throws GqlException
      */
-    public function testRunShowsWhatItBoundWhenTheRunNeverSaysWhatToShow(): void
+    public function testRunShowsEveryNameInScopeWhenTheRunAsksForAllOfThem(): void
     {
-        self::assertSame('[n:INT64] 1', AnsweredQuery::of('LET n = 1'));
+        self::assertSame('[n:INT64] 1', AnsweredQuery::of('LET n = 1 RETURN *'));
     }
 
     /**

@@ -79,7 +79,7 @@ final class OperandParser
     {
         while (true) {
             if ($this->tokens->acceptSymbol('.')) {
-                $subject = new PropertyExpression($subject, $this->tokens->expectName());
+                $subject = new PropertyExpression($subject, NameReader::identifier($this->tokens));
 
                 continue;
             }
@@ -133,10 +133,11 @@ final class OperandParser
         if (!$this->tokens->atName()) {
             $this->tokens->fail('an expression');
         }
+        if (NameReader::atWord($this->tokens) && $this->tokens->peek()->isSymbol('(')) {
+            return $this->parseCall($this->tokens->expectName());
+        }
 
-        $name = $this->tokens->expectName();
-
-        return $this->tokens->atSymbol('(') ? $this->parseCall($name) : new VariableExpression($name);
+        return new VariableExpression(NameReader::variable($this->tokens));
     }
 
     /**
@@ -277,7 +278,9 @@ final class OperandParser
     public function parseCase(): CaseExpression
     {
         $this->tokens->expectKeyword('CASE');
-        $subject = $this->tokens->atKeyword('WHEN') ? null : $this->expressions->parse();
+        $subject = $this->tokens->atKeyword('WHEN') || $this->tokens->atKeyword('END')
+            ? null
+            : $this->expressions->parse();
 
         $branches = [];
         while ($this->tokens->acceptKeyword('WHEN')) {

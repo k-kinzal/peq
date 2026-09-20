@@ -50,13 +50,10 @@ final class FunctionCatalog
         return match ($called) {
             'char_length', 'upper', 'lower', 'trim' => self::text($called, $arguments),
             'size' => ListFunctions::size(self::argument($name, $arguments, 0, 1)),
-            'nodes' => GraphFunctions::nodes(self::argument($name, $arguments, 0, 1)),
-            'edges' => GraphFunctions::edges(self::argument($name, $arguments, 0, 1)),
             'elements' => GraphFunctions::elements(self::argument($name, $arguments, 0, 1)),
-            'labels' => GraphFunctions::labels(self::argument($name, $arguments, 0, 1)),
             'path_length' => GraphFunctions::pathLength(self::argument($name, $arguments, 0, 1)),
-            'to_json_string' => GeneralFunctions::toJsonString(self::argument($name, $arguments, 0, 1)),
-            'string_join' => TextFunctions::join(self::argument($name, $arguments, 0, 2), self::argument($name, $arguments, 1, 2)),
+            'left' => TextFunctions::left(self::argument($name, $arguments, 0, 2), self::argument($name, $arguments, 1, 2)),
+            'right' => TextFunctions::right(self::argument($name, $arguments, 0, 2), self::argument($name, $arguments, 1, 2)),
             'nullif' => GeneralFunctions::nullif(self::argument($name, $arguments, 0, 2), self::argument($name, $arguments, 1, 2)),
             'coalesce' => self::atLeastOne($name, $arguments),
             'zoned_datetime' => self::moment($name, $arguments, $given),
@@ -196,9 +193,9 @@ final class FunctionCatalog
     public static function all(): array
     {
         return [
-            'char_length', 'upper', 'lower', 'trim', 'string_join',
-            'size', 'nodes', 'edges', 'elements', 'labels', 'path_length',
-            'coalesce', 'nullif', 'to_json_string', 'zoned_datetime',
+            'char_length', 'upper', 'lower', 'trim', 'left', 'right',
+            'size', 'elements', 'path_length',
+            'coalesce', 'nullif', 'zoned_datetime',
         ];
     }
 }

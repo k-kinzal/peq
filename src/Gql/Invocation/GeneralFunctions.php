@@ -7,11 +7,9 @@ namespace App\Gql\Invocation;
 use App\Gql\Argument\TextArgument;
 use App\Gql\Datum\DateTimeDatum;
 use App\Gql\Datum\Datum;
-use App\Gql\Datum\DatumJson;
 use App\Gql\Datum\DatumKind;
 use App\Gql\Datum\DatumOrder;
 use App\Gql\Datum\NullDatum;
-use App\Gql\Datum\StringDatum;
 use App\Gql\GqlException;
 use App\Gql\StatusCode;
 
@@ -76,22 +74,6 @@ final class GeneralFunctions
     public static function nullif(Datum $value, Datum $withdraw): Datum
     {
         return DatumOrder::equals($value, $withdraw) === true ? new NullDatum() : $value;
-    }
-
-    /**
-     * Returns a value written as JSON.
-     *
-     * @param Datum $value The value
-     *
-     * @example A symbol serialises as everything a query could have selected it by
-     *     $node = new \App\Gql\Datum\NodeDatum('App\\Invoice', ['Class'], []);
-     *     \App\Gql\Invocation\GeneralFunctions::toJsonString($node)->toText() // => '{"id":"App\\\\Invoice","labels":["Class"],"properties":{}}'
-     *
-     * @return Datum The JSON, as a string
-     */
-    public static function toJsonString(Datum $value): Datum
-    {
-        return new StringDatum(DatumJson::of($value));
     }
 
     /**

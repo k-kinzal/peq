@@ -143,10 +143,10 @@ final class GqlSemanticsContractTest extends TestCase
     public function testAHorizontalSummaryCanBeSummarisedVerticallyAfterwards(): void
     {
         self::assertSame(
-            '[a:STRING, paths:INT64, avgOldest:FLOAT64] show, 2, 18.0; store, 2, 23.0; total, 1, 14.0',
+            '[a:STRING, walks:INT64, avgOldest:FLOAT64] show, 2, 18.0; store, 2, 23.0; total, 1, 14.0',
             AnsweredQuery::of(
                 'MATCH (a:Method)-[e:methodCall]->{1,2}(b:Method)'
-                .' RETURN a.name AS a, count(*) AS paths, avg(min(e.line)) AS avgOldest GROUP BY a ORDER BY a',
+                .' RETURN a.name AS a, count(*) AS walks, avg(min(e.line)) AS avgOldest GROUP BY a ORDER BY a',
             ),
         );
     }

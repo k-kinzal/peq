@@ -94,21 +94,15 @@ final class FunctionCatalogTest extends TestCase
 
         yield 'a list cut to a length' => ['trim', [new ListDatum([new IntegerDatum(1), new IntegerDatum(2)]), new IntegerDatum(1)], '[1]'];
 
-        yield 'the values of a list written out' => ['string_join', [new ListDatum([new StringDatum('a')]), new StringDatum(',')], 'a'];
-
         yield 'the size of a list' => ['size', [new ListDatum([new IntegerDatum(1)])], '1'];
 
-        yield 'the symbols of a path' => ['nodes', [$path], '[a, b]'];
+        yield 'the first characters of a string' => ['left', [new StringDatum('abc'), new IntegerDatum(2)], 'ab'];
 
-        yield 'the relations of a path' => ['edges', [$path], '[a -[calls]-> b]'];
+        yield 'the last characters of a string' => ['right', [new StringDatum('abc'), new IntegerDatum(2)], 'bc'];
 
         yield 'everything a path is made of' => ['elements', [$path], '[a, a -[calls]-> b, b]'];
 
-        yield 'the labels of a symbol' => ['labels', [new NodeDatum('a', ['Class'])], '[Class]'];
-
         yield 'the length of a path' => ['path_length', [$path], '1'];
-
-        yield 'a value written as JSON' => ['to_json_string', [new IntegerDatum(1)], '1'];
 
         yield 'the first value that is there' => ['coalesce', [new NullDatum(), new StringDatum('b')], 'b'];
 

@@ -124,8 +124,6 @@ final class BinaryOperationTest extends TestCase
         $two = new IntegerDatum(2);
         $yes = new BooleanDatum(true);
         $no = new BooleanDatum(false);
-        $name = new StringDatum('UserController');
-        $suffix = new StringDatum('Controller');
 
         yield 'addition follows the arithmetic rules' => [BinaryOperator::Add, $one, $two, '3'];
 
@@ -136,12 +134,6 @@ final class BinaryOperationTest extends TestCase
         yield 'division follows them too' => [BinaryOperator::Divide, $one, $two, '0'];
 
         yield 'joining follows the rules about text' => [BinaryOperator::Concatenate, $one, $two, '12'];
-
-        yield 'containment follows them too' => [BinaryOperator::Contains, $name, $suffix, 'TRUE'];
-
-        yield 'a prefix follows them too' => [BinaryOperator::StartsWith, $name, $suffix, 'FALSE'];
-
-        yield 'a suffix follows them too' => [BinaryOperator::EndsWith, $name, $suffix, 'TRUE'];
 
         yield 'equality follows the comparing rules' => [BinaryOperator::Equal, $one, $two, 'FALSE'];
 

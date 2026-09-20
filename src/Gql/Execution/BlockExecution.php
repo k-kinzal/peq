@@ -28,10 +28,9 @@ use App\Gql\Syntax\QueryBlock;
  * produced. Nothing here knows which clause came before it, which is the property
  * that makes a long query readable in the order it is written.
  *
- * A run that never says what to show shows everything it bound. GQL would ask for a
- * `RETURN`; peq does not, because the reader most likely to write `MATCH (p:Method
- * WHERE p.deprecated)` and stop there is one exploring a codebase, and answering with
- * what was found is more useful than answering with a complaint.
+ * Every run ends in a `RETURN`, because GQL's linear query does: the reader who writes
+ * `MATCH (p:Method WHERE p.deprecated)` and stops there is asking a question the
+ * language has no way to answer, and `RETURN *` is how the language writes it.
  *
  * @visibility App\Gql
  */
@@ -75,8 +74,8 @@ final class BlockExecution
      *     $block = \App\Gql\Parsing\Parser::read('RETURN 1 AS n')->blocks[0];
      *     $execution = new \App\Gql\Execution\BlockExecution(new \App\Gql\Element\ElementGraph([], [], []));
      *     $execution->run($block)->rows[0]->value(0)->toText() // => '1'
-     * @example A run that never says what to show shows what it bound
-     *     $block = \App\Gql\Parsing\Parser::read('LET n = 1')->blocks[0];
+     * @example A run that shows everything it bound is shown all of it
+     *     $block = \App\Gql\Parsing\Parser::read('LET n = 1 RETURN *')->blocks[0];
      *     $execution = new \App\Gql\Execution\BlockExecution(new \App\Gql\Element\ElementGraph([], [], []));
      *     $execution->run($block)->headings() // => ['n']
      *

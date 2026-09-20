@@ -9,6 +9,7 @@ use App\Gql\Lexing\Lexer;
 use App\Gql\Lexing\Token;
 use App\Gql\Lexing\TokenKind;
 use App\Gql\Lexing\TokenList;
+use App\Gql\ReservedWords;
 
 /**
  * Reading the pieces of a query, with the small vocabulary a grammar needs.
@@ -280,10 +281,14 @@ final class TokenReader
     /**
      * Moves past a name, reporting the query wrong if there is not one here.
      *
+     * This is the keyword position: a word the grammar knows, such as the name of a
+     * function being called. A name is taken here whatever it spells, because what it
+     * may spell is settled by the grammar rather than by GQL's reserved words.
+     *
      * @example A required name is taken
      *     \App\Gql\Parsing\TokenReader::of('firstName')->expectName() // => 'firstName'
-     * @example A name in backticks is a name
-     *     \App\Gql\Parsing\TokenReader::of('`return`')->expectName() // => 'return'
+     * @example A word GQL reserves is one, since a function is called by a keyword
+     *     \App\Gql\Parsing\TokenReader::of('upper(x)')->expectName() // => 'upper'
      *
      * @return string The name, as it stands for itself
      *
@@ -301,17 +306,27 @@ final class TokenReader
     /**
      * Reports the query wrong here, saying what was wanted and what was written.
      *
+     * A word GQL reserves is said to be reserved, because the mistake it usually
+     * stands for is one sentence away from being obvious: `MATCH (value)` fails
+     * somewhere after `value` was not read as a name, and "expected a right
+     * parenthesis" is a true answer to the wrong question.
+     *
      * @param string $expected What the grammar wanted at this place
      *
      * @example A query is told what it was missing and where
      *     \App\Gql\Parsing\TokenReader::of('RETURN')->fail('an expression') // throws \App\Gql\GqlException: an expression
+     * @example A word GQL reserves is said to be one
+     *     \App\Gql\Parsing\TokenReader::of('value')->fail('")"') // throws \App\Gql\GqlException: GQL reserves "VALUE"
      *
      * @throws GqlException Always
      */
     public function fail(string $expected): never
     {
         $token = $this->current();
+        $reserved = $token->kind === TokenKind::Name && ReservedWords::reserves($token->value)
+            ? ', and GQL reserves "'.strtoupper($token->value).'", so it is not a name'
+            : '';
 
-        throw GqlException::syntax('expected '.$expected, $token->line, $token->column, $token->describe());
+        throw GqlException::syntax('expected '.$expected.$reserved, $token->line, $token->column, $token->describe());
     }
 }

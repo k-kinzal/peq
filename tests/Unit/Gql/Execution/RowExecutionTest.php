@@ -286,8 +286,8 @@ final class RowExecutionTest extends TestCase
     public function testBindAddsAColumnToEveryRowItIsGiven(): void
     {
         self::assertSame(
-            '[name:STRING, where:STRING] get, Store.php',
-            AnsweredQuery::of("MATCH (p:Method WHERE p.name = 'get') LET where = p.fileName RETURN p.name AS name, where AS where"),
+            '[name:STRING, holder:STRING] get, Store.php',
+            AnsweredQuery::of("MATCH (p:Method WHERE p.name = 'get') LET holder = p.fileName RETURN p.name AS name, holder AS holder"),
         );
     }
 

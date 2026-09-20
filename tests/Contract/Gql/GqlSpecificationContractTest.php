@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Contract\Gql;
 
 use App\Gql\GqlException;
+use App\Gql\Invocation\FunctionCatalog;
 use App\Gql\Lexing\TokenKind;
 use App\Gql\Parsing\ExpressionParser;
 use App\Gql\Parsing\Parser;
@@ -25,6 +26,7 @@ use Tests\Fixture\Gql\GqlSpecification;
 #[UsesClass(ExpressionParser::class)]
 #[UsesClass(TokenReader::class)]
 #[UsesClass(TokenKind::class)]
+#[UsesClass(FunctionCatalog::class)]
 #[Medium]
 final class GqlSpecificationContractTest extends TestCase
 {
@@ -82,7 +84,7 @@ final class GqlSpecificationContractTest extends TestCase
     #[Test]
     public function testEveryPatternTheDocumentationPrintsIsOnePeqMatchesOn(string $written): void
     {
-        self::assertNotSame([], Parser::read('MATCH '.$written)->blocks);
+        self::assertNotSame([], Parser::read('MATCH '.$written.' RETURN *')->blocks);
     }
 
     /**
@@ -92,6 +94,72 @@ final class GqlSpecificationContractTest extends TestCase
     {
         foreach (GqlSpecification::patterns() as $name => $written) {
             yield $name => [$written];
+        }
+    }
+
+    /**
+     * @throws GqlException
+     */
+    #[DataProvider('providerStatementsTheDocumentationPrints')]
+    #[Test]
+    public function testEveryStatementTheDocumentationPrintsIsOnePeqReads(string $written): void
+    {
+        self::assertNotSame([], Parser::read($written."\nRETURN *")->blocks);
+    }
+
+    /**
+     * @return Generator<string, array{string}>
+     */
+    public static function providerStatementsTheDocumentationPrints(): Generator
+    {
+        foreach (GqlSpecification::statements() as $name => $written) {
+            yield $name => [$written];
+        }
+    }
+
+    /**
+     * @throws GqlException
+     */
+    #[DataProvider('providerExtensionsTheDocumentationPrints')]
+    #[Test]
+    public function testNothingTheDocumentationAddsToGqlIsSomethingPeqReads(string $written): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('invalid syntax');
+
+        Parser::read($written);
+    }
+
+    /**
+     * @return Generator<string, array{string}>
+     */
+    public static function providerExtensionsTheDocumentationPrints(): Generator
+    {
+        foreach (GqlSpecification::fabricExtensions() as $name => $written) {
+            yield $name => [$written];
+        }
+    }
+
+    /**
+     * @throws GqlException
+     */
+    #[DataProvider('providerFunctionsTheDocumentationAddsToGql')]
+    #[Test]
+    public function testNoFunctionTheDocumentationAddsToGqlIsOnePeqOffers(string $name): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage(sprintf('there is no function called "%s"', $name));
+
+        FunctionCatalog::call($name, []);
+    }
+
+    /**
+     * @return Generator<string, array{string}>
+     */
+    public static function providerFunctionsTheDocumentationAddsToGql(): Generator
+    {
+        foreach (GqlSpecification::fabricFunctions() as $section => $name) {
+            yield $section => [$name];
         }
     }
 }

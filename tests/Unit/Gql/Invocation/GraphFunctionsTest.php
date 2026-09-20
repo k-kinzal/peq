@@ -54,46 +54,6 @@ final class GraphFunctionsTest extends TestCase
     /**
      * @throws GqlException
      */
-    public function testNodesReadsTheSymbolsAPathPassesThrough(): void
-    {
-        $path = PathDatum::at(new NodeDatum('a'))
-            ->continuedBy(new EdgeDatum('e', [], [], 'a', 'b'), new NodeDatum('b'))
-        ;
-
-        self::assertSame('[a, b]', GraphFunctions::nodes($path)->toText());
-    }
-
-    /**
-     * @throws GqlException
-     */
-    public function testNodesReadsNothingOffSomethingThatIsNotThere(): void
-    {
-        self::assertSame(DatumKind::Null, GraphFunctions::nodes(new NullDatum())->kind());
-    }
-
-    /**
-     * @throws GqlException
-     */
-    public function testEdgesReadsTheRelationsAPathCrosses(): void
-    {
-        $path = PathDatum::at(new NodeDatum('a'))
-            ->continuedBy(new EdgeDatum('e', ['calls'], [], 'a', 'b'), new NodeDatum('b'))
-        ;
-
-        self::assertSame('[a -[calls]-> b]', GraphFunctions::edges($path)->toText());
-    }
-
-    /**
-     * @throws GqlException
-     */
-    public function testEdgesReadsNothingOffSomethingThatIsNotThere(): void
-    {
-        self::assertSame(DatumKind::Null, GraphFunctions::edges(new NullDatum())->kind());
-    }
-
-    /**
-     * @throws GqlException
-     */
     public function testElementsReadsEverythingAPathIsMadeOf(): void
     {
         $path = PathDatum::at(new NodeDatum('a'))
@@ -125,41 +85,6 @@ final class GraphFunctionsTest extends TestCase
     public function testPathLengthMeasuresNothingThatIsNotThere(): void
     {
         self::assertSame(DatumKind::Null, GraphFunctions::pathLength(new NullDatum())->kind());
-    }
-
-    /**
-     * @throws GqlException
-     */
-    public function testLabelsReportsWhatAPatternCouldHaveSelectedASymbolBy(): void
-    {
-        self::assertSame('[Method, Callable]', GraphFunctions::labels(new NodeDatum('a', ['Method', 'Callable']))->toText());
-    }
-
-    /**
-     * @throws GqlException
-     */
-    public function testLabelsReportsWhatAPatternCouldHaveSelectedARelationBy(): void
-    {
-        self::assertSame('[calls]', GraphFunctions::labels(new EdgeDatum('e', ['calls'], [], 'a', 'b'))->toText());
-    }
-
-    /**
-     * @throws GqlException
-     */
-    public function testLabelsReportsNothingOfSomethingThatIsNotThere(): void
-    {
-        self::assertSame(DatumKind::Null, GraphFunctions::labels(new NullDatum())->kind());
-    }
-
-    /**
-     * @throws GqlException
-     */
-    public function testLabelsReportsSomethingThatIsNeitherASymbolNorARelation(): void
-    {
-        $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('a node or an edge was expected, and a STRING was given');
-
-        GraphFunctions::labels(new StringDatum('a'));
     }
 
     /**

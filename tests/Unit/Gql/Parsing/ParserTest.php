@@ -176,7 +176,7 @@ final class ParserTest extends TestCase
     public function testReadSaysWhatWasExpectedAndWhereWhenTheQueryIsNotGql(): void
     {
         $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('expected the end of the query at line 1, column 11');
+        $this->expectExceptionMessage('expected a RETURN statement, which is what GQL shows a query\'s answer with at line 1, column 11');
 
         Parser::read('MATCH (p) RETRUN p');
     }

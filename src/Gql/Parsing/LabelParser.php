@@ -29,7 +29,7 @@ final class LabelParser
      * Reads a requirement, disjunction being the loosest thing it can be.
      *
      * @example Either of two labels will do
-     *     $parsed = (new \App\Gql\Parsing\LabelParser(\App\Gql\Parsing\TokenReader::of('Method|Function')))->parse();
+     *     $parsed = (new \App\Gql\Parsing\LabelParser(\App\Gql\Parsing\TokenReader::of('Method|`Function`')))->parse();
      *     $parsed->operator // => \App\Gql\Syntax\Pattern\LabelOperator::Either
      *
      * @return LabelPattern The requirement
@@ -96,6 +96,6 @@ final class LabelParser
             return $inner;
         }
 
-        return LabelPattern::named($this->tokens->expectName());
+        return LabelPattern::named(NameReader::identifier($this->tokens));
     }
 }

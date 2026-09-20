@@ -95,7 +95,7 @@ final class TextOperationTest extends TestCase
      * @throws GqlException
      */
     #[DataProvider('providerTextOperations')]
-    public function testApplyAsksTheQuestionTheOperatorNames(string $written, string $expected): void
+    public function testConcatenateWritesOneValueAfterTheOther(string $written, string $expected): void
     {
         self::assertSame($expected, ExpressionWorth::of($written));
     }
@@ -105,34 +105,20 @@ final class TextOperationTest extends TestCase
      */
     public static function providerTextOperations(): iterable
     {
-        yield 'a namespace asked for as a prefix' => ["'App\\\\Domain\\\\Invoice' STARTS WITH 'App'", 'TRUE'];
-
-        yield 'a prefix that is not there' => ["'App\\\\Domain' STARTS WITH 'Tests'", 'FALSE'];
-
-        yield 'a convention asked for as a suffix' => ["'UserController' ENDS WITH 'Controller'", 'TRUE'];
-
-        yield 'a word looked for anywhere in a path' => ["'src/Http/Kernel.php' CONTAINS 'Http'", 'TRUE'];
-
-        yield 'anything asked of an absent value is undecided' => ["NULL CONTAINS 'x'", 'NULL'];
-
-        yield 'anything asked against an absent value is undecided' => ["'x' CONTAINS NULL", 'NULL'];
-
         yield 'two strings joined' => ["'a' || 'b'", 'ab'];
 
         yield 'a string joined to a number' => ["'line ' || 12", 'line 12'];
 
         yield 'two lists joined' => ['[1] || [2]', '[1, 2]'];
+
+        yield 'joining to an absent value has no answer' => ["'a' || NULL", 'NULL'];
+
+        yield 'joining an absent value to anything has no answer' => ["NULL || 'a'", 'NULL'];
     }
 
-    /**
-     * @throws GqlException
-     */
-    public function testApplyReportsAValueThatCannotBeReadAsAString(): void
+    public function testConcatenateAnswersTheAbsenceOfAValueWithTheAbsenceOfOne(): void
     {
-        $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('a string was expected');
-
-        ExpressionWorth::of("[1] CONTAINS 'x'");
+        self::assertSame(DatumKind::Null, TextOperation::concatenate(new StringDatum('a'), new NullDatum())->kind());
     }
 
     public function testConcatenateJoinsTwoStringsIntoALongerOne(): void

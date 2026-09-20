@@ -142,7 +142,7 @@ final class PatternParserTest extends TestCase
 
         yield 'a requirement on an edge' => ['(a)-[e:calls WHERE e.line > 1]->(b)', '(a)-[e:calls WHERE (e.line > 1)]->(b)'];
 
-        yield 'a requirement on the labels' => ['(p:Method|Function)', '(p:(Method|Function))'];
+        yield 'a requirement on the labels' => ['(p:Method|`Function`)', '(p:(Method|Function))'];
     }
 
     /**

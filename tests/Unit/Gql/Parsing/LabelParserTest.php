@@ -57,7 +57,7 @@ final class LabelParserTest extends TestCase
     {
         yield 'one label' => ['Method', 'Method'];
 
-        yield 'either of two' => ['Method|Function', '(Method|Function)'];
+        yield 'either of two' => ['Method|`Function`', '(Method|Function)'];
 
         yield 'both of two' => ['Member&Callable', '(Member&Callable)'];
 

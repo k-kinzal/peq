@@ -114,10 +114,10 @@ final class PatternParser
      */
     public function parsePathName(): ?string
     {
-        if (!$this->tokens->atName() || !$this->tokens->peek()->isSymbol('=')) {
+        if (!NameReader::atVariable($this->tokens) || !$this->tokens->peek()->isSymbol('=')) {
             return null;
         }
-        $name = $this->tokens->expectName();
+        $name = NameReader::variable($this->tokens);
         $this->tokens->expectSymbol('=');
 
         return $name;
@@ -278,6 +278,10 @@ final class PatternParser
     /**
      * Reads the name a matched element is bound to, if one is written here.
      *
+     * What settles whether a name is written here is GQL's rule that a binding
+     * variable is a word the standard does not reserve. That is why `(n WHERE ...)`
+     * needs no special case: `WHERE` is reserved, so it was never a name.
+     *
      * @example A name written first binds the element
      *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of('p:Method)'), new \App\Gql\Parsing\ExpressionParser($tokens));
      *     $parser->parseElementName() // => 'p'
@@ -291,11 +295,11 @@ final class PatternParser
      */
     public function parseElementName(): ?string
     {
-        if (!$this->tokens->atName() || $this->tokens->atKeyword('WHERE')) {
+        if (!NameReader::atVariable($this->tokens)) {
             return null;
         }
 
-        return $this->tokens->expectName();
+        return NameReader::variable($this->tokens);
     }
 
     /**
@@ -359,7 +363,7 @@ final class PatternParser
 
         $properties = [];
         do {
-            $name = $this->tokens->expectName();
+            $name = NameReader::identifier($this->tokens);
             $this->tokens->expectSymbol(':');
             $properties[$name] = $this->expressions->parse();
         } while ($this->tokens->acceptSymbol(','));

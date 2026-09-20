@@ -35,6 +35,9 @@ enum StatusCode: string
     /** The query ran and produced no rows */
     case NoData = '02000';
 
+    /** A substring was asked for that a string cannot have */
+    case SubstringError = '22011';
+
     /** A division by zero was attempted */
     case DivisionByZero = '22012';
 
@@ -71,6 +74,7 @@ enum StatusCode: string
         return match ($this) {
             self::Success => 'note: successful completion',
             self::NoData => 'note: no data',
+            self::SubstringError => 'error: data exception - substring error',
             self::DivisionByZero => 'error: data exception - division by zero',
             self::InvalidType => 'error: data exception - invalid value type',
             self::UnknownFeature => 'error: syntax error or access rule violation',
@@ -98,6 +102,7 @@ enum StatusCode: string
             self::Success,
             self::NoData => true,
 
+            self::SubstringError,
             self::DivisionByZero,
             self::InvalidType,
             self::UnknownFeature,

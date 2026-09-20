@@ -7,6 +7,7 @@ namespace Tests\Unit\Gql\Syntax;
 use App\Gql\Datum\BooleanDatum;
 use App\Gql\Datum\DatumKind;
 use App\Gql\Syntax\Clause\FilterClause;
+use App\Gql\Syntax\Clause\ReturnClause;
 use App\Gql\Syntax\Expression\LiteralExpression;
 use App\Gql\Syntax\Query;
 use App\Gql\Syntax\QueryBlock;
@@ -62,8 +63,15 @@ final class QueryTest extends TestCase
      */
     public static function providerOneBlock(): iterable
     {
-        yield 'a block that keeps every row' => [
-            new QueryBlock([new FilterClause(new LiteralExpression(new BooleanDatum(true)))]),
+        yield 'a block that shows every name it bound' => [
+            new QueryBlock([new ReturnClause()]),
+        ];
+
+        yield 'a block that keeps every row and then shows it' => [
+            new QueryBlock([
+                new FilterClause(new LiteralExpression(new BooleanDatum(true))),
+                new ReturnClause(),
+            ]),
         ];
     }
 }

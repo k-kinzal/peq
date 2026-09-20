@@ -21,11 +21,125 @@ use Generator;
  * the fragments that are bare patterns or bare expressions are here as patterns and
  * expressions rather than as queries, because that is what they are.
  *
+ * One thing is changed rather than left out. Where the reference illustrates a
+ * function with a placeholder argument — `size(list)`, `elements(path)` — the placeholder
+ * is renamed, because ISO/IEC 39075 writes a binding variable `<regular identifier>`
+ * and reserves `LIST` and `PATH`, as the reference's own reserved word table says. The
+ * expression being checked is the reference's; only the name standing in for an
+ * argument is one a query may write.
+ *
+ * And one thing is here to be refused rather than read. Where the documentation prints
+ * an extension of Fabric's own — the reference marks them as such — the program is in
+ * `fabricExtensions()` instead, and the contract is that peq does not read it, because
+ * ISO/IEC 39075 is what peq implements.
+ *
+ * A statement the guide prints on its own is in `statements()`, and a pattern in
+ * `patterns()`. Neither is a GQL-program: the standard's linear query ends in a result
+ * statement, so each is read with a `RETURN *` after it.
+ *
  * @see https://learn.microsoft.com/fabric/graph/gql-language-guide GQL language guide
  * @see https://learn.microsoft.com/fabric/graph/gql-expressions GQL expressions, predicates, and functions
  */
 final class GqlSpecification
 {
+    /**
+     * Every thing the documentation prints that GQL itself does not define.
+     *
+     * The Fabric documentation is a reading of ISO/IEC 39075 with additions of its own,
+     * and its reserved word reference says which: `CONTAINS`, `STARTS` and `ENDS` are
+     * marked as reserved by graph in Fabric for its own extensions, and ISO's published
+     * grammar writes none of the three. peq follows the standard, so it refuses them —
+     * a prefix is `left`, a suffix is `right`, both from `<substring function>`. The same
+     * goes for the functions in `fabricFunctions()`, which the grammar never calls.
+     *
+     * They are kept here rather than deleted because a divergence nobody checks is a
+     * divergence nobody notices. A contract test asserts peq refuses each one, so if a
+     * later edition of GQL adopts them the test fails and says so.
+     *
+     * @return Generator<string, string> The program, by the section that prints it
+     */
+    public static function fabricExtensions(): Generator
+    {
+        yield 'language guide, example of statement composition' => <<<'GQL'
+            MATCH (p:Person)-[:workAt]->(c:Company)
+            LET fullName = p.firstName || ' ' || p.lastName
+            FILTER c.name CONTAINS 'Air'
+            ORDER BY fullName
+            LIMIT 10
+            RETURN fullName, c.name AS companyName
+            GQL;
+
+        yield 'language guide, variable binding and scoping patterns' => <<<'GQL'
+            MATCH (p:Person)
+            LET fullName = p.firstName || ' ' || p.lastName
+            FILTER fullName CONTAINS 'Smith'
+            RETURN p.id, fullName
+            GQL;
+
+        yield 'expressions, a substring' => "RETURN p.firstName CONTAINS 'John' AS matched";
+
+        yield 'expressions, a prefix' => "RETURN p.browserUsed STARTS WITH 'Chrome' AS matched";
+
+        yield 'expressions, a suffix' => "RETURN p.locationIP ENDS WITH '.1' AS matched";
+    }
+
+    /**
+     * Every function the documentation offers that GQL itself does not call.
+     *
+     * ISO/IEC 39075 writes a left parenthesis after `ELEMENTS` and not after `NODES`,
+     * `EDGES` or `LABELS`; `STRING_JOIN` and `TO_JSON_STRING` it does not write at all.
+     * A pattern is how a GQL query asks about labels, `elements` is how it takes a path
+     * apart, and the other two have no GQL spelling — so peq refuses all five by name.
+     *
+     * @return Generator<string, string> The function's name, by the section that offers it
+     */
+    public static function fabricFunctions(): Generator
+    {
+        yield 'expressions, the symbols of a path' => 'nodes';
+
+        yield 'expressions, the relations of a path' => 'edges';
+
+        yield 'expressions, the labels of an element' => 'labels';
+
+        yield 'expressions, a list written out' => 'string_join';
+
+        yield 'expressions, a value as JSON' => 'to_json_string';
+    }
+
+    /**
+     * Every statement the documentation prints on its own, without saying what to show.
+     *
+     * The guide illustrates `MATCH` by printing one, which is a statement rather than a
+     * GQL-program: ISO/IEC 39075 writes a linear query as clauses followed by a result
+     * statement, and does not make the result statement optional. Each of these is
+     * therefore read with a `RETURN *` after it — the statement is the documentation's,
+     * and the one line that turns it into a program is the standard's.
+     *
+     * @return Generator<string, string> The statement, by the section that prints it
+     */
+    public static function statements(): Generator
+    {
+        yield 'language guide, match statement' => <<<'GQL'
+            -- Input: unit table (no columns, one row)
+            -- Pattern variables: p, c  
+            -- Output: table with (p, c) columns for each person-company match
+            MATCH (p:Person)-[:workAt]->(c:Company)
+            GQL;
+
+        yield 'language guide, match statement (2)' => <<<'GQL'
+            -- Filter pattern matches
+            MATCH (p:Person)-[:workAt]->(c:Company) WHERE p.lastName = c.name
+            GQL;
+
+        yield 'language guide, match statement (3)' => <<<'GQL'
+            -- Shared variable 'p' joins the two patterns
+            -- Output: people with both workplace and residence data
+            MATCH (p:Person)-[:workAt]->(c:Company), 
+                  (p)-[:isLocatedIn]->(city:City)
+            GQL;
+
+    }
+
     /**
      * Every complete query the documentation prints.
      *
@@ -56,17 +170,6 @@ final class GqlSpecification
             MATCH (n:Person)-[:knows]-(m:Person)
             FILTER n.birthday = m.birthday
             RETURN count(*) AS same_age_friends
-            GQL;
-
-        yield 'language guide, example of statement composition' => <<<'GQL'
-            -- Data flows: Match → Let → Filter → Order → Limit → Return
-            MATCH (p:Person)-[:workAt]->(c:Company)           -- Input: unit table, Output: (p, c) table
-            LET fullName = p.firstName || ' ' || p.lastName   -- Input: (p, c) table, Output: (p, c, fullName) table
-            FILTER c.name CONTAINS 'Air'                      -- Input: (p, c, fullName) table, Output: filtered table
-            ORDER BY fullName                                 -- Input: filtered table, Output: sorted table
-            LIMIT 10                                          -- Input: sorted table, Output: top 10 rows table
-            RETURN fullName, c.name AS companyName            -- Input: top 10 rows table
-                                                              -- Output: projected (fullName, companyName) result table
             GQL;
 
         yield 'language guide, graph patterns: finding structure' => <<<'GQL'
@@ -114,25 +217,6 @@ final class GqlSpecification
             MATCH (p:Person), (p)-[:workAt]->(c:Company), (p)-[:isLocatedIn]->(city:City)
             RETURN p.firstName, p.lastName, c.name AS company_name, city.name AS city_name
             LIMIT 1000
-            GQL;
-
-        yield 'language guide, match statement' => <<<'GQL'
-            -- Input: unit table (no columns, one row)
-            -- Pattern variables: p, c  
-            -- Output: table with (p, c) columns for each person-company match
-            MATCH (p:Person)-[:workAt]->(c:Company)
-            GQL;
-
-        yield 'language guide, match statement (2)' => <<<'GQL'
-            -- Filter pattern matches
-            MATCH (p:Person)-[:workAt]->(c:Company) WHERE p.lastName = c.name
-            GQL;
-
-        yield 'language guide, match statement (3)' => <<<'GQL'
-            -- Shared variable 'p' joins the two patterns
-            -- Output: people with both workplace and residence data
-            MATCH (p:Person)-[:workAt]->(c:Company), 
-                  (p)-[:isLocatedIn]->(city:City)
             GQL;
 
         yield 'language guide, optional match statement' => <<<'GQL'
@@ -297,14 +381,6 @@ final class GqlSpecification
             ORDER BY minDistance DESC
             GQL;
 
-        yield 'language guide, variable binding and scoping patterns' => <<<'GQL'
-            -- Variables flow forward through subsequent statements 
-            MATCH (p:Person)                                    -- Bind p 
-            LET fullName = p.firstName || ' ' || p.lastName     -- Bind concatenation of p.firstName and p.lastName as fullNume
-            FILTER fullName CONTAINS 'Smith'                    -- Filter for fullNames with “Smith” substring (p is still bound)
-            RETURN p.id, fullName                               -- Only return p.id and fullName (p is dropped from scope)
-            GQL;
-
         yield 'language guide, variable reuse for joins across statements' => <<<'GQL'
             -- Multi-statement joins using variable reuse
             MATCH (p:Person)-[:workAt]->(:Company)          -- Find people with jobs
@@ -435,11 +511,6 @@ final class GqlSpecification
             RETURN upper(p.firstName) AS name_upper
             GQL;
 
-        yield 'expressions reference, graph functions' => <<<'GQL'
-            MATCH p=(:Company)<-[:workAt]-(:Person)-[:knows]-{1,3}(:Person)-[:workAt]->(:Company)
-            RETURN nodes(p) AS chain_of_colleagues, path_length(p) AS hops
-            GQL;
-
         yield 'expressions reference, list functions' => <<<'GQL'
             MATCH (p:Person)-[:hasInterest]->(t:Tag)
             WHERE size(collect_list(t)) > 3
@@ -448,11 +519,6 @@ final class GqlSpecification
 
         yield 'expressions reference, temporal functions' => 'RETURN zoned_datetime() AS now';
 
-        yield 'expressions reference, generic functions' => <<<'GQL'
-            MATCH (p:Person)
-            RETURN coalesce(p.firstName, 'Unknown') AS display_name,
-                   to_json_string(p) AS person_json
-            GQL;
     }
 
     /**
@@ -492,12 +558,6 @@ final class GqlSpecification
 
         yield 'refused membership' => "p.gender NOT IN ['male', 'female']";
 
-        yield 'a substring' => "p.firstName CONTAINS 'John'";
-
-        yield 'a prefix' => "p.browserUsed STARTS WITH 'Chrome'";
-
-        yield 'a suffix' => "p.locationIP ENDS WITH '.1'";
-
         yield 'string concatenation' => "p.firstName || ' ' || p.lastName";
 
         yield 'a comparison' => 'p.birthday < 19980101';
@@ -508,7 +568,7 @@ final class GqlSpecification
 
         yield 'a parenthesised disjunction' => "(p.birthday < 20050915 OR p.birthday > 19651231) AND p.gender = 'male'";
 
-        yield 'a predicate with explicit grouping' => "p.gender = 'female' AND (p.firstName STARTS WITH 'A' OR p.id > 1000)";
+        yield 'a predicate with explicit grouping' => "p.gender = 'female' AND (p.firstName = 'Alice' OR p.id > 1000)";
 
         yield 'property access' => 'p.firstName';
 
@@ -526,31 +586,21 @@ final class GqlSpecification
 
         yield 'the first value that is there' => "coalesce(p.nickname, p.firstName, '???')";
 
-        yield 'a value as JSON' => 'to_json_string(value)';
+        yield 'the size of a list' => 'size(aList)';
 
-        yield 'the size of a list' => 'size(list)';
+        yield 'a list cut to a length' => 'trim(aList, 3)';
 
-        yield 'a list cut to a length' => 'trim(list, 3)';
+        yield 'everything a path is made of' => 'elements(aPath)';
 
-        yield 'the labels of an element' => 'labels(node_or_edge)';
+        yield 'the length of a path' => 'path_length(aPath)';
 
-        yield 'the symbols of a path' => 'nodes(path)';
-
-        yield 'the relations of a path' => 'edges(path)';
-
-        yield 'everything a path is made of' => 'elements(path)';
-
-        yield 'the length of a path' => 'path_length(path)';
-
-        yield 'the length of a string' => 'char_length(string)';
+        yield 'the length of a string' => 'char_length(aString)';
 
         yield 'a string in upper case' => "upper(p.firstName) = 'ALICE'";
 
-        yield 'a string in lower case' => 'lower(string)';
+        yield 'a string in lower case' => 'lower(aString)';
 
-        yield 'a string without its whitespace' => 'trim(string)';
-
-        yield 'a list written out' => 'string_join(list, separator)';
+        yield 'a string without its whitespace' => 'trim(aString)';
 
         yield 'a whole number division' => 'p.birthday / 10000';
     }

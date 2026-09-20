@@ -46,7 +46,7 @@ final class BinaryOperatorTest extends TestCase
 
     public function testBindingPutsEveryComparisonAtTheSameStrength(): void
     {
-        self::assertSame(BinaryOperator::Equal->binding(), BinaryOperator::StartsWith->binding());
+        self::assertSame(BinaryOperator::Equal->binding(), BinaryOperator::In->binding());
     }
 
     #[DataProvider('providerOperatorsAndHowTheyAreWritten')]
@@ -85,12 +85,6 @@ final class BinaryOperatorTest extends TestCase
         yield 'membership' => [BinaryOperator::In, 'IN'];
 
         yield 'refused membership' => [BinaryOperator::NotIn, 'NOT IN'];
-
-        yield 'a substring' => [BinaryOperator::Contains, 'CONTAINS'];
-
-        yield 'a prefix' => [BinaryOperator::StartsWith, 'STARTS WITH'];
-
-        yield 'a suffix' => [BinaryOperator::EndsWith, 'ENDS WITH'];
 
         yield 'conjunction' => [BinaryOperator::And, 'AND'];
 

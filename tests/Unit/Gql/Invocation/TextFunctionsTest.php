@@ -135,36 +135,94 @@ final class TextFunctionsTest extends TestCase
     /**
      * @throws GqlException
      */
-    public function testJoinWritesTheValuesOfAListOneAfterAnother(): void
+    public function testLeftTakesTheFirstCharactersOfAString(): void
     {
-        $names = new ListDatum([new StringDatum('a'), new StringDatum('b')]);
-
-        self::assertSame('a, b', TextFunctions::join($names, new StringDatum(', '))->toText());
+        self::assertSame('App\Domain', TextFunctions::left(new StringDatum('App\Domain\Invoice'), new IntegerDatum(10))->toText());
     }
 
     /**
      * @throws GqlException
      */
-    public function testJoinLeavesOutAValueThatIsNotThereRatherThanWriteNothing(): void
+    public function testLeftTakesTheWholeStringWhenMoreIsAskedForThanThereIs(): void
     {
-        $names = new ListDatum([new StringDatum('a'), new NullDatum(), new StringDatum('b')]);
-
-        self::assertSame('a, b', TextFunctions::join($names, new StringDatum(', '))->toText());
+        self::assertSame('ab', TextFunctions::left(new StringDatum('ab'), new IntegerDatum(9))->toText());
     }
 
     /**
      * @throws GqlException
      */
-    public function testJoinJoinsNothingWhenThereIsNoListToJoin(): void
+    public function testLeftTakesNothingFromSomethingThatIsNotThere(): void
     {
-        self::assertSame(DatumKind::Null, TextFunctions::join(new NullDatum(), new StringDatum(', '))->kind());
+        self::assertSame(DatumKind::Null, TextFunctions::left(new NullDatum(), new IntegerDatum(1))->kind());
     }
 
     /**
      * @throws GqlException
      */
-    public function testJoinJoinsNothingWhenThereIsNothingToWriteBetween(): void
+    public function testLeftTakesNothingWhenThereIsNoLengthToTake(): void
     {
-        self::assertSame(DatumKind::Null, TextFunctions::join(new ListDatum([]), new NullDatum())->kind());
+        self::assertSame(DatumKind::Null, TextFunctions::left(new StringDatum('ab'), new NullDatum())->kind());
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testRightTakesTheLastCharactersOfAString(): void
+    {
+        self::assertSame('Controller', TextFunctions::right(new StringDatum('UserController'), new IntegerDatum(10))->toText());
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testRightTakesNoneOfAStringWhenNoneIsAskedFor(): void
+    {
+        self::assertSame('', TextFunctions::right(new StringDatum('ab'), new IntegerDatum(0))->toText());
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testRightTakesTheWholeStringWhenMoreIsAskedForThanThereIs(): void
+    {
+        self::assertSame('ab', TextFunctions::right(new StringDatum('ab'), new IntegerDatum(9))->toText());
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testRightTakesNothingFromSomethingThatIsNotThere(): void
+    {
+        self::assertSame(DatumKind::Null, TextFunctions::right(new NullDatum(), new IntegerDatum(1))->kind());
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testLengthReadsAWholeNumberAsALength(): void
+    {
+        self::assertSame(3, TextFunctions::length(new IntegerDatum(3)));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testLengthReportsALengthThatIsNegative(): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('substring error');
+
+        TextFunctions::length(new IntegerDatum(-1));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testLengthReportsALengthThatIsNotAWholeNumber(): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('substring error');
+
+        TextFunctions::length(new FloatDatum(1.5));
     }
 }

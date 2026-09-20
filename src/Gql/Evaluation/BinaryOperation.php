@@ -46,10 +46,7 @@ final class BinaryOperation
             BinaryOperator::Multiply,
             BinaryOperator::Divide => Arithmetic::apply($operator, $left, $right),
 
-            BinaryOperator::Concatenate,
-            BinaryOperator::Contains,
-            BinaryOperator::StartsWith,
-            BinaryOperator::EndsWith => TextOperation::apply($operator, $left, $right),
+            BinaryOperator::Concatenate => TextOperation::concatenate($left, $right),
 
             BinaryOperator::Equal,
             BinaryOperator::NotEqual,

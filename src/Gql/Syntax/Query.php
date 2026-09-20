@@ -32,9 +32,7 @@ final class Query
      * @param QueryBlock $block The block
      *
      * @example A query that combines nothing is its one block
-     *     $block = new \App\Gql\Syntax\QueryBlock([new \App\Gql\Syntax\Clause\FilterClause(
-     *         new \App\Gql\Syntax\Expression\LiteralExpression(new \App\Gql\Datum\BooleanDatum(true)),
-     *     )]);
+     *     $block = new \App\Gql\Syntax\QueryBlock([new \App\Gql\Syntax\Clause\ReturnClause()]);
      *     count(\App\Gql\Syntax\Query::of($block)->operators) // => 0
      *
      * @return self The query

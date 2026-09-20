@@ -170,9 +170,8 @@ final class ExpressionParser
     /**
      * Reads the comparing operator standing at a reader, if there is one, and takes it.
      *
-     * The two-word operators are read here rather than by the lexer because their
-     * first words are ordinary names elsewhere: a property called `ends` is a
-     * property, and only `ENDS WITH` is an operator.
+     * `NOT IN` is read here rather than by the lexer because `NOT` is an operator of
+     * its own everywhere else, and only the pair is a refused membership test.
      *
      * @param TokenReader $tokens The pieces of the query being read
      *
@@ -196,7 +195,6 @@ final class ExpressionParser
             $token->isSymbol('<') => BinaryOperator::Less,
             $token->isSymbol('>') => BinaryOperator::Greater,
             $token->isKeyword('IN') => BinaryOperator::In,
-            $token->isKeyword('CONTAINS') => BinaryOperator::Contains,
             default => null,
         };
         if ($single !== null) {
@@ -214,9 +212,9 @@ final class ExpressionParser
      * @param TokenReader $tokens The pieces of the query being read
      *
      * @example A two-word operator is taken as a whole
-     *     \App\Gql\Parsing\ExpressionParser::twoWordComparisonIn(\App\Gql\Parsing\TokenReader::of('ENDS WITH x')) // => \App\Gql\Syntax\Expression\BinaryOperator::EndsWith
+     *     \App\Gql\Parsing\ExpressionParser::twoWordComparisonIn(\App\Gql\Parsing\TokenReader::of('NOT IN [1]')) // => \App\Gql\Syntax\Expression\BinaryOperator::NotIn
      * @example A first word that is not followed by its second is left alone
-     *     \App\Gql\Parsing\ExpressionParser::twoWordComparisonIn(\App\Gql\Parsing\TokenReader::of('ends')) // => null
+     *     \App\Gql\Parsing\ExpressionParser::twoWordComparisonIn(\App\Gql\Parsing\TokenReader::of('NOT b')) // => null
      *
      * @return null|BinaryOperator The operator, or null when none stands there
      */
@@ -226,8 +224,6 @@ final class ExpressionParser
         $second = $tokens->peek();
         $operator = match (true) {
             $first->isKeyword('NOT') && $second->isKeyword('IN') => BinaryOperator::NotIn,
-            $first->isKeyword('STARTS') && $second->isKeyword('WITH') => BinaryOperator::StartsWith,
-            $first->isKeyword('ENDS') && $second->isKeyword('WITH') => BinaryOperator::EndsWith,
             default => null,
         };
         if ($operator === null) {

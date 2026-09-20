@@ -82,13 +82,6 @@ final class GeneralFunctionsTest extends TestCase
         self::assertSame('public', GeneralFunctions::nullif(new StringDatum('public'), new StringDatum('unknown'))->toText());
     }
 
-    public function testToJsonStringWritesASymbolAsEverythingAQueryCouldSelectItBy(): void
-    {
-        $written = GeneralFunctions::toJsonString(new NodeDatum('App\Invoice', ['Class'], []));
-
-        self::assertSame('{"id":"App\\\Invoice","labels":["Class"],"properties":{}}', $written->toText());
-    }
-
     /**
      * @throws GqlException
      */

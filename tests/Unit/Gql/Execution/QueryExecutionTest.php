@@ -313,7 +313,7 @@ final class QueryExecutionTest extends TestCase
     public function testQueryReportsAQueryThatCannotBeRead(): void
     {
         $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('expected the end of the query');
+        $this->expectExceptionMessage('expected a RETURN statement');
 
         AnsweredQuery::of('MATCH (p) RETRUN p');
     }

@@ -128,8 +128,6 @@ final class OperandParserTest extends TestCase
 
         yield 'a name that is called' => ['upper(p)', 'upper(p)'];
 
-        yield 'a name in backticks' => ['`return`', 'return'];
-
         yield 'a parenthesised expression' => ['(a)', 'a'];
     }
 

@@ -6,76 +6,30 @@ namespace App\Gql\Invocation;
 
 use App\Gql\Datum\Datum;
 use App\Gql\Datum\DatumKind;
-use App\Gql\Datum\EdgeDatum;
 use App\Gql\Datum\IntegerDatum;
 use App\Gql\Datum\ListDatum;
-use App\Gql\Datum\NodeDatum;
 use App\Gql\Datum\NullDatum;
 use App\Gql\Datum\PathDatum;
-use App\Gql\Datum\StringDatum;
 use App\Gql\GqlException;
 use App\Gql\StatusCode;
 
 /**
  * GQL's functions over the graph itself.
  *
- * These take apart what a pattern bound. A path is the most useful thing a query
- * about code can return — not "these two symbols are connected" but "here is the
- * chain between them" — and these are how a reader gets at its parts: the symbols it
- * passes through, the relations it crosses, how long it is.
+ * These take apart what a pattern bound. A path is the most useful thing a query about
+ * code can return — not "these two symbols are connected" but "here is the chain
+ * between them" — and these are the two ways GQL gets at its parts: everything it is
+ * made of, and how long it is.
  *
- * `labels` completes the picture from the other direction. A pattern selects by
- * label; `labels` is how a result says which ones a symbol actually turned out to
- * carry, which is what an agent needs in order to ask a better question next.
+ * Other graph languages also offer a `nodes` and an `edges` that split those elements
+ * in two, and a `labels` that reads an element's labels back. ISO/IEC 39075 defines
+ * neither, so peq has neither: a pattern is how a query asks about labels, and
+ * `elements` is what the standard gives for the rest.
  *
  * @visibility App\Gql
  */
 final class GraphFunctions
 {
-    /**
-     * Returns the symbols a path passes through, in order.
-     *
-     * @param Datum $value The path
-     *
-     * @example A path of one relation passes through two symbols
-     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('a'))->continuedBy(new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
-     *     \App\Gql\Invocation\GraphFunctions::nodes($path)->toText() // => '[a, b]'
-     *
-     * @return Datum The symbols, or the absence of them
-     *
-     * @throws GqlException If the value is not a path
-     */
-    public static function nodes(Datum $value): Datum
-    {
-        if ($value->kind() === DatumKind::Null) {
-            return new NullDatum();
-        }
-
-        return new ListDatum(self::path($value)->nodes());
-    }
-
-    /**
-     * Returns the relations a path crosses, in order.
-     *
-     * @param Datum $value The path
-     *
-     * @example The relations of a path are what a reader goes and looks at
-     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('a'))->continuedBy(new \App\Gql\Datum\EdgeDatum('e', ['calls'], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
-     *     \App\Gql\Invocation\GraphFunctions::edges($path)->toText() // => '[a -[calls]-> b]'
-     *
-     * @return Datum The relations, or the absence of them
-     *
-     * @throws GqlException If the value is not a path
-     */
-    public static function edges(Datum $value): Datum
-    {
-        if ($value->kind() === DatumKind::Null) {
-            return new NullDatum();
-        }
-
-        return new ListDatum(self::path($value)->edges());
-    }
-
     /**
      * Returns everything a path is made of, in the order it was walked.
      *
@@ -117,39 +71,6 @@ final class GraphFunctions
         }
 
         return new IntegerDatum(self::path($value)->length());
-    }
-
-    /**
-     * Returns the labels a symbol or a relation carries.
-     *
-     * @param Datum $value The symbol or the relation
-     *
-     * @example A symbol reports the labels a pattern could have selected it by
-     *     \App\Gql\Invocation\GraphFunctions::labels(new \App\Gql\Datum\NodeDatum('a', ['Method', 'Callable']))->toText() // => '[Method, Callable]'
-     *
-     * @return Datum The labels, or the absence of them
-     *
-     * @throws GqlException If the value is neither a symbol nor a relation
-     */
-    public static function labels(Datum $value): Datum
-    {
-        if ($value->kind() === DatumKind::Null) {
-            return new NullDatum();
-        }
-
-        $labels = match (true) {
-            $value instanceof NodeDatum => $value->labels,
-            $value instanceof EdgeDatum => $value->labels,
-            default => null,
-        };
-        if ($labels === null) {
-            throw GqlException::because(
-                StatusCode::InvalidType,
-                sprintf('a node or an edge was expected, and a %s was given', $value->kind()->typeName()),
-            );
-        }
-
-        return new ListDatum(array_map(static fn (string $label): Datum => new StringDatum($label), $labels));
     }
 
     /**

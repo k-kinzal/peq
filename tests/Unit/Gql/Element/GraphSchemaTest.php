@@ -68,7 +68,7 @@ final class GraphSchemaTest extends TestCase
     {
         yield 'a family of symbol a pattern selects by' => ['Callable'];
 
-        yield 'a family of relation a pattern selects by' => ['call'];
+        yield 'a family of relation a pattern selects by' => ['`call`'];
 
         yield 'something a query can ask a symbol' => ['visibility'];
 
@@ -107,5 +107,25 @@ final class GraphSchemaTest extends TestCase
     public function testTypedReportsThePropertyUnderTheNameAQueryAsksItBy(): void
     {
         self::assertSame('line', GraphSchema::typed('node property', ['line' => 'INT64'])[0]->value('name')->toText());
+    }
+
+    public function testTypedReportsAPropertyNamedAfterAReservedWordInBackQuotes(): void
+    {
+        self::assertSame('`value`', GraphSchema::typed('node property', ['value' => 'STRING'])[0]->value('name')->toText());
+    }
+
+    public function testLabelledReportsALabelGqlLeavesFreeAsItIs(): void
+    {
+        self::assertSame('Method', GraphSchema::labelled('node label', ['Method'])[0]->value('name')->toText());
+    }
+
+    public function testLabelledReportsALabelGqlReservesInBackQuotes(): void
+    {
+        self::assertSame('`Function`', GraphSchema::labelled('node label', ['Function'])[0]->value('name')->toText());
+    }
+
+    public function testLabelledReportsNothingForACategoryWithNoLabels(): void
+    {
+        self::assertSame([], GraphSchema::labelled('node label', []));
     }
 }

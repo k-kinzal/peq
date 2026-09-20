@@ -88,7 +88,7 @@ final class QueryActionTest extends TestCase
     public function testExecuteReportsAQueryThatCannotBeRead(): void
     {
         $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('expected the end of the query');
+        $this->expectExceptionMessage('expected a RETURN statement');
 
         (new QueryAction())->execute(new QueryActionInput(
             config: new Config(basePath: '.', direction: Direction::Uses, analyzer: AnalyzerKind::Debug, debug: new DebugAnalyzerConfig(depth: 3, seed: 42)),
