@@ -8,6 +8,7 @@ use App\Gql\Binding\BindingTable;
 use App\Gql\Element\ElementGraph;
 use App\Gql\Evaluation\ExpressionEvaluation;
 use App\Gql\GqlException;
+use App\Gql\Matching\PatternVariables;
 use App\Gql\Result\ResultTable;
 use App\Gql\StatusCode;
 use App\Gql\Syntax\Clause;
@@ -87,10 +88,14 @@ final class BlockExecution
     {
         $table = BindingTable::unit();
         $headings = null;
+        $groupLists = [];
         foreach ($block->clauses as $clause) {
+            if ($clause instanceof MatchClause) {
+                array_push($groupLists, ...PatternVariables::groupLists($clause->pattern));
+            }
             if ($clause instanceof ReturnClause) {
                 $headings = $this->projection->headings($clause, $table);
-                $table = $this->projection->run($clause, $table);
+                $table = $this->projection->run($clause, $table, $groupLists);
 
                 continue;
             }

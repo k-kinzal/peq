@@ -118,4 +118,40 @@ final class PatternVariablesTest extends TestCase
     {
         self::assertSame([], PatternVariables::inTerms([]));
     }
+
+    /**
+     * @throws GqlException
+     */
+    public function testGroupListsReadsTheNameARepetitionBindsToEveryRelationItCrossed(): void
+    {
+        self::assertSame(['e'], PatternVariables::groupLists(MatchedPattern::pattern('(a)-[e]->{1,3}(b)')));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testGroupListsReadsNoNameFromARelationCrossedOnce(): void
+    {
+        self::assertSame([], PatternVariables::groupLists(MatchedPattern::pattern('(a)-[e]->(b)')));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testGroupListsReadsNoNameFromARepetitionThatBindsNone(): void
+    {
+        self::assertSame([], PatternVariables::groupLists(MatchedPattern::pattern('(a)-[]->{1,3}(b)')));
+    }
+
+    public function testRepeatedInSearchesInsideAParenthesisedStretchOfPattern(): void
+    {
+        $group = new GroupPattern([new EdgePattern(EdgeDirection::Along, 'e', null, new ElementFilter(), new Quantifier(1, 3))]);
+
+        self::assertSame(['e'], PatternVariables::repeatedIn([$group]));
+    }
+
+    public function testRepeatedInReadsNoNameFromAPatternWithNoPiecesAtAll(): void
+    {
+        self::assertSame([], PatternVariables::repeatedIn([]));
+    }
 }

@@ -54,6 +54,71 @@ final class PatternVariables
     }
 
     /**
+     * Returns the names a pattern binds to a group list rather than to one element.
+     *
+     * GQL calls these group list variables, and says they come from one place and one
+     * place only: an edge pattern written with a repetition binds its name to every
+     * relation the repetition crossed. The distinction decides the shape of a whole
+     * result, because a summary written over one of them summarises along the row
+     * rather than down the table — `min(e.line)` is the earliest line of this path,
+     * not of every path — and a projection made only of those keeps one row per match.
+     *
+     * @param GraphPattern $pattern The pattern
+     *
+     * @example A repetition binds its name to every relation it crossed
+     *     $edge = new \App\Gql\Syntax\Pattern\EdgePattern(\App\Gql\Syntax\Pattern\EdgeDirection::Along, 'e', null, new \App\Gql\Syntax\Pattern\ElementFilter(), new \App\Gql\Syntax\Pattern\Quantifier(1, 3));
+     *     $terms = [new \App\Gql\Syntax\Pattern\NodePattern('a'), $edge, new \App\Gql\Syntax\Pattern\NodePattern('b')];
+     *     $path = new \App\Gql\Syntax\Pattern\PathPattern($terms);
+     *     \App\Gql\Matching\PatternVariables::groupLists(new \App\Gql\Syntax\Pattern\GraphPattern([$path])) // => ['e']
+     * @example One written without a repetition binds one relation
+     *     $edge = new \App\Gql\Syntax\Pattern\EdgePattern(\App\Gql\Syntax\Pattern\EdgeDirection::Along, 'e');
+     *     $terms = [new \App\Gql\Syntax\Pattern\NodePattern('a'), $edge, new \App\Gql\Syntax\Pattern\NodePattern('b')];
+     *     $path = new \App\Gql\Syntax\Pattern\PathPattern($terms);
+     *     \App\Gql\Matching\PatternVariables::groupLists(new \App\Gql\Syntax\Pattern\GraphPattern([$path])) // => []
+     *
+     * @return list<string> The names, in the order they are written
+     */
+    public static function groupLists(GraphPattern $pattern): array
+    {
+        $names = [];
+        foreach ($pattern->paths as $path) {
+            foreach (self::repeatedIn($path->terms) as $name) {
+                $names[$name] = true;
+            }
+        }
+
+        return array_keys($names);
+    }
+
+    /**
+     * Returns the names the pieces of a path bind to a group list.
+     *
+     * @param list<PathTerm> $terms The pieces of the path
+     *
+     * @example A parenthesised stretch of pattern is searched for them too
+     *     $edge = new \App\Gql\Syntax\Pattern\EdgePattern(\App\Gql\Syntax\Pattern\EdgeDirection::Along, 'e', null, new \App\Gql\Syntax\Pattern\ElementFilter(), new \App\Gql\Syntax\Pattern\Quantifier(1, 3));
+     *     \App\Gql\Matching\PatternVariables::repeatedIn([new \App\Gql\Syntax\Pattern\GroupPattern([$edge])]) // => ['e']
+     *
+     * @return list<string> The names, in the order they are written
+     */
+    public static function repeatedIn(array $terms): array
+    {
+        $names = [];
+        foreach ($terms as $term) {
+            if ($term instanceof GroupPattern) {
+                array_push($names, ...self::repeatedIn($term->terms));
+
+                continue;
+            }
+            if ($term instanceof EdgePattern && $term->variable !== null && $term->quantifier !== null) {
+                $names[] = $term->variable;
+            }
+        }
+
+        return $names;
+    }
+
+    /**
      * Returns every name the pieces of a path would bind.
      *
      * @param list<PathTerm> $terms The pieces of the path

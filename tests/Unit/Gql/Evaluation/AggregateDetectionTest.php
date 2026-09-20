@@ -159,4 +159,77 @@ final class AggregateDetectionTest extends TestCase
 
         self::assertFalse(AggregateDetection::withinCase($written));
     }
+
+    public function testAlongTheRowReadsASummaryOfAGroupListAsWrittenAlongTheRow(): void
+    {
+        $edges = new PropertyExpression(new VariableExpression('e'), 'line');
+
+        self::assertTrue(AggregateDetection::alongTheRow(new CallExpression('min', [$edges]), ['e']));
+    }
+
+    public function testAlongTheRowReadsASummaryOfAnythingElseAsWrittenDownTheRows(): void
+    {
+        $line = new PropertyExpression(new VariableExpression('p'), 'line');
+
+        self::assertFalse(AggregateDetection::alongTheRow(new CallExpression('min', [$line]), ['e']));
+    }
+
+    public function testAlongTheRowReadsACountOfTheRowsAsWrittenDownThem(): void
+    {
+        self::assertFalse(AggregateDetection::alongTheRow(new CallExpression('count', [], false, true), ['e']));
+    }
+
+    public function testAlongTheRowReadsASummaryOfSeveralThingsAsWrittenDownTheRows(): void
+    {
+        $first = new VariableExpression('e');
+        $second = new VariableExpression('f');
+
+        self::assertFalse(AggregateDetection::alongTheRow(new CallExpression('min', [$first, $second]), ['e', 'f']));
+    }
+
+    public function testRootOfReadsANameAsItself(): void
+    {
+        self::assertSame('e', AggregateDetection::rootOf(new VariableExpression('e')));
+    }
+
+    public function testRootOfReadsAPropertyAsWhateverItsSubjectReadsFrom(): void
+    {
+        self::assertSame('e', AggregateDetection::rootOf(new PropertyExpression(new VariableExpression('e'), 'line')));
+    }
+
+    public function testRootOfReadsAnIndexedValueAsWhateverItIsIndexedFrom(): void
+    {
+        $indexed = new IndexExpression(new VariableExpression('e'), new LiteralExpression(new IntegerDatum(0)));
+
+        self::assertSame('e', AggregateDetection::rootOf($indexed));
+    }
+
+    public function testRootOfReadsAnythingElseAsComingFromNoSingleName(): void
+    {
+        self::assertNull(AggregateDetection::rootOf(new CallExpression('count', [], false, true)));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testWithinPassesOverASummaryWrittenOverAGroupList(): void
+    {
+        self::assertFalse(AggregateDetection::within(ExpressionWorth::parse('min(e.line)'), ['e']));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testWithinStillFindsASummaryWrittenOverSomethingElse(): void
+    {
+        self::assertTrue(AggregateDetection::within(ExpressionWorth::parse('min(p.line)'), ['e']));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testWithinFindsTheOuterSummaryOfOneWrittenOverAGroupList(): void
+    {
+        self::assertTrue(AggregateDetection::within(ExpressionWorth::parse('avg(min(e.line))'), ['e']));
+    }
 }

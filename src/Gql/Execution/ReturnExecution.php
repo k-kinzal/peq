@@ -69,8 +69,9 @@ final class ReturnExecution
     /**
      * Returns the rows a RETURN produces.
      *
-     * @param ReturnClause $clause The clause
-     * @param BindingTable $table  The rows it is given
+     * @param ReturnClause $clause     The clause
+     * @param BindingTable $table      The rows it is given
+     * @param list<string> $groupLists The names a repeating pattern bound to every relation it crossed
      *
      * @example A projection that summarises answers once, even over no rows at all
      *     $counted = new \App\Gql\Syntax\Expression\CallExpression('count', [], false, true);
@@ -82,9 +83,9 @@ final class ReturnExecution
      *
      * @throws GqlException If a column cannot be worked out
      */
-    public function run(ReturnClause $clause, BindingTable $table): BindingTable
+    public function run(ReturnClause $clause, BindingTable $table, array $groupLists = []): BindingTable
     {
-        $produced = $this->summarises($clause)
+        $produced = $this->summarises($clause, $groupLists)
             ? $this->summarised($clause, $table)
             : $this->reported($clause, $table);
 
@@ -104,7 +105,13 @@ final class ReturnExecution
     /**
      * Reports whether a projection summarises its rows rather than reporting them.
      *
-     * @param ReturnClause $clause The clause
+     * A summary written over a group list is not one of these. It summarises along the
+     * row it is written for rather than down the table, which is GQL's rule that
+     * horizontal aggregation takes precedence, so a projection holding nothing else
+     * keeps one row per match.
+     *
+     * @param ReturnClause $clause     The clause
+     * @param list<string> $groupLists The names a repeating pattern bound to every relation it crossed
      *
      * @example A projection that groups summarises
      *     $key = new \App\Gql\Syntax\Expression\VariableExpression('kind');
@@ -117,13 +124,13 @@ final class ReturnExecution
      *
      * @return bool True when it produces one row per group
      */
-    public function summarises(ReturnClause $clause): bool
+    public function summarises(ReturnClause $clause, array $groupLists = []): bool
     {
         if ($clause->groupBy !== []) {
             return true;
         }
         foreach ($clause->columns as $column) {
-            if (AggregateDetection::within($column->value)) {
+            if (AggregateDetection::within($column->value, $groupLists)) {
                 return true;
             }
         }
