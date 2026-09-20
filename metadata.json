@@ -1,0 +1,41 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M2ZCTC3BP3HJY8176JXNQ80W",
+  "strategy": "manual-commit",
+  "branch": "feat/gql-graph",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "AGENTS.md",
+    "spec/Context/ConformanceContext.php",
+    "spec/Context/IsoConditions.php",
+    "spec/Context/IsoFeatures.php",
+    "spec/Context/IsoGrammar.php",
+    "spec/Context/IsoImplementationDefined.php",
+    "spec/Context/ProgramContext.php",
+    "spec/Context/SpecificationGraph.php",
+    "spec/Context/SpecificationOutcome.php",
+    "spec/Context/SuiteTags.php",
+    "spec/features/conformance.feature",
+    "spec/features/graph-pattern-matching.feature",
+    "spec/features/lexical-elements.feature",
+    "spec/features/linear-composition.feature",
+    "spec/features/unimplemented-statements.feature",
+    "spec/features/value-expressions.feature"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 3150,
+    "cache_creation_tokens": 3803441,
+    "cache_read_tokens": 785408290,
+    "output_tokens": 1305907,
+    "api_call_count": 1575
+  }
+}
