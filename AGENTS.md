@@ -4,7 +4,11 @@ A CLI tool that analyzes PHP code dependencies and visualizes the blast radius o
 
 ## Supported Versions
 
-- **PHP**: 8.1 / 8.2 / 8.3 / 8.4 / 8.5
+- **PHP peq runs on**: 8.3 / 8.4 / 8.5 — write source as a PHP 8.3 project: typed class
+  constants, `readonly` classes, `#[\Override]`, and the rest of what 8.3 offers
+- **PHP peq analyzes**: 5.6 – 8.5 with `native`, 7.1 – 8.5 with `phpstan` — the floor of
+  each engine is the floor of what it is built on, and every version in range must keep
+  working whichever runtime peq runs on
 
 ## Core Concepts
 
@@ -69,7 +73,7 @@ bin/                 # Entry point (console)
 - `composer lint` — run PHP CS Fixer + PHPStan (max level)
 - `composer format` — apply PHP CS Fixer
 - `composer compile` — build PHAR with Box after lint/tests pass
-- `bin/console Namespace\\Class::method /path -L 3 --exclude vendor` — inspect dependencies. Use `--direction=used-by` for reverse traversal, and `--type=native` for the faster engine
+- `bin/console Namespace\\Class::method /path -L 3 --exclude vendor` — inspect dependencies. Use `--direction=used-by` for reverse traversal, `--type=native` for the faster engine, and `--php-version` when the analyzed sources are older than the runtime
 - `bin/console Namespace\\Class::method /path --output=json` — write the same walk as JSON. `--output` takes `tree|json|dot|table`
 
 ## Adding an Output Format

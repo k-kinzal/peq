@@ -11,11 +11,12 @@ use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\Node\MethodNode;
+use Override;
 
 /**
  * Represents a method call relationship.
  */
-final class MethodCallEdge extends AuthoredEdge
+final readonly class MethodCallEdge extends AuthoredEdge
 {
     /**
      * @param FunctionNode|MethodNode $from The node the relation starts at
@@ -35,6 +36,7 @@ final class MethodCallEdge extends AuthoredEdge
      *
      * @return EdgeKind Always EdgeKind::MethodCall
      */
+    #[Override]
     public function kind(): EdgeKind
     {
         return EdgeKind::MethodCall;
@@ -45,6 +47,7 @@ final class MethodCallEdge extends AuthoredEdge
      *
      * @return Edge A UsedByEdge carrying this edge, which inverts back into it
      */
+    #[Override]
     public function invert(): Edge
     {
         return new UsedByEdge($this);

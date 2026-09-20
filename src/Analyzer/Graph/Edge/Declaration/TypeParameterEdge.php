@@ -16,11 +16,12 @@ use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\Node\GraphInterfaceNode;
 use App\Analyzer\Graph\Node\MethodNode;
 use App\Analyzer\Graph\Node\TraitNode;
+use Override;
 
 /**
  * Represents a parameter type declaration relationship.
  */
-final class TypeParameterEdge extends AuthoredEdge
+final readonly class TypeParameterEdge extends AuthoredEdge
 {
     /**
      * @param FunctionNode|MethodNode                                     $from The node the relation starts at
@@ -40,6 +41,7 @@ final class TypeParameterEdge extends AuthoredEdge
      *
      * @return EdgeKind Always EdgeKind::DeclarationTypeParameter
      */
+    #[Override]
     public function kind(): EdgeKind
     {
         return EdgeKind::DeclarationTypeParameter;
@@ -50,6 +52,7 @@ final class TypeParameterEdge extends AuthoredEdge
      *
      * @return Edge A DeclaredInEdge carrying this edge, which inverts back into it
      */
+    #[Override]
     public function invert(): Edge
     {
         return new DeclaredInEdge($this);

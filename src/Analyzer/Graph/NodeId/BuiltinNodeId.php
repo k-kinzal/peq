@@ -7,6 +7,7 @@ namespace App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\Node\BuiltinNode;
 use App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\QualifiedName;
+use Override;
 
 /**
  * Unique identifier for a builtin type node in the dependency graph.
@@ -16,20 +17,20 @@ use App\Analyzer\Graph\QualifiedName;
  *
  * @implements NodeId<BuiltinNode>
  */
-final class BuiltinNodeId implements NodeId
+final readonly class BuiltinNodeId implements NodeId
 {
     /**
      * The precomputed string form of this identifier.
      */
-    private readonly string $stringValue;
+    private string $stringValue;
 
     /**
      * @param string $namespace The namespace of the builtin type (must be a valid PHP namespace)
      * @param string $name      The builtin type name (must be a valid PHP identifier)
      */
     public function __construct(
-        public readonly string $namespace,
-        public readonly string $name,
+        public string $namespace,
+        public string $name,
     ) {
         if ($namespace !== '') {
             assert(QualifiedName::isNamespace($namespace), 'The namespace must be one PHP would accept');
@@ -57,6 +58,7 @@ final class BuiltinNodeId implements NodeId
      *
      * @return string The fully qualified builtin type name
      */
+    #[Override]
     public function toString(): string
     {
         return $this->stringValue;

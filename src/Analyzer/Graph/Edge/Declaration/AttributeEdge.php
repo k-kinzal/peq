@@ -11,11 +11,12 @@ use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\Node\ClassNode;
+use Override;
 
 /**
  * Represents an attribute usage relationship.
  */
-final class AttributeEdge extends AuthoredEdge
+final readonly class AttributeEdge extends AuthoredEdge
 {
     /**
      * @param Node      $from The node the relation starts at
@@ -35,6 +36,7 @@ final class AttributeEdge extends AuthoredEdge
      *
      * @return EdgeKind Always EdgeKind::Attribute
      */
+    #[Override]
     public function kind(): EdgeKind
     {
         return EdgeKind::Attribute;
@@ -45,6 +47,7 @@ final class AttributeEdge extends AuthoredEdge
      *
      * @return Edge A UsedByEdge carrying this edge, which inverts back into it
      */
+    #[Override]
     public function invert(): Edge
     {
         return new UsedByEdge($this);

@@ -7,6 +7,7 @@ namespace Tests\Unit\Config;
 use App\Config\ConfigReader;
 use App\Config\DefaultConfigReader;
 use App\Config\EnvConfigReader;
+use App\Config\PhpVersion;
 use App\Config\YamlConfigLoader;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -22,6 +23,7 @@ use Tests\Fixture\Config\StubConfigReader;
 #[CoversClass(EnvConfigReader::class)]
 #[CoversClass(YamlConfigLoader::class)]
 #[UsesClass(\App\Config\AnalyzerKind::class)]
+#[UsesClass(PhpVersion::class)]
 #[Small]
 final class ConfigReaderTest extends TestCase
 {

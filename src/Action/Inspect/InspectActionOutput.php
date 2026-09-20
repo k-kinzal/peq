@@ -14,14 +14,14 @@ use App\Analyzer\Graph\Node;
  * inspection has already established that the graph holds it, so nothing downstream
  * has to repeat the lookup or handle its absence.
  */
-final class InspectActionOutput
+final readonly class InspectActionOutput
 {
     /**
      * @param Graph $graph  The dependency graph built for the configured path
      * @param Node  $symbol The node the requested symbol name resolved to
      */
     public function __construct(
-        public readonly Graph $graph,
-        public readonly Node $symbol,
+        public Graph $graph,
+        public Node $symbol,
     ) {}
 }

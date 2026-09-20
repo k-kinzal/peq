@@ -31,15 +31,15 @@ use App\Analyzer\Graph\NodeKind;
  *
  * @visibility parent
  */
-final class NodeIdGenerator
+final readonly class NodeIdGenerator
 {
     /**
      * @param NameGenerator $names  The source of the names identifiers are built from
      * @param RandomSource  $random The random source line numbers and choices are drawn from
      */
     public function __construct(
-        private readonly NameGenerator $names,
-        private readonly RandomSource $random,
+        private NameGenerator $names,
+        private RandomSource $random,
     ) {}
 
     /**

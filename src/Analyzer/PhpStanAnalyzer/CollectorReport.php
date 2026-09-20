@@ -21,13 +21,13 @@ use App\Analyzer\Graph\Node;
  * report something peq does not understand, but PHPStan's own result carries the
  * findings of every registered collector, and only peq's own are asked for here.
  */
-final class CollectorReport
+final readonly class CollectorReport
 {
     /**
      * @param list<Edge|Node> $symbols The symbols and relations the collectors reported
      */
     public function __construct(
-        private readonly array $symbols,
+        private array $symbols,
     ) {}
 
     /**

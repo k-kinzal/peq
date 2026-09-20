@@ -7,7 +7,11 @@ A CLI tool that analyzes PHP code dependencies and visualizes the blast radius o
 
 ## Requirements
 
-- PHP 8.1 or higher
+- PHP 8.3, 8.4 or 8.5 to run peq
+
+The code peq reads is a separate question from the runtime peq runs on: peq analyzes
+sources written for PHP 5.6 up to 8.5 on any of those runtimes. See
+[Analyzed PHP version](#analyzed-php-version).
 
 ## Installation
 
@@ -46,6 +50,8 @@ Options:
   -O, --output=OUTPUT        Output format: tree|json|dot|table (default: tree)
   -I, --include=INCLUDE      Include patterns (multiple values allowed)
   -E, --exclude=EXCLUDE      Exclude patterns (multiple values allowed)
+      --php-version=PHP-VERSION    PHP version the analyzed sources are read as
+                                   (default: the version peq runs on)
       --type=TYPE            Analyzer type (phpstan|native|debug)
       --memory-limit=MEMORY-LIMIT  Memory limit (e.g. 1G, 256M)
   -h, --help                 Display help for the given command
@@ -124,10 +130,10 @@ needs neither, because an arrow arriving twice at the same box is what it is for
 
 Two analyzers read real sources, and they are built to describe the same graph:
 
-| `--type`  | What it does | Where it is available |
-|-----------|--------------|-----------------------|
-| `phpstan` | Runs PHPStan over the sources and assembles the graph from what its collectors report. The reference engine. | Installed from source or via Composer |
-| `native`  | Reads the sources directly with a parser, resolving names the way PHP does. Between 13x and 59x faster. | Everywhere, including the released PHAR |
+| `--type`  | What it does | Sources it reads | Where it is available |
+|-----------|--------------|------------------|-----------------------|
+| `phpstan` | Runs PHPStan over the sources and assembles the graph from what its collectors report. The reference engine. | PHP 7.1 – 8.5 | Installed from source or via Composer |
+| `native`  | Reads the sources directly with a parser, resolving names the way PHP does. Between 13x and 59x faster. | PHP 5.6 – 8.5 | Everywhere, including the released PHAR |
 
 ```bash
 peq 'App\Domain\Invoice::total' src --type=native
@@ -160,6 +166,33 @@ to agree with:
 - A `class` declared inside a method body makes PHPStan raise an internal error, which
   peq reports as a failed analysis; `native` reads it.
 
+## Analyzed PHP version
+
+The PHP version peq runs on and the PHP version the analyzed code is written for are
+two different things. peq needs PHP 8.3 or newer to run, and reads sources written for
+PHP 5.6 through 8.5 — the range depending on the engine, as the table above says.
+
+By default peq reads sources as the version it runs on. Tell it otherwise when the
+code is older:
+
+```bash
+peq 'Legacy\Invoice::total' . --php-version=5.6 --type=native
+```
+
+Getting this right matters, because the version decides what a source is allowed to
+say. `match` is a method name in PHP 7 and a keyword in PHP 8; `$text{0}` is a string
+offset up to PHP 7.4 and a syntax error after it; `$invoice =& new Invoice()` is PHP 5
+and nothing later; an enum is PHP 8.1 and nothing earlier. A file the chosen version
+cannot read is left out of the graph the way a file PHP itself would refuse is, so a
+symbol that should be there and is not is the sign to check the version — which is
+what peq says when it cannot find one:
+
+```
+Symbol "Legacy\Invoice::total" is not in the dependency graph, which was read as PHP 8.5.
+Check the spelling, the analyzed path, the include and exclude patterns, and the PHP
+version the sources are written for.
+```
+
 ## Configuration
 
 Create a `.peq.yaml` file in your project root to set default options:
@@ -167,6 +200,7 @@ Create a `.peq.yaml` file in your project root to set default options:
 ```yaml
 type: native
 output: tree
+phpVersion: '7.4'
 excludes:
   - vendor
   - vendor-bin
@@ -174,10 +208,13 @@ excludes:
   - tests
 ```
 
+Quote the version: unquoted, YAML reads `8.10` as the number `8.1`, which is a
+different PHP version.
+
 Configuration is resolved by merging 4 layers (later layers override earlier ones):
 
 1. Default values
-2. Environment variables (`PEQ_*`)
+2. Environment variables (`PEQ_*`, for example `PEQ_PHP_VERSION=7.4`)
 3. YAML config file (`.peq.yaml`)
 4. CLI options
 

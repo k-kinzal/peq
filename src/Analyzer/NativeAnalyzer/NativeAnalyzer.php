@@ -35,11 +35,14 @@ final class NativeAnalyzer implements Analyzer
     /**
      * @param list<string>     $includes      File path patterns to include in analysis
      * @param list<string>     $excludes      File path patterns to exclude from analysis
+     * @param null|int         $phpVersion    The PHP version the sources are read as, in PHP_VERSION_ID
+     *                                        form, or null to read them as the version peq runs on
      * @param PhpFileCollector $fileCollector Selects which files the analysis covers
      */
     public function __construct(
         private readonly array $includes = [],
         private readonly array $excludes = [],
+        private readonly ?int $phpVersion = null,
         private readonly PhpFileCollector $fileCollector = new PhpFileCollector(),
     ) {}
 
@@ -67,7 +70,7 @@ final class NativeAnalyzer implements Analyzer
         }
 
         $workingDirectory = getcwd();
-        $index = SourceIndex::of($files, $workingDirectory === false ? '' : $workingDirectory);
+        $index = SourceIndex::of($files, $workingDirectory === false ? '' : $workingDirectory, $this->phpVersion);
 
         $recorder = new GraphRecorder();
         $walker = new SourceWalker($index, $recorder);

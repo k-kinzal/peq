@@ -10,6 +10,8 @@ use App\Config\Config;
 use App\Config\ConfigException;
 use App\Config\DebugAnalyzerConfig;
 use App\Config\OutputFormat;
+use App\Config\PhpVersion;
+use App\Config\RawConfig;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -20,8 +22,9 @@ use PHPUnit\Framework\TestCase;
  */
 #[CoversClass(Config::class)]
 #[UsesClass(DebugAnalyzerConfig::class)]
-#[UsesClass(\App\Config\RawConfig::class)]
+#[UsesClass(RawConfig::class)]
 #[UsesClass(AnalyzerKind::class)]
+#[UsesClass(PhpVersion::class)]
 #[Small]
 final class ConfigTest extends TestCase
 {
@@ -36,6 +39,7 @@ final class ConfigTest extends TestCase
             'level' => 3,
             'includes' => ['src'],
             'excludes' => ['vendor'],
+            'phpVersion' => '7.4',
             'output' => 'json',
             'type' => 'phpstan',
             'debug' => ['depth' => 9, 'seed' => 42],
@@ -46,6 +50,7 @@ final class ConfigTest extends TestCase
         self::assertSame(3, $config->level);
         self::assertSame(['src'], $config->includes);
         self::assertSame(['vendor'], $config->excludes);
+        self::assertSame(70400, $config->phpVersion?->id);
         self::assertSame(OutputFormat::Json, $config->output);
         self::assertSame(AnalyzerKind::PhpStan, $config->analyzer);
         self::assertSame(9, $config->debug->depth);
@@ -190,5 +195,98 @@ final class ConfigTest extends TestCase
         $settings = new DebugAnalyzerConfig(depth: 2, seed: 7);
 
         self::assertSame($settings, (new Config('.', Direction::Uses, debug: $settings))->debug);
+    }
+
+    public function testThePhpVersionOfTheAnalysedSourcesIsUnstatedUntilSomethingStatesIt(): void
+    {
+        self::assertNull((new Config('.', Direction::Uses))->phpVersion);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testAPhpVersionNoAnalyzerReadsIsRejectedLikeAnyOtherSetting(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('phpVersion');
+
+        Config::fromArray([
+            'basePath' => '/project',
+            'direction' => 'uses',
+            'type' => 'native',
+            'phpVersion' => '5.5',
+        ]);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testPhpVersionForKeepsAVersionTheChosenAnalyzerReads(): void
+    {
+        self::assertSame(
+            70100,
+            Config::phpVersionFor(new RawConfig(['phpVersion' => '7.1']), AnalyzerKind::PhpStan)?->id,
+        );
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testPhpVersionForKeepsNothingWhenNoSourceNamedAVersion(): void
+    {
+        self::assertNull(Config::phpVersionFor(new RawConfig([]), AnalyzerKind::PhpStan));
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testPhpVersionForRejectsAVersionOlderThanTheChosenAnalyzerReads(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Invalid configuration "phpVersion": the phpstan analyzer reads sources written for PHP 7.1 and newer, got 5.6.');
+
+        Config::phpVersionFor(new RawConfig(['phpVersion' => '5.6']), AnalyzerKind::PhpStan);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testPhpVersionForKeepsAVersionOnlyTheOtherAnalyzerReads(): void
+    {
+        self::assertSame(
+            50600,
+            Config::phpVersionFor(new RawConfig(['phpVersion' => '5.6']), AnalyzerKind::Native)?->id,
+        );
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testFromArrayRejectsAPhpVersionTheChosenAnalyzerCannotRead(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('phpVersion');
+
+        Config::fromArray([
+            'basePath' => '/project',
+            'direction' => 'uses',
+            'type' => 'phpstan',
+            'phpVersion' => '5.6',
+        ]);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testThePhpVersionKeepsThePatchReleaseItWasWrittenWith(): void
+    {
+        $config = Config::fromArray([
+            'basePath' => '/project',
+            'direction' => 'uses',
+            'type' => 'phpstan',
+            'phpVersion' => '8.3.2',
+        ]);
+
+        self::assertSame(80302, $config->phpVersion?->id);
     }
 }

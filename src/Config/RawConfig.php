@@ -25,13 +25,13 @@ use BackedEnum;
  *
  * @visibility namespace
  */
-final class RawConfig
+final readonly class RawConfig
 {
     /**
      * @param ConfigFields $values The field values a source reported
      */
     public function __construct(
-        private readonly array $values,
+        private array $values,
     ) {}
 
     /**
@@ -154,6 +154,57 @@ final class RawConfig
             $key,
             self::describe($value),
         ));
+    }
+
+    /**
+     * Reads an optional field that must name a PHP version peq can analyse.
+     *
+     * A version is written the way a project states it — `7.1`, `8.3.2` — and has to
+     * be quoted where the source would otherwise read it as a number, because `8.10`
+     * as a number is the same value as `8.1` and the two are different versions.
+     *
+     * @param string $key The field name
+     *
+     * @return null|PhpVersion The version, or null when the source left the field unset
+     *
+     * @example A version the analysis engine reads is the version to analyse
+     *     (new \App\Config\RawConfig(['phpVersion' => '7.1']))->optionalPhpVersion('phpVersion')?->id // => 70100
+     * @example A setting the source left out reads as nothing
+     *     (new \App\Config\RawConfig([]))->optionalPhpVersion('phpVersion') // => null
+     * @example A version outside the supported range is a configuration error
+     *     (new \App\Config\RawConfig(['phpVersion' => '5.5']))->optionalPhpVersion('phpVersion') // throws \App\Config\ConfigException: phpVersion
+     * @example A version written as a number is a configuration error
+     *     (new \App\Config\RawConfig(['phpVersion' => 8.3]))->optionalPhpVersion('phpVersion') // throws \App\Config\ConfigException: phpVersion
+     *
+     * @throws ConfigException If the field is present but names no version peq can analyse
+     */
+    public function optionalPhpVersion(string $key): ?PhpVersion
+    {
+        $value = $this->values[$key] ?? null;
+        if ($value === null) {
+            return null;
+        }
+        if (!is_string($value)) {
+            throw new ConfigException(sprintf(
+                'Invalid configuration "%s": expected a PHP version written as text, such as "%s", got %s.',
+                $key,
+                PhpVersion::oldest()->toString(),
+                self::describe($value),
+            ));
+        }
+
+        $version = PhpVersion::tryFromString($value);
+        if ($version === null) {
+            throw new ConfigException(sprintf(
+                'Invalid configuration "%s": expected a PHP version between %s and %s, got "%s".',
+                $key,
+                PhpVersion::oldest()->toString(),
+                PhpVersion::newest()->toString(),
+                $value,
+            ));
+        }
+
+        return $version;
     }
 
     /**

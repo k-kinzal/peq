@@ -10,6 +10,7 @@ use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId;
 use App\Reporter\Traversal;
 use Closure;
+use Override;
 
 /**
  * Walks the graph depth first in one direction.
@@ -21,13 +22,13 @@ use Closure;
  * answers "what does this symbol depend on", `Direction::UsedBy` follows their
  * opposite readings and answers "what depends on this symbol".
  */
-final class DepthFirstTraversal implements Traversal
+final readonly class DepthFirstTraversal implements Traversal
 {
     /**
      * @param Direction $direction The direction whose edge kinds this traversal follows
      */
     public function __construct(
-        private readonly Direction $direction,
+        private Direction $direction,
     ) {}
 
     /**
@@ -41,6 +42,7 @@ final class DepthFirstTraversal implements Traversal
      * @param NodeId<Node>             $symbol  The starting symbol identifier
      * @param Closure(Node, int): bool $visitor Invoked for each visited node
      */
+    #[Override]
     public function traverse(Graph $graph, NodeId $symbol, Closure $visitor): void
     {
         (new DepthFirstWalk($graph, $this->direction, $visitor))->visit($symbol, 0);
@@ -55,6 +57,7 @@ final class DepthFirstTraversal implements Traversal
      *
      * @return Direction The direction given to this traversal
      */
+    #[Override]
     public function direction(): Direction
     {
         return $this->direction;

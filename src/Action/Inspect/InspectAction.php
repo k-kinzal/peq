@@ -40,10 +40,12 @@ final class InspectAction
             AnalyzerKind::PhpStan => new PhpStanAnalyzer(
                 includes: $config->includes,
                 excludes: $config->excludes,
+                phpVersion: $config->phpVersion?->id,
             ),
             AnalyzerKind::Native => new NativeAnalyzer(
                 includes: $config->includes,
                 excludes: $config->excludes,
+                phpVersion: $config->phpVersion?->id,
             ),
             AnalyzerKind::Debug => new DebugAnalyzer(
                 seed: $config->debug->seed,
@@ -54,7 +56,7 @@ final class InspectAction
         $graph = $analyzer->analyze($config->basePath);
         $symbol = $graph->nodeNamed($input->target);
         if ($symbol === null) {
-            throw SymbolNotFoundException::forTarget($input->target);
+            throw SymbolNotFoundException::forTarget($input->target, $config->phpVersion?->toString());
         }
 
         return new InspectActionOutput(graph: $graph, symbol: $symbol);

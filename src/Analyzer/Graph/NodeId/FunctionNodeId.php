@@ -7,6 +7,7 @@ namespace App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\QualifiedName;
+use Override;
 
 /**
  * Unique identifier for a function node in the dependency graph.
@@ -17,20 +18,20 @@ use App\Analyzer\Graph\QualifiedName;
  *
  * @implements NodeId<FunctionNode>
  */
-final class FunctionNodeId implements NodeId
+final readonly class FunctionNodeId implements NodeId
 {
     /**
      * The precomputed string form of this identifier.
      */
-    private readonly string $stringValue;
+    private string $stringValue;
 
     /**
      * @param string $namespace    The namespace of the function (must be a valid PHP namespace)
      * @param string $functionName The function name (must be a valid PHP identifier)
      */
     public function __construct(
-        public readonly string $namespace,
-        public readonly string $functionName,
+        public string $namespace,
+        public string $functionName,
     ) {
         if ($namespace !== '') {
             assert(QualifiedName::isNamespace($namespace), 'The namespace must be one PHP would accept');
@@ -58,6 +59,7 @@ final class FunctionNodeId implements NodeId
      *
      * @return string The fully qualified function name
      */
+    #[Override]
     public function toString(): string
     {
         return $this->stringValue;

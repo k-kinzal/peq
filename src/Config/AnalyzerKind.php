@@ -28,6 +28,15 @@ enum AnalyzerKind: string
      */
     private const PHPSTAN_CONTAINER = 'PHPStan\DependencyInjection\ContainerFactory';
 
+    /**
+     * The oldest PHP version PHPStan accepts as the target of an analysis.
+     *
+     * PHPStan rejects anything older outright, so the analyzer built on it reads no
+     * source written for a version below this one, whatever the parser could make of
+     * the file.
+     */
+    private const int OLDEST_PHPSTAN_TARGET = 70100;
+
 
     /** Builds the graph from real sources, using PHPStan to resolve types */
     case PhpStan = 'phpstan';
@@ -74,6 +83,30 @@ enum AnalyzerKind: string
         $required = $this->requires();
 
         return $required === null || class_exists($required);
+    }
+
+    /**
+     * The oldest PHP version sources may be written for when this kind reads them.
+     *
+     * An analyzer reads what the thing it is built on reads. The one that reads
+     * sources directly is held only by the parser, which goes back to PHP 5.6; the
+     * one built on PHPStan is held by PHPStan, which starts at PHP 7.1. The analyzer
+     * that reads no source at all is held by nothing, so it answers with the oldest
+     * version there is rather than with a bound it does not have.
+     *
+     * @example The analyzer that reads sources directly goes back as far as peq does
+     *     \App\Config\AnalyzerKind::Native->oldestPhpVersion()->toString() // => '5.6'
+     * @example The analyzer built on PHPStan stops where PHPStan stops
+     *     \App\Config\AnalyzerKind::PhpStan->oldestPhpVersion()->toString() // => '7.1'
+     *
+     * @return PhpVersion The oldest version this kind can be asked to read sources as
+     */
+    public function oldestPhpVersion(): PhpVersion
+    {
+        return match ($this) {
+            self::PhpStan => new PhpVersion(self::OLDEST_PHPSTAN_TARGET),
+            self::Native, self::Debug => PhpVersion::oldest(),
+        };
     }
 
     /**

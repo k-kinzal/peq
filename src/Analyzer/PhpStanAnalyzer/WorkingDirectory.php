@@ -20,13 +20,13 @@ use RuntimeException;
  *
  * @visibility namespace
  */
-final class WorkingDirectory
+final readonly class WorkingDirectory
 {
     /**
      * @param string $path The absolute path of the directory
      */
     public function __construct(
-        public readonly string $path,
+        public string $path,
     ) {}
 
     /**

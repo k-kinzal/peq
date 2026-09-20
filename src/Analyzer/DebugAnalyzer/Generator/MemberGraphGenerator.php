@@ -38,7 +38,7 @@ use App\Analyzer\Graph\NodeId\PropertyNodeId;
  *
  * @visibility parent
  */
-final class MemberGraphGenerator
+final readonly class MemberGraphGenerator
 {
     /**
      * @param NodeGenerator   $nodes  The source of the nodes these graphs hold
@@ -46,9 +46,9 @@ final class MemberGraphGenerator
      * @param RandomSource    $random The random source counts and optional relations are drawn from
      */
     public function __construct(
-        private readonly NodeGenerator $nodes,
-        private readonly NodeIdGenerator $ids,
-        private readonly RandomSource $random,
+        private NodeGenerator $nodes,
+        private NodeIdGenerator $ids,
+        private RandomSource $random,
     ) {}
 
     /**

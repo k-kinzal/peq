@@ -8,6 +8,7 @@ use App\Analyzer\Graph\Direction;
 use App\Config\ConfigException;
 use App\Config\ConfigLoader;
 use App\Config\ConfigReader;
+use App\Config\PhpVersion;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
@@ -27,6 +28,7 @@ use Tests\Fixture\Config\StubConfigReader;
 #[UsesClass(\App\Config\DebugAnalyzerConfig::class)]
 #[UsesClass(\App\Config\RawConfig::class)]
 #[UsesClass(\App\Config\AnalyzerKind::class)]
+#[UsesClass(PhpVersion::class)]
 #[Small]
 final class ConfigLoaderTest extends TestCase
 {

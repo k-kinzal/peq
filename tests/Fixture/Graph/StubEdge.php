@@ -19,7 +19,7 @@ use App\Analyzer\Graph\Node;
  * This double joins any two nodes so that a test can be about adjacency, duplication
  * or inversion rather than about which relation happens to be expressible.
  */
-final class StubEdge extends AuthoredEdge
+final readonly class StubEdge extends AuthoredEdge
 {
     /**
      * @param Node     $from The node the relation starts at

@@ -7,7 +7,7 @@
     <file>config</file>
     <file>src</file>
 
-    <config name="testVersion" value="8.1-"/>
+    <config name="testVersion" value="8.3-"/>
 
     <rule ref="PHPCompatibility"/>
 </ruleset>

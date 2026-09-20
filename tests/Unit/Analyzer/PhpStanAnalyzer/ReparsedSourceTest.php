@@ -5,17 +5,20 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\PhpStanAnalyzer;
 
 use App\Analyzer\PhpStanAnalyzer\ReparsedSource;
+use App\Analyzer\SourceParser;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Return_;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
 #[CoversClass(ReparsedSource::class)]
+#[UsesClass(SourceParser::class)]
 #[Small]
 final class ReparsedSourceTest extends TestCase
 {
@@ -44,6 +47,36 @@ final class ReparsedSourceTest extends TestCase
     public function testStatementsReportsNothingForAFileThatCannotBeRead(): void
     {
         self::assertNull((new ReparsedSource())->statements(__DIR__.'/nonexistent.php'));
+    }
+
+    public function testParserReadsSyntaxOnlyThePhpVersionItWasGivenAdmits(): void
+    {
+        self::assertNotNull((new ReparsedSource(70100))->parser()->parse('<?php function first(string $text) { return $text{0}; }'));
+    }
+
+    public function testParserReadsTheVersionPeqRunsOnWhenItWasGivenNone(): void
+    {
+        self::assertNotNull((new ReparsedSource())->parser()->parse('<?php $count = 1;'));
+    }
+
+    public function testStatementsReadsAFileAsThePhpVersionItWasGiven(): void
+    {
+        self::assertNotEmpty((new ReparsedSource(70100))->statements(dirname(__DIR__, 3).'/Fixture/Target/Php71.php.inc'));
+    }
+
+    public function testStatementsReportsNothingForAFileThePhpVersionItWasGivenCannotParse(): void
+    {
+        self::assertNull((new ReparsedSource(80300))->statements(dirname(__DIR__, 3).'/Fixture/Target/Php71.php.inc'));
+    }
+
+    public function testStatementsReadsAFileWrittenForAVersionNewerThanTheOneItWasGivenAsUnparseable(): void
+    {
+        self::assertNull((new ReparsedSource(80000))->statements(dirname(__DIR__, 3).'/Fixture/Target/Php81.php.inc'));
+    }
+
+    public function testStatementsReadsAPatchReleaseAsTheMinorVersionItBelongsTo(): void
+    {
+        self::assertNotEmpty((new ReparsedSource(70199))->statements(dirname(__DIR__, 3).'/Fixture/Target/Php71.php.inc'));
     }
 
     public function testStatementsReportsNothingForAFileThatIsNotValidPhp(): void

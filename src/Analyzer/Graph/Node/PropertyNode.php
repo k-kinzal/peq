@@ -8,6 +8,7 @@ use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId\PropertyNodeId;
 use App\Analyzer\Graph\NodeKind;
+use Override;
 
 /**
  * Represents a property node in the dependency graph.
@@ -15,7 +16,7 @@ use App\Analyzer\Graph\NodeKind;
  * Encapsulates information about a PHP class property including its identifier,
  * file location metadata, and whether it has been fully resolved during analysis.
  */
-final class PropertyNode implements Node
+final readonly class PropertyNode implements Node
 {
     /**
      * @param PropertyNodeId $id       Unique identifier for this property
@@ -23,14 +24,15 @@ final class PropertyNode implements Node
      * @param null|FileMeta  $meta     File location metadata (null if not available)
      */
     public function __construct(
-        public readonly PropertyNodeId $id,
-        public readonly bool $resolved = false,
-        public readonly ?FileMeta $meta = null,
+        public PropertyNodeId $id,
+        public bool $resolved = false,
+        public ?FileMeta $meta = null,
     ) {}
 
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function id(): PropertyNodeId
     {
         return $this->id;
@@ -39,6 +41,7 @@ final class PropertyNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function kind(): NodeKind
     {
         return NodeKind::Property;
@@ -47,6 +50,7 @@ final class PropertyNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function resolved(): bool
     {
         return $this->resolved;
@@ -55,6 +59,7 @@ final class PropertyNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function meta(): ?FileMeta
     {
         return $this->meta;

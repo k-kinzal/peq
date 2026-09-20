@@ -7,6 +7,7 @@ namespace App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\Node\MethodNode;
 use App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\QualifiedName;
+use Override;
 
 /**
  * Unique identifier for a method node in the dependency graph.
@@ -17,12 +18,12 @@ use App\Analyzer\Graph\QualifiedName;
  *
  * @implements NodeId<MethodNode>
  */
-final class MethodNodeId implements NodeId
+final readonly class MethodNodeId implements NodeId
 {
     /**
      * The precomputed string form of this identifier.
      */
-    private readonly string $stringValue;
+    private string $stringValue;
 
     /**
      * @param string $namespace  The namespace of the class containing the method (must be a valid PHP namespace)
@@ -30,9 +31,9 @@ final class MethodNodeId implements NodeId
      * @param string $methodName The method name (must be a valid PHP identifier)
      */
     public function __construct(
-        public readonly string $namespace,
-        public readonly string $className,
-        public readonly string $methodName,
+        public string $namespace,
+        public string $className,
+        public string $methodName,
     ) {
         if ($namespace !== '') {
             assert(QualifiedName::isNamespace($namespace), 'The namespace must be one PHP would accept');
@@ -66,6 +67,7 @@ final class MethodNodeId implements NodeId
      *
      * @return string The fully qualified method name
      */
+    #[Override]
     public function toString(): string
     {
         return $this->stringValue;

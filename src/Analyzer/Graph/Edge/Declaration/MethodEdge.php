@@ -14,11 +14,12 @@ use App\Analyzer\Graph\Node\EnumNode;
 use App\Analyzer\Graph\Node\GraphInterfaceNode;
 use App\Analyzer\Graph\Node\MethodNode;
 use App\Analyzer\Graph\Node\TraitNode;
+use Override;
 
 /**
  * Represents a method declaration relationship within a class/interface/trait/enum.
  */
-final class MethodEdge extends AuthoredEdge
+final readonly class MethodEdge extends AuthoredEdge
 {
     /**
      * @param ClassNode|EnumNode|GraphInterfaceNode|TraitNode $from The node the relation starts at
@@ -38,6 +39,7 @@ final class MethodEdge extends AuthoredEdge
      *
      * @return EdgeKind Always EdgeKind::DeclarationMethod
      */
+    #[Override]
     public function kind(): EdgeKind
     {
         return EdgeKind::DeclarationMethod;
@@ -48,6 +50,7 @@ final class MethodEdge extends AuthoredEdge
      *
      * @return Edge A DeclaredInEdge carrying this edge, which inverts back into it
      */
+    #[Override]
     public function invert(): Edge
     {
         return new DeclaredInEdge($this);

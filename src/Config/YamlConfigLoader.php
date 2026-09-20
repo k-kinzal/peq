@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Config;
 
+use Override;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 
@@ -24,13 +25,13 @@ use Symfony\Component\Yaml\Yaml;
  * @phpstan-import-type ConfigGroup from ConfigReader
  * @phpstan-import-type ConfigFields from ConfigReader
  */
-final class YamlConfigLoader implements ConfigReader
+final readonly class YamlConfigLoader implements ConfigReader
 {
     /**
      * @param string $path Path to the YAML configuration file
      */
     public function __construct(
-        private readonly string $path,
+        private string $path,
     ) {}
 
     /**
@@ -40,6 +41,7 @@ final class YamlConfigLoader implements ConfigReader
      *
      * @throws ConfigException If the file cannot be read, cannot be parsed, or does not hold named settings
      */
+    #[Override]
     public function read(): array
     {
         if (!file_exists($this->path)) {

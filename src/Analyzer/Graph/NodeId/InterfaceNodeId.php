@@ -7,6 +7,7 @@ namespace App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\Node\GraphInterfaceNode;
 use App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\QualifiedName;
+use Override;
 
 /**
  * Unique identifier for an interface node in the dependency graph.
@@ -17,20 +18,20 @@ use App\Analyzer\Graph\QualifiedName;
  *
  * @implements NodeId<GraphInterfaceNode>
  */
-final class InterfaceNodeId implements NodeId
+final readonly class InterfaceNodeId implements NodeId
 {
     /**
      * The precomputed string form of this identifier.
      */
-    private readonly string $stringValue;
+    private string $stringValue;
 
     /**
      * @param string $namespace     The namespace of the interface (must be a valid PHP namespace)
      * @param string $interfaceName The interface name (must be a valid PHP identifier)
      */
     public function __construct(
-        public readonly string $namespace,
-        public readonly string $interfaceName,
+        public string $namespace,
+        public string $interfaceName,
     ) {
         if ($namespace !== '') {
             assert(QualifiedName::isNamespace($namespace), 'The namespace must be one PHP would accept');
@@ -58,6 +59,7 @@ final class InterfaceNodeId implements NodeId
      *
      * @return string The fully qualified interface name
      */
+    #[Override]
     public function toString(): string
     {
         return $this->stringValue;
