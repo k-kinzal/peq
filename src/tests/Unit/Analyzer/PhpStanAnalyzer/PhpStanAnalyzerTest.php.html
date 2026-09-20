@@ -162,7 +162,7 @@
 <span class="src-line" id="L126"><a class="ln" href="#L126">126</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testAnalyzeReportsAFailureRatherThanAGraphMissingTheFile</span>(): <span class="tok-id">void</span></span>
 <span class="src-line" id="L127"><a class="ln" href="#L127">127</a>    {</span>
 <span class="src-line" id="L128"><a class="ln" href="#L128">128</a>        <span class="tok-var">$this</span>-&gt;<span class="tok-id">expectException</span>(<span class="tok-id">AnalysisFailedException</span>::<span class="tok-kw">class</span>);</span>
-<span class="src-line" id="L129"><a class="ln" href="#L129">129</a>        <span class="tok-var">$this</span>-&gt;<span class="tok-id">expectExceptionMessageMatches</span>(<span class="tok-str">&#039;/^PHPStan could not finish analysing .*MethodBody\.php: the collector gave up on a /&#039;</span>);</span>
+<span class="src-line" id="L129"><a class="ln" href="#L129">129</a>        <span class="tok-var">$this</span>-&gt;<span class="tok-id">expectExceptionMessageMatches</span>(<span class="tok-str">&#039;/^PHPStan could not finish analysing .*MethodBody\.php as the PHP version peq runs on: the collector gave up on a /&#039;</span>);</span>
 <span class="src-line" id="L130"><a class="ln" href="#L130">130</a></span>
 <span class="src-line" id="L131"><a class="ln" href="#L131">131</a>        (<span class="tok-kw">new</span> <span class="tok-id">PhpStanAnalyzer</span>(<span class="tok-id">collectors</span>: [<span class="tok-id">FailingCollector</span>::<span class="tok-kw">class</span>]))-&gt;<span class="tok-id">analyze</span>(<span class="tok-id">dirname</span>(__DIR__, <span class="tok-num">3</span>).<span class="tok-str">&#039;/Fixture/Source/MethodBody.php&#039;</span>);</span>
 <span class="src-line" id="L132"><a class="ln" href="#L132">132</a>    }</span>
@@ -193,8 +193,37 @@
 <span class="src-line" id="L157"><a class="ln" href="#L157">157</a></span>
 <span class="src-line" id="L158"><a class="ln" href="#L158">158</a>        <span class="tok-id">self</span>::<span class="tok-id">assertNotSame</span>([], <span class="tok-var">$report</span>-&gt;<span class="tok-id">symbols</span>());</span>
 <span class="src-line" id="L159"><a class="ln" href="#L159">159</a>    }</span>
-<span class="src-line" id="L160"><a class="ln" href="#L160">160</a>}</span>
-<span class="src-line" id="L161"><a class="ln" href="#L161">161</a></span>
+<span class="src-line" id="L160"><a class="ln" href="#L160">160</a></span>
+<span class="src-line" id="L161"><a class="ln" href="#L161">161</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testAnalysedVersionNamesTheVersionTheSourcesAreReadAs</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L162"><a class="ln" href="#L162">162</a>    {</span>
+<span class="src-line" id="L163"><a class="ln" href="#L163">163</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(<span class="tok-str">&#039;PHP 7.1&#039;</span>, (<span class="tok-kw">new</span> <span class="tok-id">PhpStanAnalyzer</span>(<span class="tok-id">phpVersion</span>: <span class="tok-num">70100</span>))-&gt;<span class="tok-id">analysedVersion</span>());</span>
+<span class="src-line" id="L164"><a class="ln" href="#L164">164</a>    }</span>
+<span class="src-line" id="L165"><a class="ln" href="#L165">165</a></span>
+<span class="src-line" id="L166"><a class="ln" href="#L166">166</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testAnalysedVersionNamesAPatchReleaseByTheMinorItBelongsTo</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L167"><a class="ln" href="#L167">167</a>    {</span>
+<span class="src-line" id="L168"><a class="ln" href="#L168">168</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(<span class="tok-str">&#039;PHP 8.3&#039;</span>, (<span class="tok-kw">new</span> <span class="tok-id">PhpStanAnalyzer</span>(<span class="tok-id">phpVersion</span>: <span class="tok-num">80302</span>))-&gt;<span class="tok-id">analysedVersion</span>());</span>
+<span class="src-line" id="L169"><a class="ln" href="#L169">169</a>    }</span>
+<span class="src-line" id="L170"><a class="ln" href="#L170">170</a></span>
+<span class="src-line" id="L171"><a class="ln" href="#L171">171</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testAnalysedVersionNamesTheRuntimeWhenNoVersionWasChosen</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L172"><a class="ln" href="#L172">172</a>    {</span>
+<span class="src-line" id="L173"><a class="ln" href="#L173">173</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(<span class="tok-str">&#039;the PHP version peq runs on&#039;</span>, (<span class="tok-kw">new</span> <span class="tok-id">PhpStanAnalyzer</span>())-&gt;<span class="tok-id">analysedVersion</span>());</span>
+<span class="src-line" id="L174"><a class="ln" href="#L174">174</a>    }</span>
+<span class="src-line" id="L175"><a class="ln" href="#L175">175</a></span>
+<span class="src-line" id="L176"><a class="ln" href="#L176">176</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testAnalyzeReadsASourceAsThePhpVersionItWasGiven</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L177"><a class="ln" href="#L177">177</a>    {</span>
+<span class="src-line" id="L178"><a class="ln" href="#L178">178</a>        <span class="tok-var">$graph</span> = (<span class="tok-kw">new</span> <span class="tok-id">PhpStanAnalyzer</span>(<span class="tok-id">phpVersion</span>: <span class="tok-num">70100</span>))-&gt;<span class="tok-id">analyze</span>(<span class="tok-id">dirname</span>(__DIR__, <span class="tok-num">3</span>).<span class="tok-str">&#039;/Fixture/Target/Php71.php.inc&#039;</span>);</span>
+<span class="src-line" id="L179"><a class="ln" href="#L179">179</a></span>
+<span class="src-line" id="L180"><a class="ln" href="#L180">180</a>        <span class="tok-id">self</span>::<span class="tok-id">assertNotNull</span>(<span class="tok-var">$graph</span>-&gt;<span class="tok-id">nodeNamed</span>(<span class="tok-str">&#039;Tests\Fixture\Target\Php71\Reader&#039;</span>));</span>
+<span class="src-line" id="L181"><a class="ln" href="#L181">181</a>    }</span>
+<span class="src-line" id="L182"><a class="ln" href="#L182">182</a></span>
+<span class="src-line" id="L183"><a class="ln" href="#L183">183</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testAnalyzeLeavesOutAFileThePhpVersionItWasGivenCannotRead</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L184"><a class="ln" href="#L184">184</a>    {</span>
+<span class="src-line" id="L185"><a class="ln" href="#L185">185</a>        <span class="tok-var">$graph</span> = (<span class="tok-kw">new</span> <span class="tok-id">PhpStanAnalyzer</span>(<span class="tok-id">phpVersion</span>: <span class="tok-num">70100</span>))-&gt;<span class="tok-id">analyze</span>(<span class="tok-id">dirname</span>(__DIR__, <span class="tok-num">3</span>).<span class="tok-str">&#039;/Fixture/Target/Php81.php.inc&#039;</span>);</span>
+<span class="src-line" id="L186"><a class="ln" href="#L186">186</a></span>
+<span class="src-line" id="L187"><a class="ln" href="#L187">187</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>([], <span class="tok-var">$graph</span>-&gt;<span class="tok-id">nodes</span>());</span>
+<span class="src-line" id="L188"><a class="ln" href="#L188">188</a>    }</span>
+<span class="src-line" id="L189"><a class="ln" href="#L189">189</a>}</span>
+<span class="src-line" id="L190"><a class="ln" href="#L190">190</a></span>
 </code></pre>
 </main>
 <footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>

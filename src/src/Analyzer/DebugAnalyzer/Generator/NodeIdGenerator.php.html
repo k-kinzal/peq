@@ -67,15 +67,15 @@
 <span class="src-line" id="L31"><a class="ln" href="#L31">31</a><span class="tok-com"> *</span></span>
 <span class="src-line" id="L32"><a class="ln" href="#L32">32</a><span class="tok-com"> * @visibility parent</span></span>
 <span class="src-line" id="L33"><a class="ln" href="#L33">33</a><span class="tok-com"> */</span></span>
-<span class="src-line" id="L34"><a class="ln" href="#L34">34</a><span class="tok-kw">final</span> <span class="tok-kw">class</span> <span class="tok-id">NodeIdGenerator</span></span>
+<span class="src-line" id="L34"><a class="ln" href="#L34">34</a><span class="tok-kw">final</span> <span class="tok-kw">readonly</span> <span class="tok-kw">class</span> <span class="tok-id">NodeIdGenerator</span></span>
 <span class="src-line" id="L35"><a class="ln" href="#L35">35</a>{</span>
 <span class="src-line" id="L36"><a class="ln" href="#L36">36</a>    <span class="tok-com">/**</span></span>
 <span class="src-line" id="L37"><a class="ln" href="#L37">37</a><span class="tok-com">     * @param NameGenerator $names  The source of the names identifiers are built from</span></span>
 <span class="src-line" id="L38"><a class="ln" href="#L38">38</a><span class="tok-com">     * @param RandomSource  $random The random source line numbers and choices are drawn from</span></span>
 <span class="src-line" id="L39"><a class="ln" href="#L39">39</a><span class="tok-com">     */</span></span>
 <span class="src-line" id="L40"><a class="ln" href="#L40">40</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">__construct</span>(</span>
-<span class="src-line" id="L41"><a class="ln" href="#L41">41</a>        <span class="tok-kw">private</span> <span class="tok-kw">readonly</span> <span class="tok-id">NameGenerator</span> <span class="tok-var">$names</span>,</span>
-<span class="src-line" id="L42"><a class="ln" href="#L42">42</a>        <span class="tok-kw">private</span> <span class="tok-kw">readonly</span> <span class="tok-id">RandomSource</span> <span class="tok-var">$random</span>,</span>
+<span class="src-line" id="L41"><a class="ln" href="#L41">41</a>        <span class="tok-kw">private</span> <span class="tok-id">NameGenerator</span> <span class="tok-var">$names</span>,</span>
+<span class="src-line" id="L42"><a class="ln" href="#L42">42</a>        <span class="tok-kw">private</span> <span class="tok-id">RandomSource</span> <span class="tok-var">$random</span>,</span>
 <span class="src-line" id="L43"><a class="ln" href="#L43">43</a>    ) {}</span>
 <span class="src-line" id="L44"><a class="ln" href="#L44">44</a></span>
 <span class="src-line" id="L45"><a class="ln" href="#L45">45</a>    <span class="tok-com">/**</span></span>

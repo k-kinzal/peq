@@ -50,15 +50,15 @@
 <span class="src-line" id="L14"><a class="ln" href="#L14">14</a><span class="tok-com"> * inspection has already established that the graph holds it, so nothing downstream</span></span>
 <span class="src-line" id="L15"><a class="ln" href="#L15">15</a><span class="tok-com"> * has to repeat the lookup or handle its absence.</span></span>
 <span class="src-line" id="L16"><a class="ln" href="#L16">16</a><span class="tok-com"> */</span></span>
-<span class="src-line" id="L17"><a class="ln" href="#L17">17</a><span class="tok-kw">final</span> <span class="tok-kw">class</span> <span class="tok-id">InspectActionOutput</span></span>
+<span class="src-line" id="L17"><a class="ln" href="#L17">17</a><span class="tok-kw">final</span> <span class="tok-kw">readonly</span> <span class="tok-kw">class</span> <span class="tok-id">InspectActionOutput</span></span>
 <span class="src-line" id="L18"><a class="ln" href="#L18">18</a>{</span>
 <span class="src-line" id="L19"><a class="ln" href="#L19">19</a>    <span class="tok-com">/**</span></span>
 <span class="src-line" id="L20"><a class="ln" href="#L20">20</a><span class="tok-com">     * @param Graph $graph  The dependency graph built for the configured path</span></span>
 <span class="src-line" id="L21"><a class="ln" href="#L21">21</a><span class="tok-com">     * @param Node  $symbol The node the requested symbol name resolved to</span></span>
 <span class="src-line" id="L22"><a class="ln" href="#L22">22</a><span class="tok-com">     */</span></span>
 <span class="src-line" id="L23"><a class="ln" href="#L23">23</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">__construct</span>(</span>
-<span class="src-line" id="L24"><a class="ln" href="#L24">24</a>        <span class="tok-kw">public</span> <span class="tok-kw">readonly</span> <span class="tok-id">Graph</span> <span class="tok-var">$graph</span>,</span>
-<span class="src-line" id="L25"><a class="ln" href="#L25">25</a>        <span class="tok-kw">public</span> <span class="tok-kw">readonly</span> <span class="tok-id">Node</span> <span class="tok-var">$symbol</span>,</span>
+<span class="src-line" id="L24"><a class="ln" href="#L24">24</a>        <span class="tok-kw">public</span> <span class="tok-id">Graph</span> <span class="tok-var">$graph</span>,</span>
+<span class="src-line" id="L25"><a class="ln" href="#L25">25</a>        <span class="tok-kw">public</span> <span class="tok-id">Node</span> <span class="tok-var">$symbol</span>,</span>
 <span class="src-line" id="L26"><a class="ln" href="#L26">26</a>    ) {}</span>
 <span class="src-line" id="L27"><a class="ln" href="#L27">27</a>}</span>
 <span class="src-line" id="L28"><a class="ln" href="#L28">28</a></span>

@@ -75,15 +75,15 @@
 <span class="src-line" id="L39"><a class="ln" href="#L39">39</a><span class="tok-com"> *</span></span>
 <span class="src-line" id="L40"><a class="ln" href="#L40">40</a><span class="tok-com"> * @visibility parent</span></span>
 <span class="src-line" id="L41"><a class="ln" href="#L41">41</a><span class="tok-com"> */</span></span>
-<span class="src-line" id="L42"><a class="ln" href="#L42">42</a><span class="tok-kw">final</span> <span class="tok-kw">class</span> <span class="tok-id">NodeGenerator</span></span>
+<span class="src-line" id="L42"><a class="ln" href="#L42">42</a><span class="tok-kw">final</span> <span class="tok-kw">readonly</span> <span class="tok-kw">class</span> <span class="tok-id">NodeGenerator</span></span>
 <span class="src-line" id="L43"><a class="ln" href="#L43">43</a>{</span>
 <span class="src-line" id="L44"><a class="ln" href="#L44">44</a>    <span class="tok-com">/**</span></span>
 <span class="src-line" id="L45"><a class="ln" href="#L45">45</a><span class="tok-com">     * @param NodeIdGenerator $ids    The source of identifiers and source locations</span></span>
 <span class="src-line" id="L46"><a class="ln" href="#L46">46</a><span class="tok-com">     * @param RandomSource    $random The random source resolution flags are drawn from</span></span>
 <span class="src-line" id="L47"><a class="ln" href="#L47">47</a><span class="tok-com">     */</span></span>
 <span class="src-line" id="L48"><a class="ln" href="#L48">48</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">__construct</span>(</span>
-<span class="src-line" id="L49"><a class="ln" href="#L49">49</a>        <span class="tok-kw">private</span> <span class="tok-kw">readonly</span> <span class="tok-id">NodeIdGenerator</span> <span class="tok-var">$ids</span>,</span>
-<span class="src-line" id="L50"><a class="ln" href="#L50">50</a>        <span class="tok-kw">private</span> <span class="tok-kw">readonly</span> <span class="tok-id">RandomSource</span> <span class="tok-var">$random</span>,</span>
+<span class="src-line" id="L49"><a class="ln" href="#L49">49</a>        <span class="tok-kw">private</span> <span class="tok-id">NodeIdGenerator</span> <span class="tok-var">$ids</span>,</span>
+<span class="src-line" id="L50"><a class="ln" href="#L50">50</a>        <span class="tok-kw">private</span> <span class="tok-id">RandomSource</span> <span class="tok-var">$random</span>,</span>
 <span class="src-line" id="L51"><a class="ln" href="#L51">51</a>    ) {}</span>
 <span class="src-line" id="L52"><a class="ln" href="#L52">52</a></span>
 <span class="src-line" id="L53"><a class="ln" href="#L53">53</a>    <span class="tok-com">/**</span></span>

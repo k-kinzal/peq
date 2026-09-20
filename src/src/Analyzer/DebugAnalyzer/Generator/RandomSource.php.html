@@ -64,7 +64,7 @@
 <span class="src-line" id="L28"><a class="ln" href="#L28">28</a><span class="tok-com">     *</span></span>
 <span class="src-line" id="L29"><a class="ln" href="#L29">29</a><span class="tok-com">     * @var list&lt;string&gt;</span></span>
 <span class="src-line" id="L30"><a class="ln" href="#L30">30</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L31"><a class="ln" href="#L31">31</a>    <span class="tok-kw">private</span> <span class="tok-kw">const</span> <span class="tok-id">WORDS</span> = [</span>
+<span class="src-line" id="L31"><a class="ln" href="#L31">31</a>    <span class="tok-kw">private</span> <span class="tok-kw">const</span> <span class="tok-kw">array</span> <span class="tok-id">WORDS</span> = [</span>
 <span class="src-line" id="L32"><a class="ln" href="#L32">32</a>        <span class="tok-str">&#039;alias&#039;</span>, <span class="tok-str">&#039;amet&#039;</span>, <span class="tok-str">&#039;animi&#039;</span>, <span class="tok-str">&#039;aut&#039;</span>, <span class="tok-str">&#039;beatae&#039;</span>, <span class="tok-str">&#039;culpa&#039;</span>, <span class="tok-str">&#039;dolor&#039;</span>, <span class="tok-str">&#039;eius&#039;</span>,</span>
 <span class="src-line" id="L33"><a class="ln" href="#L33">33</a>        <span class="tok-str">&#039;enim&#039;</span>, <span class="tok-str">&#039;error&#039;</span>, <span class="tok-str">&#039;fugit&#039;</span>, <span class="tok-str">&#039;harum&#039;</span>, <span class="tok-str">&#039;illum&#039;</span>, <span class="tok-str">&#039;ipsum&#039;</span>, <span class="tok-str">&#039;iure&#039;</span>, <span class="tok-str">&#039;magni&#039;</span>,</span>
 <span class="src-line" id="L34"><a class="ln" href="#L34">34</a>        <span class="tok-str">&#039;minus&#039;</span>, <span class="tok-str">&#039;nemo&#039;</span>, <span class="tok-str">&#039;nihil&#039;</span>, <span class="tok-str">&#039;odio&#039;</span>, <span class="tok-str">&#039;omnis&#039;</span>, <span class="tok-str">&#039;porro&#039;</span>, <span class="tok-str">&#039;quia&#039;</span>, <span class="tok-str">&#039;quod&#039;</span>,</span>
@@ -77,12 +77,12 @@
 <span class="src-line" id="L41"><a class="ln" href="#L41">41</a>    <span class="tok-com">/**</span></span>
 <span class="src-line" id="L42"><a class="ln" href="#L42">42</a><span class="tok-com">     * The constant the seed is mixed with, so that seed zero has a state to start from.</span></span>
 <span class="src-line" id="L43"><a class="ln" href="#L43">43</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L44"><a class="ln" href="#L44">44</a>    <span class="tok-kw">private</span> <span class="tok-kw">const</span> <span class="tok-id">MIX</span> = <span class="tok-num">0x9E3779B9</span>;</span>
+<span class="src-line" id="L44"><a class="ln" href="#L44">44</a>    <span class="tok-kw">private</span> <span class="tok-kw">const</span> <span class="tok-id">int</span> <span class="tok-id">MIX</span> = <span class="tok-num">0x9E3779B9</span>;</span>
 <span class="src-line" id="L45"><a class="ln" href="#L45">45</a></span>
 <span class="src-line" id="L46"><a class="ln" href="#L46">46</a>    <span class="tok-com">/**</span></span>
 <span class="src-line" id="L47"><a class="ln" href="#L47">47</a><span class="tok-com">     * The mask keeping the state to 32 bits.</span></span>
 <span class="src-line" id="L48"><a class="ln" href="#L48">48</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L49"><a class="ln" href="#L49">49</a>    <span class="tok-kw">private</span> <span class="tok-kw">const</span> <span class="tok-id">MASK</span> = <span class="tok-num">0xFFFFFFFF</span>;</span>
+<span class="src-line" id="L49"><a class="ln" href="#L49">49</a>    <span class="tok-kw">private</span> <span class="tok-kw">const</span> <span class="tok-id">int</span> <span class="tok-id">MASK</span> = <span class="tok-num">0xFFFFFFFF</span>;</span>
 <span class="src-line" id="L50"><a class="ln" href="#L50">50</a></span>
 <span class="src-line" id="L51"><a class="ln" href="#L51">51</a>    <span class="tok-com">/**</span></span>
 <span class="src-line" id="L52"><a class="ln" href="#L52">52</a><span class="tok-com">     * The current state of the sequence, never zero.</span></span>

@@ -57,13 +57,13 @@
 <span class="src-line" id="L21"><a class="ln" href="#L21">21</a><span class="tok-com"> * report something peq does not understand, but PHPStan&#039;s own result carries the</span></span>
 <span class="src-line" id="L22"><a class="ln" href="#L22">22</a><span class="tok-com"> * findings of every registered collector, and only peq&#039;s own are asked for here.</span></span>
 <span class="src-line" id="L23"><a class="ln" href="#L23">23</a><span class="tok-com"> */</span></span>
-<span class="src-line" id="L24"><a class="ln" href="#L24">24</a><span class="tok-kw">final</span> <span class="tok-kw">class</span> <span class="tok-id">CollectorReport</span></span>
+<span class="src-line" id="L24"><a class="ln" href="#L24">24</a><span class="tok-kw">final</span> <span class="tok-kw">readonly</span> <span class="tok-kw">class</span> <span class="tok-id">CollectorReport</span></span>
 <span class="src-line" id="L25"><a class="ln" href="#L25">25</a>{</span>
 <span class="src-line" id="L26"><a class="ln" href="#L26">26</a>    <span class="tok-com">/**</span></span>
 <span class="src-line" id="L27"><a class="ln" href="#L27">27</a><span class="tok-com">     * @param list&lt;Edge|Node&gt; $symbols The symbols and relations the collectors reported</span></span>
 <span class="src-line" id="L28"><a class="ln" href="#L28">28</a><span class="tok-com">     */</span></span>
 <span class="src-line" id="L29"><a class="ln" href="#L29">29</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">__construct</span>(</span>
-<span class="src-line" id="L30"><a class="ln" href="#L30">30</a>        <span class="tok-kw">private</span> <span class="tok-kw">readonly</span> <span class="tok-kw">array</span> <span class="tok-var">$symbols</span>,</span>
+<span class="src-line" id="L30"><a class="ln" href="#L30">30</a>        <span class="tok-kw">private</span> <span class="tok-kw">array</span> <span class="tok-var">$symbols</span>,</span>
 <span class="src-line" id="L31"><a class="ln" href="#L31">31</a>    ) {}</span>
 <span class="src-line" id="L32"><a class="ln" href="#L32">32</a></span>
 <span class="src-line" id="L33"><a class="ln" href="#L33">33</a>    <span class="tok-com">/**</span></span>
