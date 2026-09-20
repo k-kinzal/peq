@@ -1,0 +1,52 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M2ZCSYKKDB9A9ZJZ5ENZY3PT",
+  "strategy": "manual-commit",
+  "branch": "feat/gql-graph",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/Gql/Element/GraphSchema.php",
+    "src/Gql/Evaluation/BinaryOperation.php",
+    "src/Gql/Evaluation/TextOperation.php",
+    "src/Gql/Execution/BlockExecution.php",
+    "src/Gql/Invocation/FunctionCatalog.php",
+    "src/Gql/Invocation/GeneralFunctions.php",
+    "src/Gql/Invocation/GraphFunctions.php",
+    "src/Gql/Invocation/TextFunctions.php",
+    "src/Gql/Parsing/ExpressionParser.php",
+    "src/Gql/Parsing/LabelParser.php",
+    "src/Gql/Parsing/NameReader.php",
+    "src/Gql/Parsing/OperandParser.php",
+    "src/Gql/Parsing/Parser.php",
+    "src/Gql/Parsing/PatternParser.php",
+    "src/Gql/Parsing/ResultParser.php",
+    "src/Gql/Parsing/TokenReader.php",
+    "src/Gql/ReservedWords.php",
+    "src/Gql/StatusCode.php",
+    "src/Gql/Syntax/Expression/BinaryOperator.php",
+    "src/Gql/Syntax/Query.php",
+    "src/Gql/Syntax/QueryBlock.php",
+    "tests/Contract/Gql/GqlSemanticsContractTest.php",
+    "tests/Contract/Gql/GqlSpecificationContractTest.php",
+    "tests/Fixture/Gql/GqlReservedWords.php",
+    "tests/Fixture/Gql/GqlSpecification.php",
+    "tests/Unit/Gql/Parsing/NameReaderTest.php",
+    "tests/Unit/Gql/ReservedWordsTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 3146,
+    "cache_creation_tokens": 3802326,
+    "cache_read_tokens": 784209385,
+    "output_tokens": 1305611,
+    "api_call_count": 1573
+  }
+}
