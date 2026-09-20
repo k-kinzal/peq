@@ -321,26 +321,52 @@ MATCH`, `LET`, `FILTER`, `ORDER BY`, `OFFSET`, `LIMIT`, `RETURN` with `DISTINCT`
 fillers; every arrow form and its shortcut; path variables, path modes (`WALK`,
 `TRAIL`, `SIMPLE`, `ACYCLIC`) and variable-length patterns over an edge or a
 parenthesised group; three-valued logic, `IS NULL`, `IN`, `CONTAINS`, `STARTS WITH`,
-`ENDS WITH`, `CASE`, and the aggregate, string, list, graph, temporal and generic
-functions. The set operators the guide lists as not yet supported — `UNION DISTINCT`,
-`EXCEPT`, `INTERSECT`, `OTHERWISE` — are supported here.
+`ENDS WITH`, `CASE`, and every aggregate, string, list, graph, temporal and generic
+function the expressions reference lists. The set operators the guide lists as not yet
+supported — `UNION DISTINCT`, `EXCEPT`, `INTERSECT`, `OTHERWISE` — are supported here.
 
-Three things are deliberately different:
+Two things are deliberately different:
 
 - **A repetition written without an upper bound stops at `--hops`** (ten by default).
   On a graph with cycles the alternative is unbounded work; the reference
   implementation caps it at eight.
-- **A projection holding any aggregate is a grouped projection**, so `RETURN a, avg(b)`
-  answers once per group rather than once per row. Aggregation along a group list —
-  `size(e)`, `avg(e.line)` — falls out of the same rule and works.
 - **A run of clauses with no `RETURN` shows everything it bound.** GQL would ask for
   one; a reader exploring a codebase with `MATCH (m:Method WHERE m.deprecated)` should
   be answered rather than corrected.
 
-Not implemented, and not planned: everything that changes a graph (`INSERT`, `SET`,
-`REMOVE`, `DELETE`), sessions and transactions, and graph type DDL. peq answers
+Not implemented: everything that changes a graph (`INSERT`, `SET`, `REMOVE`,
+`DELETE`), sessions and transactions, procedures, and graph type DDL. peq answers
 questions about source code it has just read; a statement that could change the graph
-would be describing a codebase that does not exist.
+would be describing a codebase that does not exist. Each of those is refused by name
+under GQLSTATUS `42000`, not reported as a syntax error, so a caller can tell "you
+wrote this wrongly" from "peq does not do this".
+
+### How the GQL claim is checked
+
+"It is GQL" is a claim about a published language, so it is checked against the
+published language rather than asserted. Four contract suites under
+`tests/Contract/Gql/` do it, and they fail the build when they disagree:
+
+| What is checked | How | Where the truth comes from |
+|-----------------|-----|----------------------------|
+| peq reads the language | every complete query, expression and pattern the documentation prints is run through peq's reader | the [language guide](https://learn.microsoft.com/fabric/graph/gql-language-guide) and the [expressions reference](https://learn.microsoft.com/fabric/graph/gql-expressions), transcribed into `GqlSpecification` |
+| peq reads *only* the language | every upper-case word written as a literal in `src/Gql` is looked up in GQL's vocabulary, as are every function, aggregate and column type peq offers | the [reserved words reference](https://learn.microsoft.com/fabric/graph/gql-reference-reserved-terms), transcribed into `GqlReservedWords` |
+| peq reports the standard's statuses | every GQLSTATUS peq can produce is looked up, and its wording compared | ISO/IEC 39075's published condition artifact, transcribed into `GqlConditions` |
+| peq *means* what GQL means | the documented rules — three-valued logic, operator precedence, aggregate null handling, null ordering, numeric coercion, path modes, group lists — are written out as the behaviour they describe | the rules as the documentation states them |
+
+Writing them found three things that were wrong, all now fixed: peq reported `42003`,
+which no part of ISO/IEC 39075 defines; it accepted `!=`, which GQL does not spell;
+and a summary over a group list collapsed the table, where the standard says
+horizontal aggregation takes precedence over vertical aggregation and the rows stay.
+
+Two divergences remain, and are divergences rather than bugs:
+
+- **peq reserves no word in its lexer**, so `(:Function)` and `` (:`Function`) `` both
+  work where strict GQL would require the backticks. This is what lets a property
+  called `end` or a label called `Enum` be written plainly, and it only ever accepts
+  more than GQL does, never less.
+- **`%`, the label wildcard**, is ISO GQL rather than something the Fabric guide
+  prints, so it is checked against the standard rather than against the guide.
 
 ## Analyzers
 

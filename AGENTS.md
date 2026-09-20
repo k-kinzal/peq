@@ -82,7 +82,7 @@ bin/                 # Entry point (console)
 ## Build & Test Commands
 
 - `composer install` — install dependencies and `vendor-bin/` tools
-- `composer test` — run PHPUnit (random order, `APP_ENV=test`). Append `-- tests/App/...` or `--filter testName` to narrow scope
+- `composer test` — run PHPUnit (random order, `APP_ENV=test`). Append `-- tests/App/...` or `--filter testName` to narrow scope. It is two runs, not one: `test:reading` covers the suites that only read, and `test:analysis` covers the two that run PHPStan in process. Those two cost most of a gigabyte each and their cost grows with `src`, so sharing a process with everything else put the whole suite against the memory limit and made it fail on the orderings that happened to run them late
 - `composer test:equivalence` — read every installed dependency with both engines and fail on any difference
 - `composer lint` — run PHP CS Fixer + PHPStan (max level)
 - `composer format` — apply PHP CS Fixer
@@ -140,3 +140,24 @@ What is ours is the vocabulary a query is written against — the labels a symbo
 carries, the properties it offers. Adding one means teaching `NodeLabels`,
 `NodeProperties` or their edge counterparts, and adding it to `GraphSchema` so that
 `--schema` still answers what a query may write.
+
+That rule is enforced rather than trusted. Four contract suites under
+`tests/Contract/Gql/` check the claim against the published language, and each one
+fails the build on a disagreement:
+
+- `GqlSpecificationContractTest` — every query, expression and pattern the GQL
+  documentation prints is one peq reads. The corpus is transcribed into
+  `tests/Fixture/Gql/GqlSpecification.php`
+- `GqlVocabularyContractTest` — every upper-case literal in `src/Gql`, every function
+  and aggregate peq offers, and every column type it reports is a word GQL defines.
+  The reserved words are transcribed into `tests/Fixture/Gql/GqlReservedWords.php`
+- `GqlStatusContractTest` — every GQLSTATUS peq reports is one ISO/IEC 39075 defines,
+  worded as the standard words it. The conditions are transcribed into
+  `tests/Fixture/Gql/GqlConditions.php`
+- `GqlSemanticsContractTest` — the rules the documentation states in words, written
+  out as the behaviour they describe
+
+A new keyword, operator, function or status therefore fails a test before it reaches a
+reader. Widening GQL's side of the line means transcribing the addition from a
+published page into the matching fixture, with the page cited — not editing the
+fixture until it agrees with the code.

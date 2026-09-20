@@ -35,19 +35,20 @@ final class MatchedPattern
      * @param string               $written  The pattern, as a query would write it
      * @param array<string, Datum> $bound    What is already bound when the pattern is reached
      * @param int                  $hopLimit How far a repetition goes when no upper bound was written
+     * @param null|ElementGraph    $graph    The graph to match against, or null for the sample codebase
      *
      * @return string One line per way the pattern matched, in a settled order
      *
      * @throws GqlException If the pattern cannot be read or cannot be matched
      */
-    public static function of(string $written, array $bound = [], int $hopLimit = 10): string
+    public static function of(string $written, array $bound = [], int $hopLimit = 10, ?ElementGraph $graph = null): string
     {
         $lines = array_map(
             static fn (BindingRow $row): string => implode(' ', array_map(
                 static fn (string $name): string => $name.'='.self::shortly($row->value($name)->toText()),
                 $row->names(),
             )),
-            self::rows($written, $bound, $hopLimit),
+            self::rows($written, $bound, $hopLimit, $graph),
         );
         sort($lines);
 
@@ -72,14 +73,15 @@ final class MatchedPattern
      * @param string               $written  The pattern, as a query would write it
      * @param array<string, Datum> $bound    What is already bound when the pattern is reached
      * @param int                  $hopLimit How far a repetition goes when no upper bound was written
+     * @param null|ElementGraph    $graph    The graph to match against, or null for the sample codebase
      *
      * @return list<BindingRow> One row per way the pattern matched
      *
      * @throws GqlException If the pattern cannot be read or cannot be matched
      */
-    public static function rows(string $written, array $bound = [], int $hopLimit = 10): array
+    public static function rows(string $written, array $bound = [], int $hopLimit = 10, ?ElementGraph $graph = null): array
     {
-        $matching = new PatternMatching(self::graph(), new ExpressionEvaluation(), $hopLimit);
+        $matching = new PatternMatching($graph ?? self::graph(), new ExpressionEvaluation(), $hopLimit);
 
         return $matching->match(self::pattern($written), BindingRow::unit()->withAll($bound));
     }

@@ -87,6 +87,38 @@ final class SampleGraph
     }
 
     /**
+     * Returns three methods that call round in a ring, as a query sees them.
+     *
+     * The sample codebase has no cycle in it, which is the shape most code is and the
+     * wrong shape for one question: what a path mode forbids. `TRAIL`, `SIMPLE` and
+     * `ACYCLIC` all agree about a graph nothing loops in, so a test that only ever
+     * looked at that one would pass whichever rule it was really checking.
+     *
+     * Mutual recursion is ordinary in source code, so this is ordinary too: three
+     * methods, each calling the next, the last calling the first — and the last
+     * calling back into the middle as well, which is what lets a path meet a symbol
+     * twice without crossing a relation twice, the one case that tells `TRAIL` and
+     * `SIMPLE` apart.
+     *
+     * @return ElementGraph The graph a query is written against
+     */
+    public static function recursive(): ElementGraph
+    {
+        $first = new MethodNode(MethodNodeId::of('App\Ring\Round', 'first'), true, self::at('Ring/Round.php', 5));
+        $second = new MethodNode(MethodNodeId::of('App\Ring\Round', 'second'), true, self::at('Ring/Round.php', 10));
+        $third = new MethodNode(MethodNodeId::of('App\Ring\Round', 'third'), true, self::at('Ring/Round.php', 15));
+
+        $graph = new Graph();
+        $graph->addNodes([$first, $second, $third]);
+        $graph->addEdge(new MethodCallEdge($first, $second, self::at('Ring/Round.php', 6)));
+        $graph->addEdge(new MethodCallEdge($second, $third, self::at('Ring/Round.php', 11)));
+        $graph->addEdge(new MethodCallEdge($third, $first, self::at('Ring/Round.php', 16)));
+        $graph->addEdge(new MethodCallEdge($third, $second, self::at('Ring/Round.php', 17)));
+
+        return GraphProjection::of($graph);
+    }
+
+    /**
      * Returns the controller the sample codebase is entered through.
      *
      * @return ClassNode The symbol

@@ -10,6 +10,7 @@ use App\Gql\GqlException;
 use App\Gql\Result\ResultColumn;
 use App\Gql\Result\ResultRow;
 use App\Gql\Result\ResultTable;
+use App\Gql\StatusCode;
 
 /**
  * A query run against the sample codebase, with its answer written on one line.
@@ -49,6 +50,26 @@ final class AnsweredQuery
     public static function table(string $query, int $hopLimit = 10): ResultTable
     {
         return (new QueryExecution(SampleGraph::elements(), $hopLimit))->query($query);
+    }
+
+    /**
+     * Runs a query against the sample codebase and reports the status it came back under.
+     *
+     * A query that fails reports its status by throwing, and one that succeeds reports
+     * it on the answer. A test about which status a query produces should not have to
+     * know which of the two it is going to be, so both are read out here.
+     *
+     * @param string $query The query, as it was written
+     *
+     * @return StatusCode The status the query was answered under
+     */
+    public static function statusOf(string $query): StatusCode
+    {
+        try {
+            return self::table($query)->status();
+        } catch (GqlException $reported) {
+            return $reported->status;
+        }
     }
 
     /**
