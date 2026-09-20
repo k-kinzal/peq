@@ -1,0 +1,24 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M2YM16TFKWAM2BETV249MTHN",
+  "strategy": "manual-commit",
+  "branch": "feat/gql-graph",
+  "checkpoints_count": 1,
+  "files_touched": null,
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 426,
+    "cache_creation_tokens": 791904,
+    "cache_read_tokens": 144367153,
+    "output_tokens": 148397,
+    "api_call_count": 213
+  }
+}
