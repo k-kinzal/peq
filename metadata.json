@@ -3,7 +3,7 @@
   "checkpoint_id": "01M2ZCTC3BP3HJY8176JXNQ80W",
   "strategy": "manual-commit",
   "branch": "feat/gql-graph",
-  "checkpoints_count": 2,
+  "checkpoints_count": 7,
   "files_touched": [
     ".github/workflows/ci.yaml",
     "AGENTS.md",
@@ -49,10 +49,10 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 12295,
-    "cache_creation_tokens": 3803441,
-    "cache_read_tokens": 785481762,
-    "output_tokens": 1306223,
-    "api_call_count": 1579
+    "input_tokens": 13285,
+    "cache_creation_tokens": 5694328,
+    "cache_read_tokens": 1098116444,
+    "output_tokens": 1983726,
+    "api_call_count": 2071
   }
 }
