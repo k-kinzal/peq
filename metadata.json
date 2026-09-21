@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M31YW7TADTXRWT74AC8QX5A4",
+  "strategy": "manual-commit",
+  "branch": "feat/experimental-variable-dependencies",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/Unit/Action/Experimental/InspectVariablesActionTest.php",
+    "tests/Unit/Action/Experimental/InspectVariablesInputTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/DataFlow/InspectionTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/ExitsTest.php",
+    "tests/Unit/Command/ExperimentalCommandTest.php",
+    "tests/Unit/Config/ExperimentalConfigReaderTest.php",
+    "tests/Unit/Reporter/Experimental/VariableReporterTest.php",
+    "tests/Unit/Reporter/Experimental/VariableTreeTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 17108,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 2063360,
+    "output_tokens": 7379,
+    "api_call_count": 9
+  }
+}
