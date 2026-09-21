@@ -1,0 +1,36 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M315MPS5DE2DDDVQT1D6ZQ2X",
+  "strategy": "manual-commit",
+  "branch": "feat/gql-graph",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "src/Config/OutputFormat.php",
+    "src/Reporter/Diagram/DiagramRenderer.php",
+    "src/Reporter/GraphReporter/GraphReporter.php",
+    "src/Reporter/Query/DiagramWriter.php",
+    "src/Reporter/Query/DotWriter.php",
+    "src/Reporter/Query/QueryReporterFactory.php",
+    "src/Reporter/Query/TableWriter.php",
+    "src/Reporter/Query/TreeStep.php",
+    "src/Reporter/Query/TreeWriter.php",
+    "src/Reporter/ReporterFactory.php",
+    "tests/Unit/Config/OutputFormatTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 3998,
+    "cache_creation_tokens": 5572014,
+    "cache_read_tokens": 1039349265,
+    "output_tokens": 1942606,
+    "api_call_count": 1999
+  }
+}
