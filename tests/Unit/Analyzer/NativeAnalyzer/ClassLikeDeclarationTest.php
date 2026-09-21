@@ -8,12 +8,14 @@ use App\Analyzer\Graph\NodeKind;
 use App\Analyzer\NativeAnalyzer\AnonymousClassNaming;
 use App\Analyzer\NativeAnalyzer\ClassLikeDeclaration;
 use App\Analyzer\NativeAnalyzer\ParsedSource;
+use PhpParser\Node\Stmt\ClassLike;
+use PhpParser\NodeFinder;
+use PhpParser\ParserFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\ParsedSnippet;
 
 /**
  * @internal
@@ -27,7 +29,11 @@ final class ClassLikeDeclarationTest extends TestCase
     #[DataProvider('providerDeclarations')]
     public function testKindOfReadsTheKindOutOfTheSyntax(string $code, NodeKind $expected): void
     {
-        self::assertSame($expected, ClassLikeDeclaration::kindOf(ParsedSnippet::classLike($code)));
+        $statements = (new ParserFactory())->createForHostVersion()->parse($code) ?? [];
+        $declaration = (new NodeFinder())->findFirstInstanceOf($statements, ClassLike::class);
+        self::assertNotNull($declaration);
+
+        self::assertSame($expected, ClassLikeDeclaration::kindOf($declaration));
     }
 
     /**
@@ -48,10 +54,13 @@ final class ClassLikeDeclarationTest extends TestCase
 
     public function testRemembersWhatItWasIndexedAs(): void
     {
-        $statements = ParsedSnippet::statements("<?php\nnamespace App;\nclass Invoice {}\n");
+        $statements = array_values((new ParserFactory())->createForHostVersion()->parse("<?php\nnamespace App;\nclass Invoice {}\n") ?? []);
+        $node = (new NodeFinder())->findFirstInstanceOf($statements, ClassLike::class);
+        self::assertNotNull($node);
         $source = new ParsedSource('/project/Invoice.php', $statements, AnonymousClassNaming::of($statements));
-        $declaration = new ClassLikeDeclaration('App\Invoice', NodeKind::Klass, $source, ParsedSnippet::classLike("<?php\nnamespace App;\nclass Invoice {}\n"));
 
-        self::assertSame(['App\Invoice', NodeKind::Klass, '/project/Invoice.php'], [$declaration->name, $declaration->kind, $declaration->source->path]);
+        $declaration = new ClassLikeDeclaration('App\Invoice', NodeKind::Klass, $source, $node);
+
+        self::assertSame(['App\Invoice', NodeKind::Klass, $source, $node], [$declaration->name, $declaration->kind, $declaration->source, $declaration->node]);
     }
 }

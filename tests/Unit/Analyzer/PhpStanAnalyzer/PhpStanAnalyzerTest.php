@@ -14,7 +14,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Medium;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use Tests\Fixture\Analyzer\FailingCollector;
+use Tests\Double\FailingCollector;
 
 /**
  * @internal
@@ -165,5 +165,45 @@ final class PhpStanAnalyzerTest extends TestCase
         $report = (new PhpStanAnalyzer(collectors: [\App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector::class]))->collect($container, $files);
 
         self::assertNotSame([], $report->symbols());
+    }
+}
+
+namespace Tests\Double;
+
+use PhpParser\Node;
+use PHPStan\Analyser\Scope;
+use PHPStan\Collectors\Collector;
+use RuntimeException;
+
+/**
+ * A collector that gives up on the first node it is shown.
+ *
+ * PHPStan builds its collectors from class names written into a configuration file,
+ * so the double that makes an analysis fail has to be a class with a name: neither an
+ * anonymous class nor a PHPUnit stub has one PHPStan could be told. It is declared
+ * beside the one test that needs it.
+ *
+ * @implements Collector<Node, null>
+ *
+ * @internal
+ */
+final class FailingCollector implements Collector
+{
+    /**
+     * {@inheritdoc}
+     */
+    public function getNodeType(): string
+    {
+        return Node::class;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @throws RuntimeException Always, naming the node it gave up on
+     */
+    public function processNode(Node $node, Scope $scope): mixed
+    {
+        throw new RuntimeException('the collector gave up on a '.$node->getType());
     }
 }

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\NativeAnalyzer;
 
 use App\Analyzer\NativeAnalyzer\AutoloadIndex;
+use org\bovigo\vfs\vfsStream;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\WrittenAutoloadMaps;
 
 /**
  * @internal
@@ -39,114 +39,175 @@ final class AutoloadIndexTest extends TestCase
 
     public function testAtReadsNothingBeyondPhpWhereThereAreNoMaps(): void
     {
-        self::assertFalse(AutoloadIndex::at(sys_get_temp_dir())->knows('PhpCsFixer\Console\Application'));
+        self::assertFalse(AutoloadIndex::at(vfsStream::setup('project')->url())->knows('PhpCsFixer\Console\Application'));
     }
 
     public function testAtStillFindsWhatPhpDeclaresWhereThereAreNoMaps(): void
     {
-        self::assertTrue(AutoloadIndex::at(sys_get_temp_dir())->knows('RuntimeException'));
+        self::assertTrue(AutoloadIndex::at(vfsStream::setup('project')->url())->knows('RuntimeException'));
     }
 
     public function testReadFindsNothingInAMapThatWasNeverWritten(): void
     {
-        self::assertSame([], AutoloadIndex::read(sys_get_temp_dir().'/peq-no-such-map.php'));
+        self::assertSame([], AutoloadIndex::read(vfsStream::setup('project')->url().'/vendor/composer/autoload_classmap.php'));
     }
 
     public function testReadFindsWhatAMapSays(): void
     {
-        $map = sys_get_temp_dir().'/peq-autoload-map-test.php';
-        file_put_contents($map, "<?php\n\nreturn ['App\\\\Written' => '/project/Written.php'];\n");
+        $root = vfsStream::setup('project', null, ['autoload_classmap.php' => <<<'PHP'
+            <?php
 
-        self::assertSame(['App\Written' => '/project/Written.php'], AutoloadIndex::read($map));
+            return ['App\Written' => '/project/Written.php'];
+            PHP]);
+
+        self::assertSame(['App\Written' => '/project/Written.php'], AutoloadIndex::read($root->url().'/autoload_classmap.php'));
     }
 
     public function testKnowsAClassTheClassMapNames(): void
     {
-        $project = WrittenAutoloadMaps::writeTo(['Written\Mapped' => '/anywhere/Mapped.php'], [], []);
+        $root = vfsStream::setup('project', null, ['vendor' => ['composer' => ['autoload_classmap.php' => <<<'PHP'
+            <?php
 
-        self::assertTrue(AutoloadIndex::at($project)->knows('Written\Mapped'));
+            return ['Written\Mapped' => '/anywhere/Mapped.php'];
+            PHP]]]);
+
+        self::assertTrue(AutoloadIndex::at($root->url())->knows('Written\Mapped'));
     }
 
     public function testKnowsAClassANamespacePrefixLeadsTo(): void
     {
-        $project = WrittenAutoloadMaps::writeTo([], [], [], ['src/Deep/Reached.php']);
-        WrittenAutoloadMaps::write($project.'/vendor/composer/autoload_psr4.php', ['Written\\' => [WrittenAutoloadMaps::sourceDirectory($project)]]);
+        $root = vfsStream::setup('project', null, [
+            'vendor' => ['composer' => ['autoload_psr4.php' => <<<'PHP'
+                <?php
 
-        self::assertTrue(AutoloadIndex::at($project)->knows('Written\Deep\Reached'));
+                return ['Written\\' => ['vfs://project/src']];
+                PHP]],
+            'src' => ['Deep' => ['Reached.php' => "<?php\n"]],
+        ]);
+
+        self::assertTrue(AutoloadIndex::at($root->url())->knows('Written\Deep\Reached'));
     }
 
     public function testKnowsNoClassANamespacePrefixLeadsNowhereFor(): void
     {
-        $project = WrittenAutoloadMaps::writeTo([], [], [], ['src/Deep/Reached.php']);
-        WrittenAutoloadMaps::write($project.'/vendor/composer/autoload_psr4.php', ['Written\\' => [WrittenAutoloadMaps::sourceDirectory($project)]]);
+        $root = vfsStream::setup('project', null, [
+            'vendor' => ['composer' => ['autoload_psr4.php' => <<<'PHP'
+                <?php
 
-        self::assertFalse(AutoloadIndex::at($project)->knows('Written\Deep\Missing'));
+                return ['Written\\' => ['vfs://project/src']];
+                PHP]],
+            'src' => ['Deep' => ['Reached.php' => "<?php\n"]],
+        ]);
+
+        self::assertFalse(AutoloadIndex::at($root->url())->knows('Written\Deep\Missing'));
     }
 
     public function testKnowsNoClassNoPrefixLeadsTo(): void
     {
-        $project = WrittenAutoloadMaps::writeTo([], [], [], ['src/Deep/Reached.php']);
-        WrittenAutoloadMaps::write($project.'/vendor/composer/autoload_psr4.php', ['Other\\' => [WrittenAutoloadMaps::sourceDirectory($project)]]);
+        $root = vfsStream::setup('project', null, [
+            'vendor' => ['composer' => ['autoload_psr4.php' => <<<'PHP'
+                <?php
 
-        self::assertFalse(AutoloadIndex::at($project)->knows('Written\Deep\Reached'));
+                return ['Other\\' => ['vfs://project/src']];
+                PHP]],
+            'src' => ['Deep' => ['Reached.php' => "<?php\n"]],
+        ]);
+
+        self::assertFalse(AutoloadIndex::at($root->url())->knows('Written\Deep\Reached'));
     }
 
     public function testKnowsAClassAnOlderStylePrefixLeadsTo(): void
     {
-        $project = WrittenAutoloadMaps::writeTo([], [], [], ['src/Deep/Reached.php']);
-        WrittenAutoloadMaps::write($project.'/vendor/composer/autoload_namespaces.php', ['Written\\' => [WrittenAutoloadMaps::sourceDirectory($project)]]);
+        $root = vfsStream::setup('project', null, [
+            'vendor' => ['composer' => ['autoload_namespaces.php' => <<<'PHP'
+                <?php
 
-        self::assertTrue(AutoloadIndex::at($project)->knows('Written\Deep\Reached'));
+                return ['Written\\' => ['vfs://project/src']];
+                PHP]],
+            'src' => ['Deep' => ['Reached.php' => "<?php\n"]],
+        ]);
+
+        self::assertTrue(AutoloadIndex::at($root->url())->knows('Written\Deep\Reached'));
     }
 
     public function testKnowsAClassTheLongestMatchingPrefixLeadsTo(): void
     {
-        $project = WrittenAutoloadMaps::writeTo([], [], [], ['src/Reached.php']);
-        WrittenAutoloadMaps::write($project.'/vendor/composer/autoload_psr4.php', [
-            'Written\\' => ['/nowhere'],
-            'Written\Deep\\' => [WrittenAutoloadMaps::sourceDirectory($project)],
+        $root = vfsStream::setup('project', null, [
+            'vendor' => ['composer' => ['autoload_psr4.php' => <<<'PHP'
+                <?php
+
+                return ['Written\\' => ['/nowhere'], 'Written\Deep\\' => ['vfs://project/src']];
+                PHP]],
+            'src' => ['Reached.php' => "<?php\n"],
         ]);
 
-        self::assertTrue(AutoloadIndex::at($project)->knows('Written\Deep\Reached'));
+        self::assertTrue(AutoloadIndex::at($root->url())->knows('Written\Deep\Reached'));
     }
 
     public function testKnowsAClassTheSecondDirectoryOfAPrefixLeadsTo(): void
     {
-        $project = WrittenAutoloadMaps::writeTo([], [], [], ['src/Reached.php']);
-        WrittenAutoloadMaps::write($project.'/vendor/composer/autoload_psr4.php', ['Written\\' => ['/nowhere', WrittenAutoloadMaps::sourceDirectory($project)]]);
+        $root = vfsStream::setup('project', null, [
+            'vendor' => ['composer' => ['autoload_psr4.php' => <<<'PHP'
+                <?php
 
-        self::assertTrue(AutoloadIndex::at($project)->knows('Written\Reached'));
+                return ['Written\\' => ['/nowhere', 'vfs://project/src']];
+                PHP]],
+            'src' => ['Reached.php' => "<?php\n"],
+        ]);
+
+        self::assertTrue(AutoloadIndex::at($root->url())->knows('Written\Reached'));
     }
 
     public function testReadsPastAPrefixThatIsNotAName(): void
     {
-        $project = WrittenAutoloadMaps::writeTo([], [], [], ['src/Reached.php']);
-        WrittenAutoloadMaps::write($project.'/vendor/composer/autoload_psr4.php', [7 => ['/nowhere'], 'Written\\' => [WrittenAutoloadMaps::sourceDirectory($project)]]);
+        $root = vfsStream::setup('project', null, [
+            'vendor' => ['composer' => ['autoload_psr4.php' => <<<'PHP'
+                <?php
 
-        self::assertTrue(AutoloadIndex::at($project)->knows('Written\Reached'));
+                return [7 => ['/nowhere'], 'Written\\' => ['vfs://project/src']];
+                PHP]],
+            'src' => ['Reached.php' => "<?php\n"],
+        ]);
+
+        self::assertTrue(AutoloadIndex::at($root->url())->knows('Written\Reached'));
     }
 
     public function testReadsPastAPrefixThatLeadsSomewhereUnreadable(): void
     {
-        $project = WrittenAutoloadMaps::writeTo([], [], [], ['src/Reached.php']);
-        WrittenAutoloadMaps::write($project.'/vendor/composer/autoload_psr4.php', ['Elsewhere\\' => 'not-a-list', 'Written\\' => [WrittenAutoloadMaps::sourceDirectory($project)]]);
+        $root = vfsStream::setup('project', null, [
+            'vendor' => ['composer' => ['autoload_psr4.php' => <<<'PHP'
+                <?php
 
-        self::assertTrue(AutoloadIndex::at($project)->knows('Written\Reached'));
+                return ['Elsewhere\\' => 'not-a-list', 'Written\\' => ['vfs://project/src']];
+                PHP]],
+            'src' => ['Reached.php' => "<?php\n"],
+        ]);
+
+        self::assertTrue(AutoloadIndex::at($root->url())->knows('Written\Reached'));
     }
 
     public function testReadLeavesOutWhatIsNeitherAPathNorAListOfThem(): void
     {
-        $map = sys_get_temp_dir().'/peq-autoload-odd-map.php';
-        WrittenAutoloadMaps::write($map, ['Written\Mapped' => '/anywhere/Mapped.php', 'Written\Odd' => 7, 'Written\Listed' => ['/one', 9]]);
+        $root = vfsStream::setup('project', null, ['autoload_classmap.php' => <<<'PHP'
+            <?php
 
-        self::assertSame(['Written\Mapped' => '/anywhere/Mapped.php', 'Written\Listed' => ['/one']], AutoloadIndex::read($map));
+            return ['Written\Mapped' => '/anywhere/Mapped.php', 'Written\Odd' => 7, 'Written\Listed' => ['/one', 9]];
+            PHP]);
+
+        self::assertSame(
+            ['Written\Mapped' => '/anywhere/Mapped.php', 'Written\Listed' => ['/one']],
+            AutoloadIndex::read($root->url().'/autoload_classmap.php'),
+        );
     }
 
     public function testReadsNothingFromAMapThatIsNotOne(): void
     {
-        $map = sys_get_temp_dir().'/peq-autoload-not-a-map.php';
-        file_put_contents($map, "<?php\n\nreturn 'not a map';\n");
+        $root = vfsStream::setup('project', null, ['autoload_classmap.php' => <<<'PHP'
+            <?php
 
-        self::assertSame([], AutoloadIndex::read($map));
+            return 'not a map';
+            PHP]);
+
+        self::assertSame([], AutoloadIndex::read($root->url().'/autoload_classmap.php'));
     }
 }

@@ -12,7 +12,6 @@ use PHPStan\DependencyInjection\ParameterNotFoundException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Medium;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\FailingCollector;
 
 /**
  * @internal
@@ -67,14 +66,14 @@ final class ContainerFactoryTest extends TestCase
      */
     public function testCreateConfiguresPhpStanFromAFileNamingTheCollectors(): void
     {
-        $container = (new ContainerFactory())->create([dirname(__DIR__, 3).'/Fixture/Sample/AnalysedSample.php'], [DependencyCollector::class, FailingCollector::class]);
+        $container = (new ContainerFactory())->create([dirname(__DIR__, 3).'/Fixture/Sample/AnalysedSample.php'], [DependencyCollector::class, InClassMethodCollector::class]);
         $configurations = $container->getParameter('additionalConfigFiles');
 
         self::assertIsArray($configurations);
         self::assertCount(1, $configurations);
         self::assertIsString($configurations[0]);
         self::assertStringStartsWith(WorkingDirectory::shared()->path.'/phpstan-', $configurations[0]);
-        self::assertStringContainsString(FailingCollector::class, (string) file_get_contents($configurations[0]));
+        self::assertStringContainsString(InClassMethodCollector::class, (string) file_get_contents($configurations[0]));
     }
 
     /**

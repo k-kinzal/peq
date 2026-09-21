@@ -4,295 +4,401 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\NativeAnalyzer;
 
+use App\Analyzer\NativeAnalyzer\AnonymousClassNaming;
+use App\Analyzer\NativeAnalyzer\AutoloadIndex;
+use App\Analyzer\NativeAnalyzer\ClassLikeDeclaration;
+use App\Analyzer\NativeAnalyzer\ParsedSource;
+use App\Analyzer\NativeAnalyzer\SourceIndex;
 use App\Analyzer\NativeAnalyzer\TraitFlattening;
 use App\Analyzer\NativeAnalyzer\TraitMethod;
+use org\bovigo\vfs\vfsStream;
+use PhpParser\Node\Stmt\Class_;
+use PhpParser\Node\Stmt\TraitUse;
+use PhpParser\NodeFinder;
+use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor\NameResolver;
+use PhpParser\ParserFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\ParsedSnippet;
 
 /**
  * @internal
  */
 #[CoversClass(TraitFlattening::class)]
-#[UsesClass(\App\Analyzer\NativeAnalyzer\SourceIndex::class)]
-#[UsesClass(\App\Analyzer\NativeAnalyzer\AnonymousClassNaming::class)]
-#[UsesClass(\App\Analyzer\NativeAnalyzer\AutoloadIndex::class)]
-#[UsesClass(\App\Analyzer\NativeAnalyzer\ClassLikeDeclaration::class)]
-#[UsesClass(\App\Analyzer\NativeAnalyzer\ParsedSource::class)]
+#[UsesClass(AnonymousClassNaming::class)]
+#[UsesClass(AutoloadIndex::class)]
+#[UsesClass(ClassLikeDeclaration::class)]
+#[UsesClass(ParsedSource::class)]
+#[UsesClass(SourceIndex::class)]
 #[UsesClass(TraitMethod::class)]
 #[Small]
 final class TraitFlatteningTest extends TestCase
 {
     public function testRenamesReadsWhatAUseStatementApplies(): void
     {
-        $use = ParsedSnippet::traitUse("<?php\nnamespace App;\nclass Taker { use Shared { shared as renamed; } }\n");
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nnamespace App;\nclass Taker { use Shared { shared as renamed; } }\n") ?? []);
+        $use = (new NodeFinder())->findFirstInstanceOf($parsed, TraitUse::class);
+        self::assertNotNull($use);
 
         self::assertSame(['shared' => 'renamed'], TraitFlattening::renames($use, 'App\Shared'));
     }
 
     public function testRenamesLeavesOutOneWrittenForAnotherTrait(): void
     {
-        $use = ParsedSnippet::traitUse("<?php\nnamespace App;\nclass Taker { use Shared, Other { Other::shared as renamed; } }\n");
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nnamespace App;\nclass Taker { use Shared, Other { Other::shared as renamed; } }\n") ?? []);
+        $use = (new NodeFinder())->findFirstInstanceOf($parsed, TraitUse::class);
+        self::assertNotNull($use);
 
         self::assertSame([], TraitFlattening::renames($use, 'App\Shared'));
     }
 
     public function testRenamesAppliesOneWrittenForNoTraitInParticular(): void
     {
-        $use = ParsedSnippet::traitUse("<?php\nnamespace App;\nclass Taker { use Shared { shared as renamed; } }\n");
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nnamespace App;\nclass Taker { use Shared { shared as renamed; } }\n") ?? []);
+        $use = (new NodeFinder())->findFirstInstanceOf($parsed, TraitUse::class);
+        self::assertNotNull($use);
 
         self::assertSame(['shared' => 'renamed'], TraitFlattening::renames($use, 'App\Other'));
     }
 
     public function testRenamesLeavesOutAnAdaptationThatRenamesNothing(): void
     {
-        $use = ParsedSnippet::traitUse("<?php\nnamespace App;\nclass Taker { use Shared { shared as protected; } }\n");
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nnamespace App;\nclass Taker { use Shared { shared as protected; } }\n") ?? []);
+        $use = (new NodeFinder())->findFirstInstanceOf($parsed, TraitUse::class);
+        self::assertNotNull($use);
 
         self::assertSame([], TraitFlattening::renames($use, 'App\Shared'));
     }
 
-    public function testMethodsOfReadsWhatATraitWrites(): void
-    {
-        $index = ParsedSnippet::index(['Shared.php' => "<?php\nnamespace App;\ntrait Shared { public function written(): void {} abstract public function demanded(): void; }\n"]);
-        $methods = TraitFlattening::methodsOf('App\Shared', [], $index, []);
-
-        self::assertSame([false, true], [$methods['written']->demanded, $methods['demanded']->demanded]);
-    }
-
-    public function testMethodsOfReadsWhatATraitTakesOnFromAnotherTrait(): void
-    {
-        $index = ParsedSnippet::index(['Shared.php' => "<?php\nnamespace App;\ntrait Inner { public function inner(): void {} }\ntrait Outer { use Inner; }\n"]);
-
-        self::assertSame('App\Inner', TraitFlattening::methodsOf('App\Outer', [], $index, [])['inner']->declaringTrait);
-    }
-
-    public function testMethodsOfReadsNothingFromATraitNoAnalysedFileDeclares(): void
-    {
-        $index = ParsedSnippet::index(['Shared.php' => "<?php\nnamespace App;\ntrait Shared {}\n"]);
-
-        self::assertSame([], TraitFlattening::methodsOf('App\Missing', [], $index, []));
-    }
-
-    public function testMethodsOfReadsNothingFromATraitAlreadyBeingRead(): void
-    {
-        $index = ParsedSnippet::index(['Shared.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\n"]);
-
-        self::assertSame([], TraitFlattening::methodsOf('App\Shared', [], $index, ['app\shared']));
-    }
-
-    public function testKeepsMethodKeepsTheCopyOfAMethodTheClassDoesNotWrite(): void
-    {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Taker { use Shared; }\n"]);
-        $class = ParsedSnippet::declarationIn($index, 'App\Taker');
-
-        self::assertTrue(TraitFlattening::keepsMethod($class, ParsedSnippet::method("<?php\ntrait Shared { public function shared(): void {} }\n"), 'shared', 'App\Shared', $index));
-    }
-
-    public function testKeepsMethodDiscardsTheCopyOfAMethodTheClassWritesItself(): void
-    {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Taker { use Shared; public function shared(): void {} }\n"]);
-        $class = ParsedSnippet::declarationIn($index, 'App\Taker');
-
-        self::assertFalse(TraitFlattening::keepsMethod($class, ParsedSnippet::method("<?php\ntrait Shared { public function shared(): void {} }\n"), 'shared', 'App\Shared', $index));
-    }
-
-    public function testKeepsMethodDiscardsTheCopyOfATraitAnInsteadofRulesOut(): void
-    {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Left { public function shared(): void {} }\ntrait Right { public function shared(): void {} }\nclass Taker { use Left, Right { Left::shared insteadof Right; } }\n"]);
-        $class = ParsedSnippet::declarationIn($index, 'App\Taker');
-        $method = ParsedSnippet::method("<?php\ntrait Right { public function shared(): void {} }\n");
-
-        self::assertFalse(TraitFlattening::keepsMethod($class, $method, 'shared', 'App\Right', $index));
-    }
-
-    public function testKeepsMethodKeepsTheCopyOfTheTraitAnInsteadofNames(): void
-    {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Left { public function shared(): void {} }\ntrait Right { public function shared(): void {} }\nclass Taker { use Left, Right { Left::shared insteadof Right; } }\n"]);
-        $class = ParsedSnippet::declarationIn($index, 'App\Taker');
-        $method = ParsedSnippet::method("<?php\ntrait Left { public function shared(): void {} }\n");
-
-        self::assertTrue(TraitFlattening::keepsMethod($class, $method, 'shared', 'App\Left', $index));
-    }
-
-    public function testKeepsMethodDiscardsADemandedMethodAnotherTraitWrites(): void
-    {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Demanding { abstract public function shared(): void; }\ntrait Writing { public function shared(): void {} }\nclass Taker { use Demanding, Writing; }\n"]);
-        $class = ParsedSnippet::declarationIn($index, 'App\Taker');
-        $method = ParsedSnippet::method("<?php\ntrait Demanding { abstract public function shared(): void; }\n");
-
-        self::assertFalse(TraitFlattening::keepsMethod($class, $method, 'shared', 'App\Demanding', $index));
-    }
-
-    public function testKeepsMethodDiscardsADemandedMethodAnAncestorWrites(): void
-    {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Demanding { abstract public function shared(): void; }\nclass Ancestor_ { public function shared(): void {} }\nclass Taker extends Ancestor_ { use Demanding; }\n"]);
-        $class = ParsedSnippet::declarationIn($index, 'App\Taker');
-        $method = ParsedSnippet::method("<?php\ntrait Demanding { abstract public function shared(): void; }\n");
-
-        self::assertFalse(TraitFlattening::keepsMethod($class, $method, 'shared', 'App\Demanding', $index));
-    }
-
-    public function testKeepsMethodKeepsADemandedMethodNothingAnswers(): void
-    {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Demanding { abstract public function shared(): void; }\nabstract class Taker { use Demanding; }\n"]);
-        $class = ParsedSnippet::declarationIn($index, 'App\Taker');
-        $method = ParsedSnippet::method("<?php\ntrait Demanding { abstract public function shared(): void; }\n");
-
-        self::assertTrue(TraitFlattening::keepsMethod($class, $method, 'shared', 'App\Demanding', $index));
-    }
-
-    public function testProviderOfNamesNoTraitForAMethodNoneOffers(): void
-    {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Taker { use Shared; }\n"]);
-
-        self::assertNull(TraitFlattening::providerOf(ParsedSnippet::declarationIn($index, 'App\Taker'), 'missing', $index));
-    }
-
-    public function testWritesMethodReportsAMethodAClassWritesItself(): void
-    {
-        self::assertTrue(TraitFlattening::writesMethod(ParsedSnippet::classLike("<?php\nclass Taker { public function written(): void {} }\n"), 'WRITTEN'));
-    }
-
-    public function testWritesMethodReportsNoMethodOfAnUnwrittenName(): void
-    {
-        self::assertFalse(TraitFlattening::writesMethod(ParsedSnippet::classLike("<?php\nclass Taker { public function written(): void {} }\n"), 'other'));
-    }
-
-    public function testInheritsFindsNothingAboveAClassWithNoParent(): void
-    {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\nclass Taker {}\n"]);
-
-        self::assertFalse(TraitFlattening::inherits(ParsedSnippet::declarationIn($index, 'App\Taker'), 'shared', $index, []));
-    }
-
-    public function testInheritsFindsNothingAboveAClassWhoseParentIsNotAnalysed(): void
-    {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\nclass Taker extends \\RuntimeException {}\n"]);
-
-        self::assertFalse(TraitFlattening::inherits(ParsedSnippet::declarationIn($index, 'App\Taker'), 'getMessage', $index, []));
-    }
-
-    public function testInheritsFindsAMethodWrittenTwoClassesAbove(): void
-    {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\nclass Root { public function shared(): void {} }\nclass Middle extends Root {}\nclass Taker extends Middle {}\n"]);
-
-        self::assertTrue(TraitFlattening::inherits(ParsedSnippet::declarationIn($index, 'App\Taker'), 'shared', $index, []));
-    }
-
-    public function testInheritsFindsNoMethodWhereTheAncestorOnlyDemandsOne(): void
-    {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\nabstract class Root { abstract public function shared(): void; }\nclass Taker extends Root {}\n"]);
-
-        self::assertFalse(TraitFlattening::inherits(ParsedSnippet::declarationIn($index, 'App\Taker'), 'shared', $index, []));
-    }
-
-    public function testOffersOfReadsWhatTheTraitsAClassUsesOffer(): void
-    {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Left { public function shared(): void {} }\ntrait Right { public function shared(): void {} }\nclass Taker { use Left, Right; }\n"]);
-
-        self::assertSame(
-            ['App\Left', 'App\Right'],
-            array_map(static fn (TraitMethod $offered): string => $offered->declaringTrait, TraitFlattening::offersOf(ParsedSnippet::declarationIn($index, 'App\Taker'), 'shared', $index)),
-        );
-    }
-
-    public function testMethodWrittenFindsTheMethodAClassWrites(): void
-    {
-        $written = TraitFlattening::methodWritten(ParsedSnippet::classLike("<?php\nclass Taker { public function written(): void {} }\n"), 'WRITTEN');
-
-        self::assertSame('written', $written?->name->toString());
-    }
-
-    public function testMethodWrittenFindsNothingForANameTheClassDoesNotWrite(): void
-    {
-        self::assertNull(TraitFlattening::methodWritten(ParsedSnippet::classLike("<?php\nclass Taker { public function written(): void {} }\n"), 'other'));
-    }
-
     public function testRenamesReadsAMethodNameWhateverCasingTheAdaptationWritesIt(): void
     {
-        $use = ParsedSnippet::traitUse("<?php\nnamespace App;\nclass Taker { use Shared { SHARED as renamed; } }\n");
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nnamespace App;\nclass Taker { use Shared { SHARED as renamed; } }\n") ?? []);
+        $use = (new NodeFinder())->findFirstInstanceOf($parsed, TraitUse::class);
+        self::assertNotNull($use);
 
         self::assertSame(['shared' => 'renamed'], TraitFlattening::renames($use, 'App\Shared'));
     }
 
     public function testRenamesReadsATraitNameWhateverCasingTheAdaptationWritesIt(): void
     {
-        $use = ParsedSnippet::traitUse("<?php\nnamespace App;\nclass Taker { use Shared { \\App\\SHARED::shared as renamed; } }\n");
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nnamespace App;\nclass Taker { use Shared { \\App\\SHARED::shared as renamed; } }\n") ?? []);
+        $use = (new NodeFinder())->findFirstInstanceOf($parsed, TraitUse::class);
+        self::assertNotNull($use);
 
         self::assertSame(['shared' => 'renamed'], TraitFlattening::renames($use, 'App\Shared'));
     }
 
+    public function testMethodsOfReadsWhatATraitWrites(): void
+    {
+        $root = vfsStream::setup('project', null, ['Shared.php' => "<?php\nnamespace App;\ntrait Shared { public function written(): void {} abstract public function demanded(): void; }\n"]);
+        $index = SourceIndex::of([$root->url().'/Shared.php'], $root->url());
+
+        self::assertEquals(
+            ['written' => new TraitMethod('App\Shared', false), 'demanded' => new TraitMethod('App\Shared', true)],
+            TraitFlattening::methodsOf('App\Shared', [], $index, []),
+        );
+    }
+
+    public function testMethodsOfReadsWhatATraitTakesOnFromAnotherTrait(): void
+    {
+        $root = vfsStream::setup('project', null, ['Shared.php' => "<?php\nnamespace App;\ntrait Inner { public function inner(): void {} }\ntrait Outer { use Inner; }\n"]);
+        $index = SourceIndex::of([$root->url().'/Shared.php'], $root->url());
+
+        self::assertEquals(['inner' => new TraitMethod('App\Inner', false)], TraitFlattening::methodsOf('App\Outer', [], $index, []));
+    }
+
+    public function testMethodsOfReadsNothingFromATraitNoAnalysedFileDeclares(): void
+    {
+        $root = vfsStream::setup('project', null, ['Shared.php' => "<?php\nnamespace App;\ntrait Shared {}\n"]);
+        $index = SourceIndex::of([$root->url().'/Shared.php'], $root->url());
+
+        self::assertSame([], TraitFlattening::methodsOf('App\Missing', [], $index, []));
+    }
+
+    public function testMethodsOfReadsNothingFromATraitAlreadyBeingRead(): void
+    {
+        $root = vfsStream::setup('project', null, ['Shared.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\n"]);
+        $index = SourceIndex::of([$root->url().'/Shared.php'], $root->url());
+
+        self::assertSame([], TraitFlattening::methodsOf('App\Shared', [], $index, ['app\shared']));
+    }
+
     public function testMethodsOfReadsAMethodUnderTheNameItAnswersTo(): void
     {
-        $index = ParsedSnippet::index(['Shared.php' => "<?php\nnamespace App;\ntrait Shared { public function Mixed_Case(): void {} }\n"]);
+        $root = vfsStream::setup('project', null, ['Shared.php' => "<?php\nnamespace App;\ntrait Shared { public function Mixed_Case(): void {} }\n"]);
+        $index = SourceIndex::of([$root->url().'/Shared.php'], $root->url());
 
-        self::assertSame(['mixed_case'], array_keys(TraitFlattening::methodsOf('App\Shared', [], $index, [])));
+        self::assertEquals(['mixed_case' => new TraitMethod('App\Shared', false)], TraitFlattening::methodsOf('App\Shared', [], $index, []));
     }
 
     public function testMethodsOfFindsATraitWhateverCasingItIsAskedFor(): void
     {
-        $index = ParsedSnippet::index(['Shared.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\n"]);
+        $root = vfsStream::setup('project', null, ['Shared.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\n"]);
+        $index = SourceIndex::of([$root->url().'/Shared.php'], $root->url());
 
-        self::assertSame(['shared'], array_keys(TraitFlattening::methodsOf('app\shared', [], $index, [])));
+        self::assertEquals(['shared' => new TraitMethod('App\Shared', false)], TraitFlattening::methodsOf('app\shared', [], $index, []));
     }
 
     public function testMethodsOfStopsAtATraitAlreadyBeingReadWhateverCasingItIsNamedIn(): void
     {
-        $index = ParsedSnippet::index(['Shared.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\n"]);
+        $root = vfsStream::setup('project', null, ['Shared.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\n"]);
+        $index = SourceIndex::of([$root->url().'/Shared.php'], $root->url());
 
         self::assertSame([], TraitFlattening::methodsOf('APP\SHARED', [], $index, ['app\shared']));
     }
 
+    public function testKeepsMethodKeepsTheCopyOfAMethodTheClassDoesNotWrite(): void
+    {
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Taker { use Shared; }\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        $method = $index->classLike('App\Shared')?->node->getMethod('shared');
+        self::assertNotNull($class);
+        self::assertNotNull($method);
+
+        self::assertTrue(TraitFlattening::keepsMethod($class, $method, 'shared', 'App\Shared', $index));
+    }
+
+    public function testKeepsMethodDiscardsTheCopyOfAMethodTheClassWritesItself(): void
+    {
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Taker { use Shared; public function shared(): void {} }\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        $method = $index->classLike('App\Shared')?->node->getMethod('shared');
+        self::assertNotNull($class);
+        self::assertNotNull($method);
+
+        self::assertFalse(TraitFlattening::keepsMethod($class, $method, 'shared', 'App\Shared', $index));
+    }
+
     public function testKeepsMethodDiscardsACopyOfAMethodTheClassWritesUnderAnotherCasing(): void
     {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Taker { use Shared; public function SHARED(): void {} }\n"]);
-        $method = ParsedSnippet::method("<?php\ntrait Shared { public function shared(): void {} }\n");
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Taker { use Shared; public function SHARED(): void {} }\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        $method = $index->classLike('App\Shared')?->node->getMethod('shared');
+        self::assertNotNull($class);
+        self::assertNotNull($method);
 
-        self::assertFalse(TraitFlattening::keepsMethod(ParsedSnippet::declarationIn($index, 'App\Taker'), $method, 'shared', 'App\Shared', $index));
+        self::assertFalse(TraitFlattening::keepsMethod($class, $method, 'shared', 'App\Shared', $index));
+    }
+
+    public function testKeepsMethodDiscardsTheCopyOfATraitAnInsteadofRulesOut(): void
+    {
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\ntrait Left { public function shared(): void {} }\ntrait Right { public function shared(): void {} }\nclass Taker { use Left, Right { Left::shared insteadof Right; } }\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        $method = $index->classLike('App\Right')?->node->getMethod('shared');
+        self::assertNotNull($class);
+        self::assertNotNull($method);
+
+        self::assertFalse(TraitFlattening::keepsMethod($class, $method, 'shared', 'App\Right', $index));
+    }
+
+    public function testKeepsMethodKeepsTheCopyOfTheTraitAnInsteadofNames(): void
+    {
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\ntrait Left { public function shared(): void {} }\ntrait Right { public function shared(): void {} }\nclass Taker { use Left, Right { Left::shared insteadof Right; } }\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        $method = $index->classLike('App\Left')?->node->getMethod('shared');
+        self::assertNotNull($class);
+        self::assertNotNull($method);
+
+        self::assertTrue(TraitFlattening::keepsMethod($class, $method, 'shared', 'App\Left', $index));
+    }
+
+    public function testKeepsMethodDiscardsADemandedMethodAnotherTraitWrites(): void
+    {
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\ntrait Demanding { abstract public function shared(): void; }\ntrait Writing { public function shared(): void {} }\nclass Taker { use Demanding, Writing; }\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        $method = $index->classLike('App\Demanding')?->node->getMethod('shared');
+        self::assertNotNull($class);
+        self::assertNotNull($method);
+
+        self::assertFalse(TraitFlattening::keepsMethod($class, $method, 'shared', 'App\Demanding', $index));
+    }
+
+    public function testKeepsMethodDiscardsADemandedMethodAnAncestorWrites(): void
+    {
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\ntrait Demanding { abstract public function shared(): void; }\nclass Ancestor_ { public function shared(): void {} }\nclass Taker extends Ancestor_ { use Demanding; }\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        $method = $index->classLike('App\Demanding')?->node->getMethod('shared');
+        self::assertNotNull($class);
+        self::assertNotNull($method);
+
+        self::assertFalse(TraitFlattening::keepsMethod($class, $method, 'shared', 'App\Demanding', $index));
+    }
+
+    public function testKeepsMethodKeepsADemandedMethodNothingAnswers(): void
+    {
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\ntrait Demanding { abstract public function shared(): void; }\nabstract class Taker { use Demanding; }\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        $method = $index->classLike('App\Demanding')?->node->getMethod('shared');
+        self::assertNotNull($class);
+        self::assertNotNull($method);
+
+        self::assertTrue(TraitFlattening::keepsMethod($class, $method, 'shared', 'App\Demanding', $index));
     }
 
     public function testKeepsMethodKeepsACopyTheTraitWritesWhateverCasingTheTraitIsNamedIn(): void
     {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Taker { use Shared; }\n"]);
-        $method = ParsedSnippet::method("<?php\ntrait Shared { public function shared(): void {} }\n");
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Taker { use Shared; }\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        $method = $index->classLike('App\Shared')?->node->getMethod('shared');
+        self::assertNotNull($class);
+        self::assertNotNull($method);
 
-        self::assertTrue(TraitFlattening::keepsMethod(ParsedSnippet::declarationIn($index, 'App\Taker'), $method, 'shared', 'app\shared', $index));
+        self::assertTrue(TraitFlattening::keepsMethod($class, $method, 'shared', 'app\shared', $index));
+    }
+
+    public function testProviderOfNamesNoTraitForAMethodNoneOffers(): void
+    {
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Taker { use Shared; }\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        self::assertNotNull($class);
+
+        self::assertNull(TraitFlattening::providerOf($class, 'missing', $index));
     }
 
     public function testProviderOfFindsAMethodWhateverCasingItIsAskedFor(): void
     {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Taker { use Shared; }\n"]);
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Taker { use Shared; }\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        self::assertNotNull($class);
 
-        self::assertSame('App\Shared', TraitFlattening::providerOf(ParsedSnippet::declarationIn($index, 'App\Taker'), 'SHARED', $index));
+        self::assertSame('App\Shared', TraitFlattening::providerOf($class, 'SHARED', $index));
     }
 
     public function testProviderOfIsSettledByAnInsteadofWhateverCasingItWrites(): void
     {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Left { public function shared(): void {} }\ntrait Right { public function shared(): void {} }\nclass Taker { use Left, Right { \\App\\RIGHT::SHARED insteadof Left; } }\n"]);
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\ntrait Left { public function shared(): void {} }\ntrait Right { public function shared(): void {} }\nclass Taker { use Left, Right { \\App\\RIGHT::SHARED insteadof Left; } }\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        self::assertNotNull($class);
 
-        self::assertSame('App\Right', TraitFlattening::providerOf(ParsedSnippet::declarationIn($index, 'App\Taker'), 'shared', $index));
+        self::assertSame('App\Right', TraitFlattening::providerOf($class, 'shared', $index));
+    }
+
+    public function testOffersOfReadsWhatTheTraitsAClassUsesOffer(): void
+    {
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\ntrait Left { public function shared(): void {} }\ntrait Right { public function shared(): void {} }\nclass Taker { use Left, Right; }\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        self::assertNotNull($class);
+
+        self::assertEquals(
+            [new TraitMethod('App\Left', false), new TraitMethod('App\Right', false)],
+            TraitFlattening::offersOf($class, 'shared', $index),
+        );
+    }
+
+    public function testWritesMethodReportsAMethodAClassWritesItself(): void
+    {
+        $class = (new NodeFinder())->findFirstInstanceOf((new ParserFactory())->createForHostVersion()->parse("<?php\nclass Taker { public function written(): void {} }\n") ?? [], Class_::class);
+        self::assertNotNull($class);
+
+        self::assertTrue(TraitFlattening::writesMethod($class, 'WRITTEN'));
+    }
+
+    public function testWritesMethodReportsNoMethodOfAnUnwrittenName(): void
+    {
+        $class = (new NodeFinder())->findFirstInstanceOf((new ParserFactory())->createForHostVersion()->parse("<?php\nclass Taker { public function written(): void {} }\n") ?? [], Class_::class);
+        self::assertNotNull($class);
+
+        self::assertFalse(TraitFlattening::writesMethod($class, 'other'));
+    }
+
+    public function testMethodWrittenFindsTheMethodAClassWrites(): void
+    {
+        $class = (new NodeFinder())->findFirstInstanceOf((new ParserFactory())->createForHostVersion()->parse("<?php\nclass Taker { public function written(): void {} }\n") ?? [], Class_::class);
+        self::assertNotNull($class);
+
+        self::assertSame($class->stmts[0], TraitFlattening::methodWritten($class, 'WRITTEN'));
+    }
+
+    public function testMethodWrittenFindsNothingForANameTheClassDoesNotWrite(): void
+    {
+        $class = (new NodeFinder())->findFirstInstanceOf((new ParserFactory())->createForHostVersion()->parse("<?php\nclass Taker { public function written(): void {} }\n") ?? [], Class_::class);
+        self::assertNotNull($class);
+
+        self::assertNull(TraitFlattening::methodWritten($class, 'other'));
+    }
+
+    public function testInheritsFindsNothingAboveAClassWithNoParent(): void
+    {
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\nclass Taker {}\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        self::assertNotNull($class);
+
+        self::assertFalse(TraitFlattening::inherits($class, 'shared', $index, []));
+    }
+
+    public function testInheritsFindsNothingAboveAClassWhoseParentIsNotAnalysed(): void
+    {
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\nclass Taker extends \\RuntimeException {}\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        self::assertNotNull($class);
+
+        self::assertFalse(TraitFlattening::inherits($class, 'getMessage', $index, []));
+    }
+
+    public function testInheritsFindsAMethodWrittenTwoClassesAbove(): void
+    {
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\nclass Root { public function shared(): void {} }\nclass Middle extends Root {}\nclass Taker extends Middle {}\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        self::assertNotNull($class);
+
+        self::assertTrue(TraitFlattening::inherits($class, 'shared', $index, []));
+    }
+
+    public function testInheritsFindsNoMethodWhereTheAncestorOnlyDemandsOne(): void
+    {
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\nabstract class Root { abstract public function shared(): void; }\nclass Taker extends Root {}\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        self::assertNotNull($class);
+
+        self::assertFalse(TraitFlattening::inherits($class, 'shared', $index, []));
     }
 
     public function testInheritsFindsAMethodWrittenAboveUnderAnotherCasing(): void
     {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\nclass Root { public function SHARED(): void {} }\nclass Taker extends Root {}\n"]);
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\nclass Root { public function SHARED(): void {} }\nclass Taker extends Root {}\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        self::assertNotNull($class);
 
-        self::assertTrue(TraitFlattening::inherits(ParsedSnippet::declarationIn($index, 'App\Taker'), 'shared', $index, []));
+        self::assertTrue(TraitFlattening::inherits($class, 'shared', $index, []));
     }
 
     public function testInheritsFindsAMethodATraitOfAnAncestorWrites(): void
     {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\ntrait Writing { public function shared(): void {} }\nclass Root { use Writing; }\nclass Taker extends Root {}\n"]);
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\ntrait Writing { public function shared(): void {} }\nclass Root { use Writing; }\nclass Taker extends Root {}\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        self::assertNotNull($class);
 
-        self::assertTrue(TraitFlattening::inherits(ParsedSnippet::declarationIn($index, 'App\Taker'), 'shared', $index, []));
+        self::assertTrue(TraitFlattening::inherits($class, 'shared', $index, []));
     }
 
     public function testInheritsStopsAtAnAncestorAlreadyBeingRead(): void
     {
-        $index = ParsedSnippet::index(['Taker.php' => "<?php\nnamespace App;\nclass Root { public function shared(): void {} }\nclass Taker extends Root {}\n"]);
+        $root = vfsStream::setup('project', null, ['Taker.php' => "<?php\nnamespace App;\nclass Root { public function shared(): void {} }\nclass Taker extends Root {}\n"]);
+        $index = SourceIndex::of([$root->url().'/Taker.php'], $root->url());
+        $class = $index->classLike('App\Taker')?->node;
+        self::assertNotNull($class);
 
-        self::assertFalse(TraitFlattening::inherits(ParsedSnippet::declarationIn($index, 'App\Taker'), 'shared', $index, ['app\root']));
+        self::assertFalse(TraitFlattening::inherits($class, 'shared', $index, ['app\root']));
     }
 }

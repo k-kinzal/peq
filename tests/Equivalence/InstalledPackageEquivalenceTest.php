@@ -8,14 +8,30 @@ use App\Analyzer\AnalysisFailedException;
 use App\Analyzer\Graph\GraphSnapshot;
 use App\Analyzer\NativeAnalyzer\NativeAnalyzer;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
+use FilesystemIterator;
+use Generator;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\InstalledPackages;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use RegexIterator;
 
 /**
+ * Both engines over the source trees of the packages this checkout has installed.
+ *
+ * A corpus written by hand covers what its author thought of, and a codebase peq's
+ * author did not write covers what nobody thought of: the constructs real libraries
+ * reach for, in the proportions they reach for them. The dependencies already on
+ * disk are such a codebase, and they cost nothing to obtain. They are not a fixed
+ * list: a package that arrives tomorrow is read tomorrow.
+ *
+ * Reading all of them costs more memory than one process can hold, because the
+ * reference engine keeps what it reflected over, so each package is read in a
+ * process of its own.
+ *
  * @internal
  */
 #[CoversNothing]
@@ -40,12 +56,38 @@ final class InstalledPackageEquivalenceTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{string, string}>
+     * Finds the source tree of every installed package worth reading.
+     *
+     * A package is read at the directory it keeps its sources in rather than at its
+     * root, so that its own tests and fixtures, which are written to be broken, are
+     * not read as if they were library code. A package of fewer than eight files
+     * exercises nothing a larger one does not, and each one read costs a whole run
+     * of the reference engine.
+     *
+     * @return Generator<string, array{string, string}>
      */
-    public static function providerInstalledPackages(): iterable
+    public static function providerInstalledPackages(): Generator
     {
-        foreach (InstalledPackages::sourceRoots(dirname(__DIR__, 2)) as $package => $path) {
-            yield $package => [$package, $path];
+        $vendor = dirname(__DIR__, 2).'/vendor';
+        $packages = glob($vendor.'/*/*', GLOB_ONLYDIR);
+        foreach ($packages === false ? [] : $packages as $package) {
+            foreach (['src', 'lib', 'source'] as $directory) {
+                $path = $package.'/'.$directory;
+                if (!is_dir($path)) {
+                    continue;
+                }
+                $files = new RegexIterator(new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS)), '/\.php$/');
+                if (iterator_count($files) < 8) {
+                    continue;
+                }
+
+                $name = substr($package, strlen($vendor) + 1);
+                $resolved = realpath($path);
+
+                yield $name => [$name, $resolved === false ? $path : $resolved];
+
+                break;
+            }
         }
     }
 
@@ -54,6 +96,6 @@ final class InstalledPackageEquivalenceTest extends TestCase
      */
     public function testThereAreInstalledPackagesToRead(): void
     {
-        self::assertNotSame([], InstalledPackages::sourceRoots(dirname(__DIR__, 2)), 'No installed package was read, so nothing about real code was checked.');
+        self::assertNotSame([], iterator_to_array(self::providerInstalledPackages()), 'No installed package was read, so nothing about real code was checked.');
     }
 }

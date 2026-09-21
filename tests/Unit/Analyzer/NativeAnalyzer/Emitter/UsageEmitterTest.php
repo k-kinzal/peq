@@ -4,14 +4,49 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\NativeAnalyzer\Emitter;
 
+use App\Analyzer\Graph\Edge;
+use App\Analyzer\Graph\Edge\Usage\CatchEdge;
+use App\Analyzer\Graph\Edge\Usage\ConstFetchEdge;
+use App\Analyzer\Graph\Edge\Usage\FunctionCallEdge;
+use App\Analyzer\Graph\Edge\Usage\InstanceofEdge;
+use App\Analyzer\Graph\Edge\Usage\InstantiationEdge;
+use App\Analyzer\Graph\Edge\Usage\MethodCallEdge;
+use App\Analyzer\Graph\Edge\Usage\PropertyAccessEdge;
+use App\Analyzer\Graph\Edge\Usage\StaticCallEdge;
+use App\Analyzer\Graph\Edge\Usage\StaticPropertyAccessEdge;
+use App\Analyzer\Graph\FileMeta;
+use App\Analyzer\Graph\Node\ClassNode;
+use App\Analyzer\Graph\Node\ConstantNode;
+use App\Analyzer\Graph\Node\FunctionNode;
+use App\Analyzer\Graph\Node\MethodNode;
+use App\Analyzer\Graph\Node\PropertyNode;
+use App\Analyzer\Graph\NodeId\ClassNodeId;
+use App\Analyzer\Graph\NodeId\ConstantNodeId;
+use App\Analyzer\Graph\NodeId\FunctionNodeId;
+use App\Analyzer\Graph\NodeId\MethodNodeId;
+use App\Analyzer\Graph\NodeId\PropertyNodeId;
+use App\Analyzer\NativeAnalyzer\AnalysisScope;
 use App\Analyzer\NativeAnalyzer\Emitter\UsageEmitter;
-use PhpParser\Node as PhpParserNode;
+use App\Analyzer\NativeAnalyzer\SourceIndex;
+use PhpParser\Node\Expr\ClassConstFetch;
+use PhpParser\Node\Expr\FuncCall;
+use PhpParser\Node\Expr\Instanceof_;
+use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\New_;
+use PhpParser\Node\Expr\PropertyFetch;
+use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Expr\StaticPropertyFetch;
+use PhpParser\Node\Stmt\Catch_;
+use PhpParser\Node\Stmt\Expression;
+use PhpParser\Node\Stmt\Property;
+use PhpParser\NodeFinder;
+use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor\NameResolver;
+use PhpParser\ParserFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Medium;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\GraphSpelling;
-use Tests\Fixture\Analyzer\ParsedSnippet;
 
 /**
  * @internal
@@ -21,48 +56,97 @@ use Tests\Fixture\Analyzer\ParsedSnippet;
 final class UsageEmitterTest extends TestCase
 {
     /**
-     * @param list<string> $expected The relations the expression is expected to describe
+     * @param list<Edge> $expected The relations the expression is expected to describe
      */
     #[DataProvider('providerExpressions')]
-    public function testEmitRecordsWhatAnExpressionReachesOutTo(string $written, array $expected): void
+    public function testEmitRecordsWhatAnExpressionReachesOutTo(string $code, array $expected): void
     {
-        self::assertSame($expected, GraphSpelling::of(UsageEmitter::emit(ParsedSnippet::expression($written), ParsedSnippet::scopeIn('App\Invoice', 'total'))));
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse($code) ?? []);
+        $statement = (new NodeFinder())->findFirstInstanceOf($parsed, Expression::class);
+        self::assertNotNull($statement);
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Invoice.php')->enteringClass('App\Invoice', null)->enteringMethod('total');
+
+        self::assertEquals($expected, UsageEmitter::emit($statement->expr, $scope));
     }
 
     /**
-     * @return iterable<string, array{string, list<string>}>
+     * @return iterable<string, array{string, list<Edge>}>
      */
     public static function providerExpressions(): iterable
     {
-        yield 'instantiating a class' => ['new \App\Money()', ['App\Invoice::total -[instantiation]-> App\Money']];
+        $total = new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null);
+        $at = new FileMeta('/project/Invoice.php', 2, 1);
 
-        yield 'instantiating the class it is written in' => ['new self()', ['App\Invoice::total -[instantiation]-> App\Invoice']];
+        yield 'instantiating a class' => [
+            "<?php\nnew \\App\\Money();\n",
+            [new InstantiationEdge($total, new ClassNode(ClassNodeId::of('App\Money'), false, null), $at)],
+        ];
 
-        yield 'calling a static method' => ['\App\Money::make()', ['App\Invoice::total -[static-call]-> App\Money::make']];
+        yield 'instantiating the class it is written in' => [
+            "<?php\nnew self();\n",
+            [new InstantiationEdge($total, new ClassNode(ClassNodeId::of('App\Invoice'), false, null), $at)],
+        ];
 
-        yield 'reading a constant' => ['\App\Money::ZERO', ['App\Invoice::total -[const-fetch]-> App\Money::ZERO']];
+        yield 'calling a static method' => [
+            "<?php\n\\App\\Money::make();\n",
+            [new StaticCallEdge($total, new MethodNode(MethodNodeId::of('App\Money', 'make'), false, null), $at)],
+        ];
 
-        yield 'naming a class' => ['\App\Money::class', ['App\Invoice::total -[const-fetch]-> App\Money::class']];
+        yield 'reading a constant' => [
+            "<?php\n\\App\\Money::ZERO;\n",
+            [new ConstFetchEdge($total, new ConstantNode(ConstantNodeId::of('App\Money', 'ZERO'), false, null), $at)],
+        ];
 
-        yield 'reading a static property' => ['\App\Money::$rate', ['App\Invoice::total -[static-property-access]-> App\Money::rate']];
+        yield 'naming a class' => [
+            "<?php\n\\App\\Money::class;\n",
+            [new ConstFetchEdge($total, new ConstantNode(ConstantNodeId::of('App\Money', 'class'), false, null), $at)],
+        ];
 
-        yield 'testing a type' => ['$held instanceof \App\Money', ['App\Invoice::total -[instanceof]-> App\Money']];
+        yield 'reading a static property' => [
+            "<?php\n\\App\\Money::\$rate;\n",
+            [new StaticPropertyAccessEdge($total, new PropertyNode(PropertyNodeId::of('App\Money', 'rate'), false, null), $at)],
+        ];
 
-        yield 'calling a function' => ['\App\helper()', ['App\Invoice::total -[function-call]-> App\helper']];
+        yield 'testing a type' => [
+            "<?php\n\$held instanceof \\App\\Money;\n",
+            [new InstanceofEdge($total, new ClassNode(ClassNodeId::of('App\Money'), false, null), $at)],
+        ];
 
-        yield 'calling a method on itself' => ['$this->helper()', ['App\Invoice::total -[method-call]-> App\Invoice::helper']];
+        yield 'calling a function' => [
+            "<?php\n\\App\\helper();\n",
+            [new FunctionCallEdge($total, new FunctionNode(FunctionNodeId::of('App\helper'), false, null), $at)],
+        ];
 
-        yield 'calling a method on itself, carefully' => ['$this?->helper()', ['App\Invoice::total -[method-call]-> App\Invoice::helper']];
+        yield 'calling a method on itself' => [
+            "<?php\n\$this->helper();\n",
+            [new MethodCallEdge($total, new MethodNode(MethodNodeId::of('App\Invoice', 'helper'), false, null), $at)],
+        ];
 
-        yield 'reading a property of itself' => ['$this->held', ['App\Invoice::total -[property-access]-> App\Invoice::held']];
+        yield 'calling a method on itself, carefully' => [
+            "<?php\n\$this?->helper();\n",
+            [new MethodCallEdge($total, new MethodNode(MethodNodeId::of('App\Invoice', 'helper'), false, null), $at)],
+        ];
 
-        yield 'reading a property of itself, carefully' => ['$this?->held', ['App\Invoice::total -[property-access]-> App\Invoice::held']];
+        yield 'reading a property of itself' => [
+            "<?php\n\$this->held;\n",
+            [new PropertyAccessEdge($total, new PropertyNode(PropertyNodeId::of('App\Invoice', 'held'), false, null), $at)],
+        ];
+
+        yield 'reading a property of itself, carefully' => [
+            "<?php\n\$this?->held;\n",
+            [new PropertyAccessEdge($total, new PropertyNode(PropertyNodeId::of('App\Invoice', 'held'), false, null), $at)],
+        ];
     }
 
     #[DataProvider('providerExpressionsThatReachNothingNameable')]
-    public function testEmitRecordsNothingForAnExpressionThatNamesNothing(string $written): void
+    public function testEmitRecordsNothingForAnExpressionThatNamesNothing(string $code): void
     {
-        self::assertSame([], UsageEmitter::emit(ParsedSnippet::expression($written), ParsedSnippet::scopeIn('App\Invoice', 'total')));
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse($code) ?? []);
+        $statement = (new NodeFinder())->findFirstInstanceOf($parsed, Expression::class);
+        self::assertNotNull($statement);
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Invoice.php')->enteringClass('App\Invoice', null)->enteringMethod('total');
+
+        self::assertSame([], UsageEmitter::emit($statement->expr, $scope));
     }
 
     /**
@@ -70,30 +154,38 @@ final class UsageEmitterTest extends TestCase
      */
     public static function providerExpressionsThatReachNothingNameable(): iterable
     {
-        yield 'instantiating a class named by a variable' => ['new $held()'];
+        yield 'instantiating a class named by a variable' => ["<?php\nnew \$held();\n"];
 
-        yield 'calling a method on an object of unknown type' => ['$other->helper()'];
+        yield 'calling a method on an object of unknown type' => ["<?php\n\$other->helper();\n"];
 
-        yield 'reading a property of an object of unknown type' => ['$other->held'];
+        yield 'reading a property of an object of unknown type' => ["<?php\n\$other->held;\n"];
 
-        yield 'calling a static method on a class named by a variable' => ['$held::make()'];
+        yield 'calling a static method on a class named by a variable' => ["<?php\n\$held::make();\n"];
 
-        yield 'calling a function named by a variable' => ['$held()'];
+        yield 'calling a function named by a variable' => ["<?php\n\$held();\n"];
 
-        yield 'reading a constant of a class named by a variable' => ['$held::ZERO'];
+        yield 'reading a constant of a class named by a variable' => ["<?php\n\$held::ZERO;\n"];
 
-        yield 'adding two numbers' => ['1 + 1'];
+        yield 'adding two numbers' => ["<?php\n1 + 1;\n"];
     }
 
     public function testEmitRecordsNothingWhereThereIsNoSymbolToRecordItAgainst(): void
     {
-        self::assertSame([], UsageEmitter::emit(ParsedSnippet::expression('new \App\Money()'), ParsedSnippet::scopeIn(null, null)));
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nnew \\App\\Money();\n") ?? []);
+        $statement = (new NodeFinder())->findFirstInstanceOf($parsed, Expression::class);
+        self::assertNotNull($statement);
+
+        self::assertSame([], UsageEmitter::emit($statement->expr, AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Invoice.php')));
     }
 
     #[DataProvider('providerExpressionsWorthLookingAt')]
-    public function testRecordsRecognisesAnExpressionWorthLookingAt(string $written, bool $expected): void
+    public function testRecordsRecognisesAnExpressionWorthLookingAt(string $code, bool $expected): void
     {
-        self::assertSame($expected, UsageEmitter::records(ParsedSnippet::expression($written)));
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse($code) ?? []);
+        $statement = (new NodeFinder())->findFirstInstanceOf($parsed, Expression::class);
+        self::assertNotNull($statement);
+
+        self::assertSame($expected, UsageEmitter::records($statement->expr));
     }
 
     /**
@@ -101,163 +193,205 @@ final class UsageEmitterTest extends TestCase
      */
     public static function providerExpressionsWorthLookingAt(): iterable
     {
-        yield 'reading a constant' => ['\App\Money::ZERO', true];
+        yield 'reading a constant' => ["<?php\n\\App\\Money::ZERO;\n", true];
 
-        yield 'instantiating a class' => ['new \App\Money()', true];
+        yield 'instantiating a class' => ["<?php\nnew \\App\\Money();\n", true];
 
-        yield 'calling a static method' => ['\App\Money::make()', true];
+        yield 'calling a static method' => ["<?php\n\\App\\Money::make();\n", true];
 
-        yield 'testing a type' => ['$held instanceof \App\Money', true];
+        yield 'testing a type' => ["<?php\n\$held instanceof \\App\\Money;\n", true];
 
-        yield 'calling a function' => ['\App\helper()', true];
+        yield 'calling a function' => ["<?php\n\\App\\helper();\n", true];
 
-        yield 'calling a method' => ['$this->helper()', true];
+        yield 'calling a method' => ["<?php\n\$this->helper();\n", true];
 
-        yield 'calling a method carefully' => ['$this?->helper()', true];
+        yield 'calling a method carefully' => ["<?php\n\$this?->helper();\n", true];
 
-        yield 'reading a property' => ['$this->held', true];
+        yield 'reading a property' => ["<?php\n\$this->held;\n", true];
 
-        yield 'reading a property carefully' => ['$this?->held', true];
+        yield 'reading a property carefully' => ["<?php\n\$this?->held;\n", true];
 
-        yield 'reading a static property' => ['\App\Money::$rate', true];
+        yield 'reading a static property' => ["<?php\n\\App\\Money::\$rate;\n", true];
 
-        yield 'adding two numbers' => ['1 + 1', false];
+        yield 'adding two numbers' => ["<?php\n1 + 1;\n", false];
 
-        yield 'reading a variable' => ['$held', false];
+        yield 'reading a variable' => ["<?php\n\$held;\n", false];
 
-        yield 'writing a string' => ["'text'", false];
+        yield 'writing a string' => ["<?php\n'text';\n", false];
 
-        yield 'calling something a variable names is still a call' => ['$held()', true];
+        yield 'calling something a variable names is still a call' => ["<?php\n\$held();\n", true];
     }
 
     public function testConstantFetchRecordsAConstantBeingRead(): void
     {
-        $node = ParsedSnippet::expression('\App\Money::ZERO');
-        self::assertInstanceOf(PhpParserNode\Expr\ClassConstFetch::class, $node);
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\n\\App\\Money::ZERO;\n") ?? []);
+        $fetch = (new NodeFinder())->findFirstInstanceOf($parsed, ClassConstFetch::class);
+        self::assertNotNull($fetch);
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Invoice.php')->enteringClass('App\Invoice', null)->enteringMethod('total');
+        $total = new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null);
+        $at = new FileMeta('/project/Invoice.php', 2, 1);
 
-        self::assertSame(
-            ['App\Invoice::total -[const-fetch]-> App\Money::ZERO'],
-            GraphSpelling::of(UsageEmitter::constantFetch($node, ParsedSnippet::scopeIn('App\Invoice', 'total'), ParsedSnippet::writtenBy('App\Invoice', 'total'), ParsedSnippet::writtenAt())),
+        self::assertEquals(
+            [new ConstFetchEdge($total, new ConstantNode(ConstantNodeId::of('App\Money', 'ZERO'), false, null), $at)],
+            UsageEmitter::constantFetch($fetch, $scope, $total, $at),
         );
     }
 
     public function testInstantiationRecordsAClassBeingMade(): void
     {
-        $node = ParsedSnippet::expression('new \App\Money()');
-        self::assertInstanceOf(PhpParserNode\Expr\New_::class, $node);
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nnew \\App\\Money();\n") ?? []);
+        $made = (new NodeFinder())->findFirstInstanceOf($parsed, New_::class);
+        self::assertNotNull($made);
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Invoice.php')->enteringClass('App\Invoice', null)->enteringMethod('total');
+        $total = new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null);
+        $at = new FileMeta('/project/Invoice.php', 2, 1);
 
-        self::assertSame(
-            ['App\Invoice::total -[instantiation]-> App\Money'],
-            GraphSpelling::of(UsageEmitter::instantiation($node, ParsedSnippet::scopeIn('App\Invoice', 'total'), ParsedSnippet::writtenBy('App\Invoice', 'total'), ParsedSnippet::writtenAt())),
+        self::assertEquals(
+            [new InstantiationEdge($total, new ClassNode(ClassNodeId::of('App\Money'), false, null), $at)],
+            UsageEmitter::instantiation($made, $scope, $total, $at),
         );
     }
 
     public function testStaticCallRecordsAStaticMethodBeingCalled(): void
     {
-        $node = ParsedSnippet::expression('\App\Money::make()');
-        self::assertInstanceOf(PhpParserNode\Expr\StaticCall::class, $node);
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\n\\App\\Money::make();\n") ?? []);
+        $call = (new NodeFinder())->findFirstInstanceOf($parsed, StaticCall::class);
+        self::assertNotNull($call);
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Invoice.php')->enteringClass('App\Invoice', null)->enteringMethod('total');
+        $total = new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null);
+        $at = new FileMeta('/project/Invoice.php', 2, 1);
 
-        self::assertSame(
-            ['App\Invoice::total -[static-call]-> App\Money::make'],
-            GraphSpelling::of(UsageEmitter::staticCall($node, ParsedSnippet::scopeIn('App\Invoice', 'total'), ParsedSnippet::writtenBy('App\Invoice', 'total'), ParsedSnippet::writtenAt())),
+        self::assertEquals(
+            [new StaticCallEdge($total, new MethodNode(MethodNodeId::of('App\Money', 'make'), false, null), $at)],
+            UsageEmitter::staticCall($call, $scope, $total, $at),
         );
     }
 
     public function testInstanceOfRecordsATypeBeingTested(): void
     {
-        $node = ParsedSnippet::expression('$held instanceof \App\Money');
-        self::assertInstanceOf(PhpParserNode\Expr\Instanceof_::class, $node);
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\n\$held instanceof \\App\\Money;\n") ?? []);
+        $test = (new NodeFinder())->findFirstInstanceOf($parsed, Instanceof_::class);
+        self::assertNotNull($test);
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Invoice.php')->enteringClass('App\Invoice', null)->enteringMethod('total');
+        $total = new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null);
+        $at = new FileMeta('/project/Invoice.php', 2, 1);
 
-        self::assertSame(
-            ['App\Invoice::total -[instanceof]-> App\Money'],
-            GraphSpelling::of(UsageEmitter::instanceOf($node, ParsedSnippet::scopeIn('App\Invoice', 'total'), ParsedSnippet::writtenBy('App\Invoice', 'total'), ParsedSnippet::writtenAt())),
+        self::assertEquals(
+            [new InstanceofEdge($total, new ClassNode(ClassNodeId::of('App\Money'), false, null), $at)],
+            UsageEmitter::instanceOf($test, $scope, $total, $at),
         );
     }
 
     public function testFunctionCallRecordsAFunctionBeingCalled(): void
     {
-        $node = ParsedSnippet::expression('\App\helper()');
-        self::assertInstanceOf(PhpParserNode\Expr\FuncCall::class, $node);
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\n\\App\\helper();\n") ?? []);
+        $call = (new NodeFinder())->findFirstInstanceOf($parsed, FuncCall::class);
+        self::assertNotNull($call);
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Invoice.php')->enteringClass('App\Invoice', null)->enteringMethod('total');
+        $total = new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null);
+        $at = new FileMeta('/project/Invoice.php', 2, 1);
 
-        self::assertSame(
-            ['App\Invoice::total -[function-call]-> App\helper'],
-            GraphSpelling::of(UsageEmitter::functionCall($node, ParsedSnippet::scopeIn('App\Invoice', 'total'), ParsedSnippet::writtenBy('App\Invoice', 'total'), ParsedSnippet::writtenAt())),
+        self::assertEquals(
+            [new FunctionCallEdge($total, new FunctionNode(FunctionNodeId::of('App\helper'), false, null), $at)],
+            UsageEmitter::functionCall($call, $scope, $total, $at),
         );
     }
 
     public function testMethodCallRecordsAMethodBeingCalledOnItself(): void
     {
-        $node = ParsedSnippet::expression('$this->helper()');
-        self::assertInstanceOf(PhpParserNode\Expr\MethodCall::class, $node);
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\n\$this->helper();\n") ?? []);
+        $call = (new NodeFinder())->findFirstInstanceOf($parsed, MethodCall::class);
+        self::assertNotNull($call);
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Invoice.php')->enteringClass('App\Invoice', null)->enteringMethod('total');
+        $total = new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null);
+        $at = new FileMeta('/project/Invoice.php', 2, 1);
 
-        self::assertSame(
-            ['App\Invoice::total -[method-call]-> App\Invoice::helper'],
-            GraphSpelling::of(UsageEmitter::methodCall($node, ParsedSnippet::scopeIn('App\Invoice', 'total'), ParsedSnippet::writtenBy('App\Invoice', 'total'), ParsedSnippet::writtenAt())),
+        self::assertEquals(
+            [new MethodCallEdge($total, new MethodNode(MethodNodeId::of('App\Invoice', 'helper'), false, null), $at)],
+            UsageEmitter::methodCall($call, $scope, $total, $at),
         );
     }
 
     public function testPropertyAccessRecordsAPropertyOfItselfBeingRead(): void
     {
-        $node = ParsedSnippet::expression('$this->held');
-        self::assertInstanceOf(PhpParserNode\Expr\PropertyFetch::class, $node);
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\n\$this->held;\n") ?? []);
+        $fetch = (new NodeFinder())->findFirstInstanceOf($parsed, PropertyFetch::class);
+        self::assertNotNull($fetch);
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Invoice.php')->enteringClass('App\Invoice', null)->enteringMethod('total');
+        $total = new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null);
+        $at = new FileMeta('/project/Invoice.php', 2, 1);
 
-        self::assertSame(
-            ['App\Invoice::total -[property-access]-> App\Invoice::held'],
-            GraphSpelling::of(UsageEmitter::propertyAccess($node, ParsedSnippet::scopeIn('App\Invoice', 'total'), ParsedSnippet::writtenBy('App\Invoice', 'total'), ParsedSnippet::writtenAt())),
+        self::assertEquals(
+            [new PropertyAccessEdge($total, new PropertyNode(PropertyNodeId::of('App\Invoice', 'held'), false, null), $at)],
+            UsageEmitter::propertyAccess($fetch, $scope, $total, $at),
         );
     }
 
     public function testStaticPropertyAccessRecordsAStaticPropertyBeingRead(): void
     {
-        $node = ParsedSnippet::expression('\App\Money::$rate');
-        self::assertInstanceOf(PhpParserNode\Expr\StaticPropertyFetch::class, $node);
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\n\\App\\Money::\$rate;\n") ?? []);
+        $fetch = (new NodeFinder())->findFirstInstanceOf($parsed, StaticPropertyFetch::class);
+        self::assertNotNull($fetch);
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Invoice.php')->enteringClass('App\Invoice', null)->enteringMethod('total');
+        $total = new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null);
+        $at = new FileMeta('/project/Invoice.php', 2, 1);
 
-        self::assertSame(
-            ['App\Invoice::total -[static-property-access]-> App\Money::rate'],
-            GraphSpelling::of(UsageEmitter::staticPropertyAccess($node, ParsedSnippet::scopeIn('App\Invoice', 'total'), ParsedSnippet::writtenBy('App\Invoice', 'total'), ParsedSnippet::writtenAt())),
+        self::assertEquals(
+            [new StaticPropertyAccessEdge($total, new PropertyNode(PropertyNodeId::of('App\Money', 'rate'), false, null), $at)],
+            UsageEmitter::staticPropertyAccess($fetch, $scope, $total, $at),
         );
     }
 
     public function testCaughtRecordsEveryTypeACatchClauseNames(): void
     {
-        $clause = ParsedSnippet::memberStatement(
-            "<?php\nnamespace App;\ntry { \$written = 1; } catch (\\App\\Failure|\\LogicException \$caught) { \$caught->getMessage(); }\n",
-            PhpParserNode\Stmt\Catch_::class,
-        );
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nnamespace App;\ntry { \$written = 1; } catch (\\App\\Failure|\\LogicException \$caught) { \$caught->getMessage(); }\n") ?? []);
+        $clause = (new NodeFinder())->findFirstInstanceOf($parsed, Catch_::class);
+        self::assertNotNull($clause);
+        $total = new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null);
+        $at = new FileMeta('/project/Invoice.php', 3, 1);
 
-        self::assertSame(
-            ['App\Invoice::total -[catch]-> App\Failure', 'App\Invoice::total -[catch]-> LogicException'],
-            GraphSpelling::of(UsageEmitter::caught($clause, ParsedSnippet::writtenBy('App\Invoice', 'total'), ParsedSnippet::writtenAt())),
+        self::assertEquals(
+            [
+                new CatchEdge($total, new ClassNode(ClassNodeId::of('App\Failure'), false, null), $at),
+                new CatchEdge($total, new ClassNode(ClassNodeId::of('LogicException'), false, null), $at),
+            ],
+            UsageEmitter::caught($clause, $total, $at),
         );
     }
 
     public function testIsThisRecognisesTheObjectTheCodeIsWrittenIn(): void
     {
-        self::assertTrue(UsageEmitter::isThis(ParsedSnippet::expression('$this')));
+        $parsed = (new ParserFactory())->createForHostVersion()->parse("<?php\n\$this;\n") ?? [];
+        $statement = (new NodeFinder())->findFirstInstanceOf($parsed, Expression::class);
+        self::assertNotNull($statement);
+
+        self::assertTrue(UsageEmitter::isThis($statement->expr));
     }
 
     public function testIsThisDoesNotTakeAnotherVariableForIt(): void
     {
-        self::assertFalse(UsageEmitter::isThis(ParsedSnippet::expression('$other')));
+        $parsed = (new ParserFactory())->createForHostVersion()->parse("<?php\n\$other;\n") ?? [];
+        $statement = (new NodeFinder())->findFirstInstanceOf($parsed, Expression::class);
+        self::assertNotNull($statement);
+
+        self::assertFalse(UsageEmitter::isThis($statement->expr));
     }
 
     public function testRecordsRecognisesACatchClauseWorthLookingAt(): void
     {
-        $clause = ParsedSnippet::memberStatement(
-            "<?php\nnamespace App;\ntry { \$written = 1; } catch (\\App\\Failure \$caught) { \$caught->getMessage(); }\n",
-            PhpParserNode\Stmt\Catch_::class,
-        );
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nnamespace App;\ntry { \$written = 1; } catch (\\App\\Failure \$caught) { \$caught->getMessage(); }\n") ?? []);
+        $clause = (new NodeFinder())->findFirstInstanceOf($parsed, Catch_::class);
+        self::assertNotNull($clause);
 
         self::assertTrue(UsageEmitter::records($clause));
     }
 
     public function testRecordsDoesNotTakeAnyStatementForOneWorthLookingAt(): void
     {
-        $statement = ParsedSnippet::memberStatement(
-            "<?php\nnamespace App;\nclass Written { public int \$held = 0; }\n",
-            PhpParserNode\Stmt\Property::class,
-        );
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nnamespace App;\nclass Written { public int \$held = 0; }\n") ?? []);
+        $property = (new NodeFinder())->findFirstInstanceOf($parsed, Property::class);
+        self::assertNotNull($property);
 
-        self::assertFalse(UsageEmitter::records($statement));
+        self::assertFalse(UsageEmitter::records($property));
     }
 }
