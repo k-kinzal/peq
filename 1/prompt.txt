@@ -1,0 +1,8 @@
+Run exactly these shell commands, one after another, in this order, each copied character for character, and nothing else. Stop at the first one that fails.
+git -C /Users/ab/Projects/peq/.claude/worktrees/gql-graph reset --hard 2b266ddc27aeef700e0261b2f23ed4de762c11cf
+git -C /Users/ab/Projects/peq/.claude/worktrees/gql-graph cherry-pick --no-commit c32a9f4f
+git -C /Users/ab/Projects/peq/.claude/worktrees/gql-graph rm -q -f spec/iso/features.xml spec/iso/conditions.xml spec/iso/gql.bnf.xml spec/iso/implementation-defined.xml
+git -C /Users/ab/Projects/peq/.claude/worktrees/gql-graph checkout 470f3226 -- spec/iso/subclauses.txt
+git -C /Users/ab/Projects/peq/.claude/worktrees/gql-graph commit -q -C c32a9f4f
+git -C /Users/ab/Projects/peq/.claude/worktrees/gql-graph cherry-pick 3a1319f7 470f3226 0ec27e61 76507dc6 3c5465cb 0918ed2e
+Then print the output and exit code of each command.
