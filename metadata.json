@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M334MTC470K0MP01PEVC2853",
+  "strategy": "manual-commit",
+  "branch": "ci/renovate-track-action-pins",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".github/workflows/ci.yaml",
+    ".github/workflows/docs-preview.yml",
+    ".github/workflows/docs.yml",
+    ".github/workflows/equivalence.yml",
+    ".github/workflows/pbt.yml",
+    ".github/workflows/release.yaml"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 106,
+    "cache_creation_tokens": 162197,
+    "cache_read_tokens": 2683449,
+    "output_tokens": 25304,
+    "api_call_count": 50
+  }
+}
