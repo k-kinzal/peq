@@ -52,15 +52,13 @@ final class BlockExecution
     private readonly ReturnExecution $projection;
 
     /**
-     * @param ElementGraph $graph    The graph being queried
-     * @param int          $hopLimit How far a repetition goes when no upper bound was written
+     * @param ElementGraph $graph The graph being queried
      */
     public function __construct(
         ElementGraph $graph,
-        int $hopLimit = 10,
     ) {
         $evaluation = new ExpressionEvaluation();
-        $this->matches = new MatchExecution($graph, $evaluation, $hopLimit);
+        $this->matches = new MatchExecution($graph, $evaluation);
         $this->rows = new RowExecution($evaluation);
         $this->projection = new ReturnExecution($this->rows);
     }

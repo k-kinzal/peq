@@ -28,7 +28,7 @@ final class QueryExecution
 {
     /**
      * @param ElementGraph $graph    The graph being queried
-     * @param int          $hopLimit How far a repetition goes when no upper bound was written
+     * @param int          $hopLimit The largest upper bound a quantifier may be written with, which is IL018
      */
     public function __construct(
         private readonly ElementGraph $graph,
@@ -39,7 +39,7 @@ final class QueryExecution
      * Prepares to query an analysed dependency graph.
      *
      * @param Graph $graph    The graph analysis produced
-     * @param int   $hopLimit How far a repetition goes when no upper bound was written
+     * @param int   $hopLimit The largest upper bound a quantifier may be written with, which is IL018
      *
      * @example A graph analysis produced can be queried as it stands
      *     \App\Gql\Execution\QueryExecution::against(new \App\Analyzer\Graph\Graph())->query('RETURN 1 AS n')->rows[0]->value(0)->toText() // => '1'
@@ -84,7 +84,8 @@ final class QueryExecution
      */
     public function run(Query $query): ResultTable
     {
-        $blocks = new BlockExecution($this->graph, $this->hopLimit);
+        QuantifierLimit::check($query, $this->hopLimit);
+        $blocks = new BlockExecution($this->graph);
         $answered = $blocks->run($query->blocks[0]);
 
         foreach ($query->operators as $place => $operator) {

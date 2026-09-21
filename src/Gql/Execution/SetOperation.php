@@ -6,6 +6,7 @@ namespace App\Gql\Execution;
 
 use App\Gql\Datum\DatumIdentity;
 use App\Gql\GqlException;
+use App\Gql\Result\ResultColumn;
 use App\Gql\Result\ResultRow;
 use App\Gql\Result\ResultTable;
 use App\Gql\StatusCode;
@@ -51,21 +52,45 @@ final class SetOperation
      */
     public static function combine(SetOperator $operator, ResultTable $left, ResultTable $right): ResultTable
     {
-        if ($operator === SetOperator::Otherwise) {
+        $rows = match ($operator) {
+            SetOperator::Otherwise => null,
+            SetOperator::UnionAll => [...$left->rows, ...$right->rows],
+            SetOperator::Union => self::once([...$left->rows, ...$right->rows]),
+            SetOperator::Intersect, SetOperator::Except => self::once(self::sharing($left->rows, $right->rows, $operator === SetOperator::Intersect)),
+        };
+        if ($rows === null) {
             return $left->rows === [] ? $right : $left;
         }
         self::requireSameShape($left, $right);
-        if ($operator === SetOperator::UnionAll) {
-            return new ResultTable($left->columns, [...$left->rows, ...$right->rows]);
-        }
-        if ($operator === SetOperator::Union) {
-            return new ResultTable($left->columns, self::once([...$left->rows, ...$right->rows]));
+
+        return new ResultTable(self::retyped($left->columns, $rows), $rows);
+    }
+
+    /**
+     * Returns the columns of a combined result, typed by what they hold once combined.
+     *
+     * A column's type describes its values, and a union holds the values of both
+     * sides: `RETURN 1 AS n UNION ALL RETURN 'a' AS n` holds a number and a string, so
+     * its column holds any value rather than the whole numbers the left side held.
+     *
+     * @param list<ResultColumn> $columns The columns, named as the left side names them
+     * @param list<ResultRow>    $rows    The rows of the combined result
+     *
+     * @example A column holding the values of two kinds holds any value
+     *     $columns = [new \App\Gql\Result\ResultColumn('n', 'INT64')];
+     *     $rows = [new \App\Gql\Result\ResultRow([new \App\Gql\Datum\IntegerDatum(1)]), new \App\Gql\Result\ResultRow([new \App\Gql\Datum\StringDatum('a')])];
+     *     \App\Gql\Execution\SetOperation::retyped($columns, $rows)[0]->type // => 'ANY'
+     *
+     * @return list<ResultColumn> The columns
+     */
+    public static function retyped(array $columns, array $rows): array
+    {
+        $retyped = [];
+        foreach ($columns as $index => $column) {
+            $retyped[] = new ResultColumn($column->heading, ResultTable::typeOf($rows, $index));
         }
 
-        return new ResultTable(
-            $left->columns,
-            self::once(self::sharing($left->rows, $right->rows, $operator === SetOperator::Intersect)),
-        );
+        return $retyped;
     }
 
     /**

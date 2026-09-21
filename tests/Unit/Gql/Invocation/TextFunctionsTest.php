@@ -6,23 +6,14 @@ namespace Tests\Unit\Gql\Invocation;
 
 use App\Gql\Argument\NumberArgument;
 use App\Gql\Argument\TextArgument;
-use App\Gql\Datum\BooleanDatum;
-use App\Gql\Datum\DateTimeDatum;
-use App\Gql\Datum\Datum;
-use App\Gql\Datum\DatumIdentity;
-use App\Gql\Datum\DatumJson;
 use App\Gql\Datum\DatumKind;
-use App\Gql\Datum\DatumOrder;
-use App\Gql\Datum\EdgeDatum;
+use App\Gql\Datum\DecimalDatum;
 use App\Gql\Datum\FloatDatum;
 use App\Gql\Datum\IntegerDatum;
 use App\Gql\Datum\ListDatum;
-use App\Gql\Datum\NodeDatum;
 use App\Gql\Datum\NullDatum;
-use App\Gql\Datum\PathDatum;
 use App\Gql\Datum\StringDatum;
 use App\Gql\GqlException;
-use App\Gql\Invocation\ListFunctions;
 use App\Gql\Invocation\TextFunctions;
 use App\Gql\StatusCode;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -34,26 +25,17 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(TextFunctions::class)]
-#[UsesClass(BooleanDatum::class)]
-#[UsesClass(DateTimeDatum::class)]
-#[UsesClass(DatumIdentity::class)]
-#[UsesClass(DatumJson::class)]
 #[UsesClass(DatumKind::class)]
-#[UsesClass(DatumOrder::class)]
-#[UsesClass(EdgeDatum::class)]
+#[UsesClass(DecimalDatum::class)]
 #[UsesClass(FloatDatum::class)]
+#[UsesClass(GqlException::class)]
 #[UsesClass(IntegerDatum::class)]
 #[UsesClass(ListDatum::class)]
-#[UsesClass(NodeDatum::class)]
 #[UsesClass(NullDatum::class)]
-#[UsesClass(PathDatum::class)]
-#[UsesClass(StringDatum::class)]
-#[UsesClass(Datum::class)]
-#[UsesClass(GqlException::class)]
-#[UsesClass(StatusCode::class)]
 #[UsesClass(NumberArgument::class)]
+#[UsesClass(StatusCode::class)]
+#[UsesClass(StringDatum::class)]
 #[UsesClass(TextArgument::class)]
-#[UsesClass(ListFunctions::class)]
 #[Small]
 final class TextFunctionsTest extends TestCase
 {
@@ -62,7 +44,15 @@ final class TextFunctionsTest extends TestCase
      */
     public function testCharLengthCountsTheCharactersAStringHolds(): void
     {
-        self::assertSame('7', TextFunctions::charLength(new StringDatum('Invoice'))->toText());
+        self::assertEquals(new IntegerDatum(7), TextFunctions::charLength(new StringDatum('Invoice')));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testCharLengthCountsCharactersRatherThanBytes(): void
+    {
+        self::assertEquals(new IntegerDatum(2), TextFunctions::charLength(new StringDatum('é!')));
     }
 
     /**
@@ -70,7 +60,7 @@ final class TextFunctionsTest extends TestCase
      */
     public function testCharLengthFindsNoLengthInSomethingThatIsNotThere(): void
     {
-        self::assertSame(DatumKind::Null, TextFunctions::charLength(new NullDatum())->kind());
+        self::assertEquals(new NullDatum(), TextFunctions::charLength(new NullDatum()));
     }
 
     /**
@@ -79,7 +69,7 @@ final class TextFunctionsTest extends TestCase
     public function testCharLengthReportsAValueThatIsNotAString(): void
     {
         $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('a string was expected');
+        $this->expectExceptionMessage('[22G03] error: data exception - invalid value type: a string was expected, and a LIST was given');
 
         TextFunctions::charLength(new ListDatum([]));
     }
@@ -89,7 +79,7 @@ final class TextFunctionsTest extends TestCase
      */
     public function testUpperMapsAStringToUpperCase(): void
     {
-        self::assertSame('INVOICE', TextFunctions::upper(new StringDatum('Invoice'))->toText());
+        self::assertEquals(new StringDatum('INVOICE'), TextFunctions::upper(new StringDatum('Invoice')));
     }
 
     /**
@@ -97,7 +87,7 @@ final class TextFunctionsTest extends TestCase
      */
     public function testUpperMapsNothingWhenThereIsNothingToMap(): void
     {
-        self::assertSame(DatumKind::Null, TextFunctions::upper(new NullDatum())->kind());
+        self::assertEquals(new NullDatum(), TextFunctions::upper(new NullDatum()));
     }
 
     /**
@@ -105,7 +95,7 @@ final class TextFunctionsTest extends TestCase
      */
     public function testLowerMapsAStringToLowerCase(): void
     {
-        self::assertSame('invoice', TextFunctions::lower(new StringDatum('Invoice'))->toText());
+        self::assertEquals(new StringDatum('invoice'), TextFunctions::lower(new StringDatum('Invoice')));
     }
 
     /**
@@ -113,7 +103,7 @@ final class TextFunctionsTest extends TestCase
      */
     public function testLowerMapsNothingWhenThereIsNothingToMap(): void
     {
-        self::assertSame(DatumKind::Null, TextFunctions::lower(new NullDatum())->kind());
+        self::assertEquals(new NullDatum(), TextFunctions::lower(new NullDatum()));
     }
 
     /**
@@ -121,7 +111,7 @@ final class TextFunctionsTest extends TestCase
      */
     public function testTrimTakesTheWhitespaceOffBothEnds(): void
     {
-        self::assertSame('Invoice', TextFunctions::trim(new StringDatum('  Invoice '))->toText());
+        self::assertEquals(new StringDatum('Invoice'), TextFunctions::trim(new StringDatum('  Invoice ')));
     }
 
     /**
@@ -129,7 +119,7 @@ final class TextFunctionsTest extends TestCase
      */
     public function testTrimTrimsNothingWhenThereIsNothingToTrim(): void
     {
-        self::assertSame(DatumKind::Null, TextFunctions::trim(new NullDatum())->kind());
+        self::assertEquals(new NullDatum(), TextFunctions::trim(new NullDatum()));
     }
 
     /**
@@ -137,7 +127,7 @@ final class TextFunctionsTest extends TestCase
      */
     public function testLeftTakesTheFirstCharactersOfAString(): void
     {
-        self::assertSame('App\Domain', TextFunctions::left(new StringDatum('App\Domain\Invoice'), new IntegerDatum(10))->toText());
+        self::assertEquals(new StringDatum('App\Domain'), TextFunctions::left(new StringDatum('App\Domain\Invoice'), new IntegerDatum(10)));
     }
 
     /**
@@ -145,7 +135,7 @@ final class TextFunctionsTest extends TestCase
      */
     public function testLeftTakesTheWholeStringWhenMoreIsAskedForThanThereIs(): void
     {
-        self::assertSame('ab', TextFunctions::left(new StringDatum('ab'), new IntegerDatum(9))->toText());
+        self::assertEquals(new StringDatum('ab'), TextFunctions::left(new StringDatum('ab'), new IntegerDatum(9)));
     }
 
     /**
@@ -153,7 +143,7 @@ final class TextFunctionsTest extends TestCase
      */
     public function testLeftTakesNothingFromSomethingThatIsNotThere(): void
     {
-        self::assertSame(DatumKind::Null, TextFunctions::left(new NullDatum(), new IntegerDatum(1))->kind());
+        self::assertEquals(new NullDatum(), TextFunctions::left(new NullDatum(), new IntegerDatum(1)));
     }
 
     /**
@@ -161,7 +151,7 @@ final class TextFunctionsTest extends TestCase
      */
     public function testLeftTakesNothingWhenThereIsNoLengthToTake(): void
     {
-        self::assertSame(DatumKind::Null, TextFunctions::left(new StringDatum('ab'), new NullDatum())->kind());
+        self::assertEquals(new NullDatum(), TextFunctions::left(new StringDatum('ab'), new NullDatum()));
     }
 
     /**
@@ -169,7 +159,7 @@ final class TextFunctionsTest extends TestCase
      */
     public function testRightTakesTheLastCharactersOfAString(): void
     {
-        self::assertSame('Controller', TextFunctions::right(new StringDatum('UserController'), new IntegerDatum(10))->toText());
+        self::assertEquals(new StringDatum('Controller'), TextFunctions::right(new StringDatum('UserController'), new IntegerDatum(10)));
     }
 
     /**
@@ -177,7 +167,7 @@ final class TextFunctionsTest extends TestCase
      */
     public function testRightTakesNoneOfAStringWhenNoneIsAskedFor(): void
     {
-        self::assertSame('', TextFunctions::right(new StringDatum('ab'), new IntegerDatum(0))->toText());
+        self::assertEquals(new StringDatum(''), TextFunctions::right(new StringDatum('ab'), new IntegerDatum(0)));
     }
 
     /**
@@ -185,7 +175,7 @@ final class TextFunctionsTest extends TestCase
      */
     public function testRightTakesTheWholeStringWhenMoreIsAskedForThanThereIs(): void
     {
-        self::assertSame('ab', TextFunctions::right(new StringDatum('ab'), new IntegerDatum(9))->toText());
+        self::assertEquals(new StringDatum('ab'), TextFunctions::right(new StringDatum('ab'), new IntegerDatum(9)));
     }
 
     /**
@@ -193,7 +183,7 @@ final class TextFunctionsTest extends TestCase
      */
     public function testRightTakesNothingFromSomethingThatIsNotThere(): void
     {
-        self::assertSame(DatumKind::Null, TextFunctions::right(new NullDatum(), new IntegerDatum(1))->kind());
+        self::assertEquals(new NullDatum(), TextFunctions::right(new NullDatum(), new IntegerDatum(1)));
     }
 
     /**
@@ -210,7 +200,7 @@ final class TextFunctionsTest extends TestCase
     public function testLengthReportsALengthThatIsNegative(): void
     {
         $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('substring error');
+        $this->expectExceptionMessage('[22011] error: data exception - substring error: a substring is as many characters long as a whole number that is not negative, not -1');
 
         TextFunctions::length(new IntegerDatum(-1));
     }
@@ -218,11 +208,33 @@ final class TextFunctionsTest extends TestCase
     /**
      * @throws GqlException
      */
-    public function testLengthReportsALengthThatIsNotAWholeNumber(): void
+    public function testLengthReportsAnApproximateLength(): void
     {
         $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('substring error');
+        $this->expectExceptionMessage('[22011] error: data exception - substring error: a substring is as many characters long as a whole number that is not negative, not 1.5');
 
         TextFunctions::length(new FloatDatum(1.5));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testLengthReportsALengthWrittenWithDigitsAfterItsPoint(): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('[22011] error: data exception - substring error: a substring is as many characters long as a whole number that is not negative, not 2.0');
+
+        TextFunctions::length(new DecimalDatum(20, 1));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testLengthReportsALengthThatIsNotANumber(): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('[22G03] error: data exception - invalid value type: a number was expected, and a STRING was given');
+
+        TextFunctions::length(new StringDatum('3'));
     }
 }

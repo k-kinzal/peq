@@ -64,18 +64,18 @@ final class GraphCommandTest extends TestCase
 
     public function testConfigureDeclaresEveryOptionTheConfigurationSourcesRead(): void
     {
-        $definition = (new GraphCommand(new QueryAction()))->getDefinition();
+        self::assertSame(
+            ['schema', 'config', 'output', 'hops', 'include', 'exclude', 'type', 'debug-depth', 'debug-seed', 'memory-limit'],
+            array_keys((new GraphCommand(new QueryAction()))->getDefinition()->getOptions()),
+        );
+    }
 
-        self::assertTrue($definition->hasOption('schema'));
-        self::assertTrue($definition->hasOption('output'));
-        self::assertTrue($definition->hasOption('hops'));
-        self::assertTrue($definition->hasOption('include'));
-        self::assertTrue($definition->hasOption('exclude'));
-        self::assertTrue($definition->hasOption('type'));
-        self::assertTrue($definition->hasOption('debug-depth'));
-        self::assertTrue($definition->hasOption('debug-seed'));
-        self::assertTrue($definition->hasOption('memory-limit'));
-        self::assertTrue($definition->hasOption('config'));
+    public function testConfigureDescribesTheHopsAsTheLargestUpperBoundAQuantifierMayBeWrittenWith(): void
+    {
+        self::assertSame(
+            'The largest upper bound a quantifier may be written with (default: 10)',
+            (new GraphCommand(new QueryAction()))->getDefinition()->getOption('hops')->getDescription(),
+        );
     }
 
     public function testExecuteWritesWhatTheQueryAnswered(): void
@@ -89,7 +89,10 @@ final class GraphCommandTest extends TestCase
             '--config' => __DIR__.'/absent.yaml',
         ]);
 
-        self::assertStringContainsString('11', $tester->getDisplay());
+        self::assertSame(
+            "+-----------+\n| n (INT64) |\n+-----------+\n| 11        |\n+-----------+\n",
+            $tester->getDisplay(),
+        );
     }
 
     public function testExecuteWritesTheAnswerInTheFormatTheReaderAsked(): void
@@ -104,7 +107,10 @@ final class GraphCommandTest extends TestCase
             '--config' => __DIR__.'/absent.yaml',
         ]);
 
-        self::assertJson($tester->getDisplay());
+        self::assertSame(
+            '{"status":"00000","condition":"note: successful completion","columns":[{"name":"n","type":"INT64"}],"rows":[[11]]}'."\n",
+            $tester->getDisplay(),
+        );
     }
 
     public function testExecuteSucceedsForAQueryThatFoundNothing(): void
@@ -112,6 +118,70 @@ final class GraphCommandTest extends TestCase
         $tester = new CommandTester(new GraphCommand(new QueryAction()));
         $status = $tester->execute([
             'query' => "MATCH (p:Method WHERE p.name = 'nothingIsCalledThis') RETURN p",
+            '--type' => 'debug',
+            '--debug-seed' => '42',
+            '--debug-depth' => '3',
+            '--config' => __DIR__.'/absent.yaml',
+        ]);
+
+        self::assertSame(Command::SUCCESS, $status);
+    }
+
+    public function testExecuteRunsAQuantifierWrittenUpToTheHopsItWasGiven(): void
+    {
+        $tester = new CommandTester(new GraphCommand(new QueryAction()));
+        $status = $tester->execute([
+            'query' => 'MATCH (a)-[e]->{1,3}(b) RETURN count(*) AS n',
+            '--hops' => '3',
+            '--type' => 'debug',
+            '--debug-seed' => '42',
+            '--debug-depth' => '3',
+            '--config' => __DIR__.'/absent.yaml',
+        ]);
+
+        self::assertSame(Command::SUCCESS, $status);
+    }
+
+    public function testExecuteRefusesAQuantifierWrittenBeyondTheHopsItWasGiven(): void
+    {
+        $tester = new CommandTester(new GraphCommand(new QueryAction()));
+        $status = $tester->execute([
+            'query' => 'MATCH (a)-[e]->{1,4}(b) RETURN count(*) AS n',
+            '--hops' => '3',
+            '--type' => 'debug',
+            '--debug-seed' => '42',
+            '--debug-depth' => '3',
+            '--config' => __DIR__.'/absent.yaml',
+        ]);
+
+        self::assertSame(Command::FAILURE, $status);
+    }
+
+    public function testExecuteSaysHowToRaiseTheHopsAQuantifierWentBeyond(): void
+    {
+        $tester = new CommandTester(new GraphCommand(new QueryAction()));
+        $tester->execute([
+            'query' => 'MATCH (a)-[e]->{1,4}(b) RETURN count(*) AS n',
+            '--hops' => '3',
+            '--type' => 'debug',
+            '--debug-seed' => '42',
+            '--debug-depth' => '3',
+            '--config' => __DIR__.'/absent.yaml',
+        ]);
+
+        self::assertSame(
+            '[42001] error: syntax error or access rule violation - invalid syntax: a quantifier may be written with an upper bound of at most 3 here,'
+            ." and one is written with 4: raise --hops to allow more\n",
+            $tester->getDisplay(),
+        );
+    }
+
+    public function testExecuteFollowsAQuantifierWithNoUpperBoundUnderARestrictorWhateverTheHops(): void
+    {
+        $tester = new CommandTester(new GraphCommand(new QueryAction()));
+        $status = $tester->execute([
+            'query' => 'MATCH TRAIL (a)-[e]->{1,}(b) RETURN count(*) AS n',
+            '--hops' => '1',
             '--type' => 'debug',
             '--debug-seed' => '42',
             '--debug-depth' => '3',
@@ -130,7 +200,7 @@ final class GraphCommandTest extends TestCase
             '--config' => __DIR__.'/absent.yaml',
         ]);
 
-        self::assertStringContainsString('Callable', $tester->getDisplay());
+        self::assertStringContainsString("| node label        | Callable             |               |\n", $tester->getDisplay());
     }
 
     public function testExecuteAsksForAQueryWhenItIsGivenNeitherOne(): void
@@ -139,6 +209,14 @@ final class GraphCommandTest extends TestCase
         $status = $tester->execute(['--type' => 'debug', '--config' => __DIR__.'/absent.yaml']);
 
         self::assertSame(Command::INVALID, $status);
+    }
+
+    public function testExecuteSaysWhatToWriteWhenItIsGivenNeitherOne(): void
+    {
+        $tester = new CommandTester(new GraphCommand(new QueryAction()));
+        $tester->execute(['--type' => 'debug', '--config' => __DIR__.'/absent.yaml']);
+
+        self::assertSame("Write the query to run, or ask for --schema to see what a query can be written against.\n", $tester->getDisplay());
     }
 
     public function testExecuteRejectsAConfigOptionThatIsNotAPath(): void
@@ -174,7 +252,11 @@ final class GraphCommandTest extends TestCase
             '--config' => __DIR__.'/absent.yaml',
         ]);
 
-        self::assertStringContainsString('line 1, column 11', $tester->getDisplay());
+        self::assertSame(
+            '[42001] error: syntax error or access rule violation - invalid syntax: expected a RETURN statement,'
+            ." which is what GQL shows a query's answer with at line 1, column 11 (found \"RETRUN\")\n",
+            $tester->getDisplay(),
+        );
     }
 
     public function testExecuteReportsAConfigurationItCannotUse(): void
@@ -197,7 +279,7 @@ final class GraphCommandTest extends TestCase
 
         $command->answer($input, $output, __DIR__.'/absent.yaml', null);
 
-        self::assertStringContainsString('Callable', $output->fetch());
+        self::assertStringContainsString("| node label        | Callable             |               |\n", $output->fetch());
     }
 
     public function testAnswerReportsAConfigurationItCannotUse(): void
@@ -206,6 +288,17 @@ final class GraphCommandTest extends TestCase
         $input = new ArrayInput(['--type' => 'nonsense'], $command->getDefinition());
 
         self::assertSame(Command::FAILURE, $command->answer($input, new BufferedOutput(), __DIR__.'/absent.yaml', 'RETURN 1 AS n'));
+    }
+
+    public function testAnswerSaysWhichConfigurationItCannotUse(): void
+    {
+        $command = new GraphCommand(new QueryAction());
+        $input = new ArrayInput(['--type' => 'nonsense'], $command->getDefinition());
+        $output = new BufferedOutput();
+
+        $command->answer($input, $output, __DIR__.'/absent.yaml', 'RETURN 1 AS n');
+
+        self::assertSame("Invalid configuration \"type\": expected one of phpstan, native, debug, got \"nonsense\".\n", $output->fetch());
     }
 
     /**
@@ -218,6 +311,6 @@ final class GraphCommandTest extends TestCase
 
         (new GraphCommand(new QueryAction()))->write($config, ResultTable::nothing(), null, $output);
 
-        self::assertJson($output->fetch());
+        self::assertSame('{"status":"02000","condition":"note: no data","columns":[],"rows":[]}'."\n", $output->fetch());
     }
 }

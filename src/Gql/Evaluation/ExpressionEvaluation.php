@@ -8,21 +8,18 @@ use App\Gql\Binding\BindingRow;
 use App\Gql\Datum\Datum;
 use App\Gql\Datum\DatumKind;
 use App\Gql\Datum\EdgeDatum;
-use App\Gql\Datum\IntegerDatum;
 use App\Gql\Datum\ListDatum;
 use App\Gql\Datum\NodeDatum;
 use App\Gql\Datum\NullDatum;
 use App\Gql\GqlException;
 use App\Gql\Invocation\AggregateCatalog;
 use App\Gql\Invocation\FunctionCatalog;
-use App\Gql\Invocation\ListFunctions;
 use App\Gql\StatusCode;
 use App\Gql\Syntax\Expression;
 use App\Gql\Syntax\Expression\BinaryExpression;
 use App\Gql\Syntax\Expression\BinaryOperator;
 use App\Gql\Syntax\Expression\CallExpression;
 use App\Gql\Syntax\Expression\CaseExpression;
-use App\Gql\Syntax\Expression\IndexExpression;
 use App\Gql\Syntax\Expression\ListExpression;
 use App\Gql\Syntax\Expression\LiteralExpression;
 use App\Gql\Syntax\Expression\PropertyExpression;
@@ -103,9 +100,6 @@ final class ExpressionEvaluation
         }
         if ($expression instanceof PropertyExpression) {
             return self::propertyOf($this->evaluate($expression->subject, $row), $expression->property);
-        }
-        if ($expression instanceof IndexExpression) {
-            return $this->evaluateIndex($expression, $row);
         }
         if ($expression instanceof UnaryExpression) {
             return UnaryOperation::apply($expression->operator, $this->evaluate($expression->operand, $row));
@@ -198,43 +192,6 @@ final class ExpressionEvaluation
             StatusCode::InvalidType,
             sprintf('a %s has no properties to read', $subject->kind()->typeName()),
         );
-    }
-
-    /**
-     * Returns one value taken out of a list by its place in it.
-     *
-     * A place the list does not have reads as absent rather than as a mistake, which
-     * is what lets `e[0]` be asked of a pattern that sometimes matched nothing.
-     *
-     * @param IndexExpression $expression The indexing
-     * @param BindingRow      $row        The row it is worked out for
-     *
-     * @example A place past the end of a list is absent
-     *     $parser = new \App\Gql\Parsing\ExpressionParser(\App\Gql\Parsing\TokenReader::of('e[5]'));
-     *     $row = \App\Gql\Binding\BindingRow::unit()->with('e', new \App\Gql\Datum\ListDatum([]));
-     *     (new \App\Gql\Evaluation\ExpressionEvaluation())->evaluate($parser->parse(), $row)->kind() // => \App\Gql\Datum\DatumKind::Null
-     *
-     * @return Datum The value, or the absence of one
-     *
-     * @throws GqlException If what is indexed is not a list, or the place is not a whole number
-     */
-    public function evaluateIndex(IndexExpression $expression, BindingRow $row): Datum
-    {
-        $subject = $this->evaluate($expression->subject, $row);
-        $place = $this->evaluate($expression->index, $row);
-        if ($subject->kind() === DatumKind::Null || $place->kind() === DatumKind::Null) {
-            return new NullDatum();
-        }
-        if (!$place instanceof IntegerDatum) {
-            throw GqlException::because(
-                StatusCode::InvalidType,
-                sprintf('a whole number was expected, and a %s was given', $place->kind()->typeName()),
-            );
-        }
-
-        $items = ListFunctions::items($subject);
-
-        return $items[$place->value] ?? new NullDatum();
     }
 
     /**

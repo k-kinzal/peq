@@ -21,8 +21,6 @@ use App\Analyzer\Graph\Node\UnknownNode;
 use App\Analyzer\Graph\NodeId\ClassNodeId;
 use App\Analyzer\Graph\NodeId\MethodNodeId;
 use App\Analyzer\Graph\NodeId\UnknownNodeId;
-use App\Gql\Element\ElementGraph;
-use App\Gql\Element\GraphProjection;
 
 /**
  * A small codebase, analysed, for tests about querying one.
@@ -64,30 +62,20 @@ final class SampleGraph
             self::get(),
             new UnknownNode(new UnknownNodeId('App\Missing')),
         ]);
-        $graph->addEdge(new ExtendsEdge(self::controller(), self::kernel(), self::at('Http/Controller.php', 10)));
-        $graph->addEdge(new MethodEdge(self::controller(), self::show(), self::at('Http/Controller.php', 20)));
-        $graph->addEdge(new MethodEdge(self::controller(), self::store(), self::at('Http/Controller.php', 30)));
-        $graph->addEdge(new MethodEdge(self::invoice(), self::total(), self::at('Domain/Invoice.php', 12)));
-        $graph->addEdge(new MethodEdge(self::cache(), self::get(), self::at('Cache/Store.php', 8)));
-        $graph->addEdge(new MethodCallEdge(self::show(), self::total(), self::at('Http/Controller.php', 22)));
-        $graph->addEdge(new MethodCallEdge(self::store(), self::total(), self::at('Http/Controller.php', 32)));
-        $graph->addEdge(new MethodCallEdge(self::total(), self::get(), self::at('Domain/Invoice.php', 14)));
+        $graph->addEdge(new ExtendsEdge(self::controller(), self::kernel(), new FileMeta('/project/src/Http/Controller.php', 10, 5)));
+        $graph->addEdge(new MethodEdge(self::controller(), self::show(), new FileMeta('/project/src/Http/Controller.php', 20, 5)));
+        $graph->addEdge(new MethodEdge(self::controller(), self::store(), new FileMeta('/project/src/Http/Controller.php', 30, 5)));
+        $graph->addEdge(new MethodEdge(self::invoice(), self::total(), new FileMeta('/project/src/Domain/Invoice.php', 12, 5)));
+        $graph->addEdge(new MethodEdge(self::cache(), self::get(), new FileMeta('/project/src/Cache/Store.php', 8, 5)));
+        $graph->addEdge(new MethodCallEdge(self::show(), self::total(), new FileMeta('/project/src/Http/Controller.php', 22, 5)));
+        $graph->addEdge(new MethodCallEdge(self::store(), self::total(), new FileMeta('/project/src/Http/Controller.php', 32, 5)));
+        $graph->addEdge(new MethodCallEdge(self::total(), self::get(), new FileMeta('/project/src/Domain/Invoice.php', 14, 5)));
 
         return $graph;
     }
 
     /**
-     * Returns the codebase as a query sees it.
-     *
-     * @return ElementGraph The graph a query is written against
-     */
-    public static function elements(): ElementGraph
-    {
-        return GraphProjection::of(self::analysed());
-    }
-
-    /**
-     * Returns three methods that call round in a ring, as a query sees them.
+     * Returns three methods that call round in a ring.
      *
      * The sample codebase has no cycle in it, which is the shape most code is and the
      * wrong shape for one question: what a path mode forbids. `TRAIL`, `SIMPLE` and
@@ -100,22 +88,22 @@ final class SampleGraph
      * twice without crossing a relation twice, the one case that tells `TRAIL` and
      * `SIMPLE` apart.
      *
-     * @return ElementGraph The graph a query is written against
+     * @return Graph The analysed graph
      */
-    public static function recursive(): ElementGraph
+    public static function recursive(): Graph
     {
-        $first = new MethodNode(MethodNodeId::of('App\Ring\Round', 'first'), true, self::at('Ring/Round.php', 5));
-        $second = new MethodNode(MethodNodeId::of('App\Ring\Round', 'second'), true, self::at('Ring/Round.php', 10));
-        $third = new MethodNode(MethodNodeId::of('App\Ring\Round', 'third'), true, self::at('Ring/Round.php', 15));
+        $first = new MethodNode(MethodNodeId::of('App\Ring\Round', 'first'), true, new FileMeta('/project/src/Ring/Round.php', 5, 5));
+        $second = new MethodNode(MethodNodeId::of('App\Ring\Round', 'second'), true, new FileMeta('/project/src/Ring/Round.php', 10, 5));
+        $third = new MethodNode(MethodNodeId::of('App\Ring\Round', 'third'), true, new FileMeta('/project/src/Ring/Round.php', 15, 5));
 
         $graph = new Graph();
         $graph->addNodes([$first, $second, $third]);
-        $graph->addEdge(new MethodCallEdge($first, $second, self::at('Ring/Round.php', 6)));
-        $graph->addEdge(new MethodCallEdge($second, $third, self::at('Ring/Round.php', 11)));
-        $graph->addEdge(new MethodCallEdge($third, $first, self::at('Ring/Round.php', 16)));
-        $graph->addEdge(new MethodCallEdge($third, $second, self::at('Ring/Round.php', 17)));
+        $graph->addEdge(new MethodCallEdge($first, $second, new FileMeta('/project/src/Ring/Round.php', 6, 5)));
+        $graph->addEdge(new MethodCallEdge($second, $third, new FileMeta('/project/src/Ring/Round.php', 11, 5)));
+        $graph->addEdge(new MethodCallEdge($third, $first, new FileMeta('/project/src/Ring/Round.php', 16, 5)));
+        $graph->addEdge(new MethodCallEdge($third, $second, new FileMeta('/project/src/Ring/Round.php', 17, 5)));
 
-        return GraphProjection::of($graph);
+        return $graph;
     }
 
     /**
@@ -128,7 +116,7 @@ final class SampleGraph
         return new ClassNode(
             ClassNodeId::of('App\Http\Controller'),
             true,
-            self::at('Http/Controller.php', 10),
+            new FileMeta('/project/src/Http/Controller.php', 10, 5),
             new SymbolDeclaration(modifiers: new Modifiers(final: true)),
         );
     }
@@ -140,7 +128,7 @@ final class SampleGraph
      */
     public static function kernel(): ClassNode
     {
-        return new ClassNode(ClassNodeId::of('App\Http\Kernel'), true, self::at('Http/Kernel.php', 7));
+        return new ClassNode(ClassNodeId::of('App\Http\Kernel'), true, new FileMeta('/project/src/Http/Kernel.php', 7, 5));
     }
 
     /**
@@ -150,7 +138,7 @@ final class SampleGraph
      */
     public static function invoice(): ClassNode
     {
-        return new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true, self::at('Domain/Invoice.php', 5));
+        return new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true, new FileMeta('/project/src/Domain/Invoice.php', 5, 5));
     }
 
     /**
@@ -160,7 +148,7 @@ final class SampleGraph
      */
     public static function cache(): ClassNode
     {
-        return new ClassNode(ClassNodeId::of('App\Cache\Store'), true, self::at('Cache/Store.php', 3));
+        return new ClassNode(ClassNodeId::of('App\Cache\Store'), true, new FileMeta('/project/src/Cache/Store.php', 3, 5));
     }
 
     /**
@@ -173,7 +161,7 @@ final class SampleGraph
         return new MethodNode(
             MethodNodeId::of('App\Http\Controller', 'show'),
             true,
-            self::at('Http/Controller.php', 20),
+            new FileMeta('/project/src/Http/Controller.php', 20, 5),
             new SymbolDeclaration(
                 visibility: Visibility::Public,
                 signature: new Signature([new Parameter('id', 'int')], 'string'),
@@ -192,7 +180,7 @@ final class SampleGraph
         return new MethodNode(
             MethodNodeId::of('App\Http\Controller', 'store'),
             true,
-            self::at('Http/Controller.php', 30),
+            new FileMeta('/project/src/Http/Controller.php', 30, 5),
             new SymbolDeclaration(visibility: Visibility::Public, signature: new Signature([], 'void')),
         );
     }
@@ -207,7 +195,7 @@ final class SampleGraph
         return new MethodNode(
             MethodNodeId::of('App\Domain\Invoice', 'total'),
             true,
-            self::at('Domain/Invoice.php', 12),
+            new FileMeta('/project/src/Domain/Invoice.php', 12, 5),
             new SymbolDeclaration(
                 visibility: Visibility::Public,
                 modifiers: new Modifiers(static: true),
@@ -227,24 +215,11 @@ final class SampleGraph
         return new MethodNode(
             MethodNodeId::of('App\Cache\Store', 'get'),
             true,
-            self::at('Cache/Store.php', 8),
+            new FileMeta('/project/src/Cache/Store.php', 8, 5),
             new SymbolDeclaration(
                 visibility: Visibility::Protected,
                 signature: new Signature([new Parameter('key', 'string')], 'string'),
             ),
         );
-    }
-
-    /**
-     * Returns where in the sample codebase something is written.
-     *
-     * @param string $file Where the file sits under the project root
-     * @param int    $line Which line of it
-     *
-     * @return FileMeta The place
-     */
-    public static function at(string $file, int $line): FileMeta
-    {
-        return new FileMeta('/project/src/'.$file, $line, 5);
     }
 }

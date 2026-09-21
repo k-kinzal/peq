@@ -5,19 +5,16 @@ declare(strict_types=1);
 namespace App\Gql\Parsing;
 
 use App\Gql\GqlException;
-use App\Gql\Lexing\TokenKind;
-use App\Gql\Syntax\Expression;
+use App\Gql\StatusCode;
 use App\Gql\Syntax\Pattern\EdgeDirection;
 use App\Gql\Syntax\Pattern\EdgePattern;
 use App\Gql\Syntax\Pattern\ElementFilter;
 use App\Gql\Syntax\Pattern\GraphPattern;
 use App\Gql\Syntax\Pattern\GroupPattern;
-use App\Gql\Syntax\Pattern\LabelPattern;
 use App\Gql\Syntax\Pattern\NodePattern;
 use App\Gql\Syntax\Pattern\PathMode;
 use App\Gql\Syntax\Pattern\PathPattern;
 use App\Gql\Syntax\Pattern\PathTerm;
-use App\Gql\Syntax\Pattern\Quantifier;
 
 /**
  * Reads the drawing of a graph a query is written as.
@@ -33,9 +30,19 @@ use App\Gql\Syntax\Pattern\Quantifier;
 final class PatternParser
 {
     /**
-     * Reads what a pattern requires of an element's labels.
+     * Reads what a node or an edge pattern writes between its brackets.
      */
-    private readonly LabelParser $labels;
+    private readonly ElementParser $elements;
+
+    /**
+     * Reads how often a pattern repeats.
+     */
+    private readonly QuantifierParser $quantifiers;
+
+    /**
+     * Whether the path being read is under a restrictor, and may repeat without end.
+     */
+    private bool $restricted = false;
 
     /**
      * @param TokenReader      $tokens      The pieces of the query being read
@@ -43,9 +50,10 @@ final class PatternParser
      */
     public function __construct(
         private readonly TokenReader $tokens,
-        private readonly ExpressionParser $expressions,
+        ExpressionParser $expressions,
     ) {
-        $this->labels = new LabelParser($tokens);
+        $this->elements = new ElementParser($tokens, $expressions);
+        $this->quantifiers = new QuantifierParser($tokens);
     }
 
     /**
@@ -91,6 +99,7 @@ final class PatternParser
         $variable = $this->parsePathName();
         $mode = $this->parseMode();
         $variable ??= $this->parsePathName();
+        $this->restricted = $mode !== PathMode::Walk;
 
         return new PathPattern($this->parseTerms(), $mode, $variable);
     }
@@ -124,7 +133,13 @@ final class PatternParser
     }
 
     /**
-     * Reads the mode a path is matched under, defaulting to the one GQL defaults to.
+     * Reads the mode a path is matched under.
+     *
+     * A path that names no mode is a walk: GQL's restrictors — `TRAIL`, `SIMPLE`,
+     * `ACYCLIC` — are things a query adds, and without one a path may repeat both nodes
+     * and edges. That is also why a walk cannot repeat without end: GQL requires every
+     * unbounded quantifier to stand under a restrictor or a selector, so that the
+     * number of matches is finite.
      *
      * A mode keyword followed by an equals sign is a variable that happens to spell
      * one, so it is left alone.
@@ -132,9 +147,9 @@ final class PatternParser
      * @example A mode written before a path is read as the mode
      *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of('SIMPLE (a)'), new \App\Gql\Parsing\ExpressionParser($tokens));
      *     $parser->parseMode() // => \App\Gql\Syntax\Pattern\PathMode::Simple
-     * @example A path that says nothing crosses no edge twice
+     * @example A path that names no mode is a walk
      *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of('(a)'), new \App\Gql\Parsing\ExpressionParser($tokens));
-     *     $parser->parseMode() // => \App\Gql\Syntax\Pattern\PathMode::Trail
+     *     $parser->parseMode() // => \App\Gql\Syntax\Pattern\PathMode::Walk
      *
      * @return PathMode The mode
      */
@@ -148,11 +163,18 @@ final class PatternParser
             }
         }
 
-        return PathMode::Trail;
+        return PathMode::Walk;
     }
 
     /**
-     * Reads the pieces of one path, alternating between nodes and edges.
+     * Reads the pieces of one path.
+     *
+     * GQL writes a path as any sequence of node patterns, edge patterns and
+     * parenthesised paths — `<path concatenation> ::= <path term> <path factor>` — so
+     * `(s)((a)-[]->(b)){2}` and `-[e]->` are paths as much as `(a)-[e]->(b)` is. Two
+     * node patterns side by side are the same node; an edge pattern with no node
+     * pattern beside it has an anonymous one there, which is what GQL means by it and
+     * what lets every path be matched as node, edge, node.
      *
      * @example A path alternates between what matches a node and what matches an edge
      *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of('(a)-[:calls]->(b)'), new \App\Gql\Parsing\ExpressionParser($tokens));
@@ -164,13 +186,46 @@ final class PatternParser
      */
     public function parseTerms(): array
     {
-        $terms = [$this->parseNodeOrGroup()];
-        while ($this->tokens->atSymbol('-') || $this->tokens->atSymbol('<')) {
+        $terms = [];
+        while (true) {
+            if ($this->tokens->atSymbol('(')) {
+                $terms[] = $this->parseNodeOrGroup();
+
+                continue;
+            }
+            if (!$this->atEdge()) {
+                break;
+            }
+            if ($terms === [] || $terms[count($terms) - 1] instanceof EdgePattern) {
+                $terms[] = new NodePattern();
+            }
             $terms[] = $this->parseEdge();
-            $terms[] = $this->parseNodeOrGroup();
+        }
+        if ($terms === []) {
+            $this->tokens->fail('a path pattern');
+        }
+        if ($terms[count($terms) - 1] instanceof EdgePattern) {
+            $terms[] = new NodePattern();
         }
 
         return $terms;
+    }
+
+    /**
+     * Reports whether an edge pattern starts here.
+     *
+     * @example An arrow starts one
+     *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of('<-(a)'), new \App\Gql\Parsing\ExpressionParser($tokens));
+     *     $parser->atEdge() // => true
+     * @example A parenthesis does not
+     *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of('(a)'), new \App\Gql\Parsing\ExpressionParser($tokens));
+     *     $parser->atEdge() // => false
+     *
+     * @return bool True when one does
+     */
+    public function atEdge(): bool
+    {
+        return $this->tokens->atSymbol('-') || $this->tokens->atSymbol('<') || $this->tokens->atSymbol('~');
     }
 
     /**
@@ -192,12 +247,25 @@ final class PatternParser
      */
     public function parseNodeOrGroup(): PathTerm
     {
-        if ($this->tokens->atSymbol('(') && $this->tokens->peek()->isSymbol('(')) {
+        $inside = $this->tokens->peek();
+        if ($this->tokens->atSymbol('(') && ($inside->isSymbol('(') || $inside->isSymbol('-') || $inside->isSymbol('<') || $inside->isSymbol('~'))) {
             $this->tokens->expectSymbol('(');
             $terms = $this->parseTerms();
             $this->tokens->expectSymbol(')');
+            $repeating = $this->tokens->current();
+            $quantifier = $this->quantifiers->parse($this->restricted);
+            if ($quantifier !== null && $quantifier->most === null && !QuantifierParser::crossesAnEdge($terms)) {
+                throw GqlException::because(
+                    StatusCode::UnknownFeature,
+                    sprintf(
+                        'a group that crosses no relation repeats without end at line %d, column %d, and peq repeats only what makes progress',
+                        $repeating->line,
+                        $repeating->column,
+                    ),
+                );
+            }
 
-            return new GroupPattern($terms, $this->parseQuantifier());
+            return new GroupPattern($terms, $quantifier);
         }
 
         return $this->parseNode();
@@ -220,9 +288,9 @@ final class PatternParser
     public function parseNode(): NodePattern
     {
         $this->tokens->expectSymbol('(');
-        $variable = $this->parseElementName();
-        $labels = $this->parseLabels();
-        $filter = $this->parseFilter();
+        $variable = $this->elements->parseName();
+        $labels = $this->elements->parseLabels();
+        $filter = $this->elements->parseFilter();
         $this->tokens->expectSymbol(')');
 
         return new NodePattern($variable, $labels, $filter);
@@ -231,9 +299,12 @@ final class PatternParser
     /**
      * Reads what a pattern requires of an edge, and which way it crosses it.
      *
-     * The arrows arrive in pieces, so they are assembled here: a leading `<` means
-     * the pattern reads the edge backwards, and a trailing `>` means it reads it
-     * forwards. Neither means it does not care which way the edge points.
+     * GQL writes seven edge patterns, each in a full form with brackets and an
+     * abbreviated one without: `<-[ ]-`, `-[ ]->` and `<-[ ]->` for directed edges read
+     * backwards, forwards or either way, `-[ ]-` for any edge either way, `~[ ]~` for an
+     * undirected edge, and `<~[ ]~`, `~[ ]~>` for an undirected edge or a directed one
+     * read backwards or forwards. The arrows arrive in pieces — a leading `<`, a `-` or a
+     * `~`, a trailing `>` — so they are assembled here.
      *
      * @example An arrow pointing forward follows the edge
      *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of('-[:calls]->(b)'), new \App\Gql\Parsing\ExpressionParser($tokens));
@@ -241,6 +312,12 @@ final class PatternParser
      * @example One pointing back reads it the other way
      *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of('<-[:calls]-(b)'), new \App\Gql\Parsing\ExpressionParser($tokens));
      *     $parser->parseEdge()->direction // => \App\Gql\Syntax\Pattern\EdgeDirection::Against
+     * @example One pointing both ways reads it either way
+     *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of('<-[:calls]->(b)'), new \App\Gql\Parsing\ExpressionParser($tokens));
+     *     $parser->parseEdge()->direction // => \App\Gql\Syntax\Pattern\EdgeDirection::Either
+     * @example A tilde asks for an undirected edge
+     *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of('~(b)'), new \App\Gql\Parsing\ExpressionParser($tokens));
+     *     $parser->parseEdge()->direction // => \App\Gql\Syntax\Pattern\EdgeDirection::Undirected
      * @example A shortcut with no brackets requires nothing of the edge
      *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of('->(b)'), new \App\Gql\Parsing\ExpressionParser($tokens));
      *     $parser->parseEdge()->labels // => null
@@ -251,167 +328,54 @@ final class PatternParser
      */
     public function parseEdge(): EdgePattern
     {
+        $arrow = $this->tokens->current();
         $backwards = $this->tokens->acceptSymbol('<');
-        $this->tokens->expectSymbol('-');
+        $undirected = $this->tokens->acceptSymbol('~');
+        if (!$undirected) {
+            $this->tokens->expectSymbol('-');
+        }
 
         $variable = null;
         $labels = null;
         $filter = new ElementFilter();
         if ($this->tokens->acceptSymbol('[')) {
-            $variable = $this->parseElementName();
-            $labels = $this->parseLabels();
-            $filter = $this->parseFilter();
+            $variable = $this->elements->parseName();
+            $labels = $this->elements->parseLabels();
+            $filter = $this->elements->parseFilter();
             $this->tokens->expectSymbol(']');
-            $this->tokens->expectSymbol('-');
+            $this->tokens->expectSymbol($undirected ? '~' : '-');
         }
 
         $forwards = $this->tokens->acceptSymbol('>');
-        $direction = match (true) {
+        if ($undirected && $backwards && $forwards) {
+            throw GqlException::syntax('expected an edge pattern, and GQL writes none that is both <~ and ~>', $arrow->line, $arrow->column, $arrow->describe());
+        }
+
+        return new EdgePattern(self::direction($backwards, $undirected, $forwards), $variable, $labels, $filter, $this->quantifiers->parse($this->restricted));
+    }
+
+    /**
+     * Works out which edges an edge pattern crosses, from how its arrow is drawn.
+     *
+     * An undirected edge is one peq's graph never has, so the forms that accept one
+     * alongside a directed one cross exactly the directed ones.
+     *
+     * @param bool $backwards  Whether the arrow starts with `<`
+     * @param bool $undirected Whether it is drawn with `~` rather than `-`
+     * @param bool $forwards   Whether it ends with `>`
+     *
+     * @example `~[ ]~>` crosses what `-[ ]->` crosses, since no edge is undirected
+     *     \App\Gql\Parsing\PatternParser::direction(false, true, true) // => \App\Gql\Syntax\Pattern\EdgeDirection::Along
+     *
+     * @return EdgeDirection The direction
+     */
+    public static function direction(bool $backwards, bool $undirected, bool $forwards): EdgeDirection
+    {
+        return match (true) {
+            $backwards && $forwards, !$backwards && !$forwards && !$undirected => EdgeDirection::Either,
             $backwards => EdgeDirection::Against,
             $forwards => EdgeDirection::Along,
-            default => EdgeDirection::Either,
+            default => EdgeDirection::Undirected,
         };
-
-        return new EdgePattern($direction, $variable, $labels, $filter, $this->parseQuantifier());
-    }
-
-    /**
-     * Reads the name a matched element is bound to, if one is written here.
-     *
-     * What settles whether a name is written here is GQL's rule that a binding
-     * variable is a word the standard does not reserve. That is why `(n WHERE ...)`
-     * needs no special case: `WHERE` is reserved, so it was never a name.
-     *
-     * @example A name written first binds the element
-     *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of('p:Method)'), new \App\Gql\Parsing\ExpressionParser($tokens));
-     *     $parser->parseElementName() // => 'p'
-     * @example A pattern that starts with a requirement binds nothing
-     *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of(':Method)'), new \App\Gql\Parsing\ExpressionParser($tokens));
-     *     $parser->parseElementName() // => null
-     *
-     * @return null|string The name, or null when the match is not named
-     *
-     * @throws GqlException If the name cannot be read
-     */
-    public function parseElementName(): ?string
-    {
-        if (!NameReader::atVariable($this->tokens)) {
-            return null;
-        }
-
-        return NameReader::variable($this->tokens);
-    }
-
-    /**
-     * Reads what a pattern requires of an element's labels, if it requires anything.
-     *
-     * @example A requirement is written after a colon
-     *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of(':Method)'), new \App\Gql\Parsing\ExpressionParser($tokens));
-     *     $parser->parseLabels()?->name // => 'Method'
-     * @example A pattern with no colon requires nothing of them
-     *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of(')'), new \App\Gql\Parsing\ExpressionParser($tokens));
-     *     $parser->parseLabels() // => null
-     *
-     * @return null|LabelPattern The requirement, or null when none is written
-     *
-     * @throws GqlException If what is written is not a requirement
-     */
-    public function parseLabels(): ?LabelPattern
-    {
-        return $this->tokens->acceptSymbol(':') ? $this->labels->parse() : null;
-    }
-
-    /**
-     * Reads what a pattern requires of an element beyond its labels.
-     *
-     * @example Properties are required to equal what they are written against
-     *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of("{name: 'Invoice'})"), new \App\Gql\Parsing\ExpressionParser($tokens));
-     *     array_keys($parser->parseFilter()->properties) // => ['name']
-     * @example A predicate is required to hold
-     *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of('WHERE p.line > 10)'), new \App\Gql\Parsing\ExpressionParser($tokens));
-     *     $parser->parseFilter()->predicate !== null // => true
-     *
-     * @return ElementFilter The requirement
-     *
-     * @throws GqlException If what is written is not a requirement
-     */
-    public function parseFilter(): ElementFilter
-    {
-        $properties = $this->tokens->atSymbol('{') ? $this->parseProperties() : [];
-        $predicate = $this->tokens->acceptKeyword('WHERE') ? $this->expressions->parse() : null;
-
-        return new ElementFilter($properties, $predicate);
-    }
-
-    /**
-     * Reads the properties a pattern requires an element to carry.
-     *
-     * @example Every property written has to equal what it is written against
-     *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of("{kind: 'method', visibility: 'public'}"), new \App\Gql\Parsing\ExpressionParser($tokens));
-     *     array_keys($parser->parseProperties()) // => ['kind', 'visibility']
-     *
-     * @return array<string, Expression> The properties, by name
-     *
-     * @throws GqlException If what is written is not a list of properties
-     */
-    public function parseProperties(): array
-    {
-        $this->tokens->expectSymbol('{');
-        if ($this->tokens->acceptSymbol('}')) {
-            return [];
-        }
-
-        $properties = [];
-        do {
-            $name = NameReader::identifier($this->tokens);
-            $this->tokens->expectSymbol(':');
-            $properties[$name] = $this->expressions->parse();
-        } while ($this->tokens->acceptSymbol(','));
-        $this->tokens->expectSymbol('}');
-
-        return $properties;
-    }
-
-    /**
-     * Reads how often a pattern repeats, if a repetition is written here.
-     *
-     * Both bounds may be left out. Written without a lower bound the pattern may
-     * match nothing at all, which makes the two ends of the edge the same node;
-     * written without an upper one it goes as far as the path mode allows.
-     *
-     * @example An exact repetition bounds both ends the same way
-     *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of('{3}'), new \App\Gql\Parsing\ExpressionParser($tokens));
-     *     $parser->parseQuantifier()?->most // => 3
-     * @example A repetition with no upper bound goes as far as it can
-     *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of('{1,}'), new \App\Gql\Parsing\ExpressionParser($tokens));
-     *     $parser->parseQuantifier()?->most // => null
-     * @example A pattern with no braces is crossed once
-     *     $parser = new \App\Gql\Parsing\PatternParser($tokens = \App\Gql\Parsing\TokenReader::of('(b)'), new \App\Gql\Parsing\ExpressionParser($tokens));
-     *     $parser->parseQuantifier() // => null
-     *
-     * @return null|Quantifier The repetition, or null when none is written
-     *
-     * @throws GqlException If what is written is not a repetition
-     */
-    public function parseQuantifier(): ?Quantifier
-    {
-        if (!$this->tokens->acceptSymbol('{')) {
-            return null;
-        }
-
-        $least = 0;
-        if ($this->tokens->current()->kind === TokenKind::Integer) {
-            $least = (int) $this->tokens->take()->value;
-        }
-
-        $most = $least;
-        if ($this->tokens->acceptSymbol(',')) {
-            $most = $this->tokens->current()->kind === TokenKind::Integer
-                ? (int) $this->tokens->take()->value
-                : null;
-        }
-        $this->tokens->expectSymbol('}');
-
-        return new Quantifier($least, $most);
     }
 }

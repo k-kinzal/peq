@@ -13,8 +13,8 @@ namespace App\Gql\Syntax\Pattern;
  * the pattern the same node — the way GQL says it should.
  *
  * The upper bound may be absent, meaning as far as the graph goes. On a graph with
- * cycles that is only finite because a path mode makes it so, which is why the
- * default mode forbids crossing an edge twice.
+ * cycles that is only finite because a path mode makes it so, which is why GQL
+ * allows it only under a restrictor — `TRAIL`, `SIMPLE` or `ACYCLIC`.
  */
 final class Quantifier
 {
@@ -62,29 +62,5 @@ final class Quantifier
     public function allows(int $times): bool
     {
         return $times >= $this->least && ($this->most === null || $times <= $this->most);
-    }
-
-    /**
-     * Returns how far a search should go, given how far it is willing to.
-     *
-     * A repetition written without an upper bound goes as far as the graph allows,
-     * which on a graph with cycles is only finite because a path mode makes it so —
-     * and even then can be very large. The bound a search is willing to go to is
-     * therefore used in place of the one that was not written, and an upper bound
-     * that was written is honoured whatever it is: a reader who asks for twenty steps
-     * has said what they want.
-     *
-     * @param int $willing How far the search is willing to go when nothing was written
-     *
-     * @example A written upper bound is honoured, however far it goes
-     *     (new \App\Gql\Syntax\Pattern\Quantifier(1, 20))->ceiling(10) // => 20
-     * @example One that was not written is taken from what the search is willing to do
-     *     (new \App\Gql\Syntax\Pattern\Quantifier(1))->ceiling(10) // => 10
-     *
-     * @return int The most repetitions the search should make
-     */
-    public function ceiling(int $willing): int
-    {
-        return $this->most ?? $willing;
     }
 }

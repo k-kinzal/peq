@@ -12,9 +12,11 @@ namespace App\Gql\Syntax\Pattern;
  * many matches. The modes are the four answers GQL gives to that, from the one that
  * restricts nothing to the one that forbids meeting any node twice.
  *
- * The default is the middle one, `TRAIL`: no edge is crossed twice, which is enough
- * to make every match finite while still letting a path pass through a hub class
- * more than once. That is usually what a question about reachability means.
+ * A path that names none is a `WALK`, which restricts nothing: GQL's restrictors are
+ * things a query adds. That is also why a walk may not repeat without end — GQL
+ * requires an unbounded quantifier to stand under a restrictor, and `TRAIL`, which
+ * crosses no edge twice, is the weakest one that makes every match finite while still
+ * letting a path pass through a hub class more than once.
  */
 enum PathMode: string
 {

@@ -55,12 +55,12 @@ final class EdgeTraversal
     public static function from(ElementGraph $graph, string $from, EdgeDirection $direction): array
     {
         $crossings = [];
-        if ($direction !== EdgeDirection::Against) {
+        if ($direction === EdgeDirection::Along || $direction === EdgeDirection::Either) {
             foreach ($graph->leaving($from) as $edge) {
                 $crossings[] = new self($edge, $edge->target);
             }
         }
-        if ($direction !== EdgeDirection::Along) {
+        if ($direction === EdgeDirection::Against || $direction === EdgeDirection::Either) {
             foreach ($graph->arriving($from) as $edge) {
                 $crossings[] = new self($edge, $edge->origin);
             }

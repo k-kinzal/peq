@@ -108,7 +108,9 @@ final class ResultTable
      * Returns the GQL name of what a column holds.
      *
      * A column holding values of more than one kind is reported as holding any kind
-     * rather than as holding the kind of whichever value happened to come first.
+     * rather than as holding the kind of whichever value happened to come first. Numbers
+     * of more than one kind are still numbers: a column of exact numbers is DECIMAL once
+     * one of them has digits after its point, and FLOAT64 once one of them is approximate.
      *
      * @param list<ResultRow> $rows   The rows
      * @param int             $column Which column, counting from zero
@@ -116,6 +118,9 @@ final class ResultTable
      * @example A column of whole numbers holds whole numbers
      *     $rows = [new \App\Gql\Result\ResultRow([new \App\Gql\Datum\IntegerDatum(1)])];
      *     \App\Gql\Result\ResultTable::typeOf($rows, 0) // => 'INT64'
+     * @example A column of whole numbers and decimals holds decimals
+     *     $rows = [new \App\Gql\Result\ResultRow([new \App\Gql\Datum\IntegerDatum(1)]), new \App\Gql\Result\ResultRow([new \App\Gql\Datum\DecimalDatum(15, 1)])];
+     *     \App\Gql\Result\ResultTable::typeOf($rows, 0) // => 'DECIMAL'
      * @example A column of more than one kind holds any of them
      *     $rows = [new \App\Gql\Result\ResultRow([new \App\Gql\Datum\IntegerDatum(1)]), new \App\Gql\Result\ResultRow([new \App\Gql\Datum\StringDatum('a')])];
      *     \App\Gql\Result\ResultTable::typeOf($rows, 0) // => 'ANY'
@@ -129,13 +134,17 @@ final class ResultTable
         $found = null;
         foreach ($rows as $row) {
             $kind = $row->value($column)->kind();
-            if ($kind === DatumKind::Null) {
+            if ($kind === DatumKind::Null || $kind === $found) {
                 continue;
             }
-            if ($found !== null && $found !== $kind) {
+            $found = match (true) {
+                $found === null => $kind,
+                $found->numeric() && $kind->numeric() => in_array(DatumKind::Float, [$found, $kind], true) ? DatumKind::Float : DatumKind::Decimal,
+                default => null,
+            };
+            if ($found === null) {
                 return 'ANY';
             }
-            $found = $kind;
         }
 
         return ($found ?? DatumKind::Null)->typeName();

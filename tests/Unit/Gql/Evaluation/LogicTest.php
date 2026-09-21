@@ -5,16 +5,9 @@ declare(strict_types=1);
 namespace Tests\Unit\Gql\Evaluation;
 
 use App\Gql\Datum\BooleanDatum;
-use App\Gql\Datum\DatumIdentity;
 use App\Gql\Datum\DatumKind;
-use App\Gql\Datum\DatumOrder;
-use App\Gql\Datum\EdgeDatum;
-use App\Gql\Datum\FloatDatum;
 use App\Gql\Datum\IntegerDatum;
-use App\Gql\Datum\ListDatum;
-use App\Gql\Datum\NodeDatum;
 use App\Gql\Datum\NullDatum;
-use App\Gql\Datum\StringDatum;
 use App\Gql\Evaluation\Logic;
 use App\Gql\GqlException;
 use App\Gql\StatusCode;
@@ -30,16 +23,9 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(Logic::class)]
 #[UsesClass(BooleanDatum::class)]
 #[UsesClass(DatumKind::class)]
-#[UsesClass(DatumIdentity::class)]
-#[UsesClass(DatumOrder::class)]
-#[UsesClass(EdgeDatum::class)]
-#[UsesClass(FloatDatum::class)]
-#[UsesClass(NodeDatum::class)]
-#[UsesClass(IntegerDatum::class)]
-#[UsesClass(ListDatum::class)]
-#[UsesClass(NullDatum::class)]
-#[UsesClass(StringDatum::class)]
 #[UsesClass(GqlException::class)]
+#[UsesClass(IntegerDatum::class)]
+#[UsesClass(NullDatum::class)]
 #[UsesClass(StatusCode::class)]
 #[Small]
 final class LogicTest extends TestCase
@@ -66,19 +52,19 @@ final class LogicTest extends TestCase
     public function testTruthReportsSomethingThatIsNotATruthValueAtAll(): void
     {
         $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('a truth value was expected, and a INT64 was given');
+        $this->expectExceptionMessage('[22G03] error: data exception - invalid value type: a truth value was expected, and a INT64 was given');
 
         Logic::truth(new IntegerDatum(1));
     }
 
     public function testDatumCarriesUndecidedAsTheAbsenceOfAValue(): void
     {
-        self::assertSame(DatumKind::Null, Logic::datum(null)->kind());
+        self::assertEquals(new NullDatum(), Logic::datum(null));
     }
 
     public function testDatumCarriesADecidedTruthValueAsItself(): void
     {
-        self::assertSame('TRUE', Logic::datum(true)->toText());
+        self::assertEquals(new BooleanDatum(false), Logic::datum(false));
     }
 
     #[DataProvider('providerConjunctions')]

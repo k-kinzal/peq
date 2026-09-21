@@ -74,12 +74,12 @@ final class GraphCommand extends Command
     protected function configure(): void
     {
         $this->setDefinition(new InputDefinition([
-            new InputArgument('query', InputArgument::OPTIONAL, 'The GQL query to run, for example: MATCH (m:Method)-[:call]->(t) RETURN m.id, t.id'),
+            new InputArgument('query', InputArgument::OPTIONAL, 'The GQL query to run, for example: MATCH (m:Method)-[:methodCall]->(t) RETURN m.id, t.id'),
             new InputArgument('path', InputArgument::OPTIONAL, 'Base directory to analyze (default: current working dir)'),
             new InputOption('schema', null, InputOption::VALUE_NONE, 'Write the labels, properties and functions a query can use, instead of running one'),
             new InputOption('config', null, InputOption::VALUE_REQUIRED, 'Path to config file (default: <cwd>/.peq.yaml)', getcwd().'/.peq.yaml'),
             new InputOption('output', 'O', InputOption::VALUE_REQUIRED, sprintf('Output format (%s)', OutputFormat::spell())),
-            new InputOption('hops', null, InputOption::VALUE_REQUIRED, sprintf('How far a repetition with no upper bound goes (default: %d)', Config::HOPS)),
+            new InputOption('hops', null, InputOption::VALUE_REQUIRED, sprintf('The largest upper bound a quantifier may be written with (default: %d)', Config::HOPS)),
             new InputOption('include', 'I', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Include patterns', []),
             new InputOption('exclude', 'E', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Exclude patterns', []),
             new InputOption('type', null, InputOption::VALUE_REQUIRED, sprintf('Analyzer type (%s)', AnalyzerKind::spellAvailable())),

@@ -4,20 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Gql\Invocation;
 
-use App\Gql\Datum\BooleanDatum;
-use App\Gql\Datum\DateTimeDatum;
-use App\Gql\Datum\Datum;
-use App\Gql\Datum\DatumIdentity;
-use App\Gql\Datum\DatumJson;
 use App\Gql\Datum\DatumKind;
 use App\Gql\Datum\DatumOrder;
-use App\Gql\Datum\EdgeDatum;
-use App\Gql\Datum\FloatDatum;
+use App\Gql\Datum\DecimalDatum;
 use App\Gql\Datum\IntegerDatum;
-use App\Gql\Datum\ListDatum;
-use App\Gql\Datum\NodeDatum;
 use App\Gql\Datum\NullDatum;
-use App\Gql\Datum\PathDatum;
 use App\Gql\Datum\StringDatum;
 use App\Gql\GqlException;
 use App\Gql\Invocation\ExtremeAccumulator;
@@ -31,23 +22,14 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(ExtremeAccumulator::class)]
-#[UsesClass(BooleanDatum::class)]
-#[UsesClass(DateTimeDatum::class)]
-#[UsesClass(DatumIdentity::class)]
-#[UsesClass(DatumJson::class)]
 #[UsesClass(DatumKind::class)]
 #[UsesClass(DatumOrder::class)]
-#[UsesClass(EdgeDatum::class)]
-#[UsesClass(FloatDatum::class)]
-#[UsesClass(IntegerDatum::class)]
-#[UsesClass(ListDatum::class)]
-#[UsesClass(NodeDatum::class)]
-#[UsesClass(NullDatum::class)]
-#[UsesClass(PathDatum::class)]
-#[UsesClass(StringDatum::class)]
-#[UsesClass(Datum::class)]
+#[UsesClass(DecimalDatum::class)]
 #[UsesClass(GqlException::class)]
+#[UsesClass(IntegerDatum::class)]
+#[UsesClass(NullDatum::class)]
 #[UsesClass(StatusCode::class)]
+#[UsesClass(StringDatum::class)]
 #[Small]
 final class ExtremeAccumulatorTest extends TestCase
 {
@@ -59,8 +41,9 @@ final class ExtremeAccumulatorTest extends TestCase
         $least = new ExtremeAccumulator();
         $least->accept(new IntegerDatum(3));
         $least->accept(new IntegerDatum(1));
+        $least->accept(new IntegerDatum(2));
 
-        self::assertSame('1', $least->result()->toText());
+        self::assertEquals(new IntegerDatum(1), $least->result());
     }
 
     /**
@@ -69,10 +52,35 @@ final class ExtremeAccumulatorTest extends TestCase
     public function testAcceptKeepsTheLargestWhenThatIsWhatWasAskedFor(): void
     {
         $most = new ExtremeAccumulator(true);
-        $most->accept(new IntegerDatum(3));
         $most->accept(new IntegerDatum(1));
+        $most->accept(new IntegerDatum(3));
+        $most->accept(new IntegerDatum(2));
 
-        self::assertSame('3', $most->result()->toText());
+        self::assertEquals(new IntegerDatum(3), $most->result());
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testAcceptOrdersNumbersOfDifferentKindsByValue(): void
+    {
+        $least = new ExtremeAccumulator();
+        $least->accept(new IntegerDatum(3));
+        $least->accept(new DecimalDatum(25, 1));
+
+        self::assertEquals(new DecimalDatum(25, 1), $least->result());
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testAcceptKeepsTheFirstOfTwoEqualValues(): void
+    {
+        $least = new ExtremeAccumulator();
+        $least->accept(new IntegerDatum(2));
+        $least->accept(new DecimalDatum(20, 1));
+
+        self::assertEquals(new IntegerDatum(2), $least->result());
     }
 
     /**
@@ -83,24 +91,27 @@ final class ExtremeAccumulatorTest extends TestCase
         $least = new ExtremeAccumulator();
         $least->accept(new NullDatum());
         $least->accept(new IntegerDatum(3));
+        $least->accept(new NullDatum());
 
-        self::assertSame('3', $least->result()->toText());
+        self::assertEquals(new IntegerDatum(3), $least->result());
     }
 
     /**
      * @throws GqlException
      */
-    public function testAcceptOrdersValuesOfMoreThanOneKindRatherThanRefuseThem(): void
+    public function testAcceptReportsValuesOfKindsWithNoOrderBetweenThem(): void
     {
         $least = new ExtremeAccumulator();
         $least->accept(new StringDatum('a'));
-        $least->accept(new IntegerDatum(3));
 
-        self::assertSame('3', $least->result()->toText());
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('[22G04] error: data exception - values not comparable: INT64 and STRING cannot be compared');
+
+        $least->accept(new IntegerDatum(3));
     }
 
     public function testResultAnswersNothingWhenNothingWasOffered(): void
     {
-        self::assertSame(DatumKind::Null, (new ExtremeAccumulator())->result()->kind());
+        self::assertEquals(new NullDatum(), (new ExtremeAccumulator())->result());
     }
 }

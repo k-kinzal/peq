@@ -38,7 +38,7 @@ final class Lexer
     /**
      * The operators and punctuation written as one character.
      */
-    private const SINGLES = ['(', ')', '[', ']', '{', '}', ',', '.', ':', '=', '<', '>', '+', '-', '*', '/', '|', '&', '!', '%'];
+    private const SINGLES = ['(', ')', '[', ']', '{', '}', ',', '.', ':', '=', '<', '>', '+', '-', '*', '/', '|', '&', '!', '%', '~'];
 
     /**
      * @param SourceCursor $cursor The place in the query text reading continues from
@@ -111,13 +111,13 @@ final class Lexer
         if ($next === '`') {
             return QuotedScanner::name($this->cursor);
         }
-        if ($next === "'" || $next === '"') {
+        if ($next === "'" || $next === '"' || ($next === '@' && in_array($this->cursor->peek(1), ["'", '"'], true))) {
             return QuotedScanner::text($this->cursor);
         }
-        if (preg_match('/[0-9]/', $next) === 1) {
+        if (preg_match('/[0-9]/', $next) === 1 || ($next === '.' && preg_match('/[0-9]/', $this->cursor->peek(1)) === 1)) {
             return $this->scanNumber();
         }
-        if (preg_match('/[A-Za-z_]/', $next) === 1) {
+        if ($this->cursor->capture('/[\p{L}\p{Nl}\p{Pc}]/Au') !== null) {
             return $this->scanName();
         }
 
@@ -161,8 +161,14 @@ final class Lexer
     /**
      * Reads a bare name: a variable, a label, a property, or a word a grammar reserves.
      *
+     * A name is not only ASCII. It starts with a letter or a connecting mark such as an
+     * underscore, and goes on with letters, digits, combining marks and connecting
+     * marks, so `顧客` is as good a variable as `customer`.
+     *
      * @example A name is read as far as a name can go
      *     \App\Gql\Lexing\Lexer::over('firstName || x')->next()->value // => 'firstName'
+     * @example A name may be written in any script
+     *     \App\Gql\Lexing\Lexer::over('顧客.name')->next()->value // => '顧客'
      *
      * @return Token The name
      */
@@ -171,7 +177,7 @@ final class Lexer
         $line = $this->cursor->line();
         $column = $this->cursor->column();
         $offset = $this->cursor->offset();
-        $written = $this->cursor->capture('/[A-Za-z_][A-Za-z0-9_]*/A') ?? '';
+        $written = $this->cursor->capture('/[\p{L}\p{Nl}\p{Pc}][\p{L}\p{Nl}\p{Mn}\p{Mc}\p{Nd}\p{Pc}]*/Au') ?? '';
 
         return new Token(TokenKind::Name, $this->cursor->take(strlen($written)), $written, $line, $column, $offset);
     }
@@ -179,15 +185,29 @@ final class Lexer
     /**
      * Reads a number.
      *
-     * A number with a fractional part, an exponent or a `d` or `f` suffix is a
-     * decimal one; anything else is whole. The suffix is how GQL writes a literal it
-     * wants treated as approximate even where it looks exact, and reading it here is
-     * what keeps `1.0d` from arriving at the grammar as two pieces.
+     * GQL tells exact numbers from approximate ones by how they are written, not by
+     * what they are worth. A number with a point is exact, as is one marked with `M`;
+     * one written with an exponent is approximate, as is one marked with `F` or `D`.
+     * So `1.5` is exactly one and a half, and `1.5e0` is the nearest float. Reading the
+     * suffix here is what keeps `1.0d` from arriving at the grammar as two pieces.
+     *
+     * Digits may be grouped with single underscores, as `1_000_000`, and the point may
+     * come first or last, as `.5` and `5.` — GQL's `<unsigned decimal integer>` and
+     * `<unsigned decimal in common notation>` write both. The value a number stands
+     * for leaves the underscores out.
      *
      * @example A whole number is read as one
      *     \App\Gql\Lexing\Lexer::over('42')->next()->kind // => \App\Gql\Lexing\TokenKind::Integer
-     * @example A number with a suffix is approximate
-     *     \App\Gql\Lexing\Lexer::over('1.0d')->next()->kind // => \App\Gql\Lexing\TokenKind::Decimal
+     * @example A point makes a number exact, not approximate
+     *     \App\Gql\Lexing\Lexer::over('1.5')->next()->kind // => \App\Gql\Lexing\TokenKind::Decimal
+     * @example An exponent makes it approximate
+     *     \App\Gql\Lexing\Lexer::over('1.5e0')->next()->kind // => \App\Gql\Lexing\TokenKind::Approximate
+     * @example So does a suffix
+     *     \App\Gql\Lexing\Lexer::over('1.0d')->next()->kind // => \App\Gql\Lexing\TokenKind::Approximate
+     * @example Digits may be grouped
+     *     \App\Gql\Lexing\Lexer::over('1_000')->next()->value // => '1000'
+     * @example And the point may come first
+     *     \App\Gql\Lexing\Lexer::over('.5')->next()->kind // => \App\Gql\Lexing\TokenKind::Decimal
      *
      * @return Token The number
      */
@@ -196,17 +216,39 @@ final class Lexer
         $line = $this->cursor->line();
         $column = $this->cursor->column();
         $offset = $this->cursor->offset();
-        $written = $this->cursor->capture('/[0-9]+(\.[0-9]+)?([eE][+-]?[0-9]+)?[dDfF]?/A') ?? '';
-        $exact = preg_match('/^[0-9]+$/', $written) === 1;
+        $digits = '[0-9](?:_?[0-9])*';
+        $written = $this->cursor->capture('/(?:'.$digits.'(?:\.(?:'.$digits.')?)?|\.'.$digits.')(?:[eE][+-]?'.$digits.')?[dDfFmM]?/A') ?? '';
+        $value = str_replace('_', '', $written);
 
         return new Token(
-            $exact ? TokenKind::Integer : TokenKind::Decimal,
+            self::numberKind($value),
             $this->cursor->take(strlen($written)),
-            $written,
+            $value,
             $line,
             $column,
             $offset,
         );
+    }
+
+    /**
+     * Tells which kind of number a literal is, by how it is written.
+     *
+     * @param string $written The literal
+     *
+     * @example An exponent without `M` makes a number approximate
+     *     \App\Gql\Lexing\Lexer::numberKind('1e3') // => \App\Gql\Lexing\TokenKind::Approximate
+     * @example `M` keeps it exact
+     *     \App\Gql\Lexing\Lexer::numberKind('1e3M') // => \App\Gql\Lexing\TokenKind::Decimal
+     *
+     * @return TokenKind The kind
+     */
+    public static function numberKind(string $written): TokenKind
+    {
+        return match (true) {
+            preg_match('/[dDfF]$/', $written) === 1, preg_match('/[eE]/', $written) === 1 && preg_match('/[mM]$/', $written) !== 1 => TokenKind::Approximate,
+            preg_match('/^[0-9]+$/', $written) === 1 => TokenKind::Integer,
+            default => TokenKind::Decimal,
+        };
     }
 
     /**

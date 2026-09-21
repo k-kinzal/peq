@@ -20,12 +20,12 @@ final class PathPattern
 {
     /**
      * @param list<PathTerm> $terms    The pieces of the path, beginning and ending with one that matches a node
-     * @param PathMode       $mode     What the path may visit more than once
+     * @param PathMode       $mode     What the path may visit more than once, a walk restricting nothing when none is written
      * @param null|string    $variable What to bind the matched path to, or null when the path is not named
      */
     public function __construct(
         public readonly array $terms,
-        public readonly PathMode $mode = PathMode::Trail,
+        public readonly PathMode $mode = PathMode::Walk,
         public readonly ?string $variable = null,
     ) {
         assert($this->terms !== [], 'A path passes through at least one node');

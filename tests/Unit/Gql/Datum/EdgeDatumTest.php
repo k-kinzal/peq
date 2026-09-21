@@ -41,12 +41,12 @@ final class EdgeDatumTest extends TestCase
     {
         $edge = new EdgeDatum('e', [], ['line' => new IntegerDatum(12)], 'a', 'b');
 
-        self::assertSame('12', $edge->property('line')->toText());
+        self::assertEquals(new IntegerDatum(12), $edge->property('line'));
     }
 
     public function testPropertyReadsOneItDoesNotCarryAsAbsent(): void
     {
-        self::assertSame(DatumKind::Null, (new EdgeDatum('e', [], [], 'a', 'b'))->property('line')->kind());
+        self::assertEquals(new NullDatum(), (new EdgeDatum('e', [], [], 'a', 'b'))->property('line'));
     }
 
     public function testLabelIsTheMostParticularOfTheLabelsItCarries(): void

@@ -4,33 +4,19 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Gql\Invocation;
 
-use App\Gql\Argument\NumberArgument;
-use App\Gql\Argument\TextArgument;
-use App\Gql\Datum\BooleanDatum;
-use App\Gql\Datum\DateTimeDatum;
 use App\Gql\Datum\Datum;
 use App\Gql\Datum\DatumIdentity;
-use App\Gql\Datum\DatumJson;
 use App\Gql\Datum\DatumKind;
-use App\Gql\Datum\DatumOrder;
-use App\Gql\Datum\EdgeDatum;
-use App\Gql\Datum\FloatDatum;
 use App\Gql\Datum\IntegerDatum;
-use App\Gql\Datum\ListDatum;
-use App\Gql\Datum\NodeDatum;
 use App\Gql\Datum\NullDatum;
-use App\Gql\Datum\PathDatum;
-use App\Gql\Datum\StringDatum;
 use App\Gql\GqlException;
 use App\Gql\Invocation\Accumulator;
-use App\Gql\Invocation\AggregateCatalog;
 use App\Gql\Invocation\AverageAccumulator;
 use App\Gql\Invocation\CollectAccumulator;
 use App\Gql\Invocation\CountAccumulator;
 use App\Gql\Invocation\DistinctAccumulator;
 use App\Gql\Invocation\ExtremeAccumulator;
 use App\Gql\Invocation\SumAccumulator;
-use App\Gql\StatusCode;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
@@ -41,31 +27,15 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(Accumulator::class)]
-#[UsesClass(BooleanDatum::class)]
-#[UsesClass(DateTimeDatum::class)]
-#[UsesClass(DatumIdentity::class)]
-#[UsesClass(DatumJson::class)]
-#[UsesClass(DatumKind::class)]
-#[UsesClass(DatumOrder::class)]
-#[UsesClass(EdgeDatum::class)]
-#[UsesClass(FloatDatum::class)]
-#[UsesClass(IntegerDatum::class)]
-#[UsesClass(ListDatum::class)]
-#[UsesClass(NodeDatum::class)]
-#[UsesClass(NullDatum::class)]
-#[UsesClass(PathDatum::class)]
-#[UsesClass(StringDatum::class)]
-#[UsesClass(Datum::class)]
-#[UsesClass(GqlException::class)]
-#[UsesClass(StatusCode::class)]
-#[UsesClass(NumberArgument::class)]
-#[UsesClass(TextArgument::class)]
-#[UsesClass(AggregateCatalog::class)]
 #[UsesClass(AverageAccumulator::class)]
 #[UsesClass(CollectAccumulator::class)]
 #[UsesClass(CountAccumulator::class)]
+#[UsesClass(DatumIdentity::class)]
+#[UsesClass(DatumKind::class)]
 #[UsesClass(DistinctAccumulator::class)]
 #[UsesClass(ExtremeAccumulator::class)]
+#[UsesClass(IntegerDatum::class)]
+#[UsesClass(NullDatum::class)]
 #[UsesClass(SumAccumulator::class)]
 #[Small]
 final class AccumulatorTest extends TestCase
@@ -73,39 +43,37 @@ final class AccumulatorTest extends TestCase
     /**
      * @throws GqlException
      */
-    #[DataProvider('providerEverySummary')]
-    public function testAcceptPassesOverAValueThatIsNotThere(Accumulator $summary, string $offeredNothing): void
+    #[DataProvider('providerEverySummaryAndWhatItAnswersToNothing')]
+    public function testAcceptPassesOverAValueThatIsNotThere(Accumulator $summary, Datum $offeredNothing): void
     {
         $summary->accept(new NullDatum());
 
-        self::assertSame($offeredNothing, $summary->result()->toText());
+        self::assertEquals($offeredNothing, $summary->result());
     }
 
-    #[DataProvider('providerEverySummary')]
-    public function testResultAnswersTheSameWhetherItWasOfferedNothingOrOnlyAbsentValues(
-        Accumulator $summary,
-        string $offeredNothing,
-    ): void {
-        self::assertSame($offeredNothing, $summary->result()->toText());
+    #[DataProvider('providerEverySummaryAndWhatItAnswersToNothing')]
+    public function testResultAnswersTheSameWhetherItWasOfferedNothingOrOnlyAbsentValues(Accumulator $summary, Datum $offeredNothing): void
+    {
+        self::assertEquals($offeredNothing, $summary->result());
     }
 
     /**
-     * @return iterable<string, array{Accumulator, string}>
+     * @return iterable<string, array{Accumulator, Datum}>
      */
-    public static function providerEverySummary(): iterable
+    public static function providerEverySummaryAndWhatItAnswersToNothing(): iterable
     {
-        yield 'how many there were' => [new CountAccumulator(), '0'];
+        yield 'how many there were' => [new CountAccumulator(), new IntegerDatum(0)];
 
-        yield 'what they add up to' => [new SumAccumulator(), 'NULL'];
+        yield 'what they add up to' => [new SumAccumulator(), new NullDatum()];
 
-        yield 'what they come to on average' => [new AverageAccumulator(), 'NULL'];
+        yield 'what they come to on average' => [new AverageAccumulator(), new NullDatum()];
 
-        yield 'the smallest of them' => [new ExtremeAccumulator(), 'NULL'];
+        yield 'the smallest of them' => [new ExtremeAccumulator(), new NullDatum()];
 
-        yield 'the largest of them' => [new ExtremeAccumulator(true), 'NULL'];
+        yield 'the largest of them' => [new ExtremeAccumulator(true), new NullDatum()];
 
-        yield 'all of them' => [new CollectAccumulator(), 'NULL'];
+        yield 'all of them' => [new CollectAccumulator(), new NullDatum()];
 
-        yield 'each of them only once' => [new DistinctAccumulator(new CountAccumulator()), '0'];
+        yield 'each of them only once' => [new DistinctAccumulator(new CountAccumulator()), new IntegerDatum(0)];
     }
 }

@@ -41,14 +41,12 @@ final class MatchExecution
     /**
      * @param ElementGraph         $graph      The graph being queried
      * @param ExpressionEvaluation $evaluation How a predicate is worked out
-     * @param int                  $hopLimit   How far a repetition goes when no upper bound was written
      */
     public function __construct(
         ElementGraph $graph,
         private readonly ExpressionEvaluation $evaluation,
-        int $hopLimit = 10,
     ) {
-        $this->patterns = new PatternMatching($graph, $evaluation, $hopLimit);
+        $this->patterns = new PatternMatching($graph, $evaluation);
     }
 
     /**

@@ -48,12 +48,12 @@ final class NodeDatumTest extends TestCase
     {
         $node = new NodeDatum('App\Invoice', [], ['name' => new StringDatum('Invoice')]);
 
-        self::assertSame('Invoice', $node->property('name')->toText());
+        self::assertEquals(new StringDatum('Invoice'), $node->property('name'));
     }
 
     public function testPropertyReadsOneItDoesNotCarryAsAbsent(): void
     {
-        self::assertSame(DatumKind::Null, (new NodeDatum('App\Invoice'))->property('visibility')->kind());
+        self::assertEquals(new NullDatum(), (new NodeDatum('App\Invoice'))->property('visibility'));
     }
 
     public function testToTextShowsWhatIdentifiesTheSymbol(): void

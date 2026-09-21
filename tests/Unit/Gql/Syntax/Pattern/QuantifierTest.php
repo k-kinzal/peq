@@ -63,15 +63,7 @@ final class QuantifierTest extends TestCase
         yield 'past the upper bound' => [new Quantifier(1, 3), 4, false];
 
         yield 'with no upper bound at all' => [new Quantifier(1), 99, true];
-    }
 
-    public function testCeilingHonoursAnUpperBoundThatWasWrittenHoweverFarItGoes(): void
-    {
-        self::assertSame(20, (new Quantifier(1, 20))->ceiling(10));
-    }
-
-    public function testCeilingTakesAnUnwrittenBoundFromWhatTheSearchIsWillingToDo(): void
-    {
-        self::assertSame(10, (new Quantifier(1))->ceiling(10));
+        yield 'with no repetition allowed at all' => [new Quantifier(0, 0), 0, true];
     }
 }

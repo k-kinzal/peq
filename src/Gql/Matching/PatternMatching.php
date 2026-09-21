@@ -36,14 +36,12 @@ final class PatternMatching
     /**
      * @param ElementGraph         $graph      The graph being matched against
      * @param ExpressionEvaluation $evaluation How a predicate written in a pattern is worked out
-     * @param int                  $hopLimit   How far a repetition goes when no upper bound was written
      */
     public function __construct(
         ElementGraph $graph,
         ExpressionEvaluation $evaluation,
-        int $hopLimit = 10,
     ) {
-        $this->paths = new PathMatching($graph, $evaluation, $hopLimit);
+        $this->paths = new PathMatching($graph, $evaluation);
     }
 
     /**

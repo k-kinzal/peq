@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Gql\Result;
 
-use App\Gql\Datum\DatumKind;
 use App\Gql\Datum\IntegerDatum;
 use App\Gql\Datum\NullDatum;
 use App\Gql\Result\ResultRow;
@@ -17,7 +16,6 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(ResultRow::class)]
-#[UsesClass(DatumKind::class)]
 #[UsesClass(IntegerDatum::class)]
 #[UsesClass(NullDatum::class)]
 #[Small]
@@ -32,11 +30,11 @@ final class ResultRowTest extends TestCase
 
     public function testValueReadsWhatTheRowHoldsInOneColumn(): void
     {
-        self::assertSame('1', (new ResultRow([new IntegerDatum(1)]))->value(0)->toText());
+        self::assertEquals(new IntegerDatum(2), (new ResultRow([new IntegerDatum(1), new IntegerDatum(2)]))->value(1));
     }
 
     public function testValueReadsAColumnPastTheEndOfTheRowAsAbsent(): void
     {
-        self::assertSame(DatumKind::Null, (new ResultRow([]))->value(3)->kind());
+        self::assertEquals(new NullDatum(), (new ResultRow([new IntegerDatum(1)]))->value(3));
     }
 }

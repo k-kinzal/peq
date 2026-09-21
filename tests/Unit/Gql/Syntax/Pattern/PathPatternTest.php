@@ -30,9 +30,9 @@ final class PathPatternTest extends TestCase
         self::assertSame([$term], (new PathPattern([$term]))->terms);
     }
 
-    public function testAPathThatSaysNothingCrossesNoRelationTwice(): void
+    public function testAPathThatNamesNoModeIsAWalk(): void
     {
-        self::assertSame(PathMode::Trail, (new PathPattern([new NodePattern('a')]))->mode);
+        self::assertSame(PathMode::Walk, (new PathPattern([new NodePattern('a')]))->mode);
     }
 
     public function testAPathCarriesTheModeAndTheNameItWasGiven(): void

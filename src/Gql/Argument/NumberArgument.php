@@ -6,6 +6,7 @@ namespace App\Gql\Argument;
 
 use App\Gql\Datum\Datum;
 use App\Gql\Datum\DatumKind;
+use App\Gql\Datum\DecimalDatum;
 use App\Gql\Datum\FloatDatum;
 use App\Gql\Datum\IntegerDatum;
 use App\Gql\GqlException;
@@ -44,6 +45,9 @@ final class NumberArgument
         if ($value instanceof IntegerDatum) {
             return $value->value;
         }
+        if ($value instanceof DecimalDatum) {
+            return $value->toFloat();
+        }
         if ($value instanceof FloatDatum) {
             return $value->value;
         }
@@ -52,6 +56,32 @@ final class NumberArgument
             StatusCode::InvalidType,
             sprintf('a number was expected, and a %s was given', $value->kind()->typeName()),
         );
+    }
+
+    /**
+     * Reads a value as an exact number, if it is one.
+     *
+     * @param Datum $value The value
+     *
+     * @example A decimal is exact
+     *     \App\Gql\Argument\NumberArgument::exact(new \App\Gql\Datum\DecimalDatum(15, 1)) instanceof \App\Gql\Datum\DecimalDatum // => true
+     * @example A float is not
+     *     \App\Gql\Argument\NumberArgument::exact(new \App\Gql\Datum\FloatDatum(1.5)) // => null
+     * @example Anything that is not a number is reported under the status GQL gives it
+     *     \App\Gql\Argument\NumberArgument::exact(new \App\Gql\Datum\StringDatum('2')) // throws \App\Gql\GqlException: invalid value type
+     *
+     * @return null|DecimalDatum|IntegerDatum The number, or null when it is approximate
+     *
+     * @throws GqlException If the value is not a number
+     */
+    public static function exact(Datum $value): DecimalDatum|IntegerDatum|null
+    {
+        if ($value instanceof IntegerDatum || $value instanceof DecimalDatum) {
+            return $value;
+        }
+        self::of($value);
+
+        return null;
     }
 
     /**

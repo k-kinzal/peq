@@ -4,297 +4,107 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Gql\Execution;
 
-use App\Analyzer\Graph\Declaration\AttributeUsage;
-use App\Analyzer\Graph\Declaration\Modifiers;
-use App\Analyzer\Graph\Declaration\Parameter;
-use App\Analyzer\Graph\Declaration\Signature;
-use App\Analyzer\Graph\Declaration\SymbolDeclaration;
-use App\Analyzer\Graph\Declaration\Visibility;
-use App\Analyzer\Graph\Edge\Declaration\ExtendsEdge;
-use App\Analyzer\Graph\Edge\Declaration\MethodEdge;
-use App\Analyzer\Graph\Edge\Usage\MethodCallEdge;
-use App\Analyzer\Graph\FileMeta;
-use App\Analyzer\Graph\Graph;
-use App\Analyzer\Graph\Node\ClassNode;
-use App\Analyzer\Graph\Node\MethodNode;
-use App\Analyzer\Graph\Node\UnknownNode;
-use App\Analyzer\Graph\NodeId\ClassNodeId;
-use App\Analyzer\Graph\NodeId\MethodNodeId;
-use App\Analyzer\Graph\NodeId\UnknownNodeId;
-use App\Analyzer\Graph\NodePrecedence;
-use App\Analyzer\Graph\QualifiedName;
+use App\Gql\Argument\ExactArithmetic;
 use App\Gql\Argument\NumberArgument;
-use App\Gql\Argument\TextArgument;
 use App\Gql\Binding\BindingRow;
 use App\Gql\Binding\BindingTable;
-use App\Gql\Datum\BooleanDatum;
 use App\Gql\Datum\DatumIdentity;
 use App\Gql\Datum\DatumKind;
 use App\Gql\Datum\DatumOrder;
+use App\Gql\Datum\DecimalDatum;
 use App\Gql\Datum\EdgeDatum;
-use App\Gql\Datum\FloatDatum;
 use App\Gql\Datum\IntegerDatum;
 use App\Gql\Datum\ListDatum;
-use App\Gql\Datum\NodeDatum;
-use App\Gql\Datum\NullDatum;
-use App\Gql\Datum\PathDatum;
 use App\Gql\Datum\StringDatum;
-use App\Gql\Element\EdgeLabels;
-use App\Gql\Element\EdgeProperties;
-use App\Gql\Element\ElementGraph;
-use App\Gql\Element\GraphProjection;
-use App\Gql\Element\NodeLabels;
-use App\Gql\Element\NodeProperties;
 use App\Gql\Evaluation\AggregateDetection;
 use App\Gql\Evaluation\Arithmetic;
 use App\Gql\Evaluation\BinaryOperation;
-use App\Gql\Evaluation\Comparison;
 use App\Gql\Evaluation\ExpressionEvaluation;
-use App\Gql\Evaluation\Logic;
-use App\Gql\Evaluation\Membership;
-use App\Gql\Evaluation\TextOperation;
-use App\Gql\Evaluation\UnaryOperation;
-use App\Gql\Execution\BlockExecution;
-use App\Gql\Execution\MatchExecution;
-use App\Gql\Execution\QueryExecution;
 use App\Gql\Execution\ReturnExecution;
 use App\Gql\Execution\RowExecution;
-use App\Gql\Execution\SetOperation;
 use App\Gql\GqlException;
-use App\Gql\Invocation\Accumulator;
 use App\Gql\Invocation\AggregateCatalog;
-use App\Gql\Invocation\AverageAccumulator;
-use App\Gql\Invocation\CollectAccumulator;
 use App\Gql\Invocation\CountAccumulator;
-use App\Gql\Invocation\DistinctAccumulator;
 use App\Gql\Invocation\ExtremeAccumulator;
-use App\Gql\Invocation\FunctionCatalog;
-use App\Gql\Invocation\GeneralFunctions;
-use App\Gql\Invocation\GraphFunctions;
-use App\Gql\Invocation\ListFunctions;
-use App\Gql\Invocation\SumAccumulator;
-use App\Gql\Invocation\TextFunctions;
-use App\Gql\Lexing\Lexer;
-use App\Gql\Lexing\QuotedScanner;
-use App\Gql\Lexing\SourceCursor;
-use App\Gql\Lexing\Token;
-use App\Gql\Lexing\TokenKind;
-use App\Gql\Lexing\TokenList;
-use App\Gql\Matching\EdgeMatching;
-use App\Gql\Matching\EdgeTraversal;
-use App\Gql\Matching\ElementMatching;
-use App\Gql\Matching\LabelMatching;
-use App\Gql\Matching\MatchState;
-use App\Gql\Matching\PathMatching;
-use App\Gql\Matching\PathModeRule;
-use App\Gql\Matching\PatternMatching;
-use App\Gql\Matching\PatternVariables;
-use App\Gql\Parsing\ExpressionParser;
-use App\Gql\Parsing\LabelParser;
-use App\Gql\Parsing\OperandParser;
-use App\Gql\Parsing\Parser;
-use App\Gql\Parsing\PatternParser;
-use App\Gql\Parsing\ResultParser;
-use App\Gql\Parsing\TokenReader;
-use App\Gql\Result\ResultColumn;
-use App\Gql\Result\ResultRow;
-use App\Gql\Result\ResultTable;
-use App\Gql\StatusCode;
-use App\Gql\Syntax\Clause\FilterClause;
-use App\Gql\Syntax\Clause\LetClause;
-use App\Gql\Syntax\Clause\MatchClause;
-use App\Gql\Syntax\Clause\OrderByClause;
 use App\Gql\Syntax\Clause\PageClause;
 use App\Gql\Syntax\Clause\Projection;
 use App\Gql\Syntax\Clause\ReturnClause;
 use App\Gql\Syntax\Clause\SortDirection;
 use App\Gql\Syntax\Clause\SortKey;
-use App\Gql\Syntax\Clause\VariableBinding;
 use App\Gql\Syntax\Expression\BinaryExpression;
 use App\Gql\Syntax\Expression\BinaryOperator;
 use App\Gql\Syntax\Expression\CallExpression;
-use App\Gql\Syntax\Expression\CaseBranch;
-use App\Gql\Syntax\Expression\CaseExpression;
-use App\Gql\Syntax\Expression\IndexExpression;
-use App\Gql\Syntax\Expression\ListExpression;
 use App\Gql\Syntax\Expression\LiteralExpression;
 use App\Gql\Syntax\Expression\PropertyExpression;
-use App\Gql\Syntax\Expression\UnaryExpression;
-use App\Gql\Syntax\Expression\UnaryOperator;
 use App\Gql\Syntax\Expression\VariableExpression;
-use App\Gql\Syntax\Pattern\EdgeDirection;
-use App\Gql\Syntax\Pattern\EdgePattern;
-use App\Gql\Syntax\Pattern\ElementFilter;
-use App\Gql\Syntax\Pattern\GraphPattern;
-use App\Gql\Syntax\Pattern\GroupPattern;
-use App\Gql\Syntax\Pattern\LabelOperator;
-use App\Gql\Syntax\Pattern\LabelPattern;
-use App\Gql\Syntax\Pattern\NodePattern;
-use App\Gql\Syntax\Pattern\PathMode;
-use App\Gql\Syntax\Pattern\PathPattern;
-use App\Gql\Syntax\Pattern\Quantifier;
-use App\Gql\Syntax\Query;
-use App\Gql\Syntax\QueryBlock;
-use App\Gql\Syntax\SetOperator;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Gql\AnsweredQuery;
 
 /**
  * @internal
  */
 #[CoversClass(ReturnExecution::class)]
-#[UsesClass(AttributeUsage::class)]
-#[UsesClass(Modifiers::class)]
-#[UsesClass(Parameter::class)]
-#[UsesClass(Signature::class)]
-#[UsesClass(SymbolDeclaration::class)]
-#[UsesClass(Visibility::class)]
-#[UsesClass(ExtendsEdge::class)]
-#[UsesClass(MethodEdge::class)]
-#[UsesClass(MethodCallEdge::class)]
-#[UsesClass(FileMeta::class)]
-#[UsesClass(Graph::class)]
-#[UsesClass(ClassNode::class)]
-#[UsesClass(MethodNode::class)]
-#[UsesClass(UnknownNode::class)]
-#[UsesClass(ClassNodeId::class)]
-#[UsesClass(MethodNodeId::class)]
-#[UsesClass(UnknownNodeId::class)]
-#[UsesClass(NodePrecedence::class)]
-#[UsesClass(QualifiedName::class)]
+#[UsesClass(ExactArithmetic::class)]
 #[UsesClass(NumberArgument::class)]
-#[UsesClass(TextArgument::class)]
 #[UsesClass(BindingRow::class)]
 #[UsesClass(BindingTable::class)]
-#[UsesClass(BooleanDatum::class)]
 #[UsesClass(DatumIdentity::class)]
 #[UsesClass(DatumKind::class)]
 #[UsesClass(DatumOrder::class)]
+#[UsesClass(DecimalDatum::class)]
 #[UsesClass(EdgeDatum::class)]
-#[UsesClass(FloatDatum::class)]
 #[UsesClass(IntegerDatum::class)]
 #[UsesClass(ListDatum::class)]
-#[UsesClass(NodeDatum::class)]
-#[UsesClass(NullDatum::class)]
-#[UsesClass(PathDatum::class)]
 #[UsesClass(StringDatum::class)]
-#[UsesClass(EdgeLabels::class)]
-#[UsesClass(EdgeProperties::class)]
-#[UsesClass(ElementGraph::class)]
-#[UsesClass(GraphProjection::class)]
-#[UsesClass(NodeLabels::class)]
-#[UsesClass(NodeProperties::class)]
 #[UsesClass(AggregateDetection::class)]
 #[UsesClass(Arithmetic::class)]
 #[UsesClass(BinaryOperation::class)]
-#[UsesClass(Comparison::class)]
 #[UsesClass(ExpressionEvaluation::class)]
-#[UsesClass(Logic::class)]
-#[UsesClass(Membership::class)]
-#[UsesClass(TextOperation::class)]
-#[UsesClass(UnaryOperation::class)]
-#[UsesClass(GqlException::class)]
-#[UsesClass(Accumulator::class)]
+#[UsesClass(RowExecution::class)]
 #[UsesClass(AggregateCatalog::class)]
-#[UsesClass(AverageAccumulator::class)]
-#[UsesClass(CollectAccumulator::class)]
 #[UsesClass(CountAccumulator::class)]
-#[UsesClass(DistinctAccumulator::class)]
 #[UsesClass(ExtremeAccumulator::class)]
-#[UsesClass(FunctionCatalog::class)]
-#[UsesClass(GeneralFunctions::class)]
-#[UsesClass(GraphFunctions::class)]
-#[UsesClass(ListFunctions::class)]
-#[UsesClass(SumAccumulator::class)]
-#[UsesClass(TextFunctions::class)]
-#[UsesClass(Lexer::class)]
-#[UsesClass(QuotedScanner::class)]
-#[UsesClass(SourceCursor::class)]
-#[UsesClass(Token::class)]
-#[UsesClass(TokenKind::class)]
-#[UsesClass(TokenList::class)]
-#[UsesClass(EdgeMatching::class)]
-#[UsesClass(EdgeTraversal::class)]
-#[UsesClass(ElementMatching::class)]
-#[UsesClass(LabelMatching::class)]
-#[UsesClass(MatchState::class)]
-#[UsesClass(PathMatching::class)]
-#[UsesClass(PathModeRule::class)]
-#[UsesClass(PatternMatching::class)]
-#[UsesClass(PatternVariables::class)]
-#[UsesClass(ExpressionParser::class)]
-#[UsesClass(LabelParser::class)]
-#[UsesClass(OperandParser::class)]
-#[UsesClass(Parser::class)]
-#[UsesClass(PatternParser::class)]
-#[UsesClass(ResultParser::class)]
-#[UsesClass(TokenReader::class)]
-#[UsesClass(ResultColumn::class)]
-#[UsesClass(ResultRow::class)]
-#[UsesClass(ResultTable::class)]
-#[UsesClass(StatusCode::class)]
-#[UsesClass(FilterClause::class)]
-#[UsesClass(LetClause::class)]
-#[UsesClass(MatchClause::class)]
-#[UsesClass(OrderByClause::class)]
 #[UsesClass(PageClause::class)]
 #[UsesClass(Projection::class)]
 #[UsesClass(ReturnClause::class)]
 #[UsesClass(SortDirection::class)]
 #[UsesClass(SortKey::class)]
-#[UsesClass(VariableBinding::class)]
 #[UsesClass(BinaryExpression::class)]
-#[UsesClass(BinaryOperator::class)]
 #[UsesClass(CallExpression::class)]
-#[UsesClass(CaseBranch::class)]
-#[UsesClass(CaseExpression::class)]
-#[UsesClass(IndexExpression::class)]
-#[UsesClass(ListExpression::class)]
 #[UsesClass(LiteralExpression::class)]
 #[UsesClass(PropertyExpression::class)]
-#[UsesClass(UnaryExpression::class)]
-#[UsesClass(UnaryOperator::class)]
 #[UsesClass(VariableExpression::class)]
-#[UsesClass(EdgeDirection::class)]
-#[UsesClass(EdgePattern::class)]
-#[UsesClass(ElementFilter::class)]
-#[UsesClass(GraphPattern::class)]
-#[UsesClass(GroupPattern::class)]
-#[UsesClass(LabelOperator::class)]
-#[UsesClass(LabelPattern::class)]
-#[UsesClass(NodePattern::class)]
-#[UsesClass(PathMode::class)]
-#[UsesClass(PathPattern::class)]
-#[UsesClass(Quantifier::class)]
-#[UsesClass(Query::class)]
-#[UsesClass(QueryBlock::class)]
-#[UsesClass(SetOperator::class)]
-#[UsesClass(BlockExecution::class)]
-#[UsesClass(MatchExecution::class)]
-#[UsesClass(QueryExecution::class)]
-#[UsesClass(RowExecution::class)]
-#[UsesClass(SetOperation::class)]
 #[Small]
 final class ReturnExecutionTest extends TestCase
 {
-    /**
-     * @throws GqlException
-     */
     public function testHeadingsNamesTheColumnsTheProjectionAsksFor(): void
     {
-        self::assertSame(['name', 'line'], AnsweredQuery::table('MATCH (p:Method) RETURN p.name AS name, p.line AS line')->headings());
+        $clause = new ReturnClause([
+            new Projection(new PropertyExpression(new VariableExpression('p'), 'name'), 'name', 'p.name'),
+            new Projection(new PropertyExpression(new VariableExpression('p'), 'line'), 'line', 'p.line'),
+        ]);
+        $execution = new ReturnExecution(new RowExecution(new ExpressionEvaluation()));
+
+        self::assertSame(['name', 'line'], $execution->headings($clause, BindingTable::unit()));
     }
 
-    /**
-     * @throws GqlException
-     */
+    public function testHeadingsNamesAColumnGivenNoNameAfterWhatProducedIt(): void
+    {
+        $clause = new ReturnClause([new Projection(new PropertyExpression(new VariableExpression('p'), 'name'), null, 'p.name')]);
+        $execution = new ReturnExecution(new RowExecution(new ExpressionEvaluation()));
+
+        self::assertSame(['p.name'], $execution->headings($clause, BindingTable::unit()));
+    }
+
     public function testHeadingsShowsWhatIsBoundWhenTheProjectionAsksForEverything(): void
     {
-        self::assertSame(['n', 'm'], AnsweredQuery::table('LET n = 1, m = 2 RETURN *')->headings());
+        $table = new BindingTable([new BindingRow(['n' => new IntegerDatum(1), 'm' => new IntegerDatum(2)])]);
+        $execution = new ReturnExecution(new RowExecution(new ExpressionEvaluation()));
+
+        self::assertSame(['n', 'm'], $execution->headings(new ReturnClause(), $table));
     }
 
     /**
@@ -302,20 +112,40 @@ final class ReturnExecutionTest extends TestCase
      */
     public function testRunProducesOneRowPerRowWhenNothingIsSummarised(): void
     {
-        self::assertSame(
-            '[name:STRING] get; show; store; total',
-            AnsweredQuery::of('MATCH (p:Method) RETURN p.name AS name ORDER BY name'),
+        $clause = new ReturnClause([
+            new Projection(new BinaryExpression(BinaryOperator::Add, new VariableExpression('n'), new LiteralExpression(new IntegerDatum(1))), 'next'),
+        ]);
+        $table = new BindingTable([new BindingRow(['n' => new IntegerDatum(1)]), new BindingRow(['n' => new IntegerDatum(2)])]);
+        $execution = new ReturnExecution(new RowExecution(new ExpressionEvaluation()));
+
+        self::assertEquals(
+            new BindingTable([
+                new BindingRow(['n' => new IntegerDatum(1), 'next' => new IntegerDatum(2)]),
+                new BindingRow(['n' => new IntegerDatum(2), 'next' => new IntegerDatum(3)]),
+            ]),
+            $execution->run($clause, $table),
         );
     }
 
     /**
      * @throws GqlException
      */
-    public function testRunShowsARowThatRepeatsOnceWhenAskedForWhatDiffers(): void
+    public function testRunShowsRowsThatRepeatWhatIsShownOnceWhenAskedForWhatDiffers(): void
     {
-        self::assertSame(
-            '[kind:STRING] class; method; unknown',
-            AnsweredQuery::of('MATCH (p) RETURN DISTINCT p.kind AS kind ORDER BY kind'),
+        $clause = new ReturnClause([new Projection(new VariableExpression('kind'), 'kind')], true);
+        $table = new BindingTable([
+            new BindingRow(['id' => new StringDatum('App\Http\Controller'), 'kind' => new StringDatum('class')]),
+            new BindingRow(['id' => new StringDatum('App\Http\Controller::show'), 'kind' => new StringDatum('method')]),
+            new BindingRow(['id' => new StringDatum('App\Domain\Invoice'), 'kind' => new StringDatum('class')]),
+        ]);
+        $execution = new ReturnExecution(new RowExecution(new ExpressionEvaluation()));
+
+        self::assertEquals(
+            new BindingTable([
+                new BindingRow(['id' => new StringDatum('App\Http\Controller'), 'kind' => new StringDatum('class')]),
+                new BindingRow(['id' => new StringDatum('App\Http\Controller::show'), 'kind' => new StringDatum('method')]),
+            ]),
+            $execution->run($clause, $table),
         );
     }
 
@@ -324,10 +154,15 @@ final class ReturnExecutionTest extends TestCase
      */
     public function testRunKeepsTheStretchOfRowsTheProjectionAsksFor(): void
     {
-        self::assertSame(
-            '[name:STRING] show',
-            AnsweredQuery::of('MATCH (p:Method) RETURN p.name AS name ORDER BY name OFFSET 1 LIMIT 1'),
-        );
+        $clause = new ReturnClause([new Projection(new VariableExpression('n'), 'n')], false, [], [], new PageClause(1, 1));
+        $table = new BindingTable([
+            new BindingRow(['n' => new IntegerDatum(1)]),
+            new BindingRow(['n' => new IntegerDatum(2)]),
+            new BindingRow(['n' => new IntegerDatum(3)]),
+        ]);
+        $execution = new ReturnExecution(new RowExecution(new ExpressionEvaluation()));
+
+        self::assertEquals(new BindingTable([new BindingRow(['n' => new IntegerDatum(2)])]), $execution->run($clause, $table));
     }
 
     /**
@@ -335,9 +170,19 @@ final class ReturnExecutionTest extends TestCase
      */
     public function testRunSortsBySomethingTheProjectionDoesNotShow(): void
     {
-        self::assertSame(
-            '[name:STRING] get; total; show; store',
-            AnsweredQuery::of('MATCH (p:Method) RETURN p.name AS name ORDER BY p.owner, p.line'),
+        $clause = new ReturnClause([new Projection(new VariableExpression('name'), 'shown')], false, [], [new SortKey(new VariableExpression('line'))]);
+        $table = new BindingTable([
+            new BindingRow(['name' => new StringDatum('store'), 'line' => new IntegerDatum(30)]),
+            new BindingRow(['name' => new StringDatum('show'), 'line' => new IntegerDatum(20)]),
+        ]);
+        $execution = new ReturnExecution(new RowExecution(new ExpressionEvaluation()));
+
+        self::assertEquals(
+            new BindingTable([
+                new BindingRow(['name' => new StringDatum('show'), 'line' => new IntegerDatum(20), 'shown' => new StringDatum('show')]),
+                new BindingRow(['name' => new StringDatum('store'), 'line' => new IntegerDatum(30), 'shown' => new StringDatum('store')]),
+            ]),
+            $execution->run($clause, $table),
         );
     }
 
@@ -346,42 +191,76 @@ final class ReturnExecutionTest extends TestCase
      */
     public function testRunAnswersOnceForASummaryOverNoRowsAtAll(): void
     {
-        self::assertSame('[n:INT64] 0', AnsweredQuery::of('MATCH (p:Interface) RETURN count(*) AS n'));
+        $clause = new ReturnClause([new Projection(new CallExpression('count', [], false, true), 'n', 'count(*)')]);
+        $execution = new ReturnExecution(new RowExecution(new ExpressionEvaluation()));
+
+        self::assertEquals(new BindingTable([new BindingRow(['n' => new IntegerDatum(0)])]), $execution->run($clause, BindingTable::nothing()));
     }
 
     /**
      * @throws GqlException
      */
-    #[DataProvider('providerProjectionsAndWhetherTheySummarise')]
-    public function testSummarisesDecidesFromTheShapeOfWhatIsWritten(string $query, string $expected): void
+    public function testRunSummarisesAGroupListAlongTheRowRatherThanDownTheTable(): void
     {
-        self::assertSame($expected, AnsweredQuery::of($query));
+        $first = new EdgeDatum('show>total', ['call'], ['line' => new IntegerDatum(22)], 'show', 'total');
+        $second = new EdgeDatum('total>get', ['call'], ['line' => new IntegerDatum(14)], 'total', 'get');
+        $clause = new ReturnClause([new Projection(new CallExpression('min', [new PropertyExpression(new VariableExpression('e'), 'line')]), 'earliest')]);
+        $table = new BindingTable([
+            new BindingRow(['e' => new ListDatum([$first])]),
+            new BindingRow(['e' => new ListDatum([$first, $second])]),
+        ]);
+        $execution = new ReturnExecution(new RowExecution(new ExpressionEvaluation()));
+
+        self::assertEquals(
+            new BindingTable([
+                new BindingRow(['e' => new ListDatum([$first]), 'earliest' => new IntegerDatum(22)]),
+                new BindingRow(['e' => new ListDatum([$first, $second]), 'earliest' => new IntegerDatum(14)]),
+            ]),
+            $execution->run($clause, $table, ['e']),
+        );
+    }
+
+    #[DataProvider('providerProjectionsAndWhetherTheySummarise')]
+    public function testSummarisesDecidesFromTheShapeOfWhatIsWritten(ReturnClause $clause, bool $summarises): void
+    {
+        $execution = new ReturnExecution(new RowExecution(new ExpressionEvaluation()));
+
+        self::assertSame($summarises, $execution->summarises($clause, ['e']));
     }
 
     /**
-     * @return iterable<string, array{string, string}>
+     * @return iterable<string, array{ReturnClause, bool}>
      */
     public static function providerProjectionsAndWhetherTheySummarise(): iterable
     {
-        yield 'a projection that groups summarises' => [
-            'MATCH (p:Method) RETURN p.owner AS owner GROUP BY owner ORDER BY owner',
-            '[owner:STRING] App\Cache\Store; App\Domain\Invoice; App\Http\Controller',
+        yield 'a projection that groups' => [
+            new ReturnClause([new Projection(new VariableExpression('owner'), 'owner')], false, [new VariableExpression('owner')]),
+            true,
         ];
 
-        yield 'a projection holding a summary summarises without being told to' => [
-            'MATCH (p:Method) RETURN count(*) AS n',
-            '[n:INT64] 4',
+        yield 'a projection holding a summary, without being told to group' => [
+            new ReturnClause([new Projection(new CallExpression('count', [], false, true), 'n')]),
+            true,
         ];
 
-        yield 'a summary buried in an expression still summarises' => [
-            "MATCH (p:Method) RETURN 'found ' || count(*) AS found",
-            '[found:STRING] found 4',
+        yield 'a projection holding a summary buried in an expression' => [
+            new ReturnClause([
+                new Projection(new BinaryExpression(BinaryOperator::Add, new CallExpression('count', [], false, true), new LiteralExpression(new IntegerDatum(1))), 'n'),
+            ]),
+            true,
         ];
 
-        yield 'a projection that shows properties does not' => [
-            'MATCH (p:Class) RETURN p.name AS name ORDER BY name',
-            '[name:STRING] Controller; Invoice; Kernel; Store',
+        yield 'a projection that shows properties' => [
+            new ReturnClause([new Projection(new PropertyExpression(new VariableExpression('p'), 'name'), 'name')]),
+            false,
         ];
+
+        yield 'a projection that summarises only what one path crossed' => [
+            new ReturnClause([new Projection(new CallExpression('min', [new PropertyExpression(new VariableExpression('e'), 'line')]), 'earliest')]),
+            false,
+        ];
+
+        yield 'a projection that asks for everything' => [new ReturnClause(), false];
     }
 
     /**
@@ -389,10 +268,26 @@ final class ReturnExecutionTest extends TestCase
      */
     public function testReportedAddsTheProjectedColumnsToTheRowTheyCameFrom(): void
     {
-        $row = BindingRow::unit()->with('p', new IntegerDatum(1));
+        $clause = new ReturnClause([new Projection(new VariableExpression('p'), 'shown')]);
         $execution = new ReturnExecution(new RowExecution(new ExpressionEvaluation()));
 
-        self::assertSame('1', $execution->reported(new ReturnClause(), new BindingTable([$row]))[0]->value('p')->toText());
+        self::assertEquals(
+            [new BindingRow(['p' => new IntegerDatum(1), 'shown' => new IntegerDatum(1)])],
+            $execution->reported($clause, new BindingTable([new BindingRow(['p' => new IntegerDatum(1)])])),
+        );
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testReportedLeavesItsRowsAloneWhenTheProjectionAsksForEverything(): void
+    {
+        $execution = new ReturnExecution(new RowExecution(new ExpressionEvaluation()));
+
+        self::assertEquals(
+            [new BindingRow(['p' => new IntegerDatum(1)])],
+            $execution->reported(new ReturnClause(), new BindingTable([new BindingRow(['p' => new IntegerDatum(1)])])),
+        );
     }
 
     /**
@@ -400,9 +295,24 @@ final class ReturnExecutionTest extends TestCase
      */
     public function testSummarisedWorksTheSummariesOutOverEachGroup(): void
     {
-        self::assertSame(
-            '[owner:STRING, n:INT64] App\Cache\Store, 1; App\Domain\Invoice, 1; App\Http\Controller, 2',
-            AnsweredQuery::of('MATCH (p:Method) RETURN p.owner AS owner, count(*) AS n GROUP BY owner ORDER BY owner'),
+        $clause = new ReturnClause(
+            [new Projection(new VariableExpression('owner'), 'owner'), new Projection(new CallExpression('count', [], false, true), 'n')],
+            false,
+            [new VariableExpression('owner')],
+        );
+        $table = new BindingTable([
+            new BindingRow(['owner' => new StringDatum('App\Http\Controller'), 'name' => new StringDatum('show')]),
+            new BindingRow(['owner' => new StringDatum('App\Http\Controller'), 'name' => new StringDatum('store')]),
+            new BindingRow(['owner' => new StringDatum('App\Cache\Store'), 'name' => new StringDatum('get')]),
+        ]);
+        $execution = new ReturnExecution(new RowExecution(new ExpressionEvaluation()));
+
+        self::assertEquals(
+            [
+                new BindingRow(['owner' => new StringDatum('App\Http\Controller'), 'name' => new StringDatum('show'), 'n' => new IntegerDatum(2)]),
+                new BindingRow(['owner' => new StringDatum('App\Cache\Store'), 'name' => new StringDatum('get'), 'n' => new IntegerDatum(1)]),
+            ],
+            $execution->summarised($clause, $table),
         );
     }
 
@@ -411,31 +321,25 @@ final class ReturnExecutionTest extends TestCase
      */
     public function testSummarisedAnswersOnceWhenThereIsNothingToSummarise(): void
     {
-        $counted = new CallExpression('count', [], false, true);
-        $clause = new ReturnClause([new Projection($counted, 'n', 'count(*)')]);
+        $clause = new ReturnClause([new Projection(new CallExpression('count', [], false, true), 'n', 'count(*)')]);
         $execution = new ReturnExecution(new RowExecution(new ExpressionEvaluation()));
 
-        self::assertCount(1, $execution->summarised($clause, BindingTable::nothing()));
+        self::assertEquals([new BindingRow(['n' => new IntegerDatum(0)])], $execution->summarised($clause, BindingTable::nothing()));
     }
 
-    public function testGroupKeysReadsAGroupingKeyThatNamesAColumnOfTheProjection(): void
+    public function testGroupKeysReadsAGroupingKeyThatNamesAColumnOfTheProjectionAsThatColumn(): void
     {
         $shown = new PropertyExpression(new VariableExpression('p'), 'kind');
-        $clause = new ReturnClause(
-            [new Projection($shown, 'kind', 'p.kind')],
-            false,
-            [new VariableExpression('kind')],
-        );
+        $clause = new ReturnClause([new Projection($shown, 'kind', 'p.kind')], false, [new VariableExpression('kind')]);
 
-        self::assertSame($shown, ReturnExecution::groupKeys($clause)[0]);
+        self::assertSame([$shown], ReturnExecution::groupKeys($clause));
     }
 
     public function testGroupKeysLeavesAKeyThatNamesNoColumnAsItWasWritten(): void
     {
         $key = new VariableExpression('kind');
-        $clause = new ReturnClause([], false, [$key]);
 
-        self::assertSame($key, ReturnExecution::groupKeys($clause)[0]);
+        self::assertSame([$key], ReturnExecution::groupKeys(new ReturnClause([], false, [$key])));
     }
 
     /**
@@ -443,7 +347,7 @@ final class ReturnExecutionTest extends TestCase
      */
     public function testGroupsMakesOneGroupOfEverythingWhenNothingIsGroupedBy(): void
     {
-        self::assertCount(1, ReturnExecution::groups([], []));
+        self::assertSame([[]], ReturnExecution::groups([], []));
     }
 
     /**
@@ -451,25 +355,41 @@ final class ReturnExecutionTest extends TestCase
      */
     public function testGroupsGathersTheRowsThatAgreeOnEveryKey(): void
     {
-        self::assertSame(
-            '[owner:STRING, names:LIST] App\Cache\Store, [get]; App\Domain\Invoice, [total]; App\Http\Controller, [show, store]',
-            AnsweredQuery::of('MATCH (p:Method) RETURN p.owner AS owner, collect_list(p.name) AS names GROUP BY owner ORDER BY owner'),
+        $rows = [
+            new BindingRow(['owner' => new StringDatum('App\Http\Controller'), 'name' => new StringDatum('show')]),
+            new BindingRow(['owner' => new StringDatum('App\Cache\Store'), 'name' => new StringDatum('get')]),
+            new BindingRow(['owner' => new StringDatum('App\Http\Controller'), 'name' => new StringDatum('store')]),
+        ];
+
+        self::assertEquals(
+            [
+                [
+                    new BindingRow(['owner' => new StringDatum('App\Http\Controller'), 'name' => new StringDatum('show')]),
+                    new BindingRow(['owner' => new StringDatum('App\Http\Controller'), 'name' => new StringDatum('store')]),
+                ],
+                [new BindingRow(['owner' => new StringDatum('App\Cache\Store'), 'name' => new StringDatum('get')])],
+            ],
+            ReturnExecution::groups([new VariableExpression('owner')], $rows),
         );
     }
 
     public function testOnceShowsRowsThatAgreeOnWhatIsShownOnlyOnce(): void
     {
-        $left = BindingRow::unit()->with('n', new IntegerDatum(1));
-        $right = BindingRow::unit()->with('n', new IntegerDatum(1));
+        $rows = [
+            new BindingRow(['n' => new IntegerDatum(1), 'id' => new StringDatum('a')]),
+            new BindingRow(['n' => new IntegerDatum(1), 'id' => new StringDatum('b')]),
+        ];
 
-        self::assertCount(1, ReturnExecution::once(['n'], [$left, $right]));
+        self::assertEquals([new BindingRow(['n' => new IntegerDatum(1), 'id' => new StringDatum('a')])], ReturnExecution::once(['n'], $rows));
     }
 
     public function testOnceKeepsRowsThatDifferInWhatIsShown(): void
     {
-        $left = BindingRow::unit()->with('n', new IntegerDatum(1));
-        $right = BindingRow::unit()->with('n', new IntegerDatum(2));
+        $rows = [new BindingRow(['n' => new IntegerDatum(1)]), new BindingRow(['n' => new IntegerDatum(2)])];
 
-        self::assertCount(2, ReturnExecution::once(['n'], [$left, $right]));
+        self::assertEquals(
+            [new BindingRow(['n' => new IntegerDatum(1)]), new BindingRow(['n' => new IntegerDatum(2)])],
+            ReturnExecution::once(['n'], $rows),
+        );
     }
 }

@@ -17,10 +17,10 @@ use PHPUnit\Framework\TestCase;
 #[Small]
 final class EdgeDirectionTest extends TestCase
 {
-    public function testThereAreOnlyThreeWaysToCrossARelation(): void
+    public function testThereAreFourWaysAPatternCanCrossAnEdge(): void
     {
         self::assertSame(
-            [EdgeDirection::Along, EdgeDirection::Against, EdgeDirection::Either],
+            [EdgeDirection::Along, EdgeDirection::Against, EdgeDirection::Either, EdgeDirection::Undirected],
             EdgeDirection::cases(),
         );
     }
@@ -41,5 +41,7 @@ final class EdgeDirectionTest extends TestCase
         yield 'reading it backwards' => [EdgeDirection::Against, ':calls', '<-[:calls]-'];
 
         yield 'not caring which way' => [EdgeDirection::Either, '', '-[]-'];
+
+        yield 'asking for an edge that points neither way' => [EdgeDirection::Undirected, 'e', '~[e]~'];
     }
 }

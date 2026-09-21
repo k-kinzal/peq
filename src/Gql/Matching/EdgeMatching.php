@@ -34,12 +34,10 @@ final class EdgeMatching
     /**
      * @param ElementGraph         $graph      The graph being matched against
      * @param ExpressionEvaluation $evaluation How a predicate written in a pattern is worked out
-     * @param int                  $hopLimit   How far a repetition goes when no upper bound was written
      */
     public function __construct(
         private readonly ElementGraph $graph,
         private readonly ExpressionEvaluation $evaluation,
-        private readonly int $hopLimit,
     ) {}
 
     /**
@@ -54,7 +52,7 @@ final class EdgeMatching
      * @param PathMode    $mode    What the path may visit more than once
      *
      * @example A pattern standing nowhere can cross nothing
-     *     $matching = new \App\Gql\Matching\EdgeMatching(new \App\Gql\Element\ElementGraph([], [], []), new \App\Gql\Evaluation\ExpressionEvaluation(), 10);
+     *     $matching = new \App\Gql\Matching\EdgeMatching(new \App\Gql\Element\ElementGraph([], [], []), new \App\Gql\Evaluation\ExpressionEvaluation());
      *     $pattern = new \App\Gql\Syntax\Pattern\EdgePattern(\App\Gql\Syntax\Pattern\EdgeDirection::Along);
      *     $matching->matches($pattern, \App\Gql\Matching\MatchState::before(\App\Gql\Binding\BindingRow::unit()), \App\Gql\Syntax\Pattern\PathMode::Trail) // => []
      *
@@ -75,7 +73,7 @@ final class EdgeMatching
         $start = $pattern->variable === null ? $state : $state->bind($pattern->variable, new ListDatum([]));
         $reached = $quantifier->allows(0) ? [$start] : [];
         $frontier = [$start];
-        $ceiling = $quantifier->ceiling($this->hopLimit);
+        $ceiling = $quantifier->most ?? PHP_INT_MAX;
 
         for ($times = 1; $times <= $ceiling && $frontier !== []; ++$times) {
             $next = [];
@@ -100,7 +98,7 @@ final class EdgeMatching
      * @param bool        $repeating Whether the name binds to the chain rather than to this relation
      *
      * @example A pattern standing nowhere can cross nothing
-     *     $matching = new \App\Gql\Matching\EdgeMatching(new \App\Gql\Element\ElementGraph([], [], []), new \App\Gql\Evaluation\ExpressionEvaluation(), 10);
+     *     $matching = new \App\Gql\Matching\EdgeMatching(new \App\Gql\Element\ElementGraph([], [], []), new \App\Gql\Evaluation\ExpressionEvaluation());
      *     $pattern = new \App\Gql\Syntax\Pattern\EdgePattern(\App\Gql\Syntax\Pattern\EdgeDirection::Along);
      *     $matching->crossOnce($pattern, \App\Gql\Matching\MatchState::before(\App\Gql\Binding\BindingRow::unit()), \App\Gql\Syntax\Pattern\PathMode::Trail, false) // => []
      *
@@ -137,7 +135,7 @@ final class EdgeMatching
      *
      * @example A relation leading nowhere the graph knows about is not crossed
      *     $edge = new \App\Gql\Datum\EdgeDatum('e', [], [], 'a', 'b');
-     *     $matching = new \App\Gql\Matching\EdgeMatching(new \App\Gql\Element\ElementGraph([], [], []), new \App\Gql\Evaluation\ExpressionEvaluation(), 10);
+     *     $matching = new \App\Gql\Matching\EdgeMatching(new \App\Gql\Element\ElementGraph([], [], []), new \App\Gql\Evaluation\ExpressionEvaluation());
      *     $state = \App\Gql\Matching\MatchState::before(\App\Gql\Binding\BindingRow::unit())->startingAt(new \App\Gql\Datum\NodeDatum('a'));
      *     $pattern = new \App\Gql\Syntax\Pattern\EdgePattern(\App\Gql\Syntax\Pattern\EdgeDirection::Along);
      *     $matching->arrival($pattern, $state, \App\Gql\Syntax\Pattern\PathMode::Trail, new \App\Gql\Matching\EdgeTraversal($edge, 'b'), false) // => null

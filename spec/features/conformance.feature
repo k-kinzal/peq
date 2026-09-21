@@ -15,6 +15,10 @@ Feature: Conformance to ISO/IEC 39075
   directions, so that a feature is claimed exactly when a scenario states it. A
   register nothing exercises would be a longer way of saying "it conforms".
 
+  Every scenario of this suite cites where what it states is published, and the
+  citations are looked up too: a scenario nobody can trace to a published text is a
+  rule somebody made up, and this suite has none.
+
   peq claims no extension under 24.5.3. Every GQL-program it reads is one the
   standard defines, and where its own vocabulary spells a word GQL reserves - a
   label called "Function", a property called "value" - a query writes that word in
@@ -28,14 +32,9 @@ Feature: Conformance to ISO/IEC 39075
   statements that would change one are not implemented and are refused by name; the
   register says so, feature by feature.
 
-  The subclauses stated in this feature:
-    23.1    GQLSTATUS
-    24.3    Conformance to features
-    24.5    Requirements for GQL-implementations
-    24.5.3  Extensions and options
-
   @iso:24.3 @iso:24.5
   Scenario: The conformance register, checked against the standard's own artifact
+    Source: https://www.iso.org/obp/ui/en/#iso:std:iso-iec:39075:ed-1:v1:en 24.3, 24.5
     Given the conformance register:
       | feature | claimed | description |
       | G002   | no  | Different-edges match mode |
@@ -68,8 +67,8 @@ Feature: Conformance to ISO/IEC 39075
       | G043   | yes | Complete full edge patterns |
       | G044   | yes | Basic abbreviated edge patterns |
       | G045   | yes | Complete abbreviated edge patterns |
-      | G046   | no  | Relaxed topological consistency: adjacent vertex patterns |
-      | G047   | no  | Relaxed topological consistency: concise edge patterns |
+      | G046   | yes | Relaxed topological consistency: adjacent vertex patterns |
+      | G047   | yes | Relaxed topological consistency: concise edge patterns |
       | G048   | no  | Parenthesized path pattern: subpath variable declaration |
       | G049   | no  | Parenthesized path pattern: path mode prefix |
       | G050   | no  | Parenthesized path pattern: WHERE clause |
@@ -94,7 +93,7 @@ Feature: Conformance to ISO/IEC 39075
       | GA06   | no  | Value type predicate |
       | GA07   | no  | Ordering by discarded binding variables |
       | GA08   | no  | GQL-status objects with diagnostic records |
-      | GA09   | no  | Comparison of paths |
+      | GA09   | yes | Comparison of paths |
       | GB01   | no  | Long identifiers |
       | GB02   | yes | Double minus sign comments |
       | GB03   | yes | Double solidus comments |
@@ -145,14 +144,14 @@ Feature: Conformance to ISO/IEC 39075
       | GL01   | no  | Hexadecimal literals |
       | GL02   | no  | Octal literals |
       | GL03   | no  | Binary literals |
-      | GL04   | no  | Exact number in common notation without suffix |
-      | GL05   | no  | Exact number in common notation or as decimal integer with suffix |
-      | GL06   | no  | Exact number in scientific notation with suffix |
-      | GL07   | no  | Approximate number in common notation or as decimal integer with suffix |
-      | GL08   | no  | Approximate number in scientific notation with suffix |
-      | GL09   | no  | Optional float number suffix |
-      | GL10   | no  | Optional double number suffix |
-      | GL11   | no  | Opt-out character escaping |
+      | GL04   | yes | Exact number in common notation without suffix |
+      | GL05   | yes | Exact number in common notation or as decimal integer with suffix |
+      | GL06   | yes | Exact number in scientific notation with suffix |
+      | GL07   | yes | Approximate number in common notation or as decimal integer with suffix |
+      | GL08   | yes | Approximate number in scientific notation with suffix |
+      | GL09   | yes | Optional float number suffix |
+      | GL10   | yes | Optional double number suffix |
+      | GL11   | yes | Opt-out character escaping |
       | GL12   | no  | SQL datetime and interval formats |
       | GP01   | no  | Inline procedure |
       | GP02   | no  | Inline procedure with implicit nested variable scope |
@@ -230,7 +229,7 @@ Feature: Conformance to ISO/IEC 39075
       | GV14   | no  | 128 bit signed integer numbers |
       | GV15   | no  | 256 bit unsigned integer numbers |
       | GV16   | no  | 256 bit signed integer numbers |
-      | GV17   | no  | Decimal numbers |
+      | GV17   | yes | Decimal numbers |
       | GV18   | no  | Small signed integer numbers |
       | GV19   | no  | Big signed integer numbers |
       | GV20   | no  | 16 bit floating point numbers |
@@ -272,37 +271,123 @@ Feature: Conformance to ISO/IEC 39075
     And every feature the register claims is stated by a scenario of this suite
     And no scenario states a feature the register does not claim
 
+  @iso:24.3 @iso:24.5
+  Scenario: Every scenario says where what it states is published
+    Source: https://www.iso.org/obp/ui/en/#iso:std:iso-iec:39075:ed-1:v1:en 24.3, 24.5
+    Then every scenario cites where what it states is published
+
   @iso:23.1
   Scenario: Every condition the implementation reports is one the standard defines
+    Source: https://www.iso.org/obp/ui/en/#iso:std:iso-iec:39075:ed-1:v1:en 23.1
+    Source: https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en)-conditions.xml 00000, 02000
     Then every GQLSTATUS the implementation reports is one ISO/IEC 39075 defines
     And every GQLSTATUS carries the condition the standard words for it
 
   @iso:24.5
   Scenario: Every name the implementation offers a query is a name GQL can write
+    Source: https://www.iso.org/obp/ui/en/#iso:std:iso-iec:39075:ed-1:v1:en 24.5, 21.3
+    Source: https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en).bnf.xml <delimited identifier>
     Then every name the schema offers is one a query can write
 
   @iso:24.3
   Scenario: Every subclause this suite points at is one the standard numbers
+    Source: https://www.iso.org/obp/ui/en/#iso:std:iso-iec:39075:ed-1:v1:en 24.3
     Then every subclause a scenario states is one ISO/IEC 39075 numbers
 
   @iso:24.5
   Scenario: Everything this claim is checked against is what it was published as
+    Source: https://www.iso.org/obp/ui/en/#iso:std:iso-iec:39075:ed-1:v1:en 24.5
     Then every artifact this specification reads is the one it arrived as
 
   @iso:24.5 @iso:24.5.3
   Scenario: The implementation spells no word of its own
+    Source: https://www.iso.org/obp/ui/en/#iso:std:iso-iec:39075:ed-1:v1:en 24.5, 24.5.3
+    Source: https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en).bnf.xml <reserved word>, <non-reserved word>
     Then every word the implementation spells is one ISO/IEC 39075's grammar writes
     And every function the implementation offers is one ISO/IEC 39075's grammar calls
 
   @iso:24.5
   Scenario: What the implementation settles for itself, the standard left for it to settle
+    Source: https://www.iso.org/obp/ui/en/#iso:std:iso-iec:39075:ed-1:v1:en 24.5
+    Source: https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en)-implementation-defined.xml IL018
     Given the implementation-defined register:
-      | item  | description |
-      | IL018 | The maximum value of the upper bound of a general qualifier. |
+      | item  | description | peq |
+      | ID022 | The default collation. | characters compare by their Unicode code points |
+      | ID028 | The effective binary precision of each supported integer type. | INT64 is a 64-bit two's complement integer |
+      | ID034 | The effective decimal precision of each decimal type. | a DECIMAL holds the digits of one INT64: 18 always, and 19 up to 9223372036854775807 |
+      | ID037 | The effective binary precision and scale of each supported approximate numeric type. | FLOAT64 is an IEEE 754 binary64 number |
+      | ID059 | The exact numeric declared type of results of the COUNT function. | INT64 |
+      | ID062 | The exact numeric declared type of a non-negative integer specification. | INT64 |
+      | ID063 | The numeric declared type of the result of a dyadic arithmetic operator when either operand is approximate numeric. | FLOAT64 |
+      | ID064 | The numeric declared type of the result of a dyadic arithmetic operator when both operands are exact numeric. | INT64 when both operands are INT64, DECIMAL otherwise |
+      | ID065 | The precision of the result of addition and subtraction of exact numeric types. | the larger of the two scales, in at most 18 digits |
+      | ID066 | The precision of the result of multiplication of exact numeric types. | the sum of the two scales, in at most 18 digits |
+      | ID067 | The precision and scale of the result of division of exact numeric types. | a whole number for two INT64 operands; otherwise six digits after the point, or more when an operand has more, or fewer when six would not fit, never fewer than an operand has |
+      | ID079 | The declared type of an approximate numeric literal. | FLOAT64 |
+      | ID086 | The default graph pattern match mode. | REPEATABLE ELEMENTS |
+      | ID095 | The exact numeric declared types of the results of the SUM function. | INT64 over INT64 values, DECIMAL otherwise |
+      | ID096 | The exact numeric declared types of the results of the AVG function. | DECIMAL, with six digits after the point where they fit |
+      | ID097 | The approximate numeric declared types of the results of the SUM and AVG functions. | FLOAT64 |
+      | IA011 | Whether rounding or truncating is used on division with an approximate mathematical result. | an exact quotient is truncated |
+      | IL010 | The maximum number of digits permitted in an unsigned integer literal. | 19, up to 9223372036854775807 |
+      | IL011 | The maximum precision and scale of numbers of numeric types, for each supported kind of number. | INT64 and DECIMAL the 19 digits of a 64-bit integer, FLOAT64 those of IEEE 754 binary64 |
+      | IL018 | The maximum value of the upper bound of a general qualifier. | the value of --hops, 10 unless it is given |
+      | IS001 | The implicit ordering of NULLs. | the null value sorts before every value, and so last in a descending sort |
+      | IV001 | The character repertoire of GQL source text. | Unicode, written in UTF-8 |
     Then every item the register settles is one ISO/IEC 39075 leaves to an implementation
+    And every item the register settles is stated by a scenario of this suite
+    And no scenario states an item the register does not settle
 
-  @iso:24.5
-  Scenario: A repetition with no upper bound goes as far as the implementation-defined limit
-    Given the GQL-program "MATCH WALK p = (a:Method WHERE a.name = 'first')-[:methodCall]->{1,}(b) RETURN max(path_length(p)) AS furthest"
+  @iso:16.11
+  Scenario: An upper bound above the implementation's limit is refused before the graph is read
+    Source: https://www.iso.org/obp/ui/en/#iso:std:iso-iec:39075:ed-1:v1:en 16.11
+    Source: https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en).bnf.xml <upper bound>
+    Source: https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en)-implementation-defined.xml IL018
+    Source: https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en)-conditions.xml 42001
+    Given the GQL-program "MATCH (a:Method)-[:methodCall]->{1,11}(b:Method) RETURN count(*) AS matched"
+    When the program is executed
+    Then the GQLSTATUS is "42001"
+
+  @iso:16.11
+  Scenario: An upper bound up to the implementation's limit is followed as far as it says
+    Source: https://www.iso.org/obp/ui/en/#iso:std:iso-iec:39075:ed-1:v1:en 16.11
+    Source: https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en).bnf.xml <upper bound>
+    Source: https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en)-implementation-defined.xml IL018
+    Given the GQL-program "MATCH p = (a:Method WHERE a.name = 'first')-[:methodCall]->{1,10}(b) RETURN max(path_length(p)) AS furthest"
     When the program is executed
     Then the result table holds one row "10"
+
+  @iso:16.4
+  Scenario: Two path patterns may bind the same edge, since elements may repeat
+    Source: https://www.iso.org/obp/ui/en/#iso:std:iso-iec:39075:ed-1:v1:en 16.4
+    Source: https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en)-features.xml G002, G003
+    Source: https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en)-implementation-defined.xml ID086
+    Given the GQL-program "MATCH (a:Method WHERE a.name = 'first')-[e:methodCall]->(b), (c:Method WHERE c.name = 'first')-[f:methodCall]->(d) RETURN count(*) AS matched"
+    When the program is executed
+    Then the result table holds one row "1"
+
+  @iso:21.2 @iso:21.4
+  Scenario: A program is read as Unicode
+    Source: https://www.iso.org/obp/ui/en/#iso:std:iso-iec:39075:ed-1:v1:en 21.2, 21.4
+    Source: https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en)-implementation-defined.xml IV001
+    Given the GQL-program "RETURN '顧客' AS name, char_length('顧客') AS length"
+    When the program is executed
+    Then the result table holds one row "顧客, 2"
+
+  @iso:21.2
+  Scenario: An integer literal longer than an INT64 is out of range
+    Source: https://www.iso.org/obp/ui/en/#iso:std:iso-iec:39075:ed-1:v1:en 21.2
+    Source: https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en)-implementation-defined.xml IL010
+    Source: https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en)-conditions.xml 22003
+    Given the GQL-program "RETURN 9223372036854775808 AS n"
+    When the program is read
+    Then the GQLSTATUS is "22003"
+
+  @iso:21.2
+  Scenario: A decimal whose digits no 64-bit integer holds is out of range, not approximated
+    Source: https://www.iso.org/obp/ui/en/#iso:std:iso-iec:39075:ed-1:v1:en 21.2, 20.21
+    Source: https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en)-implementation-defined.xml ID034, IL011
+    Source: https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en)-conditions.xml 22003
+    Given the GQL-program "RETURN 0.123456789012345678 * 100 AS n"
+    When the program is executed
+    Then the GQLSTATUS is "22003"

@@ -16,9 +16,10 @@ use App\Gql\Syntax\Pattern\PathMode;
  * about repetition a pattern over one of them has infinitely many matches. These
  * rules are what make a search end.
  *
- * The default, which forbids crossing the same relation twice, is chosen for exactly
- * that reason: it is the weakest rule that still makes every match finite, so it
- * rules out as little as possible of what a reader might have meant.
+ * A path that names no mode is a walk, and a walk forbids nothing — which is why GQL
+ * lets a walk repeat only a bounded number of times. `TRAIL`, which forbids crossing
+ * the same relation twice, is the weakest rule that makes an unbounded repetition
+ * finite, so it rules out as little as possible of what a reader might have meant.
  *
  * @visibility App\Gql
  */

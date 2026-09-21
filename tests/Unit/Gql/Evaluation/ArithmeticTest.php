@@ -4,120 +4,81 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Gql\Evaluation;
 
+use App\Gql\Argument\ExactArithmetic;
 use App\Gql\Argument\NumberArgument;
-use App\Gql\Datum\BooleanDatum;
-use App\Gql\Datum\DatumIdentity;
+use App\Gql\Datum\Datum;
 use App\Gql\Datum\DatumKind;
-use App\Gql\Datum\DatumOrder;
-use App\Gql\Datum\EdgeDatum;
+use App\Gql\Datum\DecimalDatum;
 use App\Gql\Datum\FloatDatum;
 use App\Gql\Datum\IntegerDatum;
-use App\Gql\Datum\ListDatum;
-use App\Gql\Datum\NodeDatum;
 use App\Gql\Datum\NullDatum;
 use App\Gql\Datum\StringDatum;
 use App\Gql\Evaluation\Arithmetic;
 use App\Gql\GqlException;
-use App\Gql\Lexing\Lexer;
-use App\Gql\Lexing\QuotedScanner;
-use App\Gql\Lexing\SourceCursor;
-use App\Gql\Lexing\Token;
-use App\Gql\Lexing\TokenKind;
-use App\Gql\Lexing\TokenList;
-use App\Gql\Parsing\ExpressionParser;
-use App\Gql\Parsing\OperandParser;
-use App\Gql\Parsing\TokenReader;
 use App\Gql\StatusCode;
-use App\Gql\Syntax\Expression\BinaryExpression;
 use App\Gql\Syntax\Expression\BinaryOperator;
-use App\Gql\Syntax\Expression\CallExpression;
-use App\Gql\Syntax\Expression\CaseBranch;
-use App\Gql\Syntax\Expression\CaseExpression;
-use App\Gql\Syntax\Expression\IndexExpression;
-use App\Gql\Syntax\Expression\ListExpression;
-use App\Gql\Syntax\Expression\LiteralExpression;
-use App\Gql\Syntax\Expression\PropertyExpression;
-use App\Gql\Syntax\Expression\UnaryExpression;
-use App\Gql\Syntax\Expression\UnaryOperator;
-use App\Gql\Syntax\Expression\VariableExpression;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Gql\ExpressionWorth;
 
 /**
  * @internal
  */
 #[CoversClass(Arithmetic::class)]
-#[UsesClass(BooleanDatum::class)]
 #[UsesClass(DatumKind::class)]
-#[UsesClass(DatumIdentity::class)]
-#[UsesClass(DatumOrder::class)]
-#[UsesClass(EdgeDatum::class)]
+#[UsesClass(DecimalDatum::class)]
+#[UsesClass(ExactArithmetic::class)]
 #[UsesClass(FloatDatum::class)]
-#[UsesClass(NodeDatum::class)]
-#[UsesClass(IntegerDatum::class)]
-#[UsesClass(ListDatum::class)]
-#[UsesClass(NullDatum::class)]
-#[UsesClass(StringDatum::class)]
 #[UsesClass(GqlException::class)]
-#[UsesClass(StatusCode::class)]
-#[UsesClass(Lexer::class)]
-#[UsesClass(QuotedScanner::class)]
-#[UsesClass(SourceCursor::class)]
-#[UsesClass(Token::class)]
-#[UsesClass(TokenKind::class)]
-#[UsesClass(TokenList::class)]
-#[UsesClass(ExpressionParser::class)]
-#[UsesClass(OperandParser::class)]
-#[UsesClass(TokenReader::class)]
-#[UsesClass(BinaryExpression::class)]
-#[UsesClass(BinaryOperator::class)]
-#[UsesClass(CallExpression::class)]
-#[UsesClass(CaseBranch::class)]
-#[UsesClass(CaseExpression::class)]
-#[UsesClass(IndexExpression::class)]
-#[UsesClass(ListExpression::class)]
-#[UsesClass(LiteralExpression::class)]
-#[UsesClass(PropertyExpression::class)]
-#[UsesClass(UnaryExpression::class)]
-#[UsesClass(UnaryOperator::class)]
-#[UsesClass(VariableExpression::class)]
+#[UsesClass(IntegerDatum::class)]
+#[UsesClass(NullDatum::class)]
 #[UsesClass(NumberArgument::class)]
+#[UsesClass(StatusCode::class)]
+#[UsesClass(StringDatum::class)]
 #[Small]
 final class ArithmeticTest extends TestCase
 {
     /**
      * @throws GqlException
      */
-    #[DataProvider('providerArithmetic')]
-    public function testApplyFollowsTheRulesAboutMixingKindsOfNumber(string $written, string $expected): void
+    #[DataProvider('providerOperationsAndWhatTheyProduce')]
+    public function testApplyFollowsTheRulesAboutMixingKindsOfNumber(BinaryOperator $operator, Datum $left, Datum $right, Datum $expected): void
     {
-        self::assertSame($expected, ExpressionWorth::of($written));
+        self::assertEquals($expected, Arithmetic::apply($operator, $left, $right));
     }
 
     /**
-     * @return iterable<string, array{string, string}>
+     * @return iterable<string, array{BinaryOperator, Datum, Datum, Datum}>
      */
-    public static function providerArithmetic(): iterable
+    public static function providerOperationsAndWhatTheyProduce(): iterable
     {
-        yield 'whole numbers added stay whole' => ['1 + 2', '3'];
+        yield 'whole numbers added stay whole' => [BinaryOperator::Add, new IntegerDatum(1), new IntegerDatum(2), new IntegerDatum(3)];
 
-        yield 'whole numbers subtracted stay whole' => ['5 - 2', '3'];
+        yield 'whole numbers subtracted stay whole' => [BinaryOperator::Subtract, new IntegerDatum(5), new IntegerDatum(2), new IntegerDatum(3)];
 
-        yield 'whole numbers multiplied stay whole' => ['2 * 3', '6'];
+        yield 'whole numbers multiplied stay whole' => [BinaryOperator::Multiply, new IntegerDatum(2), new IntegerDatum(3), new IntegerDatum(6)];
 
-        yield 'whole numbers divided stay whole' => ['7 / 2', '3'];
+        yield 'whole numbers divided stay whole' => [BinaryOperator::Divide, new IntegerDatum(7), new IntegerDatum(2), new IntegerDatum(3)];
 
-        yield 'meeting an approximate number makes the result approximate' => ['1 + 1.5', '2.5'];
+        yield 'two decimals add up exactly' => [BinaryOperator::Add, new DecimalDatum(1, 1), new DecimalDatum(2, 1), new DecimalDatum(3, 1)];
 
-        yield 'an approximate division keeps its fraction' => ['3 / 2.0', '1.5'];
+        yield 'a whole number and a decimal add up to a decimal' => [BinaryOperator::Add, new IntegerDatum(1), new DecimalDatum(15, 1), new DecimalDatum(25, 1)];
 
-        yield 'meeting the absence of a value produces the absence of one' => ['1 + NULL', 'NULL'];
+        yield 'a decimal divided keeps six digits after the point' => [BinaryOperator::Divide, new DecimalDatum(70, 1), new IntegerDatum(2), new DecimalDatum(3500000, 6)];
 
-        yield 'the absence of a value on the left too' => ['NULL * 2', 'NULL'];
+        yield 'meeting an approximate number makes the sum approximate' => [BinaryOperator::Add, new IntegerDatum(1), new FloatDatum(1.5), new FloatDatum(2.5)];
+
+        yield 'meeting one makes the difference approximate' => [BinaryOperator::Subtract, new FloatDatum(2.5), new IntegerDatum(1), new FloatDatum(1.5)];
+
+        yield 'meeting one makes the product of a decimal approximate' => [BinaryOperator::Multiply, new DecimalDatum(15, 1), new FloatDatum(2.0), new FloatDatum(3.0)];
+
+        yield 'an approximate division keeps its fraction' => [BinaryOperator::Divide, new IntegerDatum(3), new FloatDatum(2.0), new FloatDatum(1.5)];
+
+        yield 'meeting the absence of a value produces the absence of one' => [BinaryOperator::Add, new IntegerDatum(1), new NullDatum(), new NullDatum()];
+
+        yield 'the absence of a value on the left too' => [BinaryOperator::Multiply, new NullDatum(), new IntegerDatum(2), new NullDatum()];
     }
 
     /**
@@ -126,47 +87,76 @@ final class ArithmeticTest extends TestCase
     public function testApplyReportsAValueThatIsNotANumber(): void
     {
         $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('a number was expected');
+        $this->expectExceptionMessage('[22G03] error: data exception - invalid value type: a number was expected, and a STRING was given');
 
-        ExpressionWorth::of("1 + 'a'");
+        Arithmetic::apply(BinaryOperator::Add, new IntegerDatum(1), new StringDatum('a'));
     }
 
     /**
      * @throws GqlException
      */
-    public function testDivideKeepsTwoWholeNumbersWhole(): void
-    {
-        self::assertSame('1999', Arithmetic::divide(19990101, 10000, false)->toText());
-    }
-
-    /**
-     * @throws GqlException
-     */
-    public function testDivideKeepsAnApproximateNumberApproximate(): void
-    {
-        self::assertSame('1.5', Arithmetic::divide(3, 2.0, true)->toText());
-    }
-
-    /**
-     * @throws GqlException
-     */
-    public function testDivideReportsDivisionByAWholeZero(): void
+    public function testApplyReportsAWholeNumberDividedByZero(): void
     {
         $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('a number cannot be divided by zero');
+        $this->expectExceptionMessage('[22012] error: data exception - division by zero');
 
-        Arithmetic::divide(1, 0, false);
+        Arithmetic::apply(BinaryOperator::Divide, new IntegerDatum(1), new IntegerDatum(0));
     }
 
     /**
      * @throws GqlException
      */
-    public function testDivideReportsDivisionByAnApproximateZero(): void
+    public function testApplyReportsAnApproximateNumberDividedByZero(): void
     {
         $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('a number cannot be divided by zero');
+        $this->expectExceptionMessage('[22012] error: data exception - division by zero');
 
-        Arithmetic::divide(1.0, 0.0, true);
+        Arithmetic::apply(BinaryOperator::Divide, new FloatDatum(1.0), new IntegerDatum(0));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testApplyReportsAnExactResultTooLargeToHoldRatherThanApproximatingIt(): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('[22003] error: data exception - numeric value out of range');
+
+        Arithmetic::apply(BinaryOperator::Multiply, new IntegerDatum(PHP_INT_MAX), new IntegerDatum(2));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    #[DataProvider('providerApproximateOperations')]
+    public function testApproximateAppliesTheOperatorToTwoApproximateNumbers(BinaryOperator $operator, float $left, float $right, FloatDatum $expected): void
+    {
+        self::assertEquals($expected, Arithmetic::approximate($operator, $left, $right));
+    }
+
+    /**
+     * @return iterable<string, array{BinaryOperator, float, float, FloatDatum}>
+     */
+    public static function providerApproximateOperations(): iterable
+    {
+        yield 'a sum' => [BinaryOperator::Add, 1.5, 1.0, new FloatDatum(2.5)];
+
+        yield 'a difference' => [BinaryOperator::Subtract, 1.5, 1.0, new FloatDatum(0.5)];
+
+        yield 'a product' => [BinaryOperator::Multiply, 1.5, 2.0, new FloatDatum(3.0)];
+
+        yield 'a quotient, which keeps its fraction' => [BinaryOperator::Divide, 7.0, 2.0, new FloatDatum(3.5)];
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testApproximateReportsADivisionByZeroRatherThanAnInfinity(): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('[22012] error: data exception - division by zero: a number cannot be divided by zero');
+
+        Arithmetic::approximate(BinaryOperator::Divide, 1.0, 0.0);
     }
 
     /**
@@ -174,7 +164,15 @@ final class ArithmeticTest extends TestCase
      */
     public function testNegateKeepsAWholeNumberWhole(): void
     {
-        self::assertSame('-3', Arithmetic::negate(new IntegerDatum(3))->toText());
+        self::assertEquals(new IntegerDatum(-3), Arithmetic::negate(new IntegerDatum(3)));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testNegateKeepsADecimalExact(): void
+    {
+        self::assertEquals(new DecimalDatum(-15, 1), Arithmetic::negate(new DecimalDatum(15, 1)));
     }
 
     /**
@@ -182,7 +180,7 @@ final class ArithmeticTest extends TestCase
      */
     public function testNegateKeepsAnApproximateNumberApproximate(): void
     {
-        self::assertSame('-1.5', Arithmetic::negate(new FloatDatum(1.5))->toText());
+        self::assertEquals(new FloatDatum(-1.5), Arithmetic::negate(new FloatDatum(1.5)));
     }
 
     /**
@@ -190,6 +188,28 @@ final class ArithmeticTest extends TestCase
      */
     public function testNegateFindsNoSignToReverseOnTheAbsenceOfAValue(): void
     {
-        self::assertSame(DatumKind::Null, Arithmetic::negate(new NullDatum())->kind());
+        self::assertEquals(new NullDatum(), Arithmetic::negate(new NullDatum()));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testNegateReportsAValueThatIsNotANumber(): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('[22G03] error: data exception - invalid value type');
+
+        Arithmetic::negate(new StringDatum('3'));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testNegateReportsTheOneWholeNumberWhoseOppositeDoesNotFit(): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('[22003] error: data exception - numeric value out of range');
+
+        Arithmetic::negate(new IntegerDatum(PHP_INT_MIN));
     }
 }

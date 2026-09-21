@@ -4,22 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Gql\Invocation;
 
+use App\Gql\Argument\ExactArithmetic;
 use App\Gql\Argument\NumberArgument;
-use App\Gql\Argument\TextArgument;
-use App\Gql\Datum\BooleanDatum;
-use App\Gql\Datum\DateTimeDatum;
-use App\Gql\Datum\Datum;
-use App\Gql\Datum\DatumIdentity;
-use App\Gql\Datum\DatumJson;
 use App\Gql\Datum\DatumKind;
-use App\Gql\Datum\DatumOrder;
-use App\Gql\Datum\EdgeDatum;
+use App\Gql\Datum\DecimalDatum;
 use App\Gql\Datum\FloatDatum;
 use App\Gql\Datum\IntegerDatum;
-use App\Gql\Datum\ListDatum;
-use App\Gql\Datum\NodeDatum;
 use App\Gql\Datum\NullDatum;
-use App\Gql\Datum\PathDatum;
 use App\Gql\Datum\StringDatum;
 use App\Gql\GqlException;
 use App\Gql\Invocation\SumAccumulator;
@@ -33,25 +24,16 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(SumAccumulator::class)]
-#[UsesClass(BooleanDatum::class)]
-#[UsesClass(DateTimeDatum::class)]
-#[UsesClass(DatumIdentity::class)]
-#[UsesClass(DatumJson::class)]
 #[UsesClass(DatumKind::class)]
-#[UsesClass(DatumOrder::class)]
-#[UsesClass(EdgeDatum::class)]
+#[UsesClass(DecimalDatum::class)]
+#[UsesClass(ExactArithmetic::class)]
 #[UsesClass(FloatDatum::class)]
-#[UsesClass(IntegerDatum::class)]
-#[UsesClass(ListDatum::class)]
-#[UsesClass(NodeDatum::class)]
-#[UsesClass(NullDatum::class)]
-#[UsesClass(PathDatum::class)]
-#[UsesClass(StringDatum::class)]
-#[UsesClass(Datum::class)]
 #[UsesClass(GqlException::class)]
-#[UsesClass(StatusCode::class)]
+#[UsesClass(IntegerDatum::class)]
+#[UsesClass(NullDatum::class)]
 #[UsesClass(NumberArgument::class)]
-#[UsesClass(TextArgument::class)]
+#[UsesClass(StatusCode::class)]
+#[UsesClass(StringDatum::class)]
 #[Small]
 final class SumAccumulatorTest extends TestCase
 {
@@ -64,7 +46,31 @@ final class SumAccumulatorTest extends TestCase
         $sum->accept(new IntegerDatum(2));
         $sum->accept(new IntegerDatum(3));
 
-        self::assertSame('5', $sum->result()->toText());
+        self::assertEquals(new IntegerDatum(5), $sum->result());
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testAcceptAddsDecimalsUpExactly(): void
+    {
+        $sum = new SumAccumulator();
+        $sum->accept(new DecimalDatum(1, 1));
+        $sum->accept(new DecimalDatum(2, 1));
+
+        self::assertEquals(new DecimalDatum(3, 1), $sum->result());
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testAcceptAddsAWholeNumberAndADecimalUpToADecimal(): void
+    {
+        $sum = new SumAccumulator();
+        $sum->accept(new IntegerDatum(1));
+        $sum->accept(new DecimalDatum(15, 1));
+
+        self::assertEquals(new DecimalDatum(25, 1), $sum->result());
     }
 
     /**
@@ -76,7 +82,20 @@ final class SumAccumulatorTest extends TestCase
         $sum->accept(new IntegerDatum(2));
         $sum->accept(new FloatDatum(0.5));
 
-        self::assertSame('2.5', $sum->result()->toText());
+        self::assertEquals(new FloatDatum(2.5), $sum->result());
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testAcceptKeepsTheSumApproximateWhenExactValuesFollowAnApproximateOne(): void
+    {
+        $sum = new SumAccumulator();
+        $sum->accept(new FloatDatum(0.5));
+        $sum->accept(new IntegerDatum(1));
+        $sum->accept(new DecimalDatum(1, 1));
+
+        self::assertEquals(new FloatDatum(1.6), $sum->result());
     }
 
     /**
@@ -86,8 +105,9 @@ final class SumAccumulatorTest extends TestCase
     {
         $sum = new SumAccumulator();
         $sum->accept(new NullDatum());
+        $sum->accept(new IntegerDatum(2));
 
-        self::assertSame(DatumKind::Null, $sum->result()->kind());
+        self::assertEquals(new IntegerDatum(2), $sum->result());
     }
 
     /**
@@ -96,13 +116,38 @@ final class SumAccumulatorTest extends TestCase
     public function testAcceptReportsAValueThatIsNotANumber(): void
     {
         $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('a number was expected');
+        $this->expectExceptionMessage('[22G03] error: data exception - invalid value type: a number was expected, and a STRING was given');
 
         (new SumAccumulator())->accept(new StringDatum('a'));
     }
 
+    /**
+     * @throws GqlException
+     */
+    public function testAcceptReportsATotalTooLargeToHoldRatherThanApproximatingIt(): void
+    {
+        $sum = new SumAccumulator();
+        $sum->accept(new IntegerDatum(PHP_INT_MAX));
+
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('[22003] error: data exception - numeric value out of range');
+
+        $sum->accept(new IntegerDatum(1));
+    }
+
     public function testResultAnswersNothingRatherThanZeroWhenNothingWasAddedUp(): void
     {
-        self::assertSame(DatumKind::Null, (new SumAccumulator())->result()->kind());
+        self::assertEquals(new NullDatum(), (new SumAccumulator())->result());
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testResultAnswersNothingWhenOnlyAbsentValuesWereOffered(): void
+    {
+        $sum = new SumAccumulator();
+        $sum->accept(new NullDatum());
+
+        self::assertEquals(new NullDatum(), $sum->result());
     }
 }

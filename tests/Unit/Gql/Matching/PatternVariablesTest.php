@@ -4,32 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Gql\Matching;
 
-use App\Gql\GqlException;
-use App\Gql\Lexing\Lexer;
-use App\Gql\Lexing\QuotedScanner;
-use App\Gql\Lexing\SourceCursor;
-use App\Gql\Lexing\Token;
-use App\Gql\Lexing\TokenKind;
-use App\Gql\Lexing\TokenList;
 use App\Gql\Matching\PatternVariables;
-use App\Gql\Parsing\ExpressionParser;
-use App\Gql\Parsing\LabelParser;
-use App\Gql\Parsing\OperandParser;
-use App\Gql\Parsing\PatternParser;
-use App\Gql\Parsing\TokenReader;
-use App\Gql\StatusCode;
-use App\Gql\Syntax\Expression\BinaryExpression;
-use App\Gql\Syntax\Expression\BinaryOperator;
-use App\Gql\Syntax\Expression\LiteralExpression;
-use App\Gql\Syntax\Expression\PropertyExpression;
-use App\Gql\Syntax\Expression\VariableExpression;
 use App\Gql\Syntax\Pattern\EdgeDirection;
 use App\Gql\Syntax\Pattern\EdgePattern;
 use App\Gql\Syntax\Pattern\ElementFilter;
 use App\Gql\Syntax\Pattern\GraphPattern;
 use App\Gql\Syntax\Pattern\GroupPattern;
-use App\Gql\Syntax\Pattern\LabelOperator;
-use App\Gql\Syntax\Pattern\LabelPattern;
 use App\Gql\Syntax\Pattern\NodePattern;
 use App\Gql\Syntax\Pattern\PathMode;
 use App\Gql\Syntax\Pattern\PathPattern;
@@ -39,37 +19,16 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Gql\MatchedPattern;
 
 /**
  * @internal
  */
 #[CoversClass(PatternVariables::class)]
-#[UsesClass(GqlException::class)]
-#[UsesClass(StatusCode::class)]
-#[UsesClass(Lexer::class)]
-#[UsesClass(QuotedScanner::class)]
-#[UsesClass(SourceCursor::class)]
-#[UsesClass(Token::class)]
-#[UsesClass(TokenKind::class)]
-#[UsesClass(TokenList::class)]
-#[UsesClass(ExpressionParser::class)]
-#[UsesClass(LabelParser::class)]
-#[UsesClass(OperandParser::class)]
-#[UsesClass(PatternParser::class)]
-#[UsesClass(TokenReader::class)]
-#[UsesClass(BinaryExpression::class)]
-#[UsesClass(BinaryOperator::class)]
-#[UsesClass(LiteralExpression::class)]
-#[UsesClass(PropertyExpression::class)]
-#[UsesClass(VariableExpression::class)]
 #[UsesClass(EdgeDirection::class)]
 #[UsesClass(EdgePattern::class)]
 #[UsesClass(ElementFilter::class)]
 #[UsesClass(GraphPattern::class)]
 #[UsesClass(GroupPattern::class)]
-#[UsesClass(LabelOperator::class)]
-#[UsesClass(LabelPattern::class)]
 #[UsesClass(NodePattern::class)]
 #[UsesClass(PathMode::class)]
 #[UsesClass(PathPattern::class)]
@@ -79,68 +38,100 @@ final class PatternVariablesTest extends TestCase
 {
     /**
      * @param list<string> $names
-     *
-     * @throws GqlException
      */
     #[DataProvider('providerPatternsAndTheNamesTheyBind')]
-    public function testOfReturnsEveryNameAPatternWouldBind(string $written, array $names): void
+    public function testOfReturnsEveryNameAPatternWouldBind(GraphPattern $pattern, array $names): void
     {
-        self::assertSame($names, PatternVariables::of(MatchedPattern::pattern($written)));
+        self::assertSame($names, PatternVariables::of($pattern));
     }
 
     /**
-     * @return iterable<string, array{string, list<string>}>
+     * @return iterable<string, array{GraphPattern, list<string>}>
      */
     public static function providerPatternsAndTheNamesTheyBind(): iterable
     {
         yield 'the names written in a path, the path itself first' => [
-            'p = (a)-[e]->(b)',
+            new GraphPattern([
+                new PathPattern([new NodePattern('a'), new EdgePattern(EdgeDirection::Along, 'e'), new NodePattern('b')], PathMode::Walk, 'p'),
+            ]),
             ['p', 'a', 'e', 'b'],
         ];
 
-        yield 'a pattern that binds nothing' => ['()-[]->()', []];
+        yield 'a pattern that binds nothing' => [
+            new GraphPattern([
+                new PathPattern([new NodePattern(), new EdgePattern(EdgeDirection::Along), new NodePattern()], PathMode::Walk),
+            ]),
+            [],
+        ];
 
-        yield 'a name written twice, bound once' => ['(a)-[]->(a)', ['a']];
+        yield 'a name written twice, bound once' => [
+            new GraphPattern([
+                new PathPattern([new NodePattern('a'), new EdgePattern(EdgeDirection::Along), new NodePattern('a')], PathMode::Walk),
+            ]),
+            ['a'],
+        ];
 
-        yield 'the names of every path matched together' => ['(a), (b)', ['a', 'b']];
+        yield 'the names of every path matched together' => [
+            new GraphPattern([
+                new PathPattern([new NodePattern('a')], PathMode::Walk),
+                new PathPattern([new NodePattern('b')], PathMode::Walk),
+            ]),
+            ['a', 'b'],
+        ];
 
-        yield 'the names inside a parenthesised stretch of pattern' => ['((a)-[e]->(b)){1,3}', ['a', 'e', 'b']];
+        yield 'the names inside a parenthesised stretch of pattern' => [
+            new GraphPattern([
+                new PathPattern(
+                    [new GroupPattern([new NodePattern('a'), new EdgePattern(EdgeDirection::Along, 'e'), new NodePattern('b')], new Quantifier(1, 3))],
+                    PathMode::Walk,
+                ),
+            ]),
+            ['a', 'e', 'b'],
+        ];
     }
 
-    public function testInTermsReturnsTheNamesInsideAParenthesisedStretchOfPattern(): void
-    {
-        $group = new GroupPattern([new NodePattern('a')]);
-
-        self::assertSame(['a'], PatternVariables::inTerms([$group]));
-    }
-
-    public function testInTermsReturnsNothingForAPatternWithNoPiecesAtAll(): void
-    {
-        self::assertSame([], PatternVariables::inTerms([]));
-    }
-
-    /**
-     * @throws GqlException
-     */
     public function testGroupListsReadsTheNameARepetitionBindsToEveryRelationItCrossed(): void
     {
-        self::assertSame(['e'], PatternVariables::groupLists(MatchedPattern::pattern('(a)-[e]->{1,3}(b)')));
+        $pattern = new GraphPattern([
+            new PathPattern(
+                [new NodePattern('a'), new EdgePattern(EdgeDirection::Along, 'e', null, new ElementFilter(), new Quantifier(1, 3)), new NodePattern('b')],
+                PathMode::Walk,
+            ),
+        ]);
+
+        self::assertSame(['e'], PatternVariables::groupLists($pattern));
     }
 
-    /**
-     * @throws GqlException
-     */
     public function testGroupListsReadsNoNameFromARelationCrossedOnce(): void
     {
-        self::assertSame([], PatternVariables::groupLists(MatchedPattern::pattern('(a)-[e]->(b)')));
+        $pattern = new GraphPattern([
+            new PathPattern([new NodePattern('a'), new EdgePattern(EdgeDirection::Along, 'e'), new NodePattern('b')], PathMode::Walk),
+        ]);
+
+        self::assertSame([], PatternVariables::groupLists($pattern));
     }
 
-    /**
-     * @throws GqlException
-     */
     public function testGroupListsReadsNoNameFromARepetitionThatBindsNone(): void
     {
-        self::assertSame([], PatternVariables::groupLists(MatchedPattern::pattern('(a)-[]->{1,3}(b)')));
+        $pattern = new GraphPattern([
+            new PathPattern(
+                [new NodePattern('a'), new EdgePattern(EdgeDirection::Along, null, null, new ElementFilter(), new Quantifier(1, 3)), new NodePattern('b')],
+                PathMode::Walk,
+            ),
+        ]);
+
+        self::assertSame([], PatternVariables::groupLists($pattern));
+    }
+
+    public function testGroupListsReadsEachNameOnceAcrossEveryPath(): void
+    {
+        $repeated = new EdgePattern(EdgeDirection::Along, 'e', null, new ElementFilter(), new Quantifier(1, 3));
+        $pattern = new GraphPattern([
+            new PathPattern([new NodePattern('a'), $repeated, new NodePattern('b')], PathMode::Walk),
+            new PathPattern([new NodePattern('b'), $repeated, new NodePattern('c')], PathMode::Walk),
+        ]);
+
+        self::assertSame(['e'], PatternVariables::groupLists($pattern));
     }
 
     public function testRepeatedInSearchesInsideAParenthesisedStretchOfPattern(): void
@@ -153,5 +144,15 @@ final class PatternVariablesTest extends TestCase
     public function testRepeatedInReadsNoNameFromAPatternWithNoPiecesAtAll(): void
     {
         self::assertSame([], PatternVariables::repeatedIn([]));
+    }
+
+    public function testInTermsReturnsTheNamesInsideAParenthesisedStretchOfPattern(): void
+    {
+        self::assertSame(['a'], PatternVariables::inTerms([new GroupPattern([new NodePattern('a')])]));
+    }
+
+    public function testInTermsReturnsNothingForAPatternWithNoPiecesAtAll(): void
+    {
+        self::assertSame([], PatternVariables::inTerms([]));
     }
 }

@@ -27,8 +27,11 @@ enum TokenKind
     /** A whole number */
     case Integer;
 
-    /** A number with a fractional part, an exponent, or a double suffix */
+    /** An exact number with digits after its point, or one marked exact with `M` */
     case Decimal;
+
+    /** An approximate number: one with an exponent, or marked with `F` or `D` */
+    case Approximate;
 
     /** A character string in single or double quotes */
     case Text;

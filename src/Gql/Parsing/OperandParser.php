@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Gql\Parsing;
 
 use App\Gql\Datum\BooleanDatum;
+use App\Gql\Datum\DecimalDatum;
 use App\Gql\Datum\FloatDatum;
 use App\Gql\Datum\IntegerDatum;
 use App\Gql\Datum\NullDatum;
@@ -15,7 +16,6 @@ use App\Gql\Syntax\Expression;
 use App\Gql\Syntax\Expression\CallExpression;
 use App\Gql\Syntax\Expression\CaseBranch;
 use App\Gql\Syntax\Expression\CaseExpression;
-use App\Gql\Syntax\Expression\IndexExpression;
 use App\Gql\Syntax\Expression\ListExpression;
 use App\Gql\Syntax\Expression\LiteralExpression;
 use App\Gql\Syntax\Expression\PropertyExpression;
@@ -27,15 +27,24 @@ use App\Gql\Syntax\Expression\VariableExpression;
  * Reads the things operators are written between.
  *
  * Everything here binds tighter than every operator: a literal, a name, a call, a
- * parenthesised expression, a list, a conditional — and the three things that attach
- * themselves to a value once it has been read, which are a property, an index and a
- * null test. Attaching them in a loop rather than by recursion is what makes
- * `e[0].line IS NOT NULL` read left to right the way it is written.
+ * parenthesised expression, a list, a conditional — and the two things that attach
+ * themselves to a value once it has been read, which are a property and a null test.
+ * Attaching them in a loop rather than by recursion is what makes `p.name IS NOT NULL`
+ * read left to right the way it is written.
  *
  * @visibility App\Gql\Parsing
  */
 final class OperandParser
 {
+    /**
+     * The functions GQL writes as aggregates, and so the only ones a set quantifier may be written in.
+     *
+     * These are the `<general set function type>` and `<binary set function type>` of
+     * ISO/IEC 39075: `<general set function> ::= <general set function type> <left
+     * paren> [ <set quantifier> ] <value expression> <right paren>`.
+     */
+    public const SET_FUNCTIONS = ['AVG', 'COUNT', 'MAX', 'MIN', 'SUM', 'COLLECT_LIST', 'STDDEV_SAMP', 'STDDEV_POP', 'PERCENTILE_CONT', 'PERCENTILE_DISC'];
+
     /**
      * @param TokenReader      $tokens      The pieces of the query being read
      * @param ExpressionParser $expressions Where a whole expression is read again, inside brackets
@@ -64,6 +73,12 @@ final class OperandParser
     /**
      * Reads whatever attaches to a value that has already been read.
      *
+     * Two things do: a property, GQL's `<property reference>`, and a null test, its
+     * `<null predicate>`, whose operand is a `<value expression primary>`. A subscript
+     * like `xs[0]` does not: ISO/IEC 39075 writes a left bracket in a value only to
+     * construct a list, so it is not read here. `IS` followed by a truth value is not
+     * taken either — that is a test of a whole predicate, read further out.
+     *
      * @param Expression $subject The value read so far
      *
      * @example A null test attaches to the whole value before it
@@ -83,19 +98,36 @@ final class OperandParser
 
                 continue;
             }
-            if ($this->tokens->acceptSymbol('[')) {
-                $subject = new IndexExpression($subject, $this->expressions->parse());
-                $this->tokens->expectSymbol(']');
-
-                continue;
-            }
-            if (!$this->tokens->acceptKeyword('IS')) {
+            if (!$this->atNullTest()) {
                 return $subject;
             }
+            $this->tokens->expectKeyword('IS');
             $negated = $this->tokens->acceptKeyword('NOT');
             $this->tokens->expectKeyword('NULL');
             $subject = new UnaryExpression($negated ? UnaryOperator::IsNotNull : UnaryOperator::IsNull, $subject);
         }
+    }
+
+    /**
+     * Reports whether a null test, rather than a truth-value test, stands here.
+     *
+     * @example A null test is `IS NULL` or `IS NOT NULL`
+     *     $reader = \App\Gql\Parsing\TokenReader::of('IS NOT NULL');
+     *     (new \App\Gql\Parsing\OperandParser($reader, new \App\Gql\Parsing\ExpressionParser($reader)))->atNullTest() // => true
+     * @example `IS TRUE` is not one
+     *     $reader = \App\Gql\Parsing\TokenReader::of('IS TRUE');
+     *     (new \App\Gql\Parsing\OperandParser($reader, new \App\Gql\Parsing\ExpressionParser($reader)))->atNullTest() // => false
+     *
+     * @return bool True when it does
+     */
+    public function atNullTest(): bool
+    {
+        if (!$this->tokens->atKeyword('IS')) {
+            return false;
+        }
+        $next = $this->tokens->peek();
+
+        return $next->isKeyword('NULL') || ($next->isKeyword('NOT') && $this->tokens->peek(2)->isKeyword('NULL'));
     }
 
     /**
@@ -146,18 +178,24 @@ final class OperandParser
      * @example A number written into a query is read as a number
      *     $parsed = (new \App\Gql\Parsing\ExpressionParser(\App\Gql\Parsing\TokenReader::of('42')))->parse();
      *     $parsed instanceof \App\Gql\Syntax\Expression\LiteralExpression ? $parsed->value->toText() : null // => '42'
+     * @example A number with a point is exact
+     *     $parsed = (new \App\Gql\Parsing\ExpressionParser(\App\Gql\Parsing\TokenReader::of('1.5')))->parse();
+     *     $parsed instanceof \App\Gql\Syntax\Expression\LiteralExpression ? $parsed->value->kind() : null // => \App\Gql\Datum\DatumKind::Decimal
      * @example The unknown truth value is written as the absence of one
      *     $parsed = (new \App\Gql\Parsing\ExpressionParser(\App\Gql\Parsing\TokenReader::of('UNKNOWN')))->parse();
      *     $parsed instanceof \App\Gql\Syntax\Expression\LiteralExpression ? $parsed->value->kind() : null // => \App\Gql\Datum\DatumKind::Null
      *
      * @return null|LiteralExpression The literal, or null when what stands here is not one
+     *
+     * @throws GqlException If a number has more digits than an exact number can hold
      */
     public function parseLiteral(): ?LiteralExpression
     {
         $token = $this->tokens->current();
         $value = match (true) {
-            $token->kind === TokenKind::Integer => IntegerDatum::of((int) $token->value),
-            $token->kind === TokenKind::Decimal => self::approximate($token->value),
+            $token->kind === TokenKind::Integer => IntegerDatum::of(DecimalDatum::whole($token->value)),
+            $token->kind === TokenKind::Decimal => DecimalDatum::written($token->value),
+            $token->kind === TokenKind::Approximate => self::approximate($token->value),
             $token->kind === TokenKind::Text => StringDatum::of($token->value),
             $token->isKeyword('TRUE') => BooleanDatum::of(true),
             $token->isKeyword('FALSE') => BooleanDatum::of(false),
@@ -220,6 +258,9 @@ final class OperandParser
     /**
      * Reads the arguments a function is applied to.
      *
+     * GQL writes an asterisk in one call only, `COUNT(*)`, and a set quantifier —
+     * `DISTINCT` or `ALL` — only in an aggregate; anywhere else they are refused.
+     *
      * @param string $name The function name, already read
      *
      * @example A call over rows rather than over a value says so
@@ -228,19 +269,35 @@ final class OperandParser
      * @example A call that drops repeated values says so too
      *     $parsed = (new \App\Gql\Parsing\ExpressionParser(\App\Gql\Parsing\TokenReader::of('count(DISTINCT p)')))->parse();
      *     $parsed instanceof \App\Gql\Syntax\Expression\CallExpression ? $parsed->distinct : null // => true
+     * @example An asterisk is COUNT's alone
+     *     (new \App\Gql\Parsing\ExpressionParser(\App\Gql\Parsing\TokenReader::of('sum(*)')))->parse() // throws \App\Gql\GqlException: COUNT(*)
+     * @example And a set quantifier an aggregate's alone
+     *     (new \App\Gql\Parsing\ExpressionParser(\App\Gql\Parsing\TokenReader::of('upper(DISTINCT p)')))->parse() // throws \App\Gql\GqlException: aggregate
      *
      * @return CallExpression The call
      *
-     * @throws GqlException If the arguments are not finished
+     * @throws GqlException If the arguments are not finished, or are written in a way GQL writes only for another function
      */
     public function parseCall(string $name): CallExpression
     {
         $this->tokens->expectSymbol('(');
+        $aggregate = in_array(strtoupper($name), self::SET_FUNCTIONS, true);
+        $quantified = $this->tokens->atKeyword('DISTINCT') || $this->tokens->atKeyword('ALL');
+        if ($quantified && !$aggregate) {
+            $this->tokens->fail('an argument, since only an aggregate function is written with DISTINCT or ALL');
+        }
         $distinct = $this->tokens->acceptKeyword('DISTINCT');
-        if ($this->tokens->acceptSymbol('*')) {
+        if (!$distinct) {
+            $this->tokens->acceptKeyword('ALL');
+        }
+        if ($this->tokens->atSymbol('*')) {
+            if (strtoupper($name) !== 'COUNT' || $quantified) {
+                $this->tokens->fail('an argument, since GQL writes an asterisk only as COUNT(*)');
+            }
+            $this->tokens->take();
             $this->tokens->expectSymbol(')');
 
-            return new CallExpression($name, [], $distinct, true);
+            return new CallExpression($name, [], false, true);
         }
         if ($this->tokens->acceptSymbol(')')) {
             return new CallExpression($name, [], $distinct);

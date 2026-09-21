@@ -94,6 +94,8 @@ final class ElementMatching
      *     \App\Gql\Matching\ElementMatching::agrees('p', new \App\Gql\Datum\NodeDatum('b'), $row) // => false
      *
      * @return bool True when it agrees
+     *
+     * @throws GqlException If the name is bound to a value that cannot be compared with an element
      */
     public static function agrees(?string $variable, Datum $element, BindingRow $row): bool
     {

@@ -4,279 +4,72 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Gql\Execution;
 
-use App\Analyzer\Graph\Declaration\AttributeUsage;
-use App\Analyzer\Graph\Declaration\Modifiers;
-use App\Analyzer\Graph\Declaration\Parameter;
-use App\Analyzer\Graph\Declaration\Signature;
-use App\Analyzer\Graph\Declaration\SymbolDeclaration;
-use App\Analyzer\Graph\Declaration\Visibility;
-use App\Analyzer\Graph\Edge\Declaration\ExtendsEdge;
-use App\Analyzer\Graph\Edge\Declaration\MethodEdge;
-use App\Analyzer\Graph\Edge\Usage\MethodCallEdge;
-use App\Analyzer\Graph\FileMeta;
-use App\Analyzer\Graph\Graph;
-use App\Analyzer\Graph\Node\ClassNode;
-use App\Analyzer\Graph\Node\MethodNode;
-use App\Analyzer\Graph\Node\UnknownNode;
-use App\Analyzer\Graph\NodeId\ClassNodeId;
-use App\Analyzer\Graph\NodeId\MethodNodeId;
-use App\Analyzer\Graph\NodeId\UnknownNodeId;
-use App\Analyzer\Graph\NodePrecedence;
-use App\Analyzer\Graph\QualifiedName;
+use App\Gql\Argument\ExactArithmetic;
 use App\Gql\Argument\NumberArgument;
-use App\Gql\Argument\TextArgument;
 use App\Gql\Binding\BindingRow;
 use App\Gql\Binding\BindingTable;
 use App\Gql\Datum\BooleanDatum;
-use App\Gql\Datum\DatumIdentity;
 use App\Gql\Datum\DatumKind;
 use App\Gql\Datum\DatumOrder;
-use App\Gql\Datum\EdgeDatum;
-use App\Gql\Datum\FloatDatum;
+use App\Gql\Datum\DecimalDatum;
 use App\Gql\Datum\IntegerDatum;
-use App\Gql\Datum\ListDatum;
-use App\Gql\Datum\NodeDatum;
 use App\Gql\Datum\NullDatum;
-use App\Gql\Datum\PathDatum;
 use App\Gql\Datum\StringDatum;
-use App\Gql\Element\EdgeLabels;
-use App\Gql\Element\EdgeProperties;
-use App\Gql\Element\ElementGraph;
-use App\Gql\Element\GraphProjection;
-use App\Gql\Element\NodeLabels;
-use App\Gql\Element\NodeProperties;
-use App\Gql\Evaluation\AggregateDetection;
 use App\Gql\Evaluation\Arithmetic;
 use App\Gql\Evaluation\BinaryOperation;
 use App\Gql\Evaluation\Comparison;
 use App\Gql\Evaluation\ExpressionEvaluation;
 use App\Gql\Evaluation\Logic;
-use App\Gql\Evaluation\Membership;
-use App\Gql\Evaluation\TextOperation;
-use App\Gql\Evaluation\UnaryOperation;
-use App\Gql\Execution\BlockExecution;
-use App\Gql\Execution\MatchExecution;
-use App\Gql\Execution\QueryExecution;
-use App\Gql\Execution\ReturnExecution;
 use App\Gql\Execution\RowExecution;
-use App\Gql\Execution\SetOperation;
 use App\Gql\GqlException;
-use App\Gql\Invocation\Accumulator;
-use App\Gql\Invocation\AggregateCatalog;
-use App\Gql\Invocation\AverageAccumulator;
-use App\Gql\Invocation\CollectAccumulator;
-use App\Gql\Invocation\CountAccumulator;
-use App\Gql\Invocation\DistinctAccumulator;
-use App\Gql\Invocation\ExtremeAccumulator;
-use App\Gql\Invocation\FunctionCatalog;
-use App\Gql\Invocation\GeneralFunctions;
-use App\Gql\Invocation\GraphFunctions;
-use App\Gql\Invocation\ListFunctions;
-use App\Gql\Invocation\SumAccumulator;
-use App\Gql\Invocation\TextFunctions;
-use App\Gql\Lexing\Lexer;
-use App\Gql\Lexing\QuotedScanner;
-use App\Gql\Lexing\SourceCursor;
-use App\Gql\Lexing\Token;
-use App\Gql\Lexing\TokenKind;
-use App\Gql\Lexing\TokenList;
-use App\Gql\Matching\EdgeMatching;
-use App\Gql\Matching\EdgeTraversal;
-use App\Gql\Matching\ElementMatching;
-use App\Gql\Matching\LabelMatching;
-use App\Gql\Matching\MatchState;
-use App\Gql\Matching\PathMatching;
-use App\Gql\Matching\PathModeRule;
-use App\Gql\Matching\PatternMatching;
-use App\Gql\Matching\PatternVariables;
-use App\Gql\Parsing\ExpressionParser;
-use App\Gql\Parsing\LabelParser;
-use App\Gql\Parsing\OperandParser;
-use App\Gql\Parsing\Parser;
-use App\Gql\Parsing\PatternParser;
-use App\Gql\Parsing\ResultParser;
-use App\Gql\Parsing\TokenReader;
-use App\Gql\Result\ResultColumn;
-use App\Gql\Result\ResultRow;
-use App\Gql\Result\ResultTable;
 use App\Gql\StatusCode;
 use App\Gql\Syntax\Clause\FilterClause;
 use App\Gql\Syntax\Clause\LetClause;
-use App\Gql\Syntax\Clause\MatchClause;
 use App\Gql\Syntax\Clause\OrderByClause;
 use App\Gql\Syntax\Clause\PageClause;
-use App\Gql\Syntax\Clause\Projection;
-use App\Gql\Syntax\Clause\ReturnClause;
 use App\Gql\Syntax\Clause\SortDirection;
 use App\Gql\Syntax\Clause\SortKey;
 use App\Gql\Syntax\Clause\VariableBinding;
 use App\Gql\Syntax\Expression\BinaryExpression;
 use App\Gql\Syntax\Expression\BinaryOperator;
-use App\Gql\Syntax\Expression\CallExpression;
-use App\Gql\Syntax\Expression\CaseBranch;
-use App\Gql\Syntax\Expression\CaseExpression;
-use App\Gql\Syntax\Expression\IndexExpression;
-use App\Gql\Syntax\Expression\ListExpression;
 use App\Gql\Syntax\Expression\LiteralExpression;
-use App\Gql\Syntax\Expression\PropertyExpression;
-use App\Gql\Syntax\Expression\UnaryExpression;
-use App\Gql\Syntax\Expression\UnaryOperator;
 use App\Gql\Syntax\Expression\VariableExpression;
-use App\Gql\Syntax\Pattern\EdgeDirection;
-use App\Gql\Syntax\Pattern\EdgePattern;
-use App\Gql\Syntax\Pattern\ElementFilter;
-use App\Gql\Syntax\Pattern\GraphPattern;
-use App\Gql\Syntax\Pattern\GroupPattern;
-use App\Gql\Syntax\Pattern\LabelOperator;
-use App\Gql\Syntax\Pattern\LabelPattern;
-use App\Gql\Syntax\Pattern\NodePattern;
-use App\Gql\Syntax\Pattern\PathMode;
-use App\Gql\Syntax\Pattern\PathPattern;
-use App\Gql\Syntax\Pattern\Quantifier;
-use App\Gql\Syntax\Query;
-use App\Gql\Syntax\QueryBlock;
-use App\Gql\Syntax\SetOperator;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Gql\AnsweredQuery;
 
 /**
  * @internal
  */
 #[CoversClass(RowExecution::class)]
-#[UsesClass(AttributeUsage::class)]
-#[UsesClass(Modifiers::class)]
-#[UsesClass(Parameter::class)]
-#[UsesClass(Signature::class)]
-#[UsesClass(SymbolDeclaration::class)]
-#[UsesClass(Visibility::class)]
-#[UsesClass(ExtendsEdge::class)]
-#[UsesClass(MethodEdge::class)]
-#[UsesClass(MethodCallEdge::class)]
-#[UsesClass(FileMeta::class)]
-#[UsesClass(Graph::class)]
-#[UsesClass(ClassNode::class)]
-#[UsesClass(MethodNode::class)]
-#[UsesClass(UnknownNode::class)]
-#[UsesClass(ClassNodeId::class)]
-#[UsesClass(MethodNodeId::class)]
-#[UsesClass(UnknownNodeId::class)]
-#[UsesClass(NodePrecedence::class)]
-#[UsesClass(QualifiedName::class)]
+#[UsesClass(ExactArithmetic::class)]
 #[UsesClass(NumberArgument::class)]
-#[UsesClass(TextArgument::class)]
 #[UsesClass(BindingRow::class)]
 #[UsesClass(BindingTable::class)]
 #[UsesClass(BooleanDatum::class)]
-#[UsesClass(DatumIdentity::class)]
 #[UsesClass(DatumKind::class)]
 #[UsesClass(DatumOrder::class)]
-#[UsesClass(EdgeDatum::class)]
-#[UsesClass(FloatDatum::class)]
+#[UsesClass(DecimalDatum::class)]
 #[UsesClass(IntegerDatum::class)]
-#[UsesClass(ListDatum::class)]
-#[UsesClass(NodeDatum::class)]
-#[UsesClass(NullDatum::class)]
-#[UsesClass(PathDatum::class)]
 #[UsesClass(StringDatum::class)]
-#[UsesClass(EdgeLabels::class)]
-#[UsesClass(EdgeProperties::class)]
-#[UsesClass(ElementGraph::class)]
-#[UsesClass(GraphProjection::class)]
-#[UsesClass(NodeLabels::class)]
-#[UsesClass(NodeProperties::class)]
-#[UsesClass(AggregateDetection::class)]
 #[UsesClass(Arithmetic::class)]
 #[UsesClass(BinaryOperation::class)]
 #[UsesClass(Comparison::class)]
 #[UsesClass(ExpressionEvaluation::class)]
 #[UsesClass(Logic::class)]
-#[UsesClass(Membership::class)]
-#[UsesClass(TextOperation::class)]
-#[UsesClass(UnaryOperation::class)]
 #[UsesClass(GqlException::class)]
-#[UsesClass(Accumulator::class)]
-#[UsesClass(AggregateCatalog::class)]
-#[UsesClass(AverageAccumulator::class)]
-#[UsesClass(CollectAccumulator::class)]
-#[UsesClass(CountAccumulator::class)]
-#[UsesClass(DistinctAccumulator::class)]
-#[UsesClass(ExtremeAccumulator::class)]
-#[UsesClass(FunctionCatalog::class)]
-#[UsesClass(GeneralFunctions::class)]
-#[UsesClass(GraphFunctions::class)]
-#[UsesClass(ListFunctions::class)]
-#[UsesClass(SumAccumulator::class)]
-#[UsesClass(TextFunctions::class)]
-#[UsesClass(Lexer::class)]
-#[UsesClass(QuotedScanner::class)]
-#[UsesClass(SourceCursor::class)]
-#[UsesClass(Token::class)]
-#[UsesClass(TokenKind::class)]
-#[UsesClass(TokenList::class)]
-#[UsesClass(EdgeMatching::class)]
-#[UsesClass(EdgeTraversal::class)]
-#[UsesClass(ElementMatching::class)]
-#[UsesClass(LabelMatching::class)]
-#[UsesClass(MatchState::class)]
-#[UsesClass(PathMatching::class)]
-#[UsesClass(PathModeRule::class)]
-#[UsesClass(PatternMatching::class)]
-#[UsesClass(PatternVariables::class)]
-#[UsesClass(ExpressionParser::class)]
-#[UsesClass(LabelParser::class)]
-#[UsesClass(OperandParser::class)]
-#[UsesClass(Parser::class)]
-#[UsesClass(PatternParser::class)]
-#[UsesClass(ResultParser::class)]
-#[UsesClass(TokenReader::class)]
-#[UsesClass(ResultColumn::class)]
-#[UsesClass(ResultRow::class)]
-#[UsesClass(ResultTable::class)]
 #[UsesClass(StatusCode::class)]
 #[UsesClass(FilterClause::class)]
 #[UsesClass(LetClause::class)]
-#[UsesClass(MatchClause::class)]
 #[UsesClass(OrderByClause::class)]
 #[UsesClass(PageClause::class)]
-#[UsesClass(Projection::class)]
-#[UsesClass(ReturnClause::class)]
 #[UsesClass(SortDirection::class)]
 #[UsesClass(SortKey::class)]
 #[UsesClass(VariableBinding::class)]
 #[UsesClass(BinaryExpression::class)]
-#[UsesClass(BinaryOperator::class)]
-#[UsesClass(CallExpression::class)]
-#[UsesClass(CaseBranch::class)]
-#[UsesClass(CaseExpression::class)]
-#[UsesClass(IndexExpression::class)]
-#[UsesClass(ListExpression::class)]
 #[UsesClass(LiteralExpression::class)]
-#[UsesClass(PropertyExpression::class)]
-#[UsesClass(UnaryExpression::class)]
-#[UsesClass(UnaryOperator::class)]
 #[UsesClass(VariableExpression::class)]
-#[UsesClass(EdgeDirection::class)]
-#[UsesClass(EdgePattern::class)]
-#[UsesClass(ElementFilter::class)]
-#[UsesClass(GraphPattern::class)]
-#[UsesClass(GroupPattern::class)]
-#[UsesClass(LabelOperator::class)]
-#[UsesClass(LabelPattern::class)]
-#[UsesClass(NodePattern::class)]
-#[UsesClass(PathMode::class)]
-#[UsesClass(PathPattern::class)]
-#[UsesClass(Quantifier::class)]
-#[UsesClass(Query::class)]
-#[UsesClass(QueryBlock::class)]
-#[UsesClass(SetOperator::class)]
-#[UsesClass(BlockExecution::class)]
-#[UsesClass(MatchExecution::class)]
-#[UsesClass(QueryExecution::class)]
-#[UsesClass(ReturnExecution::class)]
-#[UsesClass(SetOperation::class)]
 #[Small]
 final class RowExecutionTest extends TestCase
 {
@@ -285,9 +78,17 @@ final class RowExecutionTest extends TestCase
      */
     public function testBindAddsAColumnToEveryRowItIsGiven(): void
     {
-        self::assertSame(
-            '[name:STRING, holder:STRING] get, Store.php',
-            AnsweredQuery::of("MATCH (p:Method WHERE p.name = 'get') LET holder = p.fileName RETURN p.name AS name, holder AS holder"),
+        $clause = new LetClause([
+            new VariableBinding('next', new BinaryExpression(BinaryOperator::Add, new VariableExpression('n'), new LiteralExpression(new IntegerDatum(1)))),
+        ]);
+        $table = new BindingTable([new BindingRow(['n' => new IntegerDatum(1)]), new BindingRow(['n' => new IntegerDatum(2)])]);
+
+        self::assertEquals(
+            new BindingTable([
+                new BindingRow(['n' => new IntegerDatum(1), 'next' => new IntegerDatum(2)]),
+                new BindingRow(['n' => new IntegerDatum(2), 'next' => new IntegerDatum(3)]),
+            ]),
+            (new RowExecution(new ExpressionEvaluation()))->bind($clause, $table),
         );
     }
 
@@ -296,7 +97,29 @@ final class RowExecutionTest extends TestCase
      */
     public function testBindWorksEveryNameOutFromTheRowAsItArrived(): void
     {
-        self::assertSame('[a:INT64, b:INT64] 1, 1', AnsweredQuery::of('LET a = 1 LET b = a RETURN a AS a, b AS b'));
+        $clause = new LetClause([
+            new VariableBinding('a', new LiteralExpression(new IntegerDatum(2))),
+            new VariableBinding('b', new VariableExpression('a')),
+        ]);
+        $table = new BindingTable([new BindingRow(['a' => new IntegerDatum(1)])]);
+
+        self::assertEquals(
+            new BindingTable([new BindingRow(['a' => new IntegerDatum(2), 'b' => new IntegerDatum(1)])]),
+            (new RowExecution(new ExpressionEvaluation()))->bind($clause, $table),
+        );
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testBindReportsANameNothingBinds(): void
+    {
+        $clause = new LetClause([new VariableBinding('b', new VariableExpression('a'))]);
+
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('[42002] error: syntax error or access rule violation - invalid reference: nothing binds "a" here');
+
+        (new RowExecution(new ExpressionEvaluation()))->bind($clause, BindingTable::unit());
     }
 
     /**
@@ -304,9 +127,12 @@ final class RowExecutionTest extends TestCase
      */
     public function testKeepKeepsOnlyTheRowsThePredicateIsTrueOf(): void
     {
-        self::assertSame(
-            '[name:STRING] store',
-            AnsweredQuery::of('MATCH (p:Method) FILTER p.line > 25 RETURN p.name AS name'),
+        $clause = new FilterClause(new BinaryExpression(BinaryOperator::Greater, new VariableExpression('line'), new LiteralExpression(new IntegerDatum(25))));
+        $table = new BindingTable([new BindingRow(['line' => new IntegerDatum(20)]), new BindingRow(['line' => new IntegerDatum(30)])]);
+
+        self::assertEquals(
+            new BindingTable([new BindingRow(['line' => new IntegerDatum(30)])]),
+            (new RowExecution(new ExpressionEvaluation()))->keep($clause, $table),
         );
     }
 
@@ -315,7 +141,26 @@ final class RowExecutionTest extends TestCase
      */
     public function testKeepDropsARowThePredicateCannotBeDecidedFor(): void
     {
-        self::assertSame('[id:NULL] ', AnsweredQuery::of('MATCH (p:Unresolved) FILTER p.line > 0 RETURN p.id AS id'));
+        $clause = new FilterClause(new BinaryExpression(BinaryOperator::Greater, new VariableExpression('line'), new LiteralExpression(new IntegerDatum(0))));
+        $table = new BindingTable([new BindingRow(['line' => new NullDatum()]), new BindingRow(['line' => new IntegerDatum(8)])]);
+
+        self::assertEquals(
+            new BindingTable([new BindingRow(['line' => new IntegerDatum(8)])]),
+            (new RowExecution(new ExpressionEvaluation()))->keep($clause, $table),
+        );
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testKeepReportsAPredicateThatIsNotATruthValue(): void
+    {
+        $clause = new FilterClause(new LiteralExpression(new IntegerDatum(1)));
+
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('[22G03] error: data exception - invalid value type: a truth value was expected, and a INT64 was given');
+
+        (new RowExecution(new ExpressionEvaluation()))->keep($clause, BindingTable::unit());
     }
 
     /**
@@ -323,9 +168,20 @@ final class RowExecutionTest extends TestCase
      */
     public function testOrderPutsTheRowsInTheOrderItIsAskedFor(): void
     {
-        self::assertSame(
-            '[name:STRING] store; show; total; get',
-            AnsweredQuery::of('MATCH (p:Method) ORDER BY p.line DESC RETURN p.name AS name'),
+        $clause = new OrderByClause([new SortKey(new VariableExpression('line'), SortDirection::Descending)]);
+        $table = new BindingTable([
+            new BindingRow(['line' => new IntegerDatum(12)]),
+            new BindingRow(['line' => new IntegerDatum(30)]),
+            new BindingRow(['line' => new IntegerDatum(8)]),
+        ]);
+
+        self::assertEquals(
+            new BindingTable([
+                new BindingRow(['line' => new IntegerDatum(30)]),
+                new BindingRow(['line' => new IntegerDatum(12)]),
+                new BindingRow(['line' => new IntegerDatum(8)]),
+            ]),
+            (new RowExecution(new ExpressionEvaluation()))->order($clause, $table),
         );
     }
 
@@ -334,7 +190,9 @@ final class RowExecutionTest extends TestCase
      */
     public function testOrderProducesNothingWhenThereIsNothingToOrder(): void
     {
-        self::assertSame('[name:NULL] ', AnsweredQuery::of('MATCH (p:Interface) ORDER BY p.line RETURN p.name AS name'));
+        $clause = new OrderByClause([new SortKey(new VariableExpression('line'))]);
+
+        self::assertEquals(BindingTable::nothing(), (new RowExecution(new ExpressionEvaluation()))->order($clause, BindingTable::nothing()));
     }
 
     /**
@@ -342,10 +200,47 @@ final class RowExecutionTest extends TestCase
      */
     public function testSortedTriesEachKeyInTheOrderTheyAreWritten(): void
     {
-        self::assertSame(
-            '[owner:STRING, name:STRING] App\Cache\Store, get; App\Domain\Invoice, total; App\Http\Controller, store; App\Http\Controller, show',
-            AnsweredQuery::of('MATCH (p:Method) ORDER BY p.owner ASC, p.name DESC RETURN p.owner AS owner, p.name AS name'),
+        $keys = [new SortKey(new VariableExpression('owner')), new SortKey(new VariableExpression('name'), SortDirection::Descending)];
+        $rows = [
+            new BindingRow(['owner' => new StringDatum('App\Http\Controller'), 'name' => new StringDatum('show')]),
+            new BindingRow(['owner' => new StringDatum('App\Cache\Store'), 'name' => new StringDatum('get')]),
+            new BindingRow(['owner' => new StringDatum('App\Http\Controller'), 'name' => new StringDatum('store')]),
+        ];
+
+        self::assertEquals(
+            [
+                new BindingRow(['owner' => new StringDatum('App\Cache\Store'), 'name' => new StringDatum('get')]),
+                new BindingRow(['owner' => new StringDatum('App\Http\Controller'), 'name' => new StringDatum('store')]),
+                new BindingRow(['owner' => new StringDatum('App\Http\Controller'), 'name' => new StringDatum('show')]),
+            ],
+            (new RowExecution(new ExpressionEvaluation()))->sorted($keys, $rows),
         );
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testSortedPutsTheAbsenceOfAValueFirst(): void
+    {
+        $rows = [new BindingRow(['line' => new IntegerDatum(3)]), new BindingRow(['line' => new NullDatum()])];
+
+        self::assertEquals(
+            [new BindingRow(['line' => new NullDatum()]), new BindingRow(['line' => new IntegerDatum(3)])],
+            (new RowExecution(new ExpressionEvaluation()))->sorted([new SortKey(new VariableExpression('line'))], $rows),
+        );
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testSortedReportsAKeyHoldingValuesGqlGivesNoOrderBetween(): void
+    {
+        $rows = [new BindingRow(['key' => new IntegerDatum(1)]), new BindingRow(['key' => new StringDatum('a')])];
+
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('[22G04] error: data exception - values not comparable');
+
+        (new RowExecution(new ExpressionEvaluation()))->sorted([new SortKey(new VariableExpression('key'))], $rows);
     }
 
     /**
@@ -356,6 +251,9 @@ final class RowExecutionTest extends TestCase
         self::assertSame([], (new RowExecution(new ExpressionEvaluation()))->sorted([], []));
     }
 
+    /**
+     * @throws GqlException
+     */
     public function testAgainstKeepsRowsThatTieOnEveryKeyInTheOrderTheyArrivedIn(): void
     {
         $left = ['row' => BindingRow::unit(), 'values' => [], 'index' => 0];
@@ -367,18 +265,40 @@ final class RowExecutionTest extends TestCase
     /**
      * @throws GqlException
      */
+    public function testAgainstTurnsTheComparisonRoundForADescendingKey(): void
+    {
+        $left = ['row' => BindingRow::unit(), 'values' => [new IntegerDatum(1)], 'index' => 0];
+        $right = ['row' => BindingRow::unit(), 'values' => [new IntegerDatum(2)], 'index' => 1];
+
+        self::assertSame(1, RowExecution::against([new SortKey(new VariableExpression('n'), SortDirection::Descending)], $left, $right));
+    }
+
     public function testPageKeepsTheStretchOfRowsItIsAskedFor(): void
     {
-        self::assertSame(
-            '[name:STRING] total',
-            AnsweredQuery::of('MATCH (p:Method) ORDER BY p.line OFFSET 1 LIMIT 1 RETURN p.name AS name'),
+        $table = new BindingTable([
+            new BindingRow(['n' => new IntegerDatum(1)]),
+            new BindingRow(['n' => new IntegerDatum(2)]),
+            new BindingRow(['n' => new IntegerDatum(3)]),
+        ]);
+
+        self::assertEquals(
+            new BindingTable([new BindingRow(['n' => new IntegerDatum(2)])]),
+            (new RowExecution(new ExpressionEvaluation()))->page(new PageClause(1, 1), $table),
+        );
+    }
+
+    public function testPageKeepsEverythingAfterTheOffsetWhenNoLimitIsWritten(): void
+    {
+        $table = new BindingTable([new BindingRow(['n' => new IntegerDatum(1)]), new BindingRow(['n' => new IntegerDatum(2)])]);
+
+        self::assertEquals(
+            new BindingTable([new BindingRow(['n' => new IntegerDatum(2)])]),
+            (new RowExecution(new ExpressionEvaluation()))->page(new PageClause(1), $table),
         );
     }
 
     public function testPageKeepsNothingWhenAStretchOfNoRowsIsAskedFor(): void
     {
-        $execution = new RowExecution(new ExpressionEvaluation());
-
-        self::assertSame([], $execution->page(new PageClause(0, 0), BindingTable::unit())->rows);
+        self::assertEquals(BindingTable::nothing(), (new RowExecution(new ExpressionEvaluation()))->page(new PageClause(0, 0), BindingTable::unit()));
     }
 }

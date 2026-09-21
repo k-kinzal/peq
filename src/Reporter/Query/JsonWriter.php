@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Reporter\Query;
 
 use App\Gql\Datum\Datum;
-use App\Gql\Datum\DatumJson;
 use App\Gql\Result\ResultColumn;
 use App\Gql\Result\ResultRow;
 use App\Gql\Result\ResultTable;

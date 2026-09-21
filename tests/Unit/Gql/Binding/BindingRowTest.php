@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Unit\Gql\Binding;
 
 use App\Gql\Binding\BindingRow;
-use App\Gql\Datum\DatumKind;
 use App\Gql\Datum\IntegerDatum;
 use App\Gql\Datum\NullDatum;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -17,7 +16,6 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(BindingRow::class)]
-#[UsesClass(DatumKind::class)]
 #[UsesClass(IntegerDatum::class)]
 #[UsesClass(NullDatum::class)]
 #[Small]
@@ -40,12 +38,12 @@ final class BindingRowTest extends TestCase
 
     public function testValueReadsWhatANameWasBoundTo(): void
     {
-        self::assertSame('3', BindingRow::unit()->with('n', new IntegerDatum(3))->value('n')->toText());
+        self::assertEquals(new IntegerDatum(3), BindingRow::unit()->with('n', new IntegerDatum(3))->value('n'));
     }
 
     public function testValueReadsANameNothingBoundAsAbsent(): void
     {
-        self::assertSame(DatumKind::Null, BindingRow::unit()->value('p')->kind());
+        self::assertEquals(new NullDatum(), BindingRow::unit()->value('p'));
     }
 
     public function testWithLeavesTheRowItWasBoundInAlone(): void
@@ -73,8 +71,22 @@ final class BindingRowTest extends TestCase
         self::assertSame(['p', 'e'], BindingRow::unit()->withAll(['p' => new NullDatum(), 'e' => new NullDatum()])->names());
     }
 
-    public function testValuesAreEverythingTheRowBinds(): void
+    public function testValuesOfARowThatBindsNothingAreNone(): void
     {
         self::assertSame([], BindingRow::unit()->values());
+    }
+
+    public function testValuesAreEverythingTheRowBindsByName(): void
+    {
+        $row = BindingRow::unit()->with('p', new IntegerDatum(1))->with('e', new NullDatum());
+
+        self::assertEquals(['p' => new IntegerDatum(1), 'e' => new NullDatum()], $row->values());
+    }
+
+    public function testWithBindsANameAgainToWhatItIsGivenLast(): void
+    {
+        $row = BindingRow::unit()->with('n', new IntegerDatum(1))->with('n', new IntegerDatum(2));
+
+        self::assertEquals(new IntegerDatum(2), $row->value('n'));
     }
 }

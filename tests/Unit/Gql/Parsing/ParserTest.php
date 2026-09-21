@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Gql\Parsing;
 
-use App\Gql\Datum\BooleanDatum;
 use App\Gql\Datum\DatumKind;
-use App\Gql\Datum\FloatDatum;
+use App\Gql\Datum\DecimalDatum;
 use App\Gql\Datum\IntegerDatum;
-use App\Gql\Datum\NullDatum;
 use App\Gql\Datum\StringDatum;
 use App\Gql\GqlException;
 use App\Gql\Lexing\Lexer;
@@ -17,14 +15,20 @@ use App\Gql\Lexing\SourceCursor;
 use App\Gql\Lexing\Token;
 use App\Gql\Lexing\TokenKind;
 use App\Gql\Lexing\TokenList;
+use App\Gql\Parsing\ElementParser;
 use App\Gql\Parsing\ExpressionParser;
 use App\Gql\Parsing\LabelParser;
+use App\Gql\Parsing\NameReader;
 use App\Gql\Parsing\OperandParser;
 use App\Gql\Parsing\Parser;
 use App\Gql\Parsing\PatternParser;
+use App\Gql\Parsing\QuantifierParser;
 use App\Gql\Parsing\ResultParser;
+use App\Gql\Parsing\StatementRefusal;
 use App\Gql\Parsing\TokenReader;
+use App\Gql\ReservedWords;
 use App\Gql\StatusCode;
+use App\Gql\Syntax\Clause;
 use App\Gql\Syntax\Clause\FilterClause;
 use App\Gql\Syntax\Clause\LetClause;
 use App\Gql\Syntax\Clause\MatchClause;
@@ -37,7 +41,6 @@ use App\Gql\Syntax\Clause\SortKey;
 use App\Gql\Syntax\Clause\VariableBinding;
 use App\Gql\Syntax\Expression\BinaryExpression;
 use App\Gql\Syntax\Expression\BinaryOperator;
-use App\Gql\Syntax\Expression\CallExpression;
 use App\Gql\Syntax\Expression\LiteralExpression;
 use App\Gql\Syntax\Expression\PropertyExpression;
 use App\Gql\Syntax\Expression\VariableExpression;
@@ -58,7 +61,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Gql\QuerySpelling;
 
 /**
  * @internal
@@ -73,28 +75,35 @@ use Tests\Fixture\Gql\QuerySpelling;
 #[UsesClass(TokenKind::class)]
 #[UsesClass(TokenList::class)]
 #[UsesClass(TokenReader::class)]
+#[UsesClass(NameReader::class)]
+#[UsesClass(ElementParser::class)]
 #[UsesClass(ExpressionParser::class)]
+#[UsesClass(LabelParser::class)]
 #[UsesClass(OperandParser::class)]
-#[UsesClass(BooleanDatum::class)]
+#[UsesClass(PatternParser::class)]
+#[UsesClass(QuantifierParser::class)]
+#[UsesClass(ResultParser::class)]
+#[UsesClass(StatementRefusal::class)]
+#[UsesClass(ReservedWords::class)]
 #[UsesClass(DatumKind::class)]
-#[UsesClass(FloatDatum::class)]
+#[UsesClass(DecimalDatum::class)]
 #[UsesClass(IntegerDatum::class)]
-#[UsesClass(NullDatum::class)]
 #[UsesClass(StringDatum::class)]
 #[UsesClass(BinaryExpression::class)]
 #[UsesClass(BinaryOperator::class)]
-#[UsesClass(CallExpression::class)]
 #[UsesClass(LiteralExpression::class)]
 #[UsesClass(PropertyExpression::class)]
 #[UsesClass(VariableExpression::class)]
+#[UsesClass(FilterClause::class)]
+#[UsesClass(LetClause::class)]
+#[UsesClass(MatchClause::class)]
 #[UsesClass(OrderByClause::class)]
 #[UsesClass(PageClause::class)]
 #[UsesClass(Projection::class)]
 #[UsesClass(ReturnClause::class)]
 #[UsesClass(SortDirection::class)]
 #[UsesClass(SortKey::class)]
-#[UsesClass(LabelParser::class)]
-#[UsesClass(PatternParser::class)]
+#[UsesClass(VariableBinding::class)]
 #[UsesClass(EdgeDirection::class)]
 #[UsesClass(EdgePattern::class)]
 #[UsesClass(ElementFilter::class)]
@@ -104,11 +113,6 @@ use Tests\Fixture\Gql\QuerySpelling;
 #[UsesClass(NodePattern::class)]
 #[UsesClass(PathMode::class)]
 #[UsesClass(PathPattern::class)]
-#[UsesClass(ResultParser::class)]
-#[UsesClass(FilterClause::class)]
-#[UsesClass(LetClause::class)]
-#[UsesClass(MatchClause::class)]
-#[UsesClass(VariableBinding::class)]
 #[UsesClass(Query::class)]
 #[UsesClass(QueryBlock::class)]
 #[UsesClass(SetOperator::class)]
@@ -118,55 +122,96 @@ final class ParserTest extends TestCase
     /**
      * @throws GqlException
      */
-    #[DataProvider('providerQueriesAndTheirShape')]
-    public function testReadReadsAQueryWrittenAsText(string $written, string $shape): void
+    #[DataProvider('providerQueriesAndWhatTheyAsk')]
+    public function testReadReadsAQueryWrittenAsText(string $written, Query $expected): void
     {
-        self::assertSame($shape, QuerySpelling::of(Parser::read($written)));
+        self::assertEquals($expected, Parser::read($written));
     }
 
     /**
-     * @return iterable<string, array{string, string}>
+     * @return iterable<string, array{string, Query}>
      */
-    public static function providerQueriesAndTheirShape(): iterable
+    public static function providerQueriesAndWhatTheyAsk(): iterable
     {
         yield 'a match and a projection' => [
             'MATCH (p:Method) RETURN p',
-            'MATCH (p:Method) RETURN p AS p',
+            new Query([new QueryBlock([
+                new MatchClause(new GraphPattern([new PathPattern([new NodePattern('p', LabelPattern::named('Method'))], PathMode::Walk)])),
+                new ReturnClause([new Projection(new VariableExpression('p'), null, 'p')]),
+            ])]),
         ];
 
         yield 'a match narrowed after the pattern' => [
             "MATCH (p) WHERE p.name = 'render' RETURN p",
-            "MATCH (p) WHERE (p.name = 'render') RETURN p AS p",
+            new Query([new QueryBlock([
+                new MatchClause(
+                    new GraphPattern([new PathPattern([new NodePattern('p')], PathMode::Walk)]),
+                    new BinaryExpression(
+                        BinaryOperator::Equal,
+                        new PropertyExpression(new VariableExpression('p'), 'name'),
+                        new LiteralExpression(new StringDatum('render')),
+                    ),
+                ),
+                new ReturnClause([new Projection(new VariableExpression('p'), null, 'p')]),
+            ])]),
         ];
 
         yield 'a match that keeps the rows matching nothing' => [
             'OPTIONAL MATCH (p)-[:calls]->(q) RETURN q',
-            'OPTIONAL MATCH (p)-[:calls]->(q) RETURN q AS q',
+            new Query([new QueryBlock([
+                new MatchClause(
+                    new GraphPattern([new PathPattern(
+                        [new NodePattern('p'), new EdgePattern(EdgeDirection::Along, null, LabelPattern::named('calls')), new NodePattern('q')],
+                        PathMode::Walk,
+                    )]),
+                    null,
+                    true,
+                ),
+                new ReturnClause([new Projection(new VariableExpression('q'), null, 'q')]),
+            ])]),
         ];
 
         yield 'a naming of computed values' => [
             'MATCH (p) LET kind = p.kind RETURN kind',
-            'MATCH (p) LET kind=p.kind RETURN kind AS kind',
+            new Query([new QueryBlock([
+                new MatchClause(new GraphPattern([new PathPattern([new NodePattern('p')], PathMode::Walk)])),
+                new LetClause([new VariableBinding('kind', new PropertyExpression(new VariableExpression('p'), 'kind'))]),
+                new ReturnClause([new Projection(new VariableExpression('kind'), null, 'kind')]),
+            ])]),
         ];
 
-        yield 'a filter between the match and the projection' => [
-            'MATCH (p) FILTER p.line > 10 RETURN p',
-            'MATCH (p) FILTER (p.line > 10) RETURN p AS p',
+        yield 'an ordering and a stretch written as clauses of their own' => [
+            'MATCH (p) ORDER BY p.line LIMIT 10 RETURN p',
+            new Query([new QueryBlock([
+                new MatchClause(new GraphPattern([new PathPattern([new NodePattern('p')], PathMode::Walk)])),
+                new OrderByClause([new SortKey(new PropertyExpression(new VariableExpression('p'), 'line'))]),
+                new PageClause(0, 10),
+                new ReturnClause([new Projection(new VariableExpression('p'), null, 'p')]),
+            ])]),
         ];
 
-        yield 'an ordering written as a clause of its own' => [
-            'MATCH (p) ORDER BY p.line RETURN p',
-            'MATCH (p) ORDER BY p.line ASC RETURN p AS p',
-        ];
-
-        yield 'a stretch written as a clause of its own' => [
-            'MATCH (p) LIMIT 10 RETURN p',
-            'MATCH (p) PAGE off=0 limit=10 RETURN p AS p',
+        yield 'a projection with nothing before it' => [
+            'RETURN 1 AS one',
+            new Query([new QueryBlock([
+                new ReturnClause([new Projection(new LiteralExpression(new IntegerDatum(1)), 'one', '1')]),
+            ])]),
         ];
 
         yield 'two runs of clauses combined' => [
             'MATCH (p) RETURN p UNION ALL MATCH (q) RETURN q',
-            'MATCH (p) RETURN p AS p UNION ALL MATCH (q) RETURN q AS q',
+            new Query(
+                [
+                    new QueryBlock([
+                        new MatchClause(new GraphPattern([new PathPattern([new NodePattern('p')], PathMode::Walk)])),
+                        new ReturnClause([new Projection(new VariableExpression('p'), null, 'p')]),
+                    ]),
+                    new QueryBlock([
+                        new MatchClause(new GraphPattern([new PathPattern([new NodePattern('q')], PathMode::Walk)])),
+                        new ReturnClause([new Projection(new VariableExpression('q'), null, 'q')]),
+                    ]),
+                ],
+                [SetOperator::UnionAll],
+            ),
         ];
     }
 
@@ -176,9 +221,65 @@ final class ParserTest extends TestCase
     public function testReadSaysWhatWasExpectedAndWhereWhenTheQueryIsNotGql(): void
     {
         $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('expected a RETURN statement, which is what GQL shows a query\'s answer with at line 1, column 11');
+        $this->expectExceptionMessage('expected a RETURN statement, which is what GQL shows a query\'s answer with at line 1, column 11 (found "RETRUN")');
 
         Parser::read('MATCH (p) RETRUN p');
+    }
+
+    /**
+     * @throws GqlException
+     */
+    #[DataProvider('providerQueriesWithSomethingGqlDoesNotWriteAfterAValue')]
+    public function testReadRefusesWhatGqlDoesNotWriteAfterAValue(string $written, string $message): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage($message);
+
+        Parser::read($written);
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function providerQueriesWithSomethingGqlDoesNotWriteAfterAValue(): iterable
+    {
+        yield 'a subscript' => ['RETURN xs[0]', 'expected the end of the query at line 1, column 10 (found "[")'];
+
+        yield 'a membership test' => [
+            'RETURN a IN [1]',
+            'expected the end of the query at line 1, column 10 (found "IN")',
+        ];
+
+        yield 'a second comparison' => ['RETURN a < b < c', 'expected the end of the query at line 1, column 14 (found "<")'];
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testReadRefusesAStatementThatWouldChangeTheGraphByName(): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('[42000] error: syntax error or access rule violation: INSERT adds nodes and edges to a graph');
+
+        Parser::read('INSERT (p:Person)');
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testParseReadsEveryRunOfClausesAndTheOperatorsBetweenThem(): void
+    {
+        self::assertEquals(
+            new Query(
+                [
+                    new QueryBlock([new ReturnClause([new Projection(new LiteralExpression(new IntegerDatum(1)), null, '1')])]),
+                    new QueryBlock([new ReturnClause([new Projection(new LiteralExpression(new IntegerDatum(2)), null, '2')])]),
+                    new QueryBlock([new ReturnClause([new Projection(new LiteralExpression(new IntegerDatum(3)), null, '3')])]),
+                ],
+                [SetOperator::Except, SetOperator::Otherwise],
+            ),
+            (new Parser(TokenReader::of('RETURN 1 EXCEPT RETURN 2 OTHERWISE RETURN 3')))->parse(),
+        );
     }
 
     /**
@@ -187,9 +288,9 @@ final class ParserTest extends TestCase
     public function testParseReportsWhatIsLeftOverAfterTheLastBlock(): void
     {
         $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('expected the end of the query');
+        $this->expectExceptionMessage('expected the end of the query at line 1, column 25 (found "garbage")');
 
-        Parser::read('MATCH (p) RETURN p AS p garbage');
+        (new Parser(TokenReader::of('MATCH (p) RETURN p AS p garbage')))->parse();
     }
 
     /**
@@ -197,7 +298,29 @@ final class ParserTest extends TestCase
      */
     public function testParseBlockReadsAsManyClausesAsAreWritten(): void
     {
-        self::assertCount(3, (new Parser(TokenReader::of('MATCH (p) FILTER p.line > 1 RETURN p')))->parseBlock()->clauses);
+        self::assertEquals(
+            new QueryBlock([
+                new MatchClause(new GraphPattern([new PathPattern([new NodePattern('p')], PathMode::Walk)])),
+                new FilterClause(new BinaryExpression(
+                    BinaryOperator::Greater,
+                    new PropertyExpression(new VariableExpression('p'), 'line'),
+                    new LiteralExpression(new IntegerDatum(1)),
+                )),
+                new ReturnClause([new Projection(new VariableExpression('p'), null, 'p')]),
+            ]),
+            (new Parser(TokenReader::of('MATCH (p) FILTER p.line > 1 RETURN p')))->parseBlock(),
+        );
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testParseBlockRefusesARunThatNeverSaysWhatToShow(): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('expected a RETURN statement, which is what GQL shows a query\'s answer with at line 1, column 10 (found the end of the query)');
+
+        (new Parser(TokenReader::of('MATCH (p)')))->parseBlock();
     }
 
     /**
@@ -220,6 +343,14 @@ final class ParserTest extends TestCase
 
         yield 'the word making a match optional' => ['OPTIONAL MATCH (p)', true];
 
+        yield 'the word naming a naming' => ['LET a = 1', true];
+
+        yield 'the word naming a filter' => ['FILTER a', true];
+
+        yield 'the word naming an ordering' => ['ORDER BY a', true];
+
+        yield 'the words naming a stretch' => ['SKIP 1', true];
+
         yield 'a set operator' => ['UNION ALL', false];
 
         yield 'the end of the query' => ['', false];
@@ -228,12 +359,49 @@ final class ParserTest extends TestCase
     /**
      * @throws GqlException
      */
-    public function testParseClauseReadsTheClauseTheFirstWordNames(): void
+    #[DataProvider('providerClausesAndTheWordsThatNameThem')]
+    public function testParseClauseReadsTheClauseTheFirstWordNames(string $written, Clause $expected): void
     {
-        self::assertSame(
+        self::assertEquals($expected, (new Parser(TokenReader::of($written)))->parseClause());
+    }
+
+    /**
+     * @return iterable<string, array{string, Clause}>
+     */
+    public static function providerClausesAndTheWordsThatNameThem(): iterable
+    {
+        yield 'a match that keeps the rows matching nothing' => [
             'OPTIONAL MATCH (p)',
-            QuerySpelling::clause((new Parser(TokenReader::of('OPTIONAL MATCH (p)')))->parseClause()),
-        );
+            new MatchClause(new GraphPattern([new PathPattern([new NodePattern('p')], PathMode::Walk)]), null, true),
+        ];
+
+        yield 'an ordering' => ['ORDER BY a DESC', new OrderByClause([new SortKey(new VariableExpression('a'), SortDirection::Descending)])];
+
+        yield 'a stretch' => ['OFFSET 5', new PageClause(5, null)];
+
+        yield 'a projection' => ['RETURN *', new ReturnClause()];
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testParseClauseRefusesAStatementGqlDefinesAndPeqDoesNotRunByName(): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('DELETE removes nodes and edges from a graph, and peq answers questions about source code rather than keeping a graph, so it does not run one');
+
+        (new Parser(TokenReader::of('DELETE (p)')))->parseClause();
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testParseClauseReportsAWordThatNamesNoClause(): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('expected a clause at line 1, column 1 (found "banana")');
+
+        (new Parser(TokenReader::of('banana')))->parseClause();
     }
 
     /**
@@ -241,7 +409,17 @@ final class ParserTest extends TestCase
      */
     public function testParseMatchReadsAMatchNarrowedAfterThePattern(): void
     {
-        self::assertNotNull((new Parser(TokenReader::of("MATCH (p:Method) WHERE p.visibility = 'public'")))->parseMatch(false)->where);
+        self::assertEquals(
+            new MatchClause(
+                new GraphPattern([new PathPattern([new NodePattern('p', LabelPattern::named('Method'))], PathMode::Walk)]),
+                new BinaryExpression(
+                    BinaryOperator::Equal,
+                    new PropertyExpression(new VariableExpression('p'), 'visibility'),
+                    new LiteralExpression(new StringDatum('public')),
+                ),
+            ),
+            (new Parser(TokenReader::of("MATCH (p:Method) WHERE p.visibility = 'public'")))->parseMatch(false),
+        );
     }
 
     /**
@@ -249,7 +427,10 @@ final class ParserTest extends TestCase
      */
     public function testParseMatchRemembersThatARowMatchingNothingIsKept(): void
     {
-        self::assertTrue((new Parser(TokenReader::of('MATCH (p)')))->parseMatch(true)->optional);
+        self::assertEquals(
+            new MatchClause(new GraphPattern([new PathPattern([new NodePattern('p')], PathMode::Walk)]), null, true),
+            (new Parser(TokenReader::of('MATCH (p)')))->parseMatch(true),
+        );
     }
 
     /**
@@ -257,18 +438,50 @@ final class ParserTest extends TestCase
      */
     public function testParseLetReadsEveryValueOneClauseNames(): void
     {
-        self::assertCount(2, (new Parser(TokenReader::of('LET a = p.line, b = p.name')))->parseLet()->bindings);
+        self::assertEquals(
+            new LetClause([
+                new VariableBinding('a', new PropertyExpression(new VariableExpression('p'), 'line')),
+                new VariableBinding('b', new PropertyExpression(new VariableExpression('p'), 'name')),
+            ]),
+            (new Parser(TokenReader::of('LET a = p.line, b = p.name')))->parseLet(),
+        );
     }
 
     /**
      * @throws GqlException
      */
-    public function testParseFilterReadsTheSameWithOrWithoutTheOptionalWord(): void
+    public function testParseLetRefusesANameGqlReserves(): void
     {
-        self::assertSame(
-            QuerySpelling::clause((new Parser(TokenReader::of('FILTER p.line > 10')))->parseFilter()),
-            QuerySpelling::clause((new Parser(TokenReader::of('FILTER WHERE p.line > 10')))->parseFilter()),
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('GQL reserves "VALUE", so it is not a name here: a query binds a name to a word GQL leaves free');
+
+        (new Parser(TokenReader::of('LET value = 1')))->parseLet();
+    }
+
+    /**
+     * @throws GqlException
+     */
+    #[DataProvider('providerFiltersWithAndWithoutTheOptionalWord')]
+    public function testParseFilterReadsTheSameWithOrWithoutTheOptionalWord(string $written): void
+    {
+        self::assertEquals(
+            new FilterClause(new BinaryExpression(
+                BinaryOperator::Greater,
+                new PropertyExpression(new VariableExpression('p'), 'line'),
+                new LiteralExpression(new IntegerDatum(10)),
+            )),
+            (new Parser(TokenReader::of($written)))->parseFilter(),
         );
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function providerFiltersWithAndWithoutTheOptionalWord(): iterable
+    {
+        yield 'without it' => ['FILTER p.line > 10'];
+
+        yield 'with it' => ['FILTER WHERE p.line > 10'];
     }
 
     /**
@@ -276,7 +489,7 @@ final class ParserTest extends TestCase
      */
     public function testParsePageReadsAStretchWrittenAsAnOffsetAndALimit(): void
     {
-        self::assertSame(10, (new Parser(TokenReader::of('OFFSET 5 LIMIT 10')))->parsePage()->limit);
+        self::assertEquals(new PageClause(5, 10), (new Parser(TokenReader::of('OFFSET 5 LIMIT 10')))->parsePage());
     }
 
     /**
@@ -285,7 +498,7 @@ final class ParserTest extends TestCase
     public function testParsePageReportsAWordThatNamesNoClause(): void
     {
         $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('expected a clause');
+        $this->expectExceptionMessage('expected a clause at line 1, column 1 (found "DELETE")');
 
         (new Parser(TokenReader::of('DELETE (p)')))->parsePage();
     }

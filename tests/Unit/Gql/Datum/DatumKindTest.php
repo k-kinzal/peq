@@ -34,6 +34,8 @@ final class DatumKindTest extends TestCase
 
         yield 'a whole number' => [DatumKind::Integer, 'INT64'];
 
+        yield 'an exact number with digits after the point' => [DatumKind::Decimal, 'DECIMAL'];
+
         yield 'an approximate number' => [DatumKind::Float, 'FLOAT64'];
 
         yield 'a character string' => [DatumKind::Text, 'STRING'];
@@ -62,26 +64,36 @@ final class DatumKindTest extends TestCase
     {
         yield 'a whole number' => [DatumKind::Integer];
 
+        yield 'an exact number with digits after the point' => [DatumKind::Decimal];
+
         yield 'an approximate number' => [DatumKind::Float];
     }
 
-    public function testNumericDoesNotReportAStringThatSpellsANumber(): void
+    #[DataProvider('providerKindsThatAreNotNumbers')]
+    public function testNumericDoesNotReportAKindThatIsNotANumber(DatumKind $kind): void
     {
-        self::assertFalse(DatumKind::Text->numeric());
+        self::assertFalse($kind->numeric());
     }
 
-    public function testRankPutsTheAbsenceOfAValueFirstBecauseGqlSaysItIsSmallest(): void
+    /**
+     * @return iterable<string, array{DatumKind}>
+     */
+    public static function providerKindsThatAreNotNumbers(): iterable
     {
-        self::assertSame(0, DatumKind::Null->rank());
-    }
+        yield 'the absence of a value' => [DatumKind::Null];
 
-    public function testRankPutsBothNumbersTogetherSoThatTheySortAsNumbers(): void
-    {
-        self::assertSame(DatumKind::Integer->rank(), DatumKind::Float->rank());
-    }
+        yield 'a truth value' => [DatumKind::Boolean];
 
-    public function testRankPutsNumbersBeforeText(): void
-    {
-        self::assertLessThan(DatumKind::Text->rank(), DatumKind::Integer->rank());
+        yield 'a string, even one that spells a number' => [DatumKind::Text];
+
+        yield 'a list' => [DatumKind::ListOf];
+
+        yield 'a symbol' => [DatumKind::Node];
+
+        yield 'a relation' => [DatumKind::Edge];
+
+        yield 'a path' => [DatumKind::Path];
+
+        yield 'a moment' => [DatumKind::DateTime];
     }
 }

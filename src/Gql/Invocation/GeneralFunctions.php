@@ -70,6 +70,8 @@ final class GeneralFunctions
      *     \App\Gql\Invocation\GeneralFunctions::nullif($value, new \App\Gql\Datum\StringDatum('unknown'))->toText() // => 'public'
      *
      * @return Datum The value, or the absence of one
+     *
+     * @throws GqlException If the two values cannot be compared
      */
     public static function nullif(Datum $value, Datum $withdraw): Datum
     {

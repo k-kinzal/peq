@@ -96,6 +96,36 @@ final class NameReaderTest extends TestCase
     /**
      * @throws GqlException
      */
+    public function testIdentifierTakesAReservedWordWrittenInDoubleQuotes(): void
+    {
+        self::assertSame('value', NameReader::identifier(TokenReader::of('"value"')));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testIdentifierMovesPastTheNameItTakes(): void
+    {
+        $tokens = TokenReader::of('"value".x');
+        NameReader::identifier($tokens);
+
+        self::assertSame(1, $tokens->position());
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testIdentifierDoesNotTakeAStringInSingleQuotes(): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('expected a name at line 1, column 1 (found "\'value\'")');
+
+        NameReader::identifier(TokenReader::of("'value'"));
+    }
+
+    /**
+     * @throws GqlException
+     */
     public function testIdentifierRefusesAReservedWordWrittenPlainly(): void
     {
         $this->expectException(GqlException::class);

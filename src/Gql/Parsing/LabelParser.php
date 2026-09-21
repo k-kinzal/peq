@@ -73,6 +73,8 @@ final class LabelParser
      * @example A refusal binds tightest of all
      *     $parsed = (new \App\Gql\Parsing\LabelParser(\App\Gql\Parsing\TokenReader::of('!Interface')))->parse();
      *     $parsed->operator // => \App\Gql\Syntax\Pattern\LabelOperator::Neither
+     * @example A negation of a negation is written in parentheses
+     *     (new \App\Gql\Parsing\LabelParser(\App\Gql\Parsing\TokenReader::of('!!Interface')))->parse() // throws \App\Gql\GqlException: label primary
      * @example A wildcard asks for nothing in particular
      *     $parsed = (new \App\Gql\Parsing\LabelParser(\App\Gql\Parsing\TokenReader::of('%')))->parse();
      *     $parsed->operator // => \App\Gql\Syntax\Pattern\LabelOperator::Anything
@@ -84,6 +86,10 @@ final class LabelParser
     public function parseSingle(): LabelPattern
     {
         if ($this->tokens->acceptSymbol('!')) {
+            if ($this->tokens->atSymbol('!')) {
+                $this->tokens->fail('a label, a wildcard or a parenthesised label expression after "!", since GQL negates a <label primary> and a negation is not one');
+            }
+
             return LabelPattern::neither($this->parseSingle());
         }
         if ($this->tokens->acceptSymbol('%')) {

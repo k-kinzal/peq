@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Gql\Lexing;
 
 use App\Gql\Lexing\Lexer;
+use App\Gql\Lexing\QuotedScanner;
 use App\Gql\Lexing\SourceCursor;
 use App\Gql\Lexing\Token;
 use App\Gql\Lexing\TokenKind;
@@ -19,6 +20,7 @@ use PHPUnit\Framework\TestCase;
  */
 #[CoversClass(TokenList::class)]
 #[UsesClass(Lexer::class)]
+#[UsesClass(QuotedScanner::class)]
 #[UsesClass(SourceCursor::class)]
 #[UsesClass(Token::class)]
 #[UsesClass(TokenKind::class)]

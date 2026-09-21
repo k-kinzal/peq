@@ -14,10 +14,10 @@ use Override;
  * The smallest, or the largest.
  *
  * Both are one summary, because they differ only in which way they compare. They
- * order by the total order sorting uses rather than by the three-valued comparison,
- * so a column holding values of more than one kind still has a smallest — which
- * matters on a graph where a property may be a number on one symbol and a string on
- * another.
+ * order the way sorting does, which passes over nothing but the absence of a value:
+ * values of kinds GQL gives no order between have no smallest, so a column holding a
+ * number on one symbol and a string on another is a data exception, "values not
+ * comparable" (22G04), rather than an answer that depends on which came first.
  *
  * @visibility App\Gql
  */

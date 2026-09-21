@@ -17,9 +17,10 @@ use App\Gql\Syntax\Expression\UnaryOperator;
  * The layers are written out as methods rather than driven by a table of precedences,
  * because the order operators bind in is the part of a language a reader most needs
  * to be able to check, and a method per layer can be read against the specification
- * line by line. From loosest to tightest: `OR`, `XOR`, `AND`, `NOT`, comparison,
- * addition, multiplication, sign, and the things that attach to a value — a property,
- * an index, a null test.
+ * line by line. From loosest to tightest: `OR` and `XOR` together, `AND`, `NOT`, a
+ * truth-value test, comparison, addition, multiplication, sign, and the things that
+ * attach to a value — a property and a null test. Each is named after the production of
+ * ISO/IEC 39075 it reads.
  *
  * Where an operand of a layer is read, the next tighter layer is called; where a
  * whole expression is read again — inside parentheses, inside a list, inside a
@@ -61,11 +62,20 @@ final class ExpressionParser
     }
 
     /**
-     * Reads a disjunction, the loosest-binding operator GQL has.
+     * Reads a disjunction, the loosest-binding operators GQL has.
+     *
+     * `OR` and `XOR` are one layer, read left to right: ISO/IEC 39075 writes
+     * `<boolean value expression>` as a boolean value expression followed by either of
+     * them and a `<boolean term>`. So `a OR b XOR c` is `(a OR b) XOR c`, which is not
+     * what a reader who expects `XOR` to bind tighter would guess, and gives a different
+     * answer when `a`, `b` and `c` are all true.
      *
      * @example Disjunction binds loosest, so it is the top of the tree
      *     $parsed = (new \App\Gql\Parsing\ExpressionParser(\App\Gql\Parsing\TokenReader::of('a AND b OR c')))->parseOr();
      *     $parsed instanceof \App\Gql\Syntax\Expression\BinaryExpression ? $parsed->operator : null // => \App\Gql\Syntax\Expression\BinaryOperator::Or
+     * @example Exclusive disjunction shares its layer, so the later one is the top
+     *     $parsed = (new \App\Gql\Parsing\ExpressionParser(\App\Gql\Parsing\TokenReader::of('a OR b XOR c')))->parseOr();
+     *     $parsed instanceof \App\Gql\Syntax\Expression\BinaryExpression ? $parsed->operator : null // => \App\Gql\Syntax\Expression\BinaryOperator::Xor
      *
      * @return Expression The expression
      *
@@ -73,37 +83,22 @@ final class ExpressionParser
      */
     public function parseOr(): Expression
     {
-        $left = $this->parseXor();
-        while ($this->tokens->acceptKeyword('OR')) {
-            $left = new BinaryExpression(BinaryOperator::Or, $left, $this->parseXor());
-        }
-
-        return $left;
-    }
-
-    /**
-     * Reads an exclusive disjunction.
-     *
-     * @example An exclusive disjunction binds tighter than a plain one
-     *     $parsed = (new \App\Gql\Parsing\ExpressionParser(\App\Gql\Parsing\TokenReader::of('a XOR b')))->parseXor();
-     *     $parsed instanceof \App\Gql\Syntax\Expression\BinaryExpression ? $parsed->operator : null // => \App\Gql\Syntax\Expression\BinaryOperator::Xor
-     *
-     * @return Expression The expression
-     *
-     * @throws GqlException If what is written is not an expression
-     */
-    public function parseXor(): Expression
-    {
         $left = $this->parseAnd();
-        while ($this->tokens->acceptKeyword('XOR')) {
+        while (true) {
+            if ($this->tokens->acceptKeyword('OR')) {
+                $left = new BinaryExpression(BinaryOperator::Or, $left, $this->parseAnd());
+
+                continue;
+            }
+            if (!$this->tokens->acceptKeyword('XOR')) {
+                return $left;
+            }
             $left = new BinaryExpression(BinaryOperator::Xor, $left, $this->parseAnd());
         }
-
-        return $left;
     }
 
     /**
-     * Reads a conjunction.
+     * Reads a conjunction, GQL's `<boolean term>`.
      *
      * @example A conjunction binds tighter than either disjunction
      *     $parsed = (new \App\Gql\Parsing\ExpressionParser(\App\Gql\Parsing\TokenReader::of('a AND b')))->parseAnd();
@@ -124,14 +119,17 @@ final class ExpressionParser
     }
 
     /**
-     * Reads a negation, which binds tighter than the connectives and looser than a comparison.
+     * Reads a negation, GQL's `<boolean factor>`: at most one `NOT` before a test.
      *
-     * That placement is the one most often got wrong: `NOT a = b` is `NOT (a = b)`,
-     * while `NOT a AND b` is `(NOT a) AND b`.
+     * `NOT a = b` is `NOT (a = b)`, while `NOT a AND b` is `(NOT a) AND b`. And `NOT NOT
+     * a` is not an expression at all: the grammar allows one `NOT`, and a second is
+     * written with parentheses.
      *
      * @example A negation takes the whole comparison after it
      *     $parsed = (new \App\Gql\Parsing\ExpressionParser(\App\Gql\Parsing\TokenReader::of('NOT a = b')))->parseNot();
      *     $parsed instanceof \App\Gql\Syntax\Expression\UnaryExpression ? $parsed->operator : null // => \App\Gql\Syntax\Expression\UnaryOperator::Not
+     * @example A second one is not GQL
+     *     (new \App\Gql\Parsing\ExpressionParser(\App\Gql\Parsing\TokenReader::of('NOT NOT a')))->parseNot() // throws \App\Gql\GqlException: syntax error
      *
      * @return Expression The expression
      *
@@ -139,15 +137,53 @@ final class ExpressionParser
      */
     public function parseNot(): Expression
     {
-        if ($this->tokens->acceptKeyword('NOT')) {
-            return new UnaryExpression(UnaryOperator::Not, $this->parseNot());
+        if (!$this->tokens->acceptKeyword('NOT')) {
+            return $this->parseTest();
+        }
+        if ($this->tokens->atKeyword('NOT')) {
+            $this->tokens->fail('an expression, since GQL writes one NOT before a test and a second one inside parentheses');
         }
 
-        return $this->parseComparison();
+        return new UnaryExpression(UnaryOperator::Not, $this->parseTest());
     }
 
     /**
-     * Reads a comparison, a list membership test or a string predicate.
+     * Reads a truth-value test, GQL's `<boolean test>`, if one is written.
+     *
+     * `IS TRUE`, `IS FALSE` and `IS UNKNOWN` are how a query asks which of the three
+     * truth values something has, and unlike every other comparison the answer is never
+     * unknown: `NULL IS UNKNOWN` is true.
+     *
+     * @example A test is written after what it tests
+     *     $parsed = (new \App\Gql\Parsing\ExpressionParser(\App\Gql\Parsing\TokenReader::of('a = b IS NOT TRUE')))->parseTest();
+     *     $parsed instanceof \App\Gql\Syntax\Expression\UnaryExpression ? $parsed->operator : null // => \App\Gql\Syntax\Expression\UnaryOperator::IsNotTrue
+     *
+     * @return Expression The expression
+     *
+     * @throws GqlException If what is written is not an expression
+     */
+    public function parseTest(): Expression
+    {
+        $tested = $this->parseComparison();
+        if (!$this->tokens->acceptKeyword('IS')) {
+            return $tested;
+        }
+        $negated = $this->tokens->acceptKeyword('NOT');
+        $operator = match (true) {
+            $this->tokens->acceptKeyword('TRUE') => $negated ? UnaryOperator::IsNotTrue : UnaryOperator::IsTrue,
+            $this->tokens->acceptKeyword('FALSE') => $negated ? UnaryOperator::IsNotFalse : UnaryOperator::IsFalse,
+            $this->tokens->acceptKeyword('UNKNOWN') => $negated ? UnaryOperator::IsNotUnknown : UnaryOperator::IsUnknown,
+            default => $this->tokens->fail('TRUE, FALSE or UNKNOWN'),
+        };
+
+        return new UnaryExpression($operator, $tested);
+    }
+
+    /**
+     * Reads a comparison, if one is written.
+     *
+     * A comparison compares two values and is not itself one of them, so GQL writes at
+     * most one: `a < b < c` is not an expression, and `(a < b) = c` says what it means.
      *
      * @example A comparison binds tighter than a negation
      *     $parsed = (new \App\Gql\Parsing\ExpressionParser(\App\Gql\Parsing\TokenReader::of('a < b')))->parseComparison();
@@ -160,77 +196,45 @@ final class ExpressionParser
     public function parseComparison(): Expression
     {
         $left = $this->parseAdditive();
-        while (($operator = self::comparisonIn($this->tokens)) !== null) {
-            $left = new BinaryExpression($operator, $left, $this->parseAdditive());
+        $operator = self::comparisonIn($this->tokens);
+        if ($operator === null) {
+            return $left;
         }
 
-        return $left;
+        return new BinaryExpression($operator, $left, $this->parseAdditive());
     }
 
     /**
      * Reads the comparing operator standing at a reader, if there is one, and takes it.
      *
-     * `NOT IN` is read here rather than by the lexer because `NOT` is an operator of
-     * its own everywhere else, and only the pair is a refused membership test.
+     * These six are GQL's `<comp op>`, and they are all of it. A membership test like
+     * `x IN [1, 2]` reads well and is in other graph languages, but ISO/IEC 39075 writes
+     * `IN` only after `FOR` and inside `LET ... IN ... END`, so it is not read here.
      *
      * @param TokenReader $tokens The pieces of the query being read
      *
      * @example A comparing operator is recognised and taken
      *     \App\Gql\Parsing\ExpressionParser::comparisonIn(\App\Gql\Parsing\TokenReader::of('>= 3')) // => \App\Gql\Syntax\Expression\BinaryOperator::GreaterOrEqual
-     * @example A refused membership test is one operator, not two
-     *     \App\Gql\Parsing\ExpressionParser::comparisonIn(\App\Gql\Parsing\TokenReader::of('NOT IN [1]')) // => \App\Gql\Syntax\Expression\BinaryOperator::NotIn
-     * @example Anything else leaves the reading where it was
-     *     \App\Gql\Parsing\ExpressionParser::comparisonIn(\App\Gql\Parsing\TokenReader::of('AND b')) // => null
+     * @example A membership test is not one of them
+     *     \App\Gql\Parsing\ExpressionParser::comparisonIn(\App\Gql\Parsing\TokenReader::of('IN [1]')) // => null
      *
      * @return null|BinaryOperator The operator, or null when none stands there
      */
     public static function comparisonIn(TokenReader $tokens): ?BinaryOperator
     {
         $token = $tokens->current();
-        $single = match (true) {
+        $operator = match (true) {
             $token->isSymbol('=') => BinaryOperator::Equal,
             $token->isSymbol('<>') => BinaryOperator::NotEqual,
             $token->isSymbol('<=') => BinaryOperator::LessOrEqual,
             $token->isSymbol('>=') => BinaryOperator::GreaterOrEqual,
             $token->isSymbol('<') => BinaryOperator::Less,
             $token->isSymbol('>') => BinaryOperator::Greater,
-            $token->isKeyword('IN') => BinaryOperator::In,
             default => null,
         };
-        if ($single !== null) {
+        if ($operator !== null) {
             $tokens->take();
-
-            return $single;
         }
-
-        return self::twoWordComparisonIn($tokens);
-    }
-
-    /**
-     * Reads a comparing operator written as two words, if one stands at a reader.
-     *
-     * @param TokenReader $tokens The pieces of the query being read
-     *
-     * @example A two-word operator is taken as a whole
-     *     \App\Gql\Parsing\ExpressionParser::twoWordComparisonIn(\App\Gql\Parsing\TokenReader::of('NOT IN [1]')) // => \App\Gql\Syntax\Expression\BinaryOperator::NotIn
-     * @example A first word that is not followed by its second is left alone
-     *     \App\Gql\Parsing\ExpressionParser::twoWordComparisonIn(\App\Gql\Parsing\TokenReader::of('NOT b')) // => null
-     *
-     * @return null|BinaryOperator The operator, or null when none stands there
-     */
-    public static function twoWordComparisonIn(TokenReader $tokens): ?BinaryOperator
-    {
-        $first = $tokens->current();
-        $second = $tokens->peek();
-        $operator = match (true) {
-            $first->isKeyword('NOT') && $second->isKeyword('IN') => BinaryOperator::NotIn,
-            default => null,
-        };
-        if ($operator === null) {
-            return null;
-        }
-        $tokens->take();
-        $tokens->take();
 
         return $operator;
     }

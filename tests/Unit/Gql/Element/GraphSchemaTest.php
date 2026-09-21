@@ -17,6 +17,7 @@ use App\Gql\Element\NodeLabels;
 use App\Gql\Element\NodeProperties;
 use App\Gql\Invocation\AggregateCatalog;
 use App\Gql\Invocation\FunctionCatalog;
+use App\Gql\ReservedWords;
 use App\Gql\Result\ResultColumn;
 use App\Gql\Result\ResultRow;
 use App\Gql\Result\ResultTable;
@@ -42,6 +43,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(NodeProperties::class)]
 #[UsesClass(AggregateCatalog::class)]
 #[UsesClass(FunctionCatalog::class)]
+#[UsesClass(ReservedWords::class)]
 #[UsesClass(ResultColumn::class)]
 #[UsesClass(ResultRow::class)]
 #[UsesClass(ResultTable::class)]
@@ -50,78 +52,99 @@ final class GraphSchemaTest extends TestCase
 {
     public function testTableSaysWhatEachNameIsAndWhereItHasOneItsType(): void
     {
-        self::assertSame(['category', 'name', 'type'], GraphSchema::table()->headings());
+        self::assertEquals(
+            [new ResultColumn('category', 'STRING'), new ResultColumn('name', 'STRING'), new ResultColumn('type', 'STRING')],
+            GraphSchema::table()->columns,
+        );
     }
 
     #[DataProvider('providerVocabularyAQueryIsWrittenFrom')]
-    public function testTableCoversTheWholeVocabularyAQueryIsWrittenFrom(string $name): void
+    public function testTableCoversTheWholeVocabularyAQueryIsWrittenFrom(ResultRow $row): void
     {
-        $named = array_map(static fn ($value): string => $value->toText(), GraphSchema::table()->column(1));
-
-        self::assertContains($name, $named);
+        self::assertContainsEquals($row, GraphSchema::table()->rows);
     }
 
     /**
-     * @return iterable<string, array{string}>
+     * @return iterable<string, array{ResultRow}>
      */
     public static function providerVocabularyAQueryIsWrittenFrom(): iterable
     {
-        yield 'a family of symbol a pattern selects by' => ['Callable'];
+        yield 'a family of symbol a pattern selects by' => [
+            new ResultRow([new StringDatum('node label'), new StringDatum('Callable'), new StringDatum('')]),
+        ];
 
-        yield 'a family of relation a pattern selects by' => ['`call`'];
+        yield 'a family of relation a pattern selects by, in back quotes because GQL reserves the word' => [
+            new ResultRow([new StringDatum('edge label'), new StringDatum('`call`'), new StringDatum('')]),
+        ];
 
-        yield 'something a query can ask a symbol' => ['visibility'];
+        yield 'something a query can ask a symbol' => [
+            new ResultRow([new StringDatum('node property'), new StringDatum('visibility'), new StringDatum('STRING')]),
+        ];
 
-        yield 'something a query can ask a relation' => ['line'];
+        yield 'something a query can ask a relation' => [
+            new ResultRow([new StringDatum('edge property'), new StringDatum('line'), new StringDatum('INT64')]),
+        ];
 
-        yield 'a function a query can call' => ['size'];
+        yield 'a function a query can call' => [
+            new ResultRow([new StringDatum('function'), new StringDatum('size'), new StringDatum('')]),
+        ];
 
-        yield 'a way of summarising a group of rows' => ['count'];
+        yield 'a way of summarising a group of rows' => [
+            new ResultRow([new StringDatum('aggregate'), new StringDatum('count'), new StringDatum('')]),
+        ];
     }
 
-    public function testTableSaysWhichCategoryEachNameBelongsTo(): void
+    public function testTableStartsWithTheLabelsASymbolIsSelectedBy(): void
     {
-        $categories = array_map(static fn ($value): string => $value->toText(), GraphSchema::table()->column(0));
-
-        self::assertSame(
-            ['node label', 'edge label', 'node property', 'edge property', 'function', 'aggregate'],
-            array_values(array_unique($categories)),
+        self::assertEquals(
+            new ResultRow([new StringDatum('node label'), new StringDatum('Class'), new StringDatum('')]),
+            GraphSchema::table()->rows[0],
         );
     }
 
     public function testNamedReportsANameWithNoTypeToReportAgainstIt(): void
     {
-        self::assertSame('', GraphSchema::named('node label', ['Class'])[0]->value('type')->toText());
+        self::assertEquals(
+            [new BindingRow(['category' => new StringDatum('function'), 'name' => new StringDatum('size'), 'type' => new StringDatum('')])],
+            GraphSchema::named('function', ['size']),
+        );
     }
 
     public function testNamedReportsNothingForACategoryWithNoNames(): void
     {
-        self::assertSame([], GraphSchema::named('node label', []));
+        self::assertSame([], GraphSchema::named('function', []));
     }
 
-    public function testTypedReportsAPropertyWithTheTypeItHolds(): void
+    public function testTypedReportsAPropertyUnderTheNameAQueryAsksItByWithTheTypeItHolds(): void
     {
-        self::assertSame('INT64', GraphSchema::typed('node property', ['line' => 'INT64'])[0]->value('type')->toText());
-    }
-
-    public function testTypedReportsThePropertyUnderTheNameAQueryAsksItBy(): void
-    {
-        self::assertSame('line', GraphSchema::typed('node property', ['line' => 'INT64'])[0]->value('name')->toText());
+        self::assertEquals(
+            [new BindingRow(['category' => new StringDatum('node property'), 'name' => new StringDatum('line'), 'type' => new StringDatum('INT64')])],
+            GraphSchema::typed('node property', ['line' => 'INT64']),
+        );
     }
 
     public function testTypedReportsAPropertyNamedAfterAReservedWordInBackQuotes(): void
     {
-        self::assertSame('`value`', GraphSchema::typed('node property', ['value' => 'STRING'])[0]->value('name')->toText());
+        self::assertEquals(
+            [new BindingRow(['category' => new StringDatum('node property'), 'name' => new StringDatum('`value`'), 'type' => new StringDatum('STRING')])],
+            GraphSchema::typed('node property', ['value' => 'STRING']),
+        );
     }
 
     public function testLabelledReportsALabelGqlLeavesFreeAsItIs(): void
     {
-        self::assertSame('Method', GraphSchema::labelled('node label', ['Method'])[0]->value('name')->toText());
+        self::assertEquals(
+            [new BindingRow(['category' => new StringDatum('node label'), 'name' => new StringDatum('Method'), 'type' => new StringDatum('')])],
+            GraphSchema::labelled('node label', ['Method']),
+        );
     }
 
     public function testLabelledReportsALabelGqlReservesInBackQuotes(): void
     {
-        self::assertSame('`Function`', GraphSchema::labelled('node label', ['Function'])[0]->value('name')->toText());
+        self::assertEquals(
+            [new BindingRow(['category' => new StringDatum('node label'), 'name' => new StringDatum('`Function`'), 'type' => new StringDatum('')])],
+            GraphSchema::labelled('node label', ['Function']),
+        );
     }
 
     public function testLabelledReportsNothingForACategoryWithNoLabels(): void

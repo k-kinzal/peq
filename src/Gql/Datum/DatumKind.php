@@ -24,6 +24,9 @@ enum DatumKind
     /** A whole number */
     case Integer;
 
+    /** An exact number with digits after the point */
+    case Decimal;
+
     /** An approximate number */
     case Float;
 
@@ -61,6 +64,7 @@ enum DatumKind
             self::Null => 'NULL',
             self::Boolean => 'BOOL',
             self::Integer => 'INT64',
+            self::Decimal => 'DECIMAL',
             self::Float => 'FLOAT64',
             self::Text => 'STRING',
             self::ListOf => 'LIST',
@@ -88,6 +92,7 @@ enum DatumKind
     {
         return match ($this) {
             self::Integer,
+            self::Decimal,
             self::Float => true,
 
             self::Null,
@@ -98,36 +103,6 @@ enum DatumKind
             self::Edge,
             self::Path,
             self::DateTime => false,
-        };
-    }
-
-    /**
-     * Returns the order kinds are sorted in when values of different kinds meet.
-     *
-     * Sorting a column that holds more than one kind still has to terminate, and GQL
-     * settles it by ordering the kinds themselves. Null sorts first because the
-     * standard says null is the smallest value there is; the rest follow in the order
-     * a reader would expect to see them grouped in.
-     *
-     * @example Null sorts before everything
-     *     \App\Gql\Datum\DatumKind::Null->rank() // => 0
-     * @example Numbers sort together, before text
-     *     \App\Gql\Datum\DatumKind::Integer->rank() < \App\Gql\Datum\DatumKind::Text->rank() // => true
-     *
-     * @return int The place of this kind in the order of kinds
-     */
-    public function rank(): int
-    {
-        return match ($this) {
-            self::Null => 0,
-            self::Boolean => 1,
-            self::Integer, self::Float => 2,
-            self::DateTime => 3,
-            self::Text => 4,
-            self::ListOf => 5,
-            self::Node => 6,
-            self::Edge => 7,
-            self::Path => 8,
         };
     }
 }

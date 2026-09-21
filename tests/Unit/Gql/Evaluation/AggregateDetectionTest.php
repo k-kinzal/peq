@@ -5,35 +5,16 @@ declare(strict_types=1);
 namespace Tests\Unit\Gql\Evaluation;
 
 use App\Gql\Datum\BooleanDatum;
-use App\Gql\Datum\DatumIdentity;
-use App\Gql\Datum\DatumKind;
-use App\Gql\Datum\DatumOrder;
-use App\Gql\Datum\EdgeDatum;
-use App\Gql\Datum\FloatDatum;
 use App\Gql\Datum\IntegerDatum;
-use App\Gql\Datum\ListDatum;
-use App\Gql\Datum\NodeDatum;
-use App\Gql\Datum\NullDatum;
 use App\Gql\Datum\StringDatum;
 use App\Gql\Evaluation\AggregateDetection;
-use App\Gql\GqlException;
 use App\Gql\Invocation\AggregateCatalog;
-use App\Gql\Lexing\Lexer;
-use App\Gql\Lexing\QuotedScanner;
-use App\Gql\Lexing\SourceCursor;
-use App\Gql\Lexing\Token;
-use App\Gql\Lexing\TokenKind;
-use App\Gql\Lexing\TokenList;
-use App\Gql\Parsing\ExpressionParser;
-use App\Gql\Parsing\OperandParser;
-use App\Gql\Parsing\TokenReader;
-use App\Gql\StatusCode;
+use App\Gql\Syntax\Expression;
 use App\Gql\Syntax\Expression\BinaryExpression;
 use App\Gql\Syntax\Expression\BinaryOperator;
 use App\Gql\Syntax\Expression\CallExpression;
 use App\Gql\Syntax\Expression\CaseBranch;
 use App\Gql\Syntax\Expression\CaseExpression;
-use App\Gql\Syntax\Expression\IndexExpression;
 use App\Gql\Syntax\Expression\ListExpression;
 use App\Gql\Syntax\Expression\LiteralExpression;
 use App\Gql\Syntax\Expression\PropertyExpression;
@@ -45,93 +26,147 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Gql\ExpressionWorth;
 
 /**
  * @internal
  */
 #[CoversClass(AggregateDetection::class)]
-#[UsesClass(BooleanDatum::class)]
-#[UsesClass(DatumKind::class)]
-#[UsesClass(DatumIdentity::class)]
-#[UsesClass(DatumOrder::class)]
-#[UsesClass(EdgeDatum::class)]
-#[UsesClass(FloatDatum::class)]
-#[UsesClass(NodeDatum::class)]
-#[UsesClass(IntegerDatum::class)]
-#[UsesClass(ListDatum::class)]
-#[UsesClass(NullDatum::class)]
-#[UsesClass(StringDatum::class)]
-#[UsesClass(GqlException::class)]
-#[UsesClass(StatusCode::class)]
-#[UsesClass(Lexer::class)]
-#[UsesClass(QuotedScanner::class)]
-#[UsesClass(SourceCursor::class)]
-#[UsesClass(Token::class)]
-#[UsesClass(TokenKind::class)]
-#[UsesClass(TokenList::class)]
-#[UsesClass(ExpressionParser::class)]
-#[UsesClass(OperandParser::class)]
-#[UsesClass(TokenReader::class)]
+#[UsesClass(AggregateCatalog::class)]
 #[UsesClass(BinaryExpression::class)]
-#[UsesClass(BinaryOperator::class)]
+#[UsesClass(BooleanDatum::class)]
 #[UsesClass(CallExpression::class)]
 #[UsesClass(CaseBranch::class)]
 #[UsesClass(CaseExpression::class)]
-#[UsesClass(IndexExpression::class)]
+#[UsesClass(IntegerDatum::class)]
 #[UsesClass(ListExpression::class)]
 #[UsesClass(LiteralExpression::class)]
 #[UsesClass(PropertyExpression::class)]
+#[UsesClass(StringDatum::class)]
 #[UsesClass(UnaryExpression::class)]
-#[UsesClass(UnaryOperator::class)]
 #[UsesClass(VariableExpression::class)]
-#[UsesClass(AggregateCatalog::class)]
 #[Small]
 final class AggregateDetectionTest extends TestCase
 {
-    /**
-     * @throws GqlException
-     */
     #[DataProvider('providerExpressionsAndWhetherTheySummarise')]
-    public function testWithinReportsWhetherAnExpressionSummarisesRows(string $written, bool $summarises): void
+    public function testWithinReportsWhetherAnExpressionSummarisesRows(Expression $expression, bool $summarises): void
     {
-        self::assertSame($summarises, AggregateDetection::within(ExpressionWorth::parse($written)));
+        self::assertSame($summarises, AggregateDetection::within($expression));
     }
 
     /**
-     * @return iterable<string, array{string, bool}>
+     * @return iterable<string, array{Expression, bool}>
      */
     public static function providerExpressionsAndWhetherTheySummarise(): iterable
     {
-        yield 'a projection that counts' => ['count(*)', true];
+        yield 'count(*)' => [new CallExpression('count', star: true), true];
 
-        yield 'a projection that reads a property' => ['p.name', false];
+        yield 'p.name' => [new PropertyExpression(new VariableExpression('p'), 'name'), false];
 
-        yield 'a summary buried inside a comparison' => ['count(*) > 1', true];
+        yield 'count(*) > 1' => [
+            new BinaryExpression(
+                BinaryOperator::Greater,
+                new CallExpression('count', star: true),
+                new LiteralExpression(new IntegerDatum(1)),
+            ),
+            true,
+        ];
 
-        yield 'a summary buried inside a join' => ["'found ' || count(*)", true];
+        yield "'found ' || count(*)" => [
+            new BinaryExpression(
+                BinaryOperator::Concatenate,
+                new LiteralExpression(new StringDatum('found ')),
+                new CallExpression('count', star: true),
+            ),
+            true,
+        ];
 
-        yield 'a summary buried inside a sign' => ['-count(*)', true];
+        yield '-count(*)' => [new UnaryExpression(UnaryOperator::Negate, new CallExpression('count', star: true)), true];
 
-        yield 'a summary buried inside a list' => ['[1, count(*)]', true];
+        yield '[1, count(*)]' => [
+            new ListExpression([new LiteralExpression(new IntegerDatum(1)), new CallExpression('count', star: true)]),
+            true,
+        ];
 
-        yield 'a summary buried inside an indexing' => ['xs[count(*)]', true];
+        yield 'collect_list(p).name' => [
+            new PropertyExpression(new CallExpression('collect_list', [new VariableExpression('p')]), 'name'),
+            true,
+        ];
 
-        yield 'a summary buried inside a property subject' => ['collect_list(p)[0].name', true];
+        yield 'size(collect_list(p))' => [
+            new CallExpression('size', [new CallExpression('collect_list', [new VariableExpression('p')])]),
+            true,
+        ];
 
-        yield 'a summary buried inside an ordinary call' => ['size(collect_list(p))', true];
+        yield "CASE WHEN count(*) > 1 THEN 'many' ELSE 'one' END" => [
+            new CaseExpression(
+                null,
+                [
+                    new CaseBranch(
+                        new BinaryExpression(
+                            BinaryOperator::Greater,
+                            new CallExpression('count', star: true),
+                            new LiteralExpression(new IntegerDatum(1)),
+                        ),
+                        new LiteralExpression(new StringDatum('many')),
+                    ),
+                ],
+                new LiteralExpression(new StringDatum('one')),
+            ),
+            true,
+        ];
 
-        yield 'a summary buried inside a choice' => ["CASE WHEN count(*) > 1 THEN 'many' ELSE 'one' END", true];
+        yield "CASE count(*) WHEN 1 THEN 'one' END" => [
+            new CaseExpression(
+                new CallExpression('count', star: true),
+                [new CaseBranch(new LiteralExpression(new IntegerDatum(1)), new LiteralExpression(new StringDatum('one')))],
+            ),
+            true,
+        ];
 
-        yield 'a summary buried in what a choice is about' => ["CASE count(*) WHEN 1 THEN 'one' END", true];
+        yield "CASE WHEN TRUE THEN 'x' ELSE count(*) END" => [
+            new CaseExpression(
+                null,
+                [new CaseBranch(new LiteralExpression(new BooleanDatum(true)), new LiteralExpression(new StringDatum('x')))],
+                new CallExpression('count', star: true),
+            ),
+            true,
+        ];
 
-        yield 'a summary buried in a fallback' => ["CASE WHEN TRUE THEN 'x' ELSE count(*) END", true];
+        yield 'CASE WHEN a THEN b ELSE c END' => [
+            new CaseExpression(
+                null,
+                [new CaseBranch(new VariableExpression('a'), new VariableExpression('b'))],
+                new VariableExpression('c'),
+            ),
+            false,
+        ];
 
-        yield 'a choice whose branches read properties' => ['CASE WHEN a THEN b ELSE c END', false];
+        yield "upper('a')" => [new CallExpression('upper', [new LiteralExpression(new StringDatum('a'))]), false];
 
-        yield 'an ordinary call' => ["upper('a')", false];
+        yield '42' => [new LiteralExpression(new IntegerDatum(42)), false];
+    }
 
-        yield 'a literal' => ['42', false];
+    public function testWithinPassesOverASummaryWrittenOverAGroupList(): void
+    {
+        $earliest = new CallExpression('min', [new PropertyExpression(new VariableExpression('e'), 'line')]);
+
+        self::assertFalse(AggregateDetection::within($earliest, ['e']));
+    }
+
+    public function testWithinStillFindsASummaryWrittenOverSomethingElse(): void
+    {
+        $earliest = new CallExpression('min', [new PropertyExpression(new VariableExpression('p'), 'line')]);
+
+        self::assertTrue(AggregateDetection::within($earliest, ['e']));
+    }
+
+    public function testWithinFindsTheOuterSummaryOfOneWrittenOverAGroupList(): void
+    {
+        $averaged = new CallExpression('avg', [
+            new CallExpression('min', [new PropertyExpression(new VariableExpression('e'), 'line')]),
+        ]);
+
+        self::assertTrue(AggregateDetection::within($averaged, ['e']));
     }
 
     public function testWithinAnyFindsNoSummaryInNothingAtAll(): void
@@ -139,52 +174,69 @@ final class AggregateDetectionTest extends TestCase
         self::assertFalse(AggregateDetection::withinAny([]));
     }
 
-    /**
-     * @throws GqlException
-     */
     public function testWithinAnyFindsASummaryInAnyOneOfSeveralExpressions(): void
     {
-        $expressions = [ExpressionWorth::parse('p.name'), ExpressionWorth::parse('count(*)')];
-
-        self::assertTrue(AggregateDetection::withinAny($expressions));
+        self::assertTrue(AggregateDetection::withinAny([
+            new PropertyExpression(new VariableExpression('p'), 'name'),
+            new CallExpression('count', star: true),
+        ]));
     }
 
-    /**
-     * @throws GqlException
-     */
+    public function testWithinAnyPassesOverASummaryWrittenOverAGroupList(): void
+    {
+        $expressions = [
+            new CallExpression('size', [new VariableExpression('e')]),
+            new CallExpression('max', [new VariableExpression('e')]),
+        ];
+
+        self::assertFalse(AggregateDetection::withinAny($expressions, ['e']));
+    }
+
     public function testWithinCaseFindsNoSummaryInAChoiceThatReadsProperties(): void
     {
-        $written = ExpressionWorth::parse('CASE WHEN a THEN b END');
-        self::assertInstanceOf(CaseExpression::class, $written);
+        $choice = new CaseExpression(null, [new CaseBranch(new VariableExpression('a'), new VariableExpression('b'))]);
 
-        self::assertFalse(AggregateDetection::withinCase($written));
+        self::assertFalse(AggregateDetection::withinCase($choice));
+    }
+
+    public function testWithinCaseFindsASummaryInTheValueABranchTakes(): void
+    {
+        $choice = new CaseExpression(null, [new CaseBranch(new VariableExpression('a'), new CallExpression('count', star: true))]);
+
+        self::assertTrue(AggregateDetection::withinCase($choice));
     }
 
     public function testAlongTheRowReadsASummaryOfAGroupListAsWrittenAlongTheRow(): void
     {
-        $edges = new PropertyExpression(new VariableExpression('e'), 'line');
+        $earliest = new CallExpression('min', [new PropertyExpression(new VariableExpression('e'), 'line')]);
 
-        self::assertTrue(AggregateDetection::alongTheRow(new CallExpression('min', [$edges]), ['e']));
+        self::assertTrue(AggregateDetection::alongTheRow($earliest, ['e']));
     }
 
     public function testAlongTheRowReadsASummaryOfAnythingElseAsWrittenDownTheRows(): void
     {
-        $line = new PropertyExpression(new VariableExpression('p'), 'line');
+        $earliest = new CallExpression('min', [new PropertyExpression(new VariableExpression('p'), 'line')]);
 
-        self::assertFalse(AggregateDetection::alongTheRow(new CallExpression('min', [$line]), ['e']));
+        self::assertFalse(AggregateDetection::alongTheRow($earliest, ['e']));
     }
 
     public function testAlongTheRowReadsACountOfTheRowsAsWrittenDownThem(): void
     {
-        self::assertFalse(AggregateDetection::alongTheRow(new CallExpression('count', [], false, true), ['e']));
+        self::assertFalse(AggregateDetection::alongTheRow(new CallExpression('count', star: true), ['e']));
     }
 
     public function testAlongTheRowReadsASummaryOfSeveralThingsAsWrittenDownTheRows(): void
     {
-        $first = new VariableExpression('e');
-        $second = new VariableExpression('f');
+        $summary = new CallExpression('min', [new VariableExpression('e'), new VariableExpression('f')]);
 
-        self::assertFalse(AggregateDetection::alongTheRow(new CallExpression('min', [$first, $second]), ['e', 'f']));
+        self::assertFalse(AggregateDetection::alongTheRow($summary, ['e', 'f']));
+    }
+
+    public function testAlongTheRowReadsASummaryOfAComputedValueAsWrittenDownTheRows(): void
+    {
+        $summary = new CallExpression('min', [new CallExpression('size', [new VariableExpression('e')])]);
+
+        self::assertFalse(AggregateDetection::alongTheRow($summary, ['e']));
     }
 
     public function testRootOfReadsANameAsItself(): void
@@ -197,39 +249,8 @@ final class AggregateDetectionTest extends TestCase
         self::assertSame('e', AggregateDetection::rootOf(new PropertyExpression(new VariableExpression('e'), 'line')));
     }
 
-    public function testRootOfReadsAnIndexedValueAsWhateverItIsIndexedFrom(): void
-    {
-        $indexed = new IndexExpression(new VariableExpression('e'), new LiteralExpression(new IntegerDatum(0)));
-
-        self::assertSame('e', AggregateDetection::rootOf($indexed));
-    }
-
     public function testRootOfReadsAnythingElseAsComingFromNoSingleName(): void
     {
-        self::assertNull(AggregateDetection::rootOf(new CallExpression('count', [], false, true)));
-    }
-
-    /**
-     * @throws GqlException
-     */
-    public function testWithinPassesOverASummaryWrittenOverAGroupList(): void
-    {
-        self::assertFalse(AggregateDetection::within(ExpressionWorth::parse('min(e.line)'), ['e']));
-    }
-
-    /**
-     * @throws GqlException
-     */
-    public function testWithinStillFindsASummaryWrittenOverSomethingElse(): void
-    {
-        self::assertTrue(AggregateDetection::within(ExpressionWorth::parse('min(p.line)'), ['e']));
-    }
-
-    /**
-     * @throws GqlException
-     */
-    public function testWithinFindsTheOuterSummaryOfOneWrittenOverAGroupList(): void
-    {
-        self::assertTrue(AggregateDetection::within(ExpressionWorth::parse('avg(min(e.line))'), ['e']));
+        self::assertNull(AggregateDetection::rootOf(new CallExpression('count', star: true)));
     }
 }

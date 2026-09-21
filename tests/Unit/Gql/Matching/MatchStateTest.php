@@ -5,16 +5,10 @@ declare(strict_types=1);
 namespace Tests\Unit\Gql\Matching;
 
 use App\Gql\Binding\BindingRow;
-use App\Gql\Datum\BooleanDatum;
-use App\Gql\Datum\DatumKind;
-use App\Gql\Datum\DatumOrder;
 use App\Gql\Datum\EdgeDatum;
 use App\Gql\Datum\IntegerDatum;
-use App\Gql\Datum\ListDatum;
 use App\Gql\Datum\NodeDatum;
-use App\Gql\Datum\NullDatum;
 use App\Gql\Datum\PathDatum;
-use App\Gql\Datum\StringDatum;
 use App\Gql\Matching\MatchState;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
@@ -25,17 +19,11 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(MatchState::class)]
-#[UsesClass(BooleanDatum::class)]
-#[UsesClass(DatumKind::class)]
-#[UsesClass(DatumOrder::class)]
+#[UsesClass(BindingRow::class)]
 #[UsesClass(EdgeDatum::class)]
 #[UsesClass(IntegerDatum::class)]
-#[UsesClass(ListDatum::class)]
 #[UsesClass(NodeDatum::class)]
-#[UsesClass(NullDatum::class)]
 #[UsesClass(PathDatum::class)]
-#[UsesClass(StringDatum::class)]
-#[UsesClass(BindingRow::class)]
 #[Small]
 final class MatchStateTest extends TestCase
 {
@@ -49,37 +37,56 @@ final class MatchStateTest extends TestCase
         self::assertNull(MatchState::before(BindingRow::unit())->path);
     }
 
+    public function testBeforeKeepsWhatIsAlreadyBound(): void
+    {
+        self::assertEquals(new BindingRow(['n' => new IntegerDatum(1)]), MatchState::before(new BindingRow(['n' => new IntegerDatum(1)]))->row);
+    }
+
     public function testStartingAtBeginsAPathWhereTheAttemptStarted(): void
     {
         $started = MatchState::before(BindingRow::unit())->startingAt(new NodeDatum('a'));
 
-        self::assertSame(0, $started->path?->length());
+        self::assertEquals(new PathDatum([new NodeDatum('a')]), $started->path);
     }
 
     public function testStartingAtStandsAtTheSymbolTheAttemptStartedFrom(): void
     {
-        $started = MatchState::before(BindingRow::unit())->startingAt(new NodeDatum('a'));
+        $a = new NodeDatum('a');
 
-        self::assertSame('a', $started->current?->id);
+        self::assertSame($a, MatchState::before(BindingRow::unit())->startingAt($a)->current);
     }
 
     public function testAcrossMakesThePathOneLonger(): void
     {
         $crossed = MatchState::before(BindingRow::unit())
             ->startingAt(new NodeDatum('a'))
-            ->across(new EdgeDatum('e', [], [], 'a', 'b'), new NodeDatum('b'))
+            ->across(new EdgeDatum('a>b', ['call'], [], 'a', 'b'), new NodeDatum('b'))
         ;
 
-        self::assertSame(1, $crossed->path?->length());
+        self::assertEquals(
+            new PathDatum([new NodeDatum('a'), new EdgeDatum('a>b', ['call'], [], 'a', 'b'), new NodeDatum('b')]),
+            $crossed->path,
+        );
+    }
+
+    public function testAcrossStandsAtTheSymbolTheRelationLedTo(): void
+    {
+        $b = new NodeDatum('b');
+        $crossed = MatchState::before(BindingRow::unit())
+            ->startingAt(new NodeDatum('a'))
+            ->across(new EdgeDatum('a>b', ['call'], [], 'a', 'b'), $b)
+        ;
+
+        self::assertSame($b, $crossed->current);
     }
 
     public function testAcrossStartsAPathWhenTheAttemptHadNotStartedOne(): void
     {
         $crossed = MatchState::before(BindingRow::unit())
-            ->across(new EdgeDatum('e', [], [], 'a', 'b'), new NodeDatum('b'))
+            ->across(new EdgeDatum('a>b', ['call'], [], 'a', 'b'), new NodeDatum('b'))
         ;
 
-        self::assertSame(0, $crossed->path?->length());
+        self::assertEquals(new PathDatum([new NodeDatum('b')]), $crossed->path);
     }
 
     public function testBindLeavesEverythingElseAboutTheAttemptAlone(): void
@@ -93,22 +100,22 @@ final class MatchStateTest extends TestCase
     {
         $bound = MatchState::before(BindingRow::unit())->bind('n', new IntegerDatum(1));
 
-        self::assertSame('1', $bound->row->value('n')->toText());
+        self::assertEquals(new BindingRow(['n' => new IntegerDatum(1)]), $bound->row);
     }
 
     public function testCrossedReportsARelationTheAttemptHasNotCrossed(): void
     {
-        self::assertFalse(MatchState::before(BindingRow::unit())->crossed('e'));
+        self::assertFalse(MatchState::before(BindingRow::unit())->crossed('a>b'));
     }
 
     public function testCrossedReportsARelationTheAttemptHasCrossed(): void
     {
         $crossed = MatchState::before(BindingRow::unit())
             ->startingAt(new NodeDatum('a'))
-            ->across(new EdgeDatum('e', [], [], 'a', 'b'), new NodeDatum('b'))
+            ->across(new EdgeDatum('a>b', ['call'], [], 'a', 'b'), new NodeDatum('b'))
         ;
 
-        self::assertTrue($crossed->crossed('e'));
+        self::assertTrue($crossed->crossed('a>b'));
     }
 
     public function testMetReportsTheSymbolTheAttemptStartedFrom(): void
@@ -116,6 +123,16 @@ final class MatchStateTest extends TestCase
         $started = MatchState::before(BindingRow::unit())->startingAt(new NodeDatum('a'));
 
         self::assertTrue($started->met('a'));
+    }
+
+    public function testMetReportsASymbolTheAttemptHasReached(): void
+    {
+        $crossed = MatchState::before(BindingRow::unit())
+            ->startingAt(new NodeDatum('a'))
+            ->across(new EdgeDatum('a>b', ['call'], [], 'a', 'b'), new NodeDatum('b'))
+        ;
+
+        self::assertTrue($crossed->met('b'));
     }
 
     public function testMetReportsASymbolTheAttemptHasNotReached(): void
@@ -136,9 +153,23 @@ final class MatchStateTest extends TestCase
     {
         $crossed = MatchState::before(BindingRow::unit())
             ->startingAt(new NodeDatum('a'))
-            ->across(new EdgeDatum('e', [], [], 'a', 'b'), new NodeDatum('b'))
+            ->across(new EdgeDatum('a>b', ['call'], [], 'a', 'b'), new NodeDatum('b'))
         ;
 
         self::assertFalse($crossed->startedAt('b'));
+    }
+
+    public function testWithRowReplacesWhatTheAttemptHasBound(): void
+    {
+        $state = MatchState::before(new BindingRow(['n' => new NodeDatum('old')]));
+
+        self::assertEquals(new BindingRow(['m' => new NodeDatum('new')]), $state->withRow(new BindingRow(['m' => new NodeDatum('new')]))->row);
+    }
+
+    public function testWithRowKeepsThePathTheAttemptHasWalked(): void
+    {
+        $state = MatchState::before(BindingRow::unit())->startingAt(new NodeDatum('a'));
+
+        self::assertEquals(new PathDatum([new NodeDatum('a')]), $state->withRow(BindingRow::unit())->path);
     }
 }

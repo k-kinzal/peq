@@ -7,10 +7,11 @@ namespace App\Gql\Syntax\Expression;
 /**
  * An operator written before the one value it acts on.
  *
- * The null tests are here rather than among the comparisons because that is what they
- * are: `IS NULL` asks about one value and cannot be undecided, which is exactly what
- * makes it the way out of three-valued logic. Writing it as a comparison against null
- * would make it inherit the undecidability it exists to escape.
+ * The null tests and the truth-value tests are here rather than among the comparisons
+ * because that is what they are: `IS NULL` and `IS UNKNOWN` ask about one value and
+ * cannot be undecided, which is exactly what makes them the way out of three-valued
+ * logic. Writing them as comparisons would make them inherit the undecidability they
+ * exist to escape.
  */
 enum UnaryOperator
 {
@@ -28,6 +29,24 @@ enum UnaryOperator
 
     /** Whether the value is present, which is never itself undecided */
     case IsNotNull;
+
+    /** Whether a truth value is true, which is never undecided */
+    case IsTrue;
+
+    /** Whether a truth value is anything but true */
+    case IsNotTrue;
+
+    /** Whether a truth value is false */
+    case IsFalse;
+
+    /** Whether a truth value is anything but false */
+    case IsNotFalse;
+
+    /** Whether a truth value is the undecided one */
+    case IsUnknown;
+
+    /** Whether a truth value is decided either way */
+    case IsNotUnknown;
 
     /**
      * Writes the operator the way a query writes it.
@@ -47,6 +66,12 @@ enum UnaryOperator
             self::Identity => '+',
             self::IsNull => 'IS NULL',
             self::IsNotNull => 'IS NOT NULL',
+            self::IsTrue => 'IS TRUE',
+            self::IsNotTrue => 'IS NOT TRUE',
+            self::IsFalse => 'IS FALSE',
+            self::IsNotFalse => 'IS NOT FALSE',
+            self::IsUnknown => 'IS UNKNOWN',
+            self::IsNotUnknown => 'IS NOT UNKNOWN',
         };
     }
 }

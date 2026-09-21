@@ -101,17 +101,19 @@ final class PatternVariables
      *
      * @return list<string> The names, in the order they are written
      */
-    public static function repeatedIn(array $terms): array
+    public static function repeatedIn(array $terms, bool $repeating = false): array
     {
         $names = [];
         foreach ($terms as $term) {
             if ($term instanceof GroupPattern) {
-                array_push($names, ...self::repeatedIn($term->terms));
+                array_push($names, ...self::repeatedIn($term->terms, $repeating || $term->quantifier !== null));
 
                 continue;
             }
-            if ($term instanceof EdgePattern && $term->variable !== null && $term->quantifier !== null) {
-                $names[] = $term->variable;
+            $variable = $term instanceof NodePattern || $term instanceof EdgePattern ? $term->variable : null;
+            $quantified = $repeating || ($term instanceof EdgePattern && $term->quantifier !== null);
+            if ($variable !== null && $quantified) {
+                $names[] = $variable;
             }
         }
 

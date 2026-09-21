@@ -73,15 +73,61 @@ final class DatumIdentity
      */
     public static function number(Datum $value): string
     {
+        if ($value instanceof DecimalDatum) {
+            return self::plain($value->toText());
+        }
         $number = DatumOrder::numberOf($value);
-        if (is_float($number) && is_nan($number)) {
+        if (is_int($number)) {
+            return (string) $number;
+        }
+        if (is_nan($number)) {
             return 'NAN';
         }
-        if (is_float($number) && floor($number) === $number && is_finite($number)) {
-            return number_format($number, 0, '.', '');
+        if (is_infinite($number)) {
+            return $number > 0 ? 'INF' : '-INF';
         }
 
-        return (string) $number;
+        return self::plain(var_export($number, true));
+    }
+
+    /**
+     * Writes a number without an exponent and without trailing zeros.
+     *
+     * A float is keyed by the shortest decimal that reads back as the same float —
+     * what PHP writes for it — and an exact number by its digits, so a float and an
+     * exact number that `=` finds equal are grouped together, and `0.1 + 0.2` as a
+     * float is not grouped with `0.3`, which `=` finds different.
+     *
+     * @param string $written The number, as `1.5E-7` or `2.50` is written
+     *
+     * @example An exponent is written out
+     *     \App\Gql\Datum\DatumIdentity::plain('1.5E-7') // => '0.00000015'
+     * @example Trailing zeros and a bare point are left out
+     *     \App\Gql\Datum\DatumIdentity::plain('3.0') // => '3'
+     * @example Negative zero is zero
+     *     \App\Gql\Datum\DatumIdentity::plain('-0.0') // => '0'
+     *
+     * @return string The number, written plainly
+     */
+    public static function plain(string $written): string
+    {
+        $sign = str_starts_with($written, '-') ? '-' : '';
+        $parts = explode('E', strtoupper(ltrim($written, '-+')));
+        $mantissa = $parts[0];
+        $exponent = $parts[1] ?? '0';
+        [$whole, $fraction] = explode('.', $mantissa.'.');
+        $digits = $whole.$fraction;
+        $point = strlen($whole) + (int) $exponent;
+        if ($point <= 0) {
+            $digits = str_repeat('0', 1 - $point).$digits;
+            $point = 1;
+        }
+        $digits = str_pad($digits, $point, '0');
+        $wholePart = ltrim(substr($digits, 0, $point), '0');
+        $fractionPart = rtrim(substr($digits, $point), '0');
+        $plain = ($wholePart === '' ? '0' : $wholePart).($fractionPart === '' ? '' : '.'.$fractionPart);
+
+        return $plain === '0' ? '0' : $sign.$plain;
     }
 
     /**

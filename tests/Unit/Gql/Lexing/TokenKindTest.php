@@ -24,6 +24,7 @@ final class TokenKindTest extends TestCase
                 TokenKind::QuotedName,
                 TokenKind::Integer,
                 TokenKind::Decimal,
+                TokenKind::Approximate,
                 TokenKind::Text,
                 TokenKind::Symbol,
                 TokenKind::End,

@@ -10,99 +10,52 @@ use App\Gql\Datum\DatumKind;
 use App\Gql\Datum\DatumOrder;
 use App\Gql\Datum\EdgeDatum;
 use App\Gql\Datum\IntegerDatum;
-use App\Gql\Datum\ListDatum;
 use App\Gql\Datum\NodeDatum;
 use App\Gql\Datum\NullDatum;
-use App\Gql\Datum\PathDatum;
 use App\Gql\Datum\StringDatum;
 use App\Gql\Evaluation\BinaryOperation;
 use App\Gql\Evaluation\Comparison;
 use App\Gql\Evaluation\ExpressionEvaluation;
 use App\Gql\Evaluation\Logic;
 use App\Gql\GqlException;
-use App\Gql\Lexing\Lexer;
-use App\Gql\Lexing\QuotedScanner;
-use App\Gql\Lexing\SourceCursor;
-use App\Gql\Lexing\Token;
-use App\Gql\Lexing\TokenKind;
-use App\Gql\Lexing\TokenList;
 use App\Gql\Matching\ElementMatching;
-use App\Gql\Parsing\ExpressionParser;
-use App\Gql\Parsing\LabelParser;
-use App\Gql\Parsing\OperandParser;
-use App\Gql\Parsing\PatternParser;
-use App\Gql\Parsing\TokenReader;
 use App\Gql\StatusCode;
 use App\Gql\Syntax\Expression\BinaryExpression;
 use App\Gql\Syntax\Expression\BinaryOperator;
 use App\Gql\Syntax\Expression\LiteralExpression;
 use App\Gql\Syntax\Expression\PropertyExpression;
 use App\Gql\Syntax\Expression\VariableExpression;
-use App\Gql\Syntax\Pattern\EdgeDirection;
-use App\Gql\Syntax\Pattern\EdgePattern;
 use App\Gql\Syntax\Pattern\ElementFilter;
-use App\Gql\Syntax\Pattern\GraphPattern;
-use App\Gql\Syntax\Pattern\GroupPattern;
-use App\Gql\Syntax\Pattern\LabelOperator;
-use App\Gql\Syntax\Pattern\LabelPattern;
-use App\Gql\Syntax\Pattern\NodePattern;
-use App\Gql\Syntax\Pattern\PathMode;
-use App\Gql\Syntax\Pattern\PathPattern;
-use App\Gql\Syntax\Pattern\Quantifier;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Gql\MatchedPattern;
 
 /**
  * @internal
  */
 #[CoversClass(ElementMatching::class)]
+#[UsesClass(BindingRow::class)]
 #[UsesClass(BooleanDatum::class)]
 #[UsesClass(DatumKind::class)]
 #[UsesClass(DatumOrder::class)]
 #[UsesClass(EdgeDatum::class)]
 #[UsesClass(IntegerDatum::class)]
-#[UsesClass(ListDatum::class)]
 #[UsesClass(NodeDatum::class)]
 #[UsesClass(NullDatum::class)]
-#[UsesClass(PathDatum::class)]
 #[UsesClass(StringDatum::class)]
+#[UsesClass(BinaryOperation::class)]
+#[UsesClass(Comparison::class)]
+#[UsesClass(ExpressionEvaluation::class)]
+#[UsesClass(Logic::class)]
 #[UsesClass(GqlException::class)]
 #[UsesClass(StatusCode::class)]
-#[UsesClass(Lexer::class)]
-#[UsesClass(QuotedScanner::class)]
-#[UsesClass(SourceCursor::class)]
-#[UsesClass(Token::class)]
-#[UsesClass(TokenKind::class)]
-#[UsesClass(TokenList::class)]
-#[UsesClass(ExpressionParser::class)]
-#[UsesClass(LabelParser::class)]
-#[UsesClass(OperandParser::class)]
-#[UsesClass(PatternParser::class)]
-#[UsesClass(TokenReader::class)]
 #[UsesClass(BinaryExpression::class)]
 #[UsesClass(BinaryOperator::class)]
 #[UsesClass(LiteralExpression::class)]
 #[UsesClass(PropertyExpression::class)]
 #[UsesClass(VariableExpression::class)]
-#[UsesClass(EdgeDirection::class)]
-#[UsesClass(EdgePattern::class)]
 #[UsesClass(ElementFilter::class)]
-#[UsesClass(GraphPattern::class)]
-#[UsesClass(GroupPattern::class)]
-#[UsesClass(LabelOperator::class)]
-#[UsesClass(LabelPattern::class)]
-#[UsesClass(NodePattern::class)]
-#[UsesClass(PathMode::class)]
-#[UsesClass(PathPattern::class)]
-#[UsesClass(Quantifier::class)]
-#[UsesClass(BindingRow::class)]
-#[UsesClass(ExpressionEvaluation::class)]
-#[UsesClass(BinaryOperation::class)]
-#[UsesClass(Comparison::class)]
-#[UsesClass(Logic::class)]
 #[Small]
 final class ElementMatchingTest extends TestCase
 {
@@ -111,7 +64,10 @@ final class ElementMatchingTest extends TestCase
      */
     public function testSatisfiesAcceptsASymbolCarryingThePropertyAPatternAskedFor(): void
     {
-        self::assertSame('p=Store::get', MatchedPattern::of("(p:Method {visibility: 'protected'})"));
+        $get = new NodeDatum('get', ['Method'], ['visibility' => new StringDatum('protected')]);
+        $filter = new ElementFilter(['visibility' => new LiteralExpression(new StringDatum('protected'))]);
+
+        self::assertTrue(ElementMatching::satisfies($get, 'p', $filter, BindingRow::unit(), new ExpressionEvaluation()));
     }
 
     /**
@@ -119,7 +75,21 @@ final class ElementMatchingTest extends TestCase
      */
     public function testSatisfiesRefusesASymbolCarryingADifferentValueForIt(): void
     {
-        self::assertSame('', MatchedPattern::of("(p:Method {visibility: 'private'})"));
+        $get = new NodeDatum('get', ['Method'], ['visibility' => new StringDatum('protected')]);
+        $filter = new ElementFilter(['visibility' => new LiteralExpression(new StringDatum('private'))]);
+
+        self::assertFalse(ElementMatching::satisfies($get, 'p', $filter, BindingRow::unit(), new ExpressionEvaluation()));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testSatisfiesRefusesASymbolThatDoesNotCarryThePropertyAtAll(): void
+    {
+        $missing = new NodeDatum('missing', ['Unknown']);
+        $filter = new ElementFilter(['visibility' => new LiteralExpression(new StringDatum('protected'))]);
+
+        self::assertFalse(ElementMatching::satisfies($missing, 'p', $filter, BindingRow::unit(), new ExpressionEvaluation()));
     }
 
     /**
@@ -127,7 +97,29 @@ final class ElementMatchingTest extends TestCase
      */
     public function testSatisfiesAcceptsASymbolThePredicateHoldsOf(): void
     {
-        self::assertSame('p=Controller::store', MatchedPattern::of('(p:Method WHERE p.line > 20)'));
+        $store = new NodeDatum('store', ['Method'], ['line' => new IntegerDatum(30)]);
+        $laterThanLineTwenty = new BinaryExpression(
+            BinaryOperator::Greater,
+            new PropertyExpression(new VariableExpression('p'), 'line'),
+            new LiteralExpression(new IntegerDatum(20)),
+        );
+
+        self::assertTrue(ElementMatching::satisfies($store, 'p', new ElementFilter([], $laterThanLineTwenty), BindingRow::unit(), new ExpressionEvaluation()));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testSatisfiesRefusesASymbolThePredicateIsFalseOf(): void
+    {
+        $get = new NodeDatum('get', ['Method'], ['line' => new IntegerDatum(8)]);
+        $laterThanLineTwenty = new BinaryExpression(
+            BinaryOperator::Greater,
+            new PropertyExpression(new VariableExpression('p'), 'line'),
+            new LiteralExpression(new IntegerDatum(20)),
+        );
+
+        self::assertFalse(ElementMatching::satisfies($get, 'p', new ElementFilter([], $laterThanLineTwenty), BindingRow::unit(), new ExpressionEvaluation()));
     }
 
     /**
@@ -135,7 +127,30 @@ final class ElementMatchingTest extends TestCase
      */
     public function testSatisfiesRefusesASymbolThePredicateCannotBeDecidedFor(): void
     {
-        self::assertSame('', MatchedPattern::of('(p:Unresolved WHERE p.line > 0)'));
+        $missing = new NodeDatum('missing', ['Unknown']);
+        $laterThanLineZero = new BinaryExpression(
+            BinaryOperator::Greater,
+            new PropertyExpression(new VariableExpression('p'), 'line'),
+            new LiteralExpression(new IntegerDatum(0)),
+        );
+
+        self::assertFalse(ElementMatching::satisfies($missing, 'p', new ElementFilter([], $laterThanLineZero), BindingRow::unit(), new ExpressionEvaluation()));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testSatisfiesLetsThePredicateReadWhatIsAlreadyBound(): void
+    {
+        $store = new NodeDatum('store', ['Method'], ['line' => new IntegerDatum(30)]);
+        $laterThanShow = new BinaryExpression(
+            BinaryOperator::Greater,
+            new PropertyExpression(new VariableExpression('p'), 'line'),
+            new PropertyExpression(new VariableExpression('show'), 'line'),
+        );
+        $row = new BindingRow(['show' => new NodeDatum('show', ['Method'], ['line' => new IntegerDatum(20)])]);
+
+        self::assertTrue(ElementMatching::satisfies($store, 'p', new ElementFilter([], $laterThanShow), $row, new ExpressionEvaluation()));
     }
 
     /**
@@ -143,7 +158,7 @@ final class ElementMatchingTest extends TestCase
      */
     public function testSatisfiesAcceptsAnyElementWhenThePatternRequiresNothingBeyondItsLabels(): void
     {
-        self::assertSame('p=Missing', MatchedPattern::of('(p:Unresolved)'));
+        self::assertTrue(ElementMatching::satisfies(new NodeDatum('missing'), 'p', new ElementFilter(), BindingRow::unit(), new ExpressionEvaluation()));
     }
 
     /**
@@ -151,40 +166,82 @@ final class ElementMatchingTest extends TestCase
      */
     public function testSatisfiesNarrowsARelationByThePredicateWrittenOnIt(): void
     {
-        self::assertSame(
-            'a=Invoice::total e=Invoice::total -[methodCall]-> Store::get b=Store::get',
-            MatchedPattern::of('(a)-[e:methodCall WHERE e.line < 20]->(b)'),
+        $call = new EdgeDatum('total>get', ['call'], ['line' => new IntegerDatum(14)], 'total', 'get');
+        $beforeLineTwenty = new BinaryExpression(
+            BinaryOperator::Less,
+            new PropertyExpression(new VariableExpression('e'), 'line'),
+            new LiteralExpression(new IntegerDatum(20)),
         );
+
+        self::assertTrue(ElementMatching::satisfies($call, 'e', new ElementFilter([], $beforeLineTwenty), BindingRow::unit(), new ExpressionEvaluation()));
     }
 
     /**
      * @throws GqlException
      */
-    public function testAgreesLetsANameWrittenTwiceMeanTheSameElement(): void
+    public function testSatisfiesReportsAPredicateComparingValuesOfUnrelatedKinds(): void
     {
-        self::assertSame('', MatchedPattern::of('(p:Method)-[:methodCall]->(p)'));
+        $store = new NodeDatum('store', ['Method'], ['line' => new IntegerDatum(30)]);
+        $laterThanAWord = new BinaryExpression(
+            BinaryOperator::Greater,
+            new PropertyExpression(new VariableExpression('p'), 'line'),
+            new LiteralExpression(new StringDatum('twenty')),
+        );
+
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('[22G04] error: data exception - values not comparable: INT64 and STRING cannot be compared');
+
+        ElementMatching::satisfies($store, 'p', new ElementFilter([], $laterThanAWord), BindingRow::unit(), new ExpressionEvaluation());
     }
 
     /**
      * @throws GqlException
      */
-    public function testAgreesLetsAPatternJoinToWhatAnEarlierClauseBound(): void
-    {
-        $bound = ['a' => MatchedPattern::graph()->node('App\Http\Controller::show')];
-        assert($bound['a'] !== null);
-
-        self::assertSame('a=Controller::show b=Invoice::total', MatchedPattern::of('(a)-[:methodCall]->(b)', $bound));
-    }
-
     public function testAgreesAcceptsAnythingForANameNothingBound(): void
     {
-        self::assertSame(true, ElementMatching::agrees('p', new NodeDatum('a'), BindingRow::unit()));
+        self::assertTrue(ElementMatching::agrees('p', new NodeDatum('a'), BindingRow::unit()));
     }
 
+    /**
+     * @throws GqlException
+     */
+    public function testAgreesAcceptsAnythingWhenThePatternNamesNothing(): void
+    {
+        self::assertTrue(ElementMatching::agrees(null, new NodeDatum('a'), new BindingRow(['p' => new NodeDatum('b')])));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testAgreesAcceptsTheElementTheNameIsBoundTo(): void
+    {
+        self::assertTrue(ElementMatching::agrees('p', new NodeDatum('a'), new BindingRow(['p' => new NodeDatum('a')])));
+    }
+
+    /**
+     * @throws GqlException
+     */
     public function testAgreesRefusesAnElementThatIsNotWhatTheNameIsBoundTo(): void
     {
-        $row = BindingRow::unit()->with('p', new NodeDatum('a'));
+        self::assertFalse(ElementMatching::agrees('p', new NodeDatum('b'), new BindingRow(['p' => new NodeDatum('a')])));
+    }
 
-        self::assertFalse(ElementMatching::agrees('p', new NodeDatum('b'), $row));
+    /**
+     * @throws GqlException
+     */
+    public function testAgreesRefusesAnElementWhereTheNameIsBoundToNothing(): void
+    {
+        self::assertFalse(ElementMatching::agrees('p', new NodeDatum('a'), new BindingRow(['p' => new NullDatum()])));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testAgreesReportsANameBoundToAValueThatCannotBeComparedWithAnElement(): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('[22G04] error: data exception - values not comparable: INT64 and NODE cannot be compared');
+
+        ElementMatching::agrees('p', new NodeDatum('a'), new BindingRow(['p' => new IntegerDatum(1)]));
     }
 }

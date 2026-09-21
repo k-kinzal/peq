@@ -12,7 +12,6 @@ use App\Gql\Syntax\Expression\BinaryOperator;
 use App\Gql\Syntax\Expression\CallExpression;
 use App\Gql\Syntax\Expression\CaseBranch;
 use App\Gql\Syntax\Expression\CaseExpression;
-use App\Gql\Syntax\Expression\IndexExpression;
 use App\Gql\Syntax\Expression\ListExpression;
 use App\Gql\Syntax\Expression\LiteralExpression;
 use App\Gql\Syntax\Expression\PropertyExpression;
@@ -36,7 +35,6 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(CallExpression::class)]
 #[UsesClass(CaseBranch::class)]
 #[UsesClass(CaseExpression::class)]
-#[UsesClass(IndexExpression::class)]
 #[UsesClass(ListExpression::class)]
 #[UsesClass(LiteralExpression::class)]
 #[UsesClass(PropertyExpression::class)]
@@ -65,8 +63,6 @@ final class ExpressionTest extends TestCase
         yield 'a name' => [$value, VariableExpression::class];
 
         yield 'a property' => [new PropertyExpression($value, 'name'), PropertyExpression::class];
-
-        yield 'an index' => [new IndexExpression($value, $zero), IndexExpression::class];
 
         yield 'an operator over one value' => [new UnaryExpression(UnaryOperator::Not, $value), UnaryExpression::class];
 

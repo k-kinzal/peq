@@ -17,36 +17,27 @@ use PHPUnit\Framework\TestCase;
 #[Small]
 final class BinaryOperatorTest extends TestCase
 {
-    #[DataProvider('providerOperatorsAndHowTightlyTheyBind')]
-    public function testBindingRanksTheOperatorTheWayGqlRanksIt(BinaryOperator $tighter, BinaryOperator $looser): void
+    public function testTheOperatorsWrittenBetweenTwoValuesAreTheOnlyOnesThereAre(): void
     {
-        self::assertLessThan($looser->binding(), $tighter->binding());
-    }
-
-    /**
-     * @return iterable<string, array{BinaryOperator, BinaryOperator}>
-     */
-    public static function providerOperatorsAndHowTightlyTheyBind(): iterable
-    {
-        yield 'multiplication before addition' => [BinaryOperator::Multiply, BinaryOperator::Add];
-
-        yield 'addition before comparison' => [BinaryOperator::Add, BinaryOperator::Equal];
-
-        yield 'comparison before conjunction' => [BinaryOperator::Equal, BinaryOperator::And];
-
-        yield 'conjunction before exclusive disjunction' => [BinaryOperator::And, BinaryOperator::Xor];
-
-        yield 'exclusive disjunction before disjunction' => [BinaryOperator::Xor, BinaryOperator::Or];
-    }
-
-    public function testBindingPutsConcatenationWithAdditionAsSqlDoes(): void
-    {
-        self::assertSame(BinaryOperator::Add->binding(), BinaryOperator::Concatenate->binding());
-    }
-
-    public function testBindingPutsEveryComparisonAtTheSameStrength(): void
-    {
-        self::assertSame(BinaryOperator::Equal->binding(), BinaryOperator::In->binding());
+        self::assertSame(
+            [
+                BinaryOperator::Add,
+                BinaryOperator::Subtract,
+                BinaryOperator::Multiply,
+                BinaryOperator::Divide,
+                BinaryOperator::Concatenate,
+                BinaryOperator::Equal,
+                BinaryOperator::NotEqual,
+                BinaryOperator::Less,
+                BinaryOperator::LessOrEqual,
+                BinaryOperator::Greater,
+                BinaryOperator::GreaterOrEqual,
+                BinaryOperator::And,
+                BinaryOperator::Xor,
+                BinaryOperator::Or,
+            ],
+            BinaryOperator::cases(),
+        );
     }
 
     #[DataProvider('providerOperatorsAndHowTheyAreWritten')]
@@ -82,21 +73,10 @@ final class BinaryOperatorTest extends TestCase
 
         yield 'the other ordering or equality' => [BinaryOperator::GreaterOrEqual, '>='];
 
-        yield 'membership' => [BinaryOperator::In, 'IN'];
-
-        yield 'refused membership' => [BinaryOperator::NotIn, 'NOT IN'];
-
         yield 'conjunction' => [BinaryOperator::And, 'AND'];
 
         yield 'exclusive disjunction' => [BinaryOperator::Xor, 'XOR'];
 
         yield 'disjunction' => [BinaryOperator::Or, 'OR'];
-    }
-
-    public function testEveryOperatorIsWrittenAsSomething(): void
-    {
-        $written = array_map(static fn (BinaryOperator $operator): string => $operator->spelling(), BinaryOperator::cases());
-
-        self::assertNotContains('', $written);
     }
 }

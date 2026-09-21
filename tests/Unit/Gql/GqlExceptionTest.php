@@ -71,12 +71,30 @@ final class GqlExceptionTest extends TestCase
         );
     }
 
+    public function testDescribeSaysWhereAConditionHappenedEvenWithNothingToShowThere(): void
+    {
+        self::assertSame(
+            '[42001] error: syntax error or access rule violation - invalid syntax: expected a pattern at line 3, column 7',
+            GqlException::describe(StatusCode::SyntaxError, 'expected a pattern', 3, 7),
+        );
+    }
+
     public function testTheMessageOfAConditionIsHowItIsDescribed(): void
     {
         $reported = GqlException::syntax('expected a pattern', 3, 7, '"RETRUN"');
 
         self::assertSame(
-            GqlException::describe(StatusCode::SyntaxError, 'expected a pattern', 3, 7, '"RETRUN"'),
+            '[42001] error: syntax error or access rule violation - invalid syntax: expected a pattern at line 3, column 7 (found "RETRUN")',
+            $reported->getMessage(),
+        );
+    }
+
+    public function testTheMessageOfAConditionAboutTheWholeQueryNamesNoPlace(): void
+    {
+        $reported = GqlException::because(StatusCode::ValuesNotComparable, 'INT64 and STRING cannot be compared');
+
+        self::assertSame(
+            '[22G04] error: data exception - values not comparable: INT64 and STRING cannot be compared',
             $reported->getMessage(),
         );
     }

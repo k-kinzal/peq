@@ -9,7 +9,6 @@ use App\Gql\Syntax\Expression;
 use App\Gql\Syntax\Expression\BinaryExpression;
 use App\Gql\Syntax\Expression\CallExpression;
 use App\Gql\Syntax\Expression\CaseExpression;
-use App\Gql\Syntax\Expression\IndexExpression;
 use App\Gql\Syntax\Expression\ListExpression;
 use App\Gql\Syntax\Expression\PropertyExpression;
 use App\Gql\Syntax\Expression\UnaryExpression;
@@ -81,9 +80,6 @@ final class AggregateDetection
         if ($expression instanceof PropertyExpression) {
             return self::within($expression->subject, $groupLists);
         }
-        if ($expression instanceof IndexExpression) {
-            return self::within($expression->subject, $groupLists) || self::within($expression->index, $groupLists);
-        }
         if ($expression instanceof ListExpression) {
             return self::withinAny($expression->items, $groupLists);
         }
@@ -142,9 +138,6 @@ final class AggregateDetection
             return $expression->name;
         }
         if ($expression instanceof PropertyExpression) {
-            return self::rootOf($expression->subject);
-        }
-        if ($expression instanceof IndexExpression) {
             return self::rootOf($expression->subject);
         }
 

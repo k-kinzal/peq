@@ -170,10 +170,10 @@ final class ConformanceContext implements Context
      * States that everything the register settles is something the standard left open.
      *
      * Clause 24.5 asks an implementation to define every implementation-defined item
-     * rather than to decide freely: `--hops` capping an unbounded quantifier looks like
-     * peq answering a narrower question than the one asked until IL018 says the cap is
-     * the implementation's to choose. So the register names the code, and the code is
-     * looked up.
+     * rather than to decide freely: `--hops` refusing `{1,20}` looks like peq declining
+     * a query GQL allows until IL018 says the largest upper bound a quantifier may be
+     * written with is the implementation's to choose. So the register names the code,
+     * and the code is looked up.
      */
     #[Then('every item the register settles is one ISO\/IEC 39075 leaves to an implementation')]
     public function everyItemSettledIsOneTheStandardLeavesOpen(): void
@@ -256,6 +256,53 @@ final class ConformanceContext implements Context
                 sprintf('%s is not the file ISO publishes at %s.', $name, $artifact['url']),
             );
         }
+    }
+
+    /**
+     * States that every item the register settles is shown settled that way by a scenario.
+     *
+     * An item settled in a table and nowhere else is a sentence; an item a scenario
+     * cites is behaviour somebody can watch. So the register is compared with the
+     * implementation-defined items the scenarios of this suite cite, both ways.
+     */
+    #[Then('every item the register settles is stated by a scenario of this suite')]
+    public function everyItemSettledIsStatedByAScenario(): void
+    {
+        $unstated = array_values(array_diff(array_keys($this->defined), SuiteSources::cited('implementation-defined.xml')));
+
+        Assert::assertSame([], $unstated, 'The register settles items no scenario of this suite shows settled.');
+    }
+
+    /**
+     * States that no scenario shows an item settled that the register does not settle.
+     */
+    #[Then('no scenario states an item the register does not settle')]
+    public function noScenarioStatesAnItemTheRegisterDoesNotSettle(): void
+    {
+        $unsettled = array_values(array_diff(SuiteSources::cited('implementation-defined.xml'), array_keys($this->defined)));
+
+        Assert::assertSame([], $unsettled, 'Scenarios cite implementation-defined items the register does not settle.');
+    }
+
+    /**
+     * States that every scenario says where what it states is published.
+     *
+     * A scenario nobody can trace to a published text is a rule somebody made up, and
+     * the way to find one is to ask each scenario for its source and look the source
+     * up: a subclause in the standard's table of contents, a production in its grammar,
+     * a code in its artifacts, a section of the editors' paper.
+     */
+    #[Then('every scenario cites where what it states is published')]
+    public function everyScenarioCitesWhereWhatItStatesIsPublished(): void
+    {
+        $faults = [];
+        foreach (SuiteSources::scenarios() as $scenario) {
+            foreach (SuiteSources::faults($scenario) as $fault) {
+                $faults[] = sprintf('%s "%s" %s', $scenario['where'], $scenario['title'], $fault);
+            }
+        }
+
+        Assert::assertSame([], $faults, 'Scenarios state something without citing where it is published.');
     }
 
     /**

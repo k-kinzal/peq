@@ -16,6 +16,12 @@ namespace App\Gql\Syntax\Pattern;
  * A pattern written undirected matches an edge twice when both its ends match the
  * same node pattern, which is GQL's rule and is worth knowing: a self-call shows up
  * once in each direction.
+ *
+ * GQL writes seven edge patterns, and three of them — `~[ ]~`, `<~[ ]~` and `~[ ]~>` —
+ * are about undirected edges. peq reads source code, and a relation in source code
+ * always points one way, so the graph has no undirected edge: `~[ ]~` matches nothing,
+ * and the two mixed forms match exactly what their directed half does. The remaining
+ * two, `-[ ]-` and `<-[ ]->`, differ only on undirected edges, so both are `Either`.
  */
 enum EdgeDirection
 {
@@ -27,6 +33,9 @@ enum EdgeDirection
 
     /** The pattern crosses the edge whichever way it points */
     case Either;
+
+    /** The pattern crosses only an edge that points neither way */
+    case Undirected;
 
     /**
      * Writes the direction the way a pattern writes it, around a given label.
@@ -48,6 +57,7 @@ enum EdgeDirection
             self::Along => '-['.$inside.']->',
             self::Against => '<-['.$inside.']-',
             self::Either => '-['.$inside.']-',
+            self::Undirected => '~['.$inside.']~',
         };
     }
 }

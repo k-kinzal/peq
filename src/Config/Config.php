@@ -21,12 +21,13 @@ use App\Analyzer\Graph\Direction;
 final class Config
 {
     /**
-     * How far a query's repetition goes when it writes no upper bound of its own.
+     * The largest upper bound a query's quantifier may be written with.
      *
-     * A pattern like `-[:call]->{1,}` asks for everything reachable, and on a graph
-     * with cycles that is bounded only by the path mode — which makes it finite and
-     * not necessarily small. Ten steps is far enough to answer the questions a reader
-     * asks in practice and near enough to answer them while they wait.
+     * GQL leaves this to the implementation (IL018). A walk may revisit what it has
+     * crossed, so `-[e]->{1,20}` on a graph with cycles is a great deal of work for a
+     * question a reader rarely means; ten steps is far enough for the questions asked
+     * in practice. A quantifier with no upper bound is not limited by this, because GQL
+     * allows one only under a restrictor that keeps its matches finite.
      */
     public const HOPS = 10;
 
@@ -38,7 +39,7 @@ final class Config
      * @param list<string>        $includes  File path patterns to include in analysis
      * @param list<string>        $excludes  File path patterns to exclude from analysis
      * @param AnalyzerKind        $analyzer  Which analyzer builds the graph
-     * @param int                 $hops      How far a query's repetition goes when it writes no upper bound
+     * @param int                 $hops      The largest upper bound a query's quantifier may be written with
      * @param DebugAnalyzerConfig $debug     Settings for the synthetic graph of the debug analyzer
      */
     public function __construct(

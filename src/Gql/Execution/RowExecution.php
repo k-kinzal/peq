@@ -168,6 +168,8 @@ final class RowExecution
      *     \App\Gql\Execution\RowExecution::against([], $left, $right) // => -1
      *
      * @return int Negative, zero or positive
+     *
+     * @throws GqlException If a key holds two values GQL gives no order between
      */
     public static function against(array $keys, array $left, array $right): int
     {

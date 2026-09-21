@@ -135,15 +135,32 @@ final class SourceCursor
         $lines = substr_count($taken, "\n");
         if ($lines > 0) {
             $this->line += $lines;
-            $lastBreak = strrpos($taken, "\n");
-            $this->column = strlen($taken) - (int) $lastBreak;
+            $this->column = self::characters(substr($taken, (int) strrpos($taken, "\n") + 1)) + 1;
 
             return $taken;
         }
 
-        $this->column += strlen($taken);
+        $this->column += self::characters($taken);
 
         return $taken;
+    }
+
+    /**
+     * Counts the characters in a stretch of UTF-8, even one cut in the middle of a character.
+     *
+     * A character is counted at the byte that begins it, so a stretch that ends partway
+     * through one still counts it once, and the rest of it counts nothing.
+     *
+     * @param string $bytes The stretch
+     *
+     * @example A character written in three bytes is one character
+     *     \App\Gql\Lexing\SourceCursor::characters('顧客') // => 2
+     *
+     * @return int How many characters begin in it
+     */
+    public static function characters(string $bytes): int
+    {
+        return strlen($bytes) - (int) preg_match_all('/[\x80-\xBF]/', $bytes);
     }
 
     /**

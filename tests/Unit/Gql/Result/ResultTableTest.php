@@ -7,6 +7,8 @@ namespace Tests\Unit\Gql\Result;
 use App\Gql\Binding\BindingRow;
 use App\Gql\Binding\BindingTable;
 use App\Gql\Datum\DatumKind;
+use App\Gql\Datum\DecimalDatum;
+use App\Gql\Datum\FloatDatum;
 use App\Gql\Datum\IntegerDatum;
 use App\Gql\Datum\NullDatum;
 use App\Gql\Datum\StringDatum;
@@ -15,7 +17,6 @@ use App\Gql\Result\ResultRow;
 use App\Gql\Result\ResultTable;
 use App\Gql\StatusCode;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -27,53 +28,87 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(BindingRow::class)]
 #[UsesClass(BindingTable::class)]
 #[UsesClass(DatumKind::class)]
+#[UsesClass(DecimalDatum::class)]
 #[UsesClass(IntegerDatum::class)]
 #[UsesClass(NullDatum::class)]
-#[UsesClass(StringDatum::class)]
 #[UsesClass(ResultColumn::class)]
 #[UsesClass(ResultRow::class)]
 #[UsesClass(StatusCode::class)]
+#[UsesClass(StringDatum::class)]
+#[UsesClass(FloatDatum::class)]
 #[Small]
 final class ResultTableTest extends TestCase
 {
-    #[DataProvider('providerOneRow')]
-    public function testOfTakesItsColumnsFromWhatTheQueryAskedFor(ResultTable $result): void
+    public function testOfTakesItsColumnsFromWhatTheQueryAskedForAndTheirTypesFromWhatTheyHold(): void
     {
-        self::assertSame(['n'], $result->headings());
+        $table = new BindingTable([BindingRow::unit()->with('n', new IntegerDatum(1))->with('s', new StringDatum('a'))]);
+
+        self::assertEquals(
+            [new ResultColumn('s', 'STRING'), new ResultColumn('n', 'INT64')],
+            ResultTable::of(['s', 'n'], $table)->columns,
+        );
     }
 
-    #[DataProvider('providerOneRow')]
-    public function testOfReadsTheTypeOfEachColumnFromWhatItHolds(ResultTable $result): void
+    public function testOfReadsOneRowPerRowBoundInTheOrderItsColumnsAreShown(): void
     {
-        self::assertSame('INT64', $result->columns[0]->type);
+        $table = new BindingTable([
+            BindingRow::unit()->with('n', new IntegerDatum(1))->with('s', new StringDatum('a')),
+            BindingRow::unit()->with('n', new IntegerDatum(2))->with('s', new StringDatum('b')),
+        ]);
+
+        self::assertEquals(
+            [
+                new ResultRow([new StringDatum('a'), new IntegerDatum(1)]),
+                new ResultRow([new StringDatum('b'), new IntegerDatum(2)]),
+            ],
+            ResultTable::of(['s', 'n'], $table)->rows,
+        );
+    }
+
+    public function testOfReadsAColumnARowDoesNotBindAsAbsent(): void
+    {
+        $table = new BindingTable([BindingRow::unit()]);
+
+        self::assertEquals([new ResultRow([new NullDatum()])], ResultTable::of(['n'], $table)->rows);
     }
 
     public function testNothingIsAResultWithNoColumnsAndNoRows(): void
     {
-        self::assertSame([], ResultTable::nothing()->rows);
-        self::assertSame([], ResultTable::nothing()->columns);
+        $result = ResultTable::nothing();
+
+        self::assertSame([], $result->columns);
+        self::assertSame([], $result->rows);
     }
 
-    #[DataProvider('providerOneRow')]
-    public function testStatusSaysThatAQueryFoundSomething(ResultTable $result): void
+    public function testStatusSaysThatAQueryFoundSomething(): void
     {
+        $result = new ResultTable([new ResultColumn('n', 'INT64')], [new ResultRow([new IntegerDatum(1)])]);
+
         self::assertSame(StatusCode::Success, $result->status());
     }
 
     public function testStatusSaysThatAQueryFoundNothingRatherThanThatItFailed(): void
     {
-        self::assertSame(StatusCode::NoData, ResultTable::nothing()->status());
+        $result = new ResultTable([new ResultColumn('n', 'NULL')], []);
+
+        self::assertSame(StatusCode::NoData, $result->status());
     }
 
-    #[DataProvider('providerOneRow')]
-    public function testHeadingsAreWhatTheQueryAskedItsColumnsToBeCalled(ResultTable $result): void
+    public function testHeadingsAreWhatTheQueryAskedItsColumnsToBeCalled(): void
     {
-        self::assertSame(['n'], $result->headings());
+        $result = new ResultTable([new ResultColumn('p', 'NODE'), new ResultColumn('n', 'INT64')], []);
+
+        self::assertSame(['p', 'n'], $result->headings());
     }
 
     public function testTypeOfNamesTheTypeOfAColumnOfOneKind(): void
     {
         self::assertSame('INT64', ResultTable::typeOf([new ResultRow([new IntegerDatum(1)])], 0));
+    }
+
+    public function testTypeOfNamesAColumnOfDecimals(): void
+    {
+        self::assertSame('DECIMAL', ResultTable::typeOf([new ResultRow([new DecimalDatum(15, 1)])], 0));
     }
 
     public function testTypeOfNamesAColumnOfMoreThanOneKindAsHoldingAnyOfThem(): void
@@ -90,29 +125,47 @@ final class ResultTableTest extends TestCase
 
     public function testTypeOfPassesOverTheRowsWhoseValueIsAbsent(): void
     {
-        $rows = [new ResultRow([new NullDatum()]), new ResultRow([new IntegerDatum(1)])];
+        $rows = [new ResultRow([new NullDatum()]), new ResultRow([new IntegerDatum(1)]), new ResultRow([new NullDatum()])];
 
         self::assertSame('INT64', ResultTable::typeOf($rows, 0));
     }
 
-    #[DataProvider('providerOneRow')]
-    public function testColumnIsEveryValueOfOneColumnInRowOrder(ResultTable $result): void
+    public function testTypeOfReadsTheColumnItIsAsked(): void
     {
-        self::assertSame(['1'], array_map(static fn ($value): string => $value->toText(), $result->column(0)));
+        $rows = [new ResultRow([new IntegerDatum(1), new StringDatum('a')])];
+
+        self::assertSame('STRING', ResultTable::typeOf($rows, 1));
     }
 
-    /**
-     * @return iterable<string, array{ResultTable}>
-     */
-    public static function providerOneRow(): iterable
+    public function testColumnIsEveryValueOfOneColumnInRowOrder(): void
     {
-        $row = BindingRow::unit()->with('n', new IntegerDatum(1));
+        $result = new ResultTable(
+            [new ResultColumn('n', 'INT64'), new ResultColumn('s', 'STRING')],
+            [
+                new ResultRow([new IntegerDatum(1), new StringDatum('a')]),
+                new ResultRow([new IntegerDatum(2), new StringDatum('b')]),
+            ],
+        );
 
-        yield 'a result of one whole number' => [ResultTable::of(['n'], new BindingTable([$row]))];
+        self::assertEquals([new StringDatum('a'), new StringDatum('b')], $result->column(1));
     }
 
     public function testColumnOfAResultWithNoRowsHoldsNoValues(): void
     {
         self::assertSame([], ResultTable::nothing()->column(0));
+    }
+
+    public function testTypeOfFindsAColumnOfWholeNumbersAndDecimalsHoldsDecimals(): void
+    {
+        $rows = [new ResultRow([new IntegerDatum(1)]), new ResultRow([new DecimalDatum(15, 1)])];
+
+        self::assertSame('DECIMAL', ResultTable::typeOf($rows, 0));
+    }
+
+    public function testTypeOfFindsAColumnWithAnApproximateNumberInItHoldsApproximateNumbers(): void
+    {
+        $rows = [new ResultRow([new DecimalDatum(15, 1)]), new ResultRow([new FloatDatum(2.5)])];
+
+        self::assertSame('FLOAT64', ResultTable::typeOf($rows, 0));
     }
 }

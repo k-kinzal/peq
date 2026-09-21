@@ -242,10 +242,10 @@ final class TokenReaderTest extends TestCase
     /**
      * @throws GqlException
      */
-    public function testFailSaysThatAWordGqlReservesIsOne(): void
+    public function testFailQuotesWhatWasWrittenInsteadAndNothingMore(): void
     {
         $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('expected ")", and GQL reserves "VALUE", so it is not a name');
+        $this->expectExceptionMessage('[42001] error: syntax error or access rule violation - invalid syntax: expected ")" at line 1, column 1 (found "value")');
 
         TokenReader::of('value')->fail('")"');
     }

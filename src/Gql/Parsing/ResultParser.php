@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Gql\Parsing;
 
+use App\Gql\Datum\DecimalDatum;
 use App\Gql\GqlException;
 use App\Gql\Lexing\TokenKind;
 use App\Gql\Syntax\Clause\OrderByClause;
@@ -13,6 +14,7 @@ use App\Gql\Syntax\Clause\ReturnClause;
 use App\Gql\Syntax\Clause\SortDirection;
 use App\Gql\Syntax\Clause\SortKey;
 use App\Gql\Syntax\Expression;
+use App\Gql\Syntax\Expression\VariableExpression;
 
 /**
  * Reads what a query shows the reader.
@@ -113,21 +115,24 @@ final class ResultParser
     /**
      * Reads what the rows are grouped by, if they are grouped.
      *
-     * A group key is usually a name a `LET` gave to something, which is the form GQL
-     *'s own examples prefer because it lets the projection refer to the same name.
-     * A property read straight off a matched element is allowed too, since that is
-     * what a reader writes when there is nothing to name.
+     * ISO/IEC 39075 writes a `<grouping element>` as a binding variable reference and
+     * nothing else, so a group key is a name: one a `LET` gave, or one the `RETURN`
+     * gave with `AS`. `GROUP BY c.name` is not GQL; `RETURN c.name AS name ... GROUP BY
+     * name` is, and says the same.
      *
-     * @example Rows can be grouped by more than one thing
-     *     $reader = \App\Gql\Parsing\TokenReader::of('GROUP BY kind, owner.name');
+     * @example Rows can be grouped by more than one name
+     *     $reader = \App\Gql\Parsing\TokenReader::of('GROUP BY kind, owner');
      *     count((new \App\Gql\Parsing\ResultParser($reader, new \App\Gql\Parsing\ExpressionParser($reader)))->parseGroupBy()) // => 2
+     * @example Anything but a name is not a group key
+     *     $reader = \App\Gql\Parsing\TokenReader::of('GROUP BY owner.name');
+     *     (new \App\Gql\Parsing\ResultParser($reader, new \App\Gql\Parsing\ExpressionParser($reader)))->parseGroupBy() // throws \App\Gql\GqlException: GROUP BY
      * @example A projection that does not group says nothing
      *     $reader = \App\Gql\Parsing\TokenReader::of('LIMIT 10');
      *     (new \App\Gql\Parsing\ResultParser($reader, new \App\Gql\Parsing\ExpressionParser($reader)))->parseGroupBy() // => []
      *
      * @return list<Expression> What the rows are grouped by
      *
-     * @throws GqlException If what is written is not something to group by
+     * @throws GqlException If what is written is not a list of names
      */
     public function parseGroupBy(): array
     {
@@ -138,7 +143,10 @@ final class ResultParser
 
         $keys = [];
         do {
-            $keys[] = $this->expressions->parse();
+            $keys[] = new VariableExpression(NameReader::variable($this->tokens));
+            if ($this->tokens->atSymbol('.')) {
+                $this->tokens->fail('a comma or the end of GROUP BY, which groups by names only');
+            }
         } while ($this->tokens->acceptSymbol(','));
 
         return $keys;
@@ -231,7 +239,7 @@ final class ResultParser
      *
      * @return int The count
      *
-     * @throws GqlException If what is written is not a whole number of rows
+     * @throws GqlException If what is written is not a whole number of rows, or is too large for one
      */
     public function parseCount(): int
     {
@@ -239,6 +247,6 @@ final class ResultParser
             $this->tokens->fail('a whole number of rows');
         }
 
-        return (int) $this->tokens->take()->value;
+        return DecimalDatum::whole($this->tokens->take()->value);
     }
 }

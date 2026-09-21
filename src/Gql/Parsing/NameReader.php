@@ -76,7 +76,9 @@ final class NameReader
      *
      * A graph with a label called `Function` is matched by `` (:`Function`) ``, and
      * `(:Function)` is a query that was written wrong — `FUNCTION` is a word the
-     * standard holds back for a later edition.
+     * standard holds back for a later edition. GQL's `<delimited identifier>` may be
+     * written in double quotes as well as back quotes, so `(:"Function")` says the same;
+     * a double-quoted sequence is a string only where a value is written.
      *
      * @param TokenReader $tokens The pieces of the query being read
      *
@@ -84,6 +86,8 @@ final class NameReader
      *     \App\Gql\Parsing\NameReader::identifier(\App\Gql\Parsing\TokenReader::of('firstName')) // => 'firstName'
      * @example A word GQL reserves is one when it is written in back quotes
      *     \App\Gql\Parsing\NameReader::identifier(\App\Gql\Parsing\TokenReader::of('`value`')) // => 'value'
+     * @example Or in double quotes
+     *     \App\Gql\Parsing\NameReader::identifier(\App\Gql\Parsing\TokenReader::of('"value"')) // => 'value'
      * @example And is not one when it is not
      *     \App\Gql\Parsing\NameReader::identifier(\App\Gql\Parsing\TokenReader::of('value')) // throws \App\Gql\GqlException: reserves
      *
@@ -93,10 +97,13 @@ final class NameReader
      */
     public static function identifier(TokenReader $tokens): string
     {
+        $token = $tokens->current();
+        if ($token->kind === TokenKind::Text && str_starts_with($token->lexeme, '"')) {
+            return $tokens->take()->value;
+        }
         if (!$tokens->atName()) {
             $tokens->fail('a name');
         }
-        $token = $tokens->current();
         if ($token->kind === TokenKind::Name && ReservedWords::reserves($token->value)) {
             self::refuseReserved($token, 'write it in back quotes to use it as a name');
         }

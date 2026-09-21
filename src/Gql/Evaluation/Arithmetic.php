@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Gql\Evaluation;
 
+use App\Gql\Argument\ExactArithmetic;
 use App\Gql\Argument\NumberArgument;
 use App\Gql\Datum\Datum;
 use App\Gql\Datum\DatumKind;
@@ -13,20 +14,21 @@ use App\Gql\Datum\NullDatum;
 use App\Gql\GqlException;
 use App\Gql\StatusCode;
 use App\Gql\Syntax\Expression\BinaryOperator;
+use InvalidArgumentException;
 
 /**
  * Arithmetic, under GQL's rules about what mixing kinds of number produces.
  *
- * Two rules decide everything here, and both are the standard's. An expression that
- * meets an approximate number produces an approximate one, so `1 + 1.5` is 2.5 and
- * not 2. And an expression that meets the absence of a value produces the absence of
- * one, so a sum over a property some symbols do not carry is absent rather than
- * wrong.
+ * Three rules decide everything here, and all three are the standard's. An expression
+ * on two exact numbers produces an exact one — `0.1 + 0.2` is `0.3` — which
+ * `ExactArithmetic` works out. An expression that meets an approximate number produces
+ * an approximate one, so `1 + 1.5e0` is a float. And an expression that meets the
+ * absence of a value produces the absence of one, so a sum over a property some
+ * symbols do not carry is absent rather than wrong.
  *
- * Division of two whole numbers stays whole, as it does in SQL. That is what makes
- * `p.birthday / 10000` a birth year rather than a fraction, and it is why the one
- * failure arithmetic can have — dividing by zero — is reported rather than quietly
- * turned into infinity the way PHP's own division would.
+ * Division by zero is reported rather than turned into infinity the way PHP's own
+ * division would, and an exact result too large to hold is reported rather than turned
+ * into a float.
  *
  * @visibility App\Gql
  */
@@ -39,72 +41,79 @@ final class Arithmetic
      * @param Datum          $left     The value on its left
      * @param Datum          $right    The value on its right
      *
-     * @example Whole numbers stay whole
-     *     \App\Gql\Evaluation\Arithmetic::apply(\App\Gql\Syntax\Expression\BinaryOperator::Add, new \App\Gql\Datum\IntegerDatum(1), new \App\Gql\Datum\IntegerDatum(2))->toText() // => '3'
-     * @example Meeting an approximate number makes the result approximate
-     *     \App\Gql\Evaluation\Arithmetic::apply(\App\Gql\Syntax\Expression\BinaryOperator::Add, new \App\Gql\Datum\IntegerDatum(1), new \App\Gql\Datum\FloatDatum(1.5))->toText() // => '2.5'
-     * @example Meeting the absence of a value produces the absence of one
+     * @example Two exact numbers make an exact one
+     *     \App\Gql\Evaluation\Arithmetic::apply(\App\Gql\Syntax\Expression\BinaryOperator::Add, new \App\Gql\Datum\DecimalDatum(1, 1), new \App\Gql\Datum\DecimalDatum(2, 1))->toText() // => '0.3'
+     * @example An approximate number makes the result approximate
+     *     \App\Gql\Evaluation\Arithmetic::apply(\App\Gql\Syntax\Expression\BinaryOperator::Add, new \App\Gql\Datum\IntegerDatum(1), new \App\Gql\Datum\FloatDatum(1.5))->kind() // => \App\Gql\Datum\DatumKind::Float
+     * @example An absent value makes the result absent
      *     \App\Gql\Evaluation\Arithmetic::apply(\App\Gql\Syntax\Expression\BinaryOperator::Add, new \App\Gql\Datum\IntegerDatum(1), new \App\Gql\Datum\NullDatum())->kind() // => \App\Gql\Datum\DatumKind::Null
      *
      * @return Datum What the operator produced
      *
-     * @throws GqlException If a value is not a number, or a division is by zero
+     * @throws GqlException             If a value is not a number, the divisor is zero, or an exact result is out of range
+     * @throws InvalidArgumentException If the operator is not an arithmetic one
      */
     public static function apply(BinaryOperator $operator, Datum $left, Datum $right): Datum
     {
+        if (!in_array($operator, [BinaryOperator::Add, BinaryOperator::Subtract, BinaryOperator::Multiply, BinaryOperator::Divide], true)) {
+            throw new InvalidArgumentException(sprintf('%s is not an arithmetic operator', $operator->spelling()));
+        }
         if ($left->kind() === DatumKind::Null || $right->kind() === DatumKind::Null) {
             return new NullDatum();
         }
+        $first = NumberArgument::exact($left);
+        $second = NumberArgument::exact($right);
+        if ($first !== null && $second !== null) {
+            if ($operator === BinaryOperator::Add) {
+                return ExactArithmetic::add($first, $second);
+            }
+            if ($operator === BinaryOperator::Subtract) {
+                return ExactArithmetic::subtract($first, $second);
+            }
 
-        $approximate = NumberArgument::approximate($left) || NumberArgument::approximate($right);
-        $first = NumberArgument::of($left);
-        $second = NumberArgument::of($right);
-
-        if ($operator === BinaryOperator::Divide) {
-            return self::divide($first, $second, $approximate);
+            return $operator === BinaryOperator::Multiply
+                ? ExactArithmetic::multiply($first, $second)
+                : ExactArithmetic::divide($first, $second);
         }
 
-        $result = $first * $second;
-        if ($operator === BinaryOperator::Add) {
-            $result = $first + $second;
-        }
-        if ($operator === BinaryOperator::Subtract) {
-            $result = $first - $second;
-        }
-
-        return $approximate ? new FloatDatum((float) $result) : new IntegerDatum((int) $result);
+        return self::approximate($operator, (float) NumberArgument::of($left), (float) NumberArgument::of($right));
     }
 
     /**
-     * Divides one number by another, keeping whole numbers whole.
+     * Applies an arithmetic operator to two approximate numbers.
      *
-     * @param float|int $left        The number being divided
-     * @param float|int $right       The number to divide it by
-     * @param bool      $approximate Whether either of them is approximate
+     * @param BinaryOperator $operator What to apply
+     * @param float          $left     The number on its left
+     * @param float          $right    The number on its right
      *
-     * @example Two whole numbers divide into a whole number
-     *     \App\Gql\Evaluation\Arithmetic::divide(19990101, 10000, false)->toText() // => '1999'
-     * @example An approximate number divides into an approximate one
-     *     \App\Gql\Evaluation\Arithmetic::divide(3, 2.0, true)->toText() // => '1.5'
-     * @example Dividing by zero is reported rather than guessed at
-     *     \App\Gql\Evaluation\Arithmetic::divide(1, 0, false) // throws \App\Gql\GqlException: division by zero
-     * @example Including when the zero is an approximate one
-     *     \App\Gql\Evaluation\Arithmetic::divide(1.0, 0.0, true) // throws \App\Gql\GqlException: division by zero
+     * @example Approximate division keeps its fraction
+     *     \App\Gql\Evaluation\Arithmetic::approximate(\App\Gql\Syntax\Expression\BinaryOperator::Divide, 7.0, 2.0)->toText() // => '3.5'
+     * @example It still cannot divide by zero
+     *     \App\Gql\Evaluation\Arithmetic::approximate(\App\Gql\Syntax\Expression\BinaryOperator::Divide, 1.0, 0.0) // throws \App\Gql\GqlException: division by zero
      *
-     * @return Datum The quotient
+     * @return FloatDatum The result
      *
-     * @throws GqlException If the divisor is zero
+     * @throws GqlException             If the divisor is zero
+     * @throws InvalidArgumentException If the operator is not an arithmetic one
      */
-    public static function divide(float|int $left, float|int $right, bool $approximate): Datum
+    public static function approximate(BinaryOperator $operator, float $left, float $right): FloatDatum
     {
-        if ($right === 0 || $right === 0.0) {
+        if (!in_array($operator, [BinaryOperator::Add, BinaryOperator::Subtract, BinaryOperator::Multiply, BinaryOperator::Divide], true)) {
+            throw new InvalidArgumentException(sprintf('%s is not an arithmetic operator', $operator->spelling()));
+        }
+        if ($operator === BinaryOperator::Divide && $right === 0.0) {
             throw GqlException::because(StatusCode::DivisionByZero, 'a number cannot be divided by zero');
         }
-        if ($approximate) {
-            return new FloatDatum($left / $right);
+
+        $result = $operator === BinaryOperator::Divide ? $left / $right : $left * $right;
+        if ($operator === BinaryOperator::Add) {
+            $result = $left + $right;
+        }
+        if ($operator === BinaryOperator::Subtract) {
+            $result = $left - $right;
         }
 
-        return new IntegerDatum(intdiv((int) $left, (int) $right));
+        return new FloatDatum($result);
     }
 
     /**
@@ -112,27 +121,25 @@ final class Arithmetic
      *
      * @param Datum $value The number
      *
-     * @example A whole number keeps being whole
-     *     \App\Gql\Evaluation\Arithmetic::negate(new \App\Gql\Datum\IntegerDatum(3))->toText() // => '-3'
-     * @example An approximate one keeps being approximate
-     *     \App\Gql\Evaluation\Arithmetic::negate(new \App\Gql\Datum\FloatDatum(1.5))->toText() // => '-1.5'
-     * @example The absence of a value has no sign to reverse
+     * @example An exact number stays exact
+     *     \App\Gql\Evaluation\Arithmetic::negate(new \App\Gql\Datum\DecimalDatum(15, 1))->toText() // => '-1.5'
+     * @example The absence of a number has no sign to reverse
      *     \App\Gql\Evaluation\Arithmetic::negate(new \App\Gql\Datum\NullDatum())->kind() // => \App\Gql\Datum\DatumKind::Null
      *
-     * @return Datum The number with its sign reversed
+     * @return Datum The number, negated
      *
-     * @throws GqlException If the value is not a number
+     * @throws GqlException If the value is not a number, or its negation is out of range
      */
     public static function negate(Datum $value): Datum
     {
         if ($value->kind() === DatumKind::Null) {
             return new NullDatum();
         }
+        $exact = NumberArgument::exact($value);
+        if ($exact === null) {
+            return new FloatDatum(-(float) NumberArgument::of($value));
+        }
 
-        $number = NumberArgument::of($value);
-
-        return NumberArgument::approximate($value)
-            ? new FloatDatum(-(float) $number)
-            : new IntegerDatum(-(int) $number);
+        return ExactArithmetic::subtract(new IntegerDatum(0), $exact);
     }
 }

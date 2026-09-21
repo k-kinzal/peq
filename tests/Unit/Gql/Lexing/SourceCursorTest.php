@@ -113,4 +113,22 @@ final class SourceCursorTest extends TestCase
 
         self::assertSame(6, $cursor->offset());
     }
+
+    public function testCharactersCountsACharacterWrittenInSeveralBytesOnce(): void
+    {
+        self::assertSame(2, SourceCursor::characters('顧客'));
+    }
+
+    public function testCharactersCountsACharacterCutInTheMiddleOnce(): void
+    {
+        self::assertSame(1, SourceCursor::characters(substr('顧', 0, 2)));
+    }
+
+    public function testTakeCountsColumnsInCharactersRatherThanBytes(): void
+    {
+        $cursor = new SourceCursor('顧客 x');
+        $cursor->take(strlen('顧客 '));
+
+        self::assertSame(4, $cursor->column());
+    }
 }

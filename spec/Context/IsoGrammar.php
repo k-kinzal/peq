@@ -180,6 +180,22 @@ final class IsoGrammar
     }
 
     /**
+     * Reports whether the grammar defines a production.
+     *
+     * @param string $name The production's name, as the artifact spells it
+     *
+     * @return bool True when it does
+     *
+     * @throws RuntimeException If the artifact cannot be read
+     */
+    public static function defines(string $name): bool
+    {
+        $found = self::grammar()->xpath(sprintf('//BNFdef[@name=%s]', self::quoted($name)));
+
+        return $found !== null && $found !== [];
+    }
+
+    /**
      * Returns the keywords one production of the grammar is written from.
      *
      * @param string $name The production's name, as the artifact spells it

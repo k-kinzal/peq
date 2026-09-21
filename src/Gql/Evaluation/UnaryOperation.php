@@ -13,9 +13,10 @@ use App\Gql\Syntax\Expression\UnaryOperator;
 /**
  * Which rule an operator written before one value follows.
  *
- * The two null tests are the only expressions in GQL that can never come out
- * undecided, and that is what they are for: they are the way out of three-valued
- * logic, the one question about an absent value that has a definite answer.
+ * The null tests and the truth tests — `IS [NOT] NULL`, `IS [NOT] TRUE`, `IS [NOT]
+ * FALSE`, `IS [NOT] UNKNOWN` — are the only expressions in GQL that can never come
+ * out undecided, and that is what they are for: they are the way out of three-valued
+ * logic, the questions about an absent value that have a definite answer.
  *
  * @visibility App\Gql
  */
@@ -46,6 +47,12 @@ final class UnaryOperation
             UnaryOperator::Identity => self::identity($operand),
             UnaryOperator::IsNull => Logic::datum($operand->kind() === DatumKind::Null),
             UnaryOperator::IsNotNull => Logic::datum($operand->kind() !== DatumKind::Null),
+            UnaryOperator::IsTrue => Logic::datum(Logic::truth($operand) === true),
+            UnaryOperator::IsNotTrue => Logic::datum(Logic::truth($operand) !== true),
+            UnaryOperator::IsFalse => Logic::datum(Logic::truth($operand) === false),
+            UnaryOperator::IsNotFalse => Logic::datum(Logic::truth($operand) !== false),
+            UnaryOperator::IsUnknown => Logic::datum(Logic::truth($operand) === null),
+            UnaryOperator::IsNotUnknown => Logic::datum(Logic::truth($operand) !== null),
         };
     }
 

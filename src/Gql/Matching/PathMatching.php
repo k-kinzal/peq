@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Gql\Matching;
 
 use App\Gql\Binding\BindingRow;
+use App\Gql\Datum\Datum;
+use App\Gql\Datum\ListDatum;
 use App\Gql\Datum\NodeDatum;
 use App\Gql\Element\ElementGraph;
 use App\Gql\Evaluation\ExpressionEvaluation;
@@ -15,7 +17,6 @@ use App\Gql\Syntax\Pattern\NodePattern;
 use App\Gql\Syntax\Pattern\PathMode;
 use App\Gql\Syntax\Pattern\PathPattern;
 use App\Gql\Syntax\Pattern\PathTerm;
-use App\Gql\Syntax\Pattern\Quantifier;
 
 /**
  * Finding every way one path pattern matches the graph.
@@ -43,14 +44,12 @@ final class PathMatching
     /**
      * @param ElementGraph         $graph      The graph being matched against
      * @param ExpressionEvaluation $evaluation How a predicate written in a pattern is worked out
-     * @param int                  $hopLimit   How far a repetition goes when no upper bound was written
      */
     public function __construct(
         private readonly ElementGraph $graph,
         private readonly ExpressionEvaluation $evaluation,
-        private readonly int $hopLimit = 10,
     ) {
-        $this->edges = new EdgeMatching($graph, $evaluation, $hopLimit);
+        $this->edges = new EdgeMatching($graph, $evaluation);
     }
 
     /**
@@ -219,6 +218,13 @@ final class PathMatching
      * a repeated group a chain of the shape it describes rather than a set of
      * unrelated matches of it.
      *
+     * A name a repeated group binds is a group variable: each repetition binds it
+     * afresh, and once the group is matched it is bound to the list of what every
+     * repetition bound, in the order they were matched. `((a)-[]->(b)){2}` binds `a`
+     * and `b` to two symbols each, not to one symbol that has to recur. A group that
+     * is only parenthesised, with no quantifier, repeats nothing and binds as the
+     * pattern inside it does.
+     *
      * @param GroupPattern $group The stretch of pattern
      * @param MatchState   $state How far the attempt has got
      * @param PathMode     $mode  What the path may visit more than once
@@ -235,15 +241,24 @@ final class PathMatching
      */
     public function matchGroup(GroupPattern $group, MatchState $state, PathMode $mode): array
     {
-        $quantifier = $group->quantifier ?? Quantifier::exactly(1);
-        $reached = $quantifier->allows(0) ? [$state] : [];
-        $frontier = [$state];
-        $ceiling = $quantifier->ceiling($this->hopLimit);
+        $quantifier = $group->quantifier;
+        if ($quantifier === null) {
+            return $this->matchTerms($group->terms, 0, $state, $mode);
+        }
+
+        $variables = array_values(array_unique(PatternVariables::inTerms($group->terms)));
+        $start = $state;
+        foreach ($variables as $name) {
+            $start = $start->bind($name, new ListDatum([]));
+        }
+        $reached = $quantifier->allows(0) ? [$start] : [];
+        $frontier = [$start];
+        $ceiling = $quantifier->most ?? PHP_INT_MAX;
 
         for ($times = 1; $times <= $ceiling && $frontier !== []; ++$times) {
             $next = [];
             foreach ($frontier as $standing) {
-                array_push($next, ...$this->matchTerms($group->terms, 0, $standing, $mode));
+                array_push($next, ...$this->repeat($group, $variables, $standing, $mode));
             }
             $frontier = $next;
             if ($quantifier->allows($times)) {
@@ -252,5 +267,63 @@ final class PathMatching
         }
 
         return $reached;
+    }
+
+    /**
+     * Returns every way one more repetition of a group matches, with its names added to their lists.
+     *
+     * @param GroupPattern $group     The group
+     * @param list<string> $variables The names it binds, each bound to the list of what earlier repetitions bound
+     * @param MatchState   $standing  How far the attempt has got
+     * @param PathMode     $mode      What the path may visit more than once
+     *
+     * @example A repetition adds what it bound to the list the name is bound to
+     *     $node = new \App\Gql\Datum\NodeDatum('a');
+     *     $matching = new \App\Gql\Matching\PathMatching(new \App\Gql\Element\ElementGraph(['a' => $node], [], []), new \App\Gql\Evaluation\ExpressionEvaluation());
+     *     $group = new \App\Gql\Syntax\Pattern\GroupPattern([new \App\Gql\Syntax\Pattern\NodePattern('n')], \App\Gql\Syntax\Pattern\Quantifier::exactly(1));
+     *     $standing = \App\Gql\Matching\MatchState::before(\App\Gql\Binding\BindingRow::unit()->with('n', new \App\Gql\Datum\ListDatum([])));
+     *     $matching->repeat($group, ['n'], $standing, \App\Gql\Syntax\Pattern\PathMode::Walk)[0]->row->value('n')->toText() // => '[a]'
+     *
+     * @return list<MatchState> The attempts that matched it once more
+     *
+     * @throws GqlException If a requirement written in the pattern cannot be worked out
+     */
+    public function repeat(GroupPattern $group, array $variables, MatchState $standing, PathMode $mode): array
+    {
+        $fresh = $standing->withRow(new BindingRow(array_diff_key($standing->row->values(), array_flip($variables))));
+        $repeated = [];
+        foreach ($this->matchTerms($group->terms, 0, $fresh, $mode) as $after) {
+            $row = $after->row;
+            foreach ($variables as $name) {
+                $row = $row->with($name, self::collected($standing->row->value($name), $after->row->value($name)));
+            }
+            $repeated[] = $after->withRow($row);
+        }
+
+        return $repeated;
+    }
+
+    /**
+     * Returns a group variable's list with what one more repetition bound it to added.
+     *
+     * A repeated relation inside a repeated group binds a list of its own on every
+     * repetition, and that list is added element by element, so that a group variable
+     * is always one list of elements in the order the path crossed them.
+     *
+     * @param Datum $collected What earlier repetitions bound, as a list
+     * @param Datum $bound     What this repetition bound
+     *
+     * @example A repetition adds one element to the list
+     *     \App\Gql\Matching\PathMatching::collected(new \App\Gql\Datum\ListDatum([new \App\Gql\Datum\NodeDatum('a')]), new \App\Gql\Datum\NodeDatum('b'))->toText() // => '[a, b]'
+     * @example A list a repetition bound is added element by element
+     *     \App\Gql\Matching\PathMatching::collected(new \App\Gql\Datum\ListDatum([]), new \App\Gql\Datum\ListDatum([new \App\Gql\Datum\NodeDatum('a')]))->toText() // => '[a]'
+     *
+     * @return ListDatum The list
+     */
+    public static function collected(Datum $collected, Datum $bound): ListDatum
+    {
+        $items = $collected instanceof ListDatum ? $collected->items : [];
+
+        return new ListDatum([...$items, ...($bound instanceof ListDatum ? $bound->items : [$bound])]);
     }
 }

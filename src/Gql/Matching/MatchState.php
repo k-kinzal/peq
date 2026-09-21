@@ -102,6 +102,25 @@ final class MatchState
     }
 
     /**
+     * Returns the attempt with what it has bound replaced, and everything else about it kept.
+     *
+     * A repeated group binds its names afresh on every repetition, so each repetition
+     * is matched against a row without them and the row is put back together after.
+     *
+     * @param BindingRow $row What the attempt has bound
+     *
+     * @example The path an attempt has walked is kept
+     *     $state = \App\Gql\Matching\MatchState::before(\App\Gql\Binding\BindingRow::unit())->startingAt(new \App\Gql\Datum\NodeDatum('a'));
+     *     $state->withRow(\App\Gql\Binding\BindingRow::unit())->current?->id // => 'a'
+     *
+     * @return self The attempt, with that row
+     */
+    public function withRow(BindingRow $row): self
+    {
+        return new self($row, $this->current, $this->path, $this->edges, $this->nodes, $this->start);
+    }
+
+    /**
      * Returns the attempt with one more name bound.
      *
      * @param string $name  The name

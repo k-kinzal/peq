@@ -4,26 +4,18 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Gql\Invocation;
 
-use App\Gql\Argument\NumberArgument;
 use App\Gql\Argument\TextArgument;
-use App\Gql\Datum\BooleanDatum;
 use App\Gql\Datum\DateTimeDatum;
-use App\Gql\Datum\Datum;
-use App\Gql\Datum\DatumIdentity;
-use App\Gql\Datum\DatumJson;
 use App\Gql\Datum\DatumKind;
 use App\Gql\Datum\DatumOrder;
-use App\Gql\Datum\EdgeDatum;
-use App\Gql\Datum\FloatDatum;
+use App\Gql\Datum\DecimalDatum;
 use App\Gql\Datum\IntegerDatum;
-use App\Gql\Datum\ListDatum;
-use App\Gql\Datum\NodeDatum;
 use App\Gql\Datum\NullDatum;
-use App\Gql\Datum\PathDatum;
 use App\Gql\Datum\StringDatum;
 use App\Gql\GqlException;
 use App\Gql\Invocation\GeneralFunctions;
 use App\Gql\StatusCode;
+use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -33,53 +25,78 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(GeneralFunctions::class)]
-#[UsesClass(BooleanDatum::class)]
 #[UsesClass(DateTimeDatum::class)]
-#[UsesClass(DatumIdentity::class)]
-#[UsesClass(DatumJson::class)]
 #[UsesClass(DatumKind::class)]
 #[UsesClass(DatumOrder::class)]
-#[UsesClass(EdgeDatum::class)]
-#[UsesClass(FloatDatum::class)]
-#[UsesClass(IntegerDatum::class)]
-#[UsesClass(ListDatum::class)]
-#[UsesClass(NodeDatum::class)]
-#[UsesClass(NullDatum::class)]
-#[UsesClass(PathDatum::class)]
-#[UsesClass(StringDatum::class)]
-#[UsesClass(Datum::class)]
+#[UsesClass(DecimalDatum::class)]
 #[UsesClass(GqlException::class)]
+#[UsesClass(IntegerDatum::class)]
+#[UsesClass(NullDatum::class)]
 #[UsesClass(StatusCode::class)]
-#[UsesClass(NumberArgument::class)]
+#[UsesClass(StringDatum::class)]
 #[UsesClass(TextArgument::class)]
 #[Small]
 final class GeneralFunctionsTest extends TestCase
 {
     public function testCoalesceAnswersWithTheFirstValueThatIsThere(): void
     {
-        self::assertSame('Unknown', GeneralFunctions::coalesce([new NullDatum(), new StringDatum('Unknown')])->toText());
+        self::assertEquals(
+            new StringDatum('Unknown'),
+            GeneralFunctions::coalesce([new NullDatum(), new StringDatum('Unknown'), new StringDatum('Other')]),
+        );
     }
 
     public function testCoalesceAnswersWithNothingWhenNoneOfThemIsThere(): void
     {
-        self::assertSame(DatumKind::Null, GeneralFunctions::coalesce([new NullDatum()])->kind());
+        self::assertEquals(new NullDatum(), GeneralFunctions::coalesce([new NullDatum(), new NullDatum()]));
     }
 
     public function testCoalesceAnswersWithNothingWhenThereIsNothingToChooseBetween(): void
     {
-        self::assertSame(DatumKind::Null, GeneralFunctions::coalesce([])->kind());
+        self::assertEquals(new NullDatum(), GeneralFunctions::coalesce([]));
     }
 
+    /**
+     * @throws GqlException
+     */
     public function testNullifWithdrawsAValueThatEqualsTheOneWithdrawn(): void
     {
-        $withdrawn = GeneralFunctions::nullif(new StringDatum('unknown'), new StringDatum('unknown'));
-
-        self::assertSame(DatumKind::Null, $withdrawn->kind());
+        self::assertEquals(new NullDatum(), GeneralFunctions::nullif(new StringDatum('unknown'), new StringDatum('unknown')));
     }
 
+    /**
+     * @throws GqlException
+     */
+    public function testNullifWithdrawsANumberEqualToTheOneWithdrawnWhateverKindOfNumberItIs(): void
+    {
+        self::assertEquals(new NullDatum(), GeneralFunctions::nullif(new DecimalDatum(10, 1), new IntegerDatum(1)));
+    }
+
+    /**
+     * @throws GqlException
+     */
     public function testNullifLeavesAnyOtherValueAsItIs(): void
     {
-        self::assertSame('public', GeneralFunctions::nullif(new StringDatum('public'), new StringDatum('unknown'))->toText());
+        self::assertEquals(new StringDatum('public'), GeneralFunctions::nullif(new StringDatum('public'), new StringDatum('unknown')));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testNullifLeavesAValueAsItIsWhenWhatIsWithdrawnIsAbsent(): void
+    {
+        self::assertEquals(new StringDatum('public'), GeneralFunctions::nullif(new StringDatum('public'), new NullDatum()));
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testNullifReportsTwoValuesOfKindsWithNoComparisonBetweenThem(): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('[22G04] error: data exception - values not comparable: INT64 and STRING cannot be compared');
+
+        GeneralFunctions::nullif(new IntegerDatum(1), new StringDatum('1'));
     }
 
     /**
@@ -87,9 +104,10 @@ final class GeneralFunctionsTest extends TestCase
      */
     public function testZonedDatetimeReadsAMomentWrittenInIsoEightThousandSixHundredAndOne(): void
     {
-        $written = [new StringDatum('2024-01-15T10:30:00+00:00')];
-
-        self::assertSame('2024-01-15T10:30:00+00:00', GeneralFunctions::zonedDatetime($written)->toText());
+        self::assertEquals(
+            new DateTimeDatum(new DateTimeImmutable('2024-01-15T10:30:00+00:00')),
+            GeneralFunctions::zonedDatetime([new StringDatum('2024-01-15T10:30:00+00:00')]),
+        );
     }
 
     /**
@@ -105,7 +123,7 @@ final class GeneralFunctionsTest extends TestCase
      */
     public function testZonedDatetimeReadsNoMomentOffSomethingThatIsNotThere(): void
     {
-        self::assertSame(DatumKind::Null, GeneralFunctions::zonedDatetime([new NullDatum()])->kind());
+        self::assertEquals(new NullDatum(), GeneralFunctions::zonedDatetime([new NullDatum()]));
     }
 
     /**
@@ -114,8 +132,19 @@ final class GeneralFunctionsTest extends TestCase
     public function testZonedDatetimeReportsSomethingThatIsNotAMoment(): void
     {
         $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('"yesterday-ish" is not a moment in time');
+        $this->expectExceptionMessage('[22G03] error: data exception - invalid value type: "yesterday-ish" is not a moment in time');
 
         GeneralFunctions::zonedDatetime([new StringDatum('yesterday-ish')]);
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testZonedDatetimeReportsAValueThatIsNotAString(): void
+    {
+        $this->expectException(GqlException::class);
+        $this->expectExceptionMessage('[22G03] error: data exception - invalid value type: a string was expected, and a INT64 was given');
+
+        GeneralFunctions::zonedDatetime([new IntegerDatum(1705314600)]);
     }
 }

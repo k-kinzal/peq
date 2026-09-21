@@ -2,28 +2,30 @@
 
 declare(strict_types=1);
 
-namespace App\Gql\Datum;
+namespace App\Reporter\Query;
+
+use App\Gql\Datum\BooleanDatum;
+use App\Gql\Datum\Datum;
+use App\Gql\Datum\DecimalDatum;
+use App\Gql\Datum\EdgeDatum;
+use App\Gql\Datum\FloatDatum;
+use App\Gql\Datum\IntegerDatum;
+use App\Gql\Datum\ListDatum;
+use App\Gql\Datum\NodeDatum;
+use App\Gql\Datum\NullDatum;
+use App\Gql\Datum\PathDatum;
 
 /**
  * A value written as JSON.
- *
- * Two things need this and want it to agree: the `to_json_string` function GQL
- * defines, and the reporter that writes a whole result for a program to read. A
- * symbol serialised inside a query should look the same as the same symbol serialised
- * by the reporter around it.
  *
  * The text is built rather than handed to a serialiser, because the values are not
  * PHP values: a node is an object with labels and properties, a path is the chain it
  * represents, and the absence of a value is JSON's null rather than an absent key.
  * Only the leaves — strings and numbers — go through PHP's encoder, which is what
- * they are good at.
+ * they are good at. An exact number is written with exactly the digits it has, so a
+ * decimal reaches a reader as the number it is rather than as the float nearest to it.
  *
- * The reporters name this too, which is why its scope reaches past the language. A
- * symbol serialised inside a query and the same symbol serialised by the reporter
- * around it should be the same text, and the only way to promise that is for both to
- * go through here.
- *
- * @visibility App
+ * @visibility App\Reporter
  */
 final class DatumJson
 {
@@ -33,11 +35,11 @@ final class DatumJson
      * @param Datum $value The value
      *
      * @example A string is quoted and escaped the way JSON quotes one
-     *     \App\Gql\Datum\DatumJson::of(new \App\Gql\Datum\StringDatum('App\\Invoice')) // => '"App\\\\Invoice"'
+     *     \App\Reporter\Query\DatumJson::of(new \App\Gql\Datum\StringDatum('App\\Invoice')) // => '"App\\\\Invoice"'
      * @example The absence of a value is JSON's own absence
-     *     \App\Gql\Datum\DatumJson::of(new \App\Gql\Datum\NullDatum()) // => 'null'
+     *     \App\Reporter\Query\DatumJson::of(new \App\Gql\Datum\NullDatum()) // => 'null'
      * @example A list is a JSON array of its values
-     *     \App\Gql\Datum\DatumJson::of(new \App\Gql\Datum\ListDatum([new \App\Gql\Datum\IntegerDatum(1)])) // => '[1]'
+     *     \App\Reporter\Query\DatumJson::of(new \App\Gql\Datum\ListDatum([new \App\Gql\Datum\IntegerDatum(1)])) // => '[1]'
      *
      * @return string The value, written as JSON
      */
@@ -48,6 +50,9 @@ final class DatumJson
         }
         if ($value instanceof BooleanDatum) {
             return $value->value ? 'true' : 'false';
+        }
+        if ($value instanceof DecimalDatum) {
+            return $value->toText();
         }
         if ($value instanceof IntegerDatum) {
             return (string) $value->value;
@@ -73,9 +78,9 @@ final class DatumJson
      *
      * @example A node carries what a query selected it by
      *     $node = new \App\Gql\Datum\NodeDatum('App\\Invoice', ['Class'], []);
-     *     \App\Gql\Datum\DatumJson::element($node) // => '{"id":"App\\\\Invoice","labels":["Class"],"properties":{}}'
+     *     \App\Reporter\Query\DatumJson::element($node) // => '{"id":"App\\\\Invoice","labels":["Class"],"properties":{}}'
      * @example Anything with no shape of its own is written as its text
-     *     \App\Gql\Datum\DatumJson::element(new \App\Gql\Datum\StringDatum('x')) // => '"x"'
+     *     \App\Reporter\Query\DatumJson::element(new \App\Gql\Datum\StringDatum('x')) // => '"x"'
      *
      * @return string The value, written as JSON
      */
@@ -106,7 +111,7 @@ final class DatumJson
      * @param array<string, Datum> $properties The properties, by name
      *
      * @example An element that carries nothing is still an object
-     *     \App\Gql\Datum\DatumJson::properties([]) // => '{}'
+     *     \App\Reporter\Query\DatumJson::properties([]) // => '{}'
      *
      * @return string The properties, written as JSON
      */
@@ -129,9 +134,9 @@ final class DatumJson
      * @param string $value The characters
      *
      * @example A namespace separator is escaped, because JSON requires it
-     *     \App\Gql\Datum\DatumJson::text('App\\Invoice') // => '"App\\\\Invoice"'
+     *     \App\Reporter\Query\DatumJson::text('App\\Invoice') // => '"App\\\\Invoice"'
      * @example A path separator is left alone, because JSON does not
-     *     \App\Gql\Datum\DatumJson::text('src/Invoice.php') // => '"src/Invoice.php"'
+     *     \App\Reporter\Query\DatumJson::text('src/Invoice.php') // => '"src/Invoice.php"'
      *
      * @return string The string, written as JSON
      */
@@ -152,9 +157,9 @@ final class DatumJson
      * @param float $value The number
      *
      * @example A number is written as itself
-     *     \App\Gql\Datum\DatumJson::number(1.5) // => '1.5'
+     *     \App\Reporter\Query\DatumJson::number(1.5) // => '1.5'
      * @example One JSON cannot write is written as an absence
-     *     \App\Gql\Datum\DatumJson::number(INF) // => 'null'
+     *     \App\Reporter\Query\DatumJson::number(INF) // => 'null'
      *
      * @return string The number, written as JSON
      */

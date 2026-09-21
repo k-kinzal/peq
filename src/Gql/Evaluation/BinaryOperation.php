@@ -11,9 +11,10 @@ use App\Gql\Syntax\Expression\BinaryOperator;
 /**
  * Which rule an operator written between two values follows.
  *
- * Nineteen operators, five sets of rules. Sorting one into the other is a single
- * closed decision, which is what makes adding an operator a change in two places
- * rather than a search for every place that might have had an opinion.
+ * Fourteen operators, four sets of rules: arithmetic, concatenation, comparison and
+ * three-valued logic. Sorting one into the other is a single closed decision, which
+ * is what makes adding an operator a change in two places rather than a search for
+ * every place that might have had an opinion.
  *
  * @visibility App\Gql
  */
@@ -30,9 +31,8 @@ final class BinaryOperation
      *     \App\Gql\Evaluation\BinaryOperation::apply(\App\Gql\Syntax\Expression\BinaryOperator::Multiply, new \App\Gql\Datum\IntegerDatum(2), new \App\Gql\Datum\IntegerDatum(3))->toText() // => '6'
      * @example A logical one follows three-valued logic
      *     \App\Gql\Evaluation\BinaryOperation::apply(\App\Gql\Syntax\Expression\BinaryOperator::And, new \App\Gql\Datum\BooleanDatum(false), new \App\Gql\Datum\NullDatum())->toText() // => 'FALSE'
-     * @example A membership test follows the rules about lists
-     *     $within = new \App\Gql\Datum\ListDatum([new \App\Gql\Datum\IntegerDatum(1)]);
-     *     \App\Gql\Evaluation\BinaryOperation::apply(\App\Gql\Syntax\Expression\BinaryOperator::NotIn, new \App\Gql\Datum\IntegerDatum(2), $within)->toText() // => 'TRUE'
+     * @example A comparing one follows the rules about order
+     *     \App\Gql\Evaluation\BinaryOperation::apply(\App\Gql\Syntax\Expression\BinaryOperator::Less, new \App\Gql\Datum\IntegerDatum(2), new \App\Gql\Datum\DecimalDatum(25, 1))->toText() // => 'TRUE'
      *
      * @return Datum What the operator produced
      *
@@ -54,9 +54,6 @@ final class BinaryOperation
             BinaryOperator::LessOrEqual,
             BinaryOperator::Greater,
             BinaryOperator::GreaterOrEqual => Comparison::apply($operator, $left, $right),
-
-            BinaryOperator::In => Membership::of($left, $right),
-            BinaryOperator::NotIn => Logic::datum(Logic::negate(Logic::truth(Membership::of($left, $right)))),
 
             BinaryOperator::And => Logic::datum(Logic::both(Logic::truth($left), Logic::truth($right))),
             BinaryOperator::Or => Logic::datum(Logic::either(Logic::truth($left), Logic::truth($right))),

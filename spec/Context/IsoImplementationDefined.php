@@ -12,10 +12,10 @@ use SimpleXMLElement;
  *
  * The artifact's header says it exists so implementers can be sure every such item has
  * been given a definition, and so users can state what they need one to be. That is the
- * difference between a limit and a divergence: `--hops` caps the upper bound of an
- * unbounded quantifier, which sounds like peq answering a different question from the
- * one asked until you find IL018, where the standard says the cap is the
- * implementation's to choose.
+ * difference between a limit and a divergence: `--hops` refuses a quantifier written
+ * with an upper bound above it, which sounds like peq declining GQL until you find
+ * IL018, where the standard leaves the largest upper bound a quantifier may be written
+ * with to the implementation.
  *
  * @see spec/iso/artifacts.txt Where ISO publishes the artifact, and its sum
  */

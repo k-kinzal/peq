@@ -6,6 +6,7 @@ namespace App\Gql\Evaluation;
 
 use App\Gql\Datum\Datum;
 use App\Gql\Datum\DatumOrder;
+use App\Gql\GqlException;
 use App\Gql\Syntax\Expression\BinaryOperator;
 
 /**
@@ -31,10 +32,12 @@ final class Comparison
      *     \App\Gql\Evaluation\Comparison::apply(\App\Gql\Syntax\Expression\BinaryOperator::Less, new \App\Gql\Datum\IntegerDatum(1), new \App\Gql\Datum\IntegerDatum(2))->toText() // => 'TRUE'
      * @example Nothing compares equal to the absence of a value
      *     \App\Gql\Evaluation\Comparison::apply(\App\Gql\Syntax\Expression\BinaryOperator::Equal, new \App\Gql\Datum\NullDatum(), new \App\Gql\Datum\NullDatum())->kind() // => \App\Gql\Datum\DatumKind::Null
-     * @example Values of unrelated kinds are unequal rather than undecided
-     *     \App\Gql\Evaluation\Comparison::apply(\App\Gql\Syntax\Expression\BinaryOperator::Equal, new \App\Gql\Datum\IntegerDatum(5), new \App\Gql\Datum\StringDatum('5'))->toText() // => 'FALSE'
+     * @example Values of kinds GQL gives no order between cannot be compared at all
+     *     \App\Gql\Evaluation\Comparison::apply(\App\Gql\Syntax\Expression\BinaryOperator::Equal, new \App\Gql\Datum\IntegerDatum(5), new \App\Gql\Datum\StringDatum('5')) // throws \App\Gql\GqlException: values not comparable
      *
      * @return Datum True, false, or the absence of an answer
+     *
+     * @throws GqlException If the two values cannot be compared
      */
     public static function apply(BinaryOperator $operator, Datum $left, Datum $right): Datum
     {

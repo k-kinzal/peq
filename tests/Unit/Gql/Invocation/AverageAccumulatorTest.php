@@ -4,25 +4,17 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Gql\Invocation;
 
+use App\Gql\Argument\ExactArithmetic;
 use App\Gql\Argument\NumberArgument;
-use App\Gql\Argument\TextArgument;
-use App\Gql\Datum\BooleanDatum;
-use App\Gql\Datum\DateTimeDatum;
-use App\Gql\Datum\Datum;
-use App\Gql\Datum\DatumIdentity;
-use App\Gql\Datum\DatumJson;
 use App\Gql\Datum\DatumKind;
-use App\Gql\Datum\DatumOrder;
-use App\Gql\Datum\EdgeDatum;
+use App\Gql\Datum\DecimalDatum;
 use App\Gql\Datum\FloatDatum;
 use App\Gql\Datum\IntegerDatum;
-use App\Gql\Datum\ListDatum;
-use App\Gql\Datum\NodeDatum;
 use App\Gql\Datum\NullDatum;
-use App\Gql\Datum\PathDatum;
 use App\Gql\Datum\StringDatum;
 use App\Gql\GqlException;
 use App\Gql\Invocation\AverageAccumulator;
+use App\Gql\Invocation\SumAccumulator;
 use App\Gql\StatusCode;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
@@ -33,40 +25,20 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(AverageAccumulator::class)]
-#[UsesClass(BooleanDatum::class)]
-#[UsesClass(DateTimeDatum::class)]
-#[UsesClass(DatumIdentity::class)]
-#[UsesClass(DatumJson::class)]
 #[UsesClass(DatumKind::class)]
-#[UsesClass(DatumOrder::class)]
-#[UsesClass(EdgeDatum::class)]
+#[UsesClass(DecimalDatum::class)]
+#[UsesClass(ExactArithmetic::class)]
 #[UsesClass(FloatDatum::class)]
-#[UsesClass(IntegerDatum::class)]
-#[UsesClass(ListDatum::class)]
-#[UsesClass(NodeDatum::class)]
-#[UsesClass(NullDatum::class)]
-#[UsesClass(PathDatum::class)]
-#[UsesClass(StringDatum::class)]
-#[UsesClass(Datum::class)]
 #[UsesClass(GqlException::class)]
-#[UsesClass(StatusCode::class)]
+#[UsesClass(IntegerDatum::class)]
+#[UsesClass(NullDatum::class)]
 #[UsesClass(NumberArgument::class)]
-#[UsesClass(TextArgument::class)]
+#[UsesClass(StatusCode::class)]
+#[UsesClass(StringDatum::class)]
+#[UsesClass(SumAccumulator::class)]
 #[Small]
 final class AverageAccumulatorTest extends TestCase
 {
-    /**
-     * @throws GqlException
-     */
-    public function testAcceptAveragesWholeNumbersIntoAnApproximateOne(): void
-    {
-        $average = new AverageAccumulator();
-        $average->accept(new IntegerDatum(1));
-        $average->accept(new IntegerDatum(2));
-
-        self::assertSame('1.5', $average->result()->toText());
-    }
-
     /**
      * @throws GqlException
      */
@@ -76,7 +48,7 @@ final class AverageAccumulatorTest extends TestCase
         $average->accept(new IntegerDatum(2));
         $average->accept(new NullDatum());
 
-        self::assertSame('2.0', $average->result()->toText());
+        self::assertEquals(new DecimalDatum(2000000, 6), $average->result());
     }
 
     /**
@@ -85,13 +57,88 @@ final class AverageAccumulatorTest extends TestCase
     public function testAcceptReportsAValueThatIsNotANumber(): void
     {
         $this->expectException(GqlException::class);
-        $this->expectExceptionMessage('a number was expected');
+        $this->expectExceptionMessage('[22G03] error: data exception - invalid value type: a number was expected, and a STRING was given');
 
         (new AverageAccumulator())->accept(new StringDatum('a'));
     }
 
+    /**
+     * @throws GqlException
+     */
+    public function testResultAveragesWholeNumbersIntoAnExactDecimalWithSixDigitsAfterThePoint(): void
+    {
+        $average = new AverageAccumulator();
+        $average->accept(new IntegerDatum(1));
+        $average->accept(new IntegerDatum(2));
+
+        self::assertEquals(new DecimalDatum(1500000, 6), $average->result());
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testResultKeepsSixDigitsAfterThePointOfAnAverageThatComesOutWhole(): void
+    {
+        $average = new AverageAccumulator();
+        $average->accept(new IntegerDatum(1));
+        $average->accept(new IntegerDatum(1));
+
+        self::assertEquals(new DecimalDatum(1000000, 6), $average->result());
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testResultCutsOffTheDigitsOfAnAverageThatDoNotFit(): void
+    {
+        $average = new AverageAccumulator();
+        $average->accept(new IntegerDatum(1));
+        $average->accept(new IntegerDatum(0));
+        $average->accept(new IntegerDatum(1));
+
+        self::assertEquals(new DecimalDatum(666666, 6), $average->result());
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testResultAveragesDecimalsExactly(): void
+    {
+        $average = new AverageAccumulator();
+        $average->accept(new DecimalDatum(15, 1));
+        $average->accept(new IntegerDatum(2));
+
+        self::assertEquals(new DecimalDatum(1750000, 6), $average->result());
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testResultIsApproximateOnceOneValueAveragedIs(): void
+    {
+        $average = new AverageAccumulator();
+        $average->accept(new IntegerDatum(1));
+        $average->accept(new FloatDatum(2.0));
+
+        self::assertEquals(new FloatDatum(1.5), $average->result());
+    }
+
+    /**
+     * @throws GqlException
+     */
     public function testResultAnswersNothingWhenNothingWasAveraged(): void
     {
-        self::assertSame(DatumKind::Null, (new AverageAccumulator())->result()->kind());
+        self::assertEquals(new NullDatum(), (new AverageAccumulator())->result());
+    }
+
+    /**
+     * @throws GqlException
+     */
+    public function testResultKeepsFewerDigitsAfterThePointOfAnAverageTooLargeForSix(): void
+    {
+        $average = new AverageAccumulator();
+        $average->accept(new IntegerDatum(10000000000000));
+
+        self::assertEquals(new DecimalDatum(100000000000000000, 4), $average->result());
     }
 }

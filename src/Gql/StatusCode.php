@@ -35,6 +35,9 @@ enum StatusCode: string
     /** The query ran and produced no rows */
     case NoData = '02000';
 
+    /** A number was worked out that its type cannot hold */
+    case NumericValueOutOfRange = '22003';
+
     /** A substring was asked for that a string cannot have */
     case SubstringError = '22011';
 
@@ -43,6 +46,9 @@ enum StatusCode: string
 
     /** A value was of a type the operation cannot accept */
     case InvalidType = '22G03';
+
+    /** Two values were compared that have no order between them */
+    case ValuesNotComparable = '22G04';
 
     /** The query named a function, an aggregate or a statement GQL does not define here */
     case UnknownFeature = '42000';
@@ -74,9 +80,11 @@ enum StatusCode: string
         return match ($this) {
             self::Success => 'note: successful completion',
             self::NoData => 'note: no data',
+            self::NumericValueOutOfRange => 'error: data exception - numeric value out of range',
             self::SubstringError => 'error: data exception - substring error',
             self::DivisionByZero => 'error: data exception - division by zero',
             self::InvalidType => 'error: data exception - invalid value type',
+            self::ValuesNotComparable => 'error: data exception - values not comparable',
             self::UnknownFeature => 'error: syntax error or access rule violation',
             self::SyntaxError => 'error: syntax error or access rule violation - invalid syntax',
             self::InvalidReference => 'error: syntax error or access rule violation - invalid reference',
@@ -102,9 +110,11 @@ enum StatusCode: string
             self::Success,
             self::NoData => true,
 
+            self::NumericValueOutOfRange,
             self::SubstringError,
             self::DivisionByZero,
             self::InvalidType,
+            self::ValuesNotComparable,
             self::UnknownFeature,
             self::SyntaxError,
             self::InvalidReference => false,
