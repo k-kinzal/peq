@@ -16,13 +16,13 @@ use App\Gql\Syntax\Pattern\LabelPattern;
  *
  * @visibility App\Gql\Parsing
  */
-final class LabelParser
+final readonly class LabelParser
 {
     /**
      * @param TokenReader $tokens The pieces of the query being read
      */
     public function __construct(
-        private readonly TokenReader $tokens,
+        private TokenReader $tokens,
     ) {}
 
     /**

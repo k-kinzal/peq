@@ -24,15 +24,15 @@ use App\Gql\Syntax\Query;
  * afterwards, because nothing flows across a set operator — a name bound on the left
  * of a `UNION` means nothing on its right.
  */
-final class QueryExecution
+final readonly class QueryExecution
 {
     /**
      * @param ElementGraph $graph    The graph being queried
      * @param int          $hopLimit The largest upper bound a quantifier may be written with, which is IL018
      */
     public function __construct(
-        private readonly ElementGraph $graph,
-        private readonly int $hopLimit = 10,
+        private ElementGraph $graph,
+        private int $hopLimit = 10,
     ) {}
 
     /**

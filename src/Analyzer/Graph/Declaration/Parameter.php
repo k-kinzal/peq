@@ -16,7 +16,7 @@ namespace App\Analyzer\Graph\Declaration;
  * The type is kept as it was written rather than resolved, because that is the form a
  * reader recognises and the form the question is usually asked in.
  */
-final class Parameter
+final readonly class Parameter
 {
     /**
      * @param string      $name     The parameter name, without its leading dollar sign
@@ -27,12 +27,12 @@ final class Parameter
      * @param bool        $promoted Whether it also declares a property of the class
      */
     public function __construct(
-        public readonly string $name,
-        public readonly ?string $type = null,
-        public readonly bool $optional = false,
-        public readonly bool $variadic = false,
-        public readonly bool $byRef = false,
-        public readonly bool $promoted = false,
+        public string $name,
+        public ?string $type = null,
+        public bool $optional = false,
+        public bool $variadic = false,
+        public bool $byRef = false,
+        public bool $promoted = false,
     ) {
         assert($this->name !== '', 'A parameter must be named');
     }

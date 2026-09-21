@@ -16,15 +16,15 @@ namespace App\Analyzer\Graph\Declaration;
  * what a query is written against; resolving it would answer a different question
  * than the one the source asked.
  */
-final class Signature
+final readonly class Signature
 {
     /**
      * @param list<Parameter> $parameters The parameters, in the order they are declared
      * @param null|string     $returnType The declared return type as written, or null when none was written
      */
     public function __construct(
-        public readonly array $parameters = [],
-        public readonly ?string $returnType = null,
+        public array $parameters = [],
+        public ?string $returnType = null,
     ) {}
 
     /**

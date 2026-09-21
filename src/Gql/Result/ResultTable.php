@@ -18,15 +18,15 @@ use App\Gql\StatusCode;
  * the other. Finding nothing is an answer — often the answer a question about
  * impact was hoping for.
  */
-final class ResultTable
+final readonly class ResultTable
 {
     /**
      * @param list<ResultColumn> $columns The columns, in the order they are shown
      * @param list<ResultRow>    $rows    The rows, in the order they are shown
      */
     public function __construct(
-        public readonly array $columns,
-        public readonly array $rows,
+        public array $columns,
+        public array $rows,
     ) {}
 
     /**

@@ -20,13 +20,13 @@ use Symfony\Component\Console\Output\OutputInterface;
  *
  * @visibility App\Reporter
  */
-final class DotWriter implements QueryReporter
+final readonly class DotWriter implements QueryReporter
 {
     /**
      * @param null|ElementGraph $graph The graph the answer came from, so the arrows between its symbols can be drawn
      */
     public function __construct(
-        private readonly ?ElementGraph $graph = null,
+        private ?ElementGraph $graph = null,
     ) {}
 
     /**

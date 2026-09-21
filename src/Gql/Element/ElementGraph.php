@@ -23,7 +23,7 @@ use App\Gql\Datum\NodeDatum;
  *
  * @visibility App
  */
-final class ElementGraph
+final readonly class ElementGraph
 {
     /**
      * @param array<string, NodeDatum>       $nodes    Every symbol, by what identifies it
@@ -31,9 +31,9 @@ final class ElementGraph
      * @param array<string, list<EdgeDatum>> $arriving The relations arriving at each symbol, by what identifies it
      */
     public function __construct(
-        private readonly array $nodes,
-        private readonly array $leaving,
-        private readonly array $arriving,
+        private array $nodes,
+        private array $leaving,
+        private array $arriving,
     ) {}
 
     /**

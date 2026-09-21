@@ -14,13 +14,13 @@ use Override;
  * is a decision the reporter makes about the format it is writing, not a property of
  * the value.
  */
-final class StringDatum implements Datum
+final readonly class StringDatum implements Datum
 {
     /**
      * @param string $value The characters
      */
     public function __construct(
-        public readonly string $value,
+        public string $value,
     ) {}
 
     /**

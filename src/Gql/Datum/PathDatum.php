@@ -18,13 +18,13 @@ use Override;
  * Binding one is how a query gets an answer it can act on: not "these two symbols are
  * connected" but "here is the chain of calls between them".
  */
-final class PathDatum implements Datum
+final readonly class PathDatum implements Datum
 {
     /**
      * @param list<Datum> $elements The nodes and edges met, in order, beginning and ending with a node
      */
     public function __construct(
-        public readonly array $elements,
+        public array $elements,
     ) {
         assert($this->elements !== [], 'A path passes through at least one node');
         assert($this->elements[0] instanceof NodeDatum, 'A path begins at a node');

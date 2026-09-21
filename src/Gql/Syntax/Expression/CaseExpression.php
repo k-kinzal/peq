@@ -17,7 +17,7 @@ use App\Gql\Syntax\Expression;
  * A `CASE` that matches nothing and was written without an `ELSE` is worth nothing,
  * which is GQL's rule and the reason the fallback may be absent too.
  */
-final class CaseExpression implements Expression
+final readonly class CaseExpression implements Expression
 {
     /**
      * @param null|Expression  $subject   What each branch is tested against, or null when branches test themselves
@@ -25,9 +25,9 @@ final class CaseExpression implements Expression
      * @param null|Expression  $otherwise What the expression is worth when no branch is taken, or null when nothing is
      */
     public function __construct(
-        public readonly ?Expression $subject,
-        public readonly array $branches,
-        public readonly ?Expression $otherwise = null,
+        public ?Expression $subject,
+        public array $branches,
+        public ?Expression $otherwise = null,
     ) {
         assert($this->branches !== [], 'A choice offers at least one branch');
     }

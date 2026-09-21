@@ -17,14 +17,14 @@ namespace App\Gql\Result;
  * often than it would in a database: a property like `value` is a number on one
  * symbol and a string on another.
  */
-final class ResultColumn
+final readonly class ResultColumn
 {
     /**
      * @param string $heading What the column is called
      * @param string $type    The GQL name of what it holds
      */
     public function __construct(
-        public readonly string $heading,
-        public readonly string $type,
+        public string $heading,
+        public string $type,
     ) {}
 }

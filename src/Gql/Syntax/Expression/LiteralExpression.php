@@ -15,12 +15,12 @@ use App\Gql\Syntax\Expression;
  * again at evaluation time would be doing it once too often — and would leave open
  * the possibility of the two readings disagreeing.
  */
-final class LiteralExpression implements Expression
+final readonly class LiteralExpression implements Expression
 {
     /**
      * @param Datum $value The value the query wrote
      */
     public function __construct(
-        public readonly Datum $value,
+        public Datum $value,
     ) {}
 }

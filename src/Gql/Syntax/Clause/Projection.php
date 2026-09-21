@@ -15,7 +15,7 @@ use App\Gql\Syntax\Expression;
  * the projection can use the name, and a program reading the result gets a heading
  * that does not change when the expression is rewritten.
  */
-final class Projection
+final readonly class Projection
 {
     /**
      * @param Expression  $value   What the column holds
@@ -23,9 +23,9 @@ final class Projection
      * @param string      $written The text that produced it, used as its heading when it has no name
      */
     public function __construct(
-        public readonly Expression $value,
-        public readonly ?string $alias = null,
-        public readonly string $written = '',
+        public Expression $value,
+        public ?string $alias = null,
+        public string $written = '',
     ) {}
 
     /**

@@ -16,7 +16,7 @@ namespace App\Gql\Syntax\Pattern;
  * property of this traversal: one pattern in a `MATCH` may need to forbid repeating a
  * node while another beside it does not care.
  */
-final class PathPattern
+final readonly class PathPattern
 {
     /**
      * @param list<PathTerm> $terms    The pieces of the path, beginning and ending with one that matches a node
@@ -24,9 +24,9 @@ final class PathPattern
      * @param null|string    $variable What to bind the matched path to, or null when the path is not named
      */
     public function __construct(
-        public readonly array $terms,
-        public readonly PathMode $mode = PathMode::Walk,
-        public readonly ?string $variable = null,
+        public array $terms,
+        public PathMode $mode = PathMode::Walk,
+        public ?string $variable = null,
     ) {
         assert($this->terms !== [], 'A path passes through at least one node');
     }

@@ -15,13 +15,13 @@ use App\Gql\Datum\NullDatum;
  * them. Everything that reads a result — a table, a JSON document, a drawing —
  * reads the columns and then reads the rows against them.
  */
-final class ResultRow
+final readonly class ResultRow
 {
     /**
      * @param list<Datum> $values What the row holds, one per column
      */
     public function __construct(
-        public readonly array $values,
+        public array $values,
     ) {}
 
     /**

@@ -13,15 +13,15 @@ namespace App\Gql\Syntax\Pattern;
  * follows a chain of classes through the methods that connect them. Neither is
  * expressible by repeating an edge.
  */
-final class GroupPattern implements PathTerm
+final readonly class GroupPattern implements PathTerm
 {
     /**
      * @param list<PathTerm>  $terms      The stretch of pattern in the parentheses
      * @param null|Quantifier $quantifier How often it repeats, or null when it is matched exactly once
      */
     public function __construct(
-        public readonly array $terms,
-        public readonly ?Quantifier $quantifier = null,
+        public array $terms,
+        public ?Quantifier $quantifier = null,
     ) {
         assert($this->terms !== [], 'A group holds at least one piece of pattern');
     }

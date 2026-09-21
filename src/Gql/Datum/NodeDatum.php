@@ -18,7 +18,7 @@ use Override;
  * The identity is the node's own — the symbol's fully qualified name — so two
  * references to the same symbol are the same node however they were reached.
  */
-final class NodeDatum implements Datum
+final readonly class NodeDatum implements Datum
 {
     /**
      * @param string               $id         What identifies the node, unique in its graph
@@ -26,9 +26,9 @@ final class NodeDatum implements Datum
      * @param array<string, Datum> $properties The properties the node carries, by name
      */
     public function __construct(
-        public readonly string $id,
-        public readonly array $labels = [],
-        public readonly array $properties = [],
+        public string $id,
+        public array $labels = [],
+        public array $properties = [],
     ) {}
 
     /**

@@ -16,7 +16,7 @@ namespace App\Gql\Syntax\Pattern;
  * the pattern names still matches. A pattern asking for `Callable` matches a method,
  * which carries `Method`, `Member` and `Callable`.
  */
-final class LabelPattern
+final readonly class LabelPattern
 {
     /**
      * @param LabelOperator      $operator How the requirement is built up
@@ -24,9 +24,9 @@ final class LabelPattern
      * @param list<LabelPattern> $operands The requirements it is built from, when it is built from any
      */
     public function __construct(
-        public readonly LabelOperator $operator,
-        public readonly ?string $name = null,
-        public readonly array $operands = [],
+        public LabelOperator $operator,
+        public ?string $name = null,
+        public array $operands = [],
     ) {
         assert($this->operator !== LabelOperator::Named || ($this->name !== null && $this->name !== ''), 'A named requirement names a label');
     }

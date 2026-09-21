@@ -28,7 +28,7 @@ final class StatementRefusal
     /**
      * The statements GQL defines that peq does not run, and what each one does.
      */
-    private const STATEMENTS = [
+    private const array STATEMENTS = [
         'INSERT' => 'adds nodes and edges to a graph',
         'SET' => 'assigns properties or labels',
         'REMOVE' => 'takes properties or labels away',

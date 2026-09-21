@@ -14,7 +14,7 @@ namespace App\Gql\Syntax\Pattern;
  * pattern to the list of every edge along the match, which is what makes `size(e)`
  * the distance between two symbols.
  */
-final class EdgePattern implements PathTerm
+final readonly class EdgePattern implements PathTerm
 {
     /**
      * @param EdgeDirection     $direction  Which way the pattern crosses the edge
@@ -24,10 +24,10 @@ final class EdgePattern implements PathTerm
      * @param null|Quantifier   $quantifier How often it repeats, or null when it is crossed exactly once
      */
     public function __construct(
-        public readonly EdgeDirection $direction,
-        public readonly ?string $variable = null,
-        public readonly ?LabelPattern $labels = null,
-        public readonly ElementFilter $filter = new ElementFilter(),
-        public readonly ?Quantifier $quantifier = null,
+        public EdgeDirection $direction,
+        public ?string $variable = null,
+        public ?LabelPattern $labels = null,
+        public ElementFilter $filter = new ElementFilter(),
+        public ?Quantifier $quantifier = null,
     ) {}
 }

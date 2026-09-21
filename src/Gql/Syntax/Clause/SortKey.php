@@ -13,14 +13,14 @@ use App\Gql\Syntax\Expression;
  * between rows the earlier ones tied on. That is what makes a multi-key sort
  * predictable, and it is what a paged query needs in order to page consistently.
  */
-final class SortKey
+final readonly class SortKey
 {
     /**
      * @param Expression    $value     What to order by
      * @param SortDirection $direction Which way to order it
      */
     public function __construct(
-        public readonly Expression $value,
-        public readonly SortDirection $direction = SortDirection::Ascending,
+        public Expression $value,
+        public SortDirection $direction = SortDirection::Ascending,
     ) {}
 }

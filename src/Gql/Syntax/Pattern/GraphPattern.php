@@ -16,13 +16,13 @@ namespace App\Gql\Syntax\Pattern;
  * usual way to keep it readable, which is why this is a list rather than an
  * afterthought.
  */
-final class GraphPattern
+final readonly class GraphPattern
 {
     /**
      * @param list<PathPattern> $paths The paths matched together
      */
     public function __construct(
-        public readonly array $paths,
+        public array $paths,
     ) {
         assert($this->paths !== [], 'A pattern looks for at least one path');
     }

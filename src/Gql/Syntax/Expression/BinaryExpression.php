@@ -15,7 +15,7 @@ use App\Gql\Syntax\Expression;
  * about the operator, and is answered where the operator is applied rather than by
  * having nineteen shapes.
  */
-final class BinaryExpression implements Expression
+final readonly class BinaryExpression implements Expression
 {
     /**
      * @param BinaryOperator $operator What is applied
@@ -23,8 +23,8 @@ final class BinaryExpression implements Expression
      * @param Expression     $right    The value on its right
      */
     public function __construct(
-        public readonly BinaryOperator $operator,
-        public readonly Expression $left,
-        public readonly Expression $right,
+        public BinaryOperator $operator,
+        public Expression $left,
+        public Expression $right,
     ) {}
 }

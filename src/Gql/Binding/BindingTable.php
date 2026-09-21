@@ -15,13 +15,13 @@ namespace App\Gql\Binding;
  *
  * @visibility App\Gql
  */
-final class BindingTable
+final readonly class BindingTable
 {
     /**
      * @param list<BindingRow> $rows The rows, in order
      */
     public function __construct(
-        public readonly array $rows = [],
+        public array $rows = [],
     ) {}
 
     /**

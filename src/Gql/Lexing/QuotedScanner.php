@@ -29,7 +29,7 @@ final class QuotedScanner
     /**
      * What each backslash escape in a string stands for.
      */
-    private const ESCAPES = [
+    private const array ESCAPES = [
         'n' => "\n",
         't' => "\t",
         'r' => "\r",

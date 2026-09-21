@@ -27,13 +27,13 @@ use App\Gql\Syntax\Clause\SortKey;
  *
  * @visibility App\Gql
  */
-final class RowExecution
+final readonly class RowExecution
 {
     /**
      * @param ExpressionEvaluation $evaluation How an expression is worked out for a row
      */
     public function __construct(
-        private readonly ExpressionEvaluation $evaluation,
+        private ExpressionEvaluation $evaluation,
     ) {}
 
     /**

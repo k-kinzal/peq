@@ -32,7 +32,7 @@ final class EdgeLabels
     /**
      * What a query calls each kind of relation.
      */
-    private const NAMES = [
+    private const array NAMES = [
         'function-call' => 'functionCall',
         'method-call' => 'methodCall',
         'static-call' => 'staticCall',

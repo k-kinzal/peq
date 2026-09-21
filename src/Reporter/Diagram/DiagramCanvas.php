@@ -27,27 +27,27 @@ final class DiagramCanvas
     /**
      * A cell joined to the one above.
      */
-    public const NORTH = 1;
+    public const int NORTH = 1;
 
     /**
      * A cell joined to the one on its right.
      */
-    public const EAST = 2;
+    public const int EAST = 2;
 
     /**
      * A cell joined to the one below.
      */
-    public const SOUTH = 4;
+    public const int SOUTH = 4;
 
     /**
      * A cell joined to the one on its left.
      */
-    public const WEST = 8;
+    public const int WEST = 8;
 
     /**
      * The character for each way a cell can be joined.
      */
-    public const GLYPHS = [
+    public const array GLYPHS = [
         0 => ' ',
         self::NORTH => '│',
         self::SOUTH => '│',

@@ -34,33 +34,33 @@ use App\Gql\Syntax\SetOperator;
  *
  * @visibility App\Gql
  */
-final class Parser
+final readonly class Parser
 {
     /**
      * The words that can begin a clause.
      */
-    private const CLAUSES = ['MATCH', 'OPTIONAL', 'LET', 'FILTER', 'ORDER', 'OFFSET', 'SKIP', 'LIMIT', 'RETURN'];
+    private const array CLAUSES = ['MATCH', 'OPTIONAL', 'LET', 'FILTER', 'ORDER', 'OFFSET', 'SKIP', 'LIMIT', 'RETURN'];
 
     /**
      * Reads expressions wherever a value is written.
      */
-    private readonly ExpressionParser $expressions;
+    private ExpressionParser $expressions;
 
     /**
      * Reads the drawing of a graph a MATCH is written as.
      */
-    private readonly PatternParser $patterns;
+    private PatternParser $patterns;
 
     /**
      * Reads what a query shows the reader.
      */
-    private readonly ResultParser $results;
+    private ResultParser $results;
 
     /**
      * @param TokenReader $tokens The pieces of the query being read
      */
     public function __construct(
-        private readonly TokenReader $tokens,
+        private TokenReader $tokens,
     ) {
         $this->expressions = new ExpressionParser($tokens);
         $this->patterns = new PatternParser($tokens, $this->expressions);

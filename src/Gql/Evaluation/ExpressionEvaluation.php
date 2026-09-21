@@ -47,13 +47,13 @@ use App\Gql\Syntax\Expression\VariableExpression;
  *
  * @visibility App\Gql
  */
-final class ExpressionEvaluation
+final readonly class ExpressionEvaluation
 {
     /**
      * @param null|list<BindingRow> $group The rows a summary written here summarises, or null when there is no group
      */
     public function __construct(
-        private readonly ?array $group = null,
+        private ?array $group = null,
     ) {}
 
     /**

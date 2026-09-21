@@ -18,14 +18,14 @@ use App\Gql\Result\ResultTable;
  * reporter asked to draw what was found has to read those relations back out of the
  * graph the answer came from.
  */
-final class QueryActionOutput
+final readonly class QueryActionOutput
 {
     /**
      * @param ResultTable  $result What the query answered
      * @param ElementGraph $graph  The graph it was answered from
      */
     public function __construct(
-        public readonly ResultTable $result,
-        public readonly ElementGraph $graph,
+        public ResultTable $result,
+        public ElementGraph $graph,
     ) {}
 }

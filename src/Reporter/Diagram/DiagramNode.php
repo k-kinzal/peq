@@ -12,7 +12,7 @@ namespace App\Reporter\Diagram;
  * should not have to know which. What it needs is what a reader needs: what the
  * symbol is called, what kind of thing it is, and where to go and look at it.
  */
-final class DiagramNode
+final readonly class DiagramNode
 {
     /**
      * @param string      $id       What identifies the symbol, unique in the drawing
@@ -20,9 +20,9 @@ final class DiagramNode
      * @param null|string $location Where it is written, or null when that is not known
      */
     public function __construct(
-        public readonly string $id,
-        public readonly string $kind = '',
-        public readonly ?string $location = null,
+        public string $id,
+        public string $kind = '',
+        public ?string $location = null,
     ) {
         assert($this->id !== '', 'A drawn symbol is identified');
     }

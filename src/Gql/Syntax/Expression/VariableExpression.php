@@ -14,13 +14,13 @@ use App\Gql\Syntax\Expression;
  * this clause continues from what that one found. Both are the same idea, and both
  * come down to reading a column of the current row.
  */
-final class VariableExpression implements Expression
+final readonly class VariableExpression implements Expression
 {
     /**
      * @param string $name The name, as the query wrote it
      */
     public function __construct(
-        public readonly string $name,
+        public string $name,
     ) {
         assert($this->name !== '', 'A variable is named');
     }

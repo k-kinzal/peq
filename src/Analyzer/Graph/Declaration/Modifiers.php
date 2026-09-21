@@ -17,7 +17,7 @@ namespace App\Analyzer\Graph\Declaration;
  * class and `readonly` on a property are the same keyword answering the same
  * question, so they share one field.
  */
-final class Modifiers
+final readonly class Modifiers
 {
     /**
      * @param bool $static   Whether the declaration belongs to the class rather than to an instance
@@ -26,10 +26,10 @@ final class Modifiers
      * @param bool $readonly Whether the declaration may only be written once
      */
     public function __construct(
-        public readonly bool $static = false,
-        public readonly bool $abstract = false,
-        public readonly bool $final = false,
-        public readonly bool $readonly = false,
+        public bool $static = false,
+        public bool $abstract = false,
+        public bool $final = false,
+        public bool $readonly = false,
     ) {}
 
     /**

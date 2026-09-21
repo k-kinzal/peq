@@ -23,7 +23,7 @@ final class AggregateCatalog
     /**
      * The summaries GQL defines.
      */
-    private const NAMES = ['count', 'sum', 'avg', 'min', 'max', 'collect_list'];
+    private const array NAMES = ['count', 'sum', 'avg', 'min', 'max', 'collect_list'];
 
     /**
      * Reports whether a name is one of the summaries.

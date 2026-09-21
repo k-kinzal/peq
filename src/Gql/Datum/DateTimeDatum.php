@@ -16,13 +16,13 @@ use Override;
  * what GQL asks for: two moments that name the same instant in different offsets are
  * equal, and both still say where they were written.
  */
-final class DateTimeDatum implements Datum
+final readonly class DateTimeDatum implements Datum
 {
     /**
      * @param DateTimeImmutable $value The moment
      */
     public function __construct(
-        public readonly DateTimeImmutable $value,
+        public DateTimeImmutable $value,
     ) {}
 
     /**

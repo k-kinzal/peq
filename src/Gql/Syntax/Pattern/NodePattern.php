@@ -15,7 +15,7 @@ namespace App\Gql\Syntax\Pattern;
  * A node pattern that requires nothing and binds nothing — a bare `()` — is still a
  * node pattern: it says a node stands there, which is what an edge needs at each end.
  */
-final class NodePattern implements PathTerm
+final readonly class NodePattern implements PathTerm
 {
     /**
      * @param null|string       $variable What to bind the matched node to, or null when the match is not named
@@ -23,8 +23,8 @@ final class NodePattern implements PathTerm
      * @param ElementFilter     $filter   What else it must satisfy
      */
     public function __construct(
-        public readonly ?string $variable = null,
-        public readonly ?LabelPattern $labels = null,
-        public readonly ElementFilter $filter = new ElementFilter(),
+        public ?string $variable = null,
+        public ?LabelPattern $labels = null,
+        public ElementFilter $filter = new ElementFilter(),
     ) {}
 }

@@ -15,7 +15,7 @@ use Override;
  * references so that an edge stays a small value, and so that a pattern that binds
  * only the edge does not drag two nodes along with it.
  */
-final class EdgeDatum implements Datum
+final readonly class EdgeDatum implements Datum
 {
     /**
      * @param string               $id         What identifies the edge, unique in its graph
@@ -25,11 +25,11 @@ final class EdgeDatum implements Datum
      * @param string               $target     What identifies the node the edge arrives at
      */
     public function __construct(
-        public readonly string $id,
-        public readonly array $labels,
-        public readonly array $properties,
-        public readonly string $origin,
-        public readonly string $target,
+        public string $id,
+        public array $labels,
+        public array $properties,
+        public string $origin,
+        public string $target,
     ) {}
 
     /**

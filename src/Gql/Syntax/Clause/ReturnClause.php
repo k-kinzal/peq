@@ -21,7 +21,7 @@ use App\Gql\Syntax\Expression;
  * is what it means: every name in scope, decided when the query runs rather than when
  * it is written.
  */
-final class ReturnClause implements Clause
+final readonly class ReturnClause implements Clause
 {
     /**
      * @param list<Projection> $columns  What the reader is shown, or nothing at all to show every name in scope
@@ -31,11 +31,11 @@ final class ReturnClause implements Clause
      * @param null|PageClause  $page     Which stretch of the result is shown, or null for all of it
      */
     public function __construct(
-        public readonly array $columns = [],
-        public readonly bool $distinct = false,
-        public readonly array $groupBy = [],
-        public readonly array $orderBy = [],
-        public readonly ?PageClause $page = null,
+        public array $columns = [],
+        public bool $distinct = false,
+        public array $groupBy = [],
+        public array $orderBy = [],
+        public ?PageClause $page = null,
     ) {}
 
     /**

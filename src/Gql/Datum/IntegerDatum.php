@@ -14,13 +14,13 @@ use Override;
  * mixes the two produces an approximate result, and one that does not stays exact.
  * A line number that came out as 12.0 would be a small lie about what was read.
  */
-final class IntegerDatum implements Datum
+final readonly class IntegerDatum implements Datum
 {
     /**
      * @param int $value The number
      */
     public function __construct(
-        public readonly int $value,
+        public int $value,
     ) {}
 
     /**

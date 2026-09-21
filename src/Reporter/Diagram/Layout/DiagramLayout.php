@@ -14,7 +14,7 @@ namespace App\Reporter\Diagram\Layout;
  *
  * @visibility App\Reporter\Diagram
  */
-final class DiagramLayout
+final readonly class DiagramLayout
 {
     /**
      * @param array<string, LayoutItem>   $items  Everything drawn, by what identifies its place
@@ -23,10 +23,10 @@ final class DiagramLayout
      * @param list<array{string, string}> $links  The arrows, each from a place to one in the next column
      */
     public function __construct(
-        public readonly array $items,
-        public readonly array $layers,
-        public readonly array $rows,
-        public readonly array $links,
+        public array $items,
+        public array $layers,
+        public array $rows,
+        public array $links,
     ) {}
 
     /**

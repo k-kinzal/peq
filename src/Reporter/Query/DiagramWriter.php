@@ -25,15 +25,15 @@ use Symfony\Component\Console\Output\OutputInterface;
  *
  * @visibility App\Reporter
  */
-final class DiagramWriter implements QueryReporter
+final readonly class DiagramWriter implements QueryReporter
 {
     /**
      * @param null|ElementGraph $graph    The graph the answer came from, so the arrows between its symbols can be drawn
      * @param DiagramRenderer   $renderer How a drawing is written
      */
     public function __construct(
-        private readonly ?ElementGraph $graph = null,
-        private readonly DiagramRenderer $renderer = new TerminalRenderer(),
+        private ?ElementGraph $graph = null,
+        private DiagramRenderer $renderer = new TerminalRenderer(),
     ) {}
 
     /**

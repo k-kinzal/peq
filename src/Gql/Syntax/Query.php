@@ -12,15 +12,15 @@ namespace App\Gql\Syntax;
  * associating the way it reads — `A UNION B EXCEPT C` is `(A UNION B) EXCEPT C` — and
  * keeps a query with no set operator at all from needing a special shape.
  */
-final class Query
+final readonly class Query
 {
     /**
      * @param list<QueryBlock>  $blocks    The blocks, in the order they are written
      * @param list<SetOperator> $operators How each block is combined with what came before it
      */
     public function __construct(
-        public readonly array $blocks,
-        public readonly array $operators = [],
+        public array $blocks,
+        public array $operators = [],
     ) {
         assert($this->blocks !== [], 'A query has at least one block');
         assert(count($this->operators) === count($this->blocks) - 1, 'One operator combines each block with what came before it');

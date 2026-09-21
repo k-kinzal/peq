@@ -29,18 +29,18 @@ use App\Gql\Syntax\Expression\UnaryOperator;
  *
  * @visibility App\Gql
  */
-final class ExpressionParser
+final readonly class ExpressionParser
 {
     /**
      * Reads operands, which are whole expressions in every way but their binding.
      */
-    private readonly OperandParser $operands;
+    private OperandParser $operands;
 
     /**
      * @param TokenReader $tokens The pieces of the query being read
      */
     public function __construct(
-        private readonly TokenReader $tokens,
+        private TokenReader $tokens,
     ) {
         $this->operands = new OperandParser($tokens, $this);
     }

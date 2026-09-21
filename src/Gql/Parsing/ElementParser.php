@@ -20,20 +20,20 @@ use App\Gql\Syntax\Pattern\LabelPattern;
  *
  * @visibility App\Gql\Parsing
  */
-final class ElementParser
+final readonly class ElementParser
 {
     /**
      * Reads what a pattern requires of an element's labels.
      */
-    private readonly LabelParser $labels;
+    private LabelParser $labels;
 
     /**
      * @param TokenReader      $tokens      The pieces of the query being read
      * @param ExpressionParser $expressions Where a value or a predicate is written inside a pattern
      */
     public function __construct(
-        private readonly TokenReader $tokens,
-        private readonly ExpressionParser $expressions,
+        private TokenReader $tokens,
+        private ExpressionParser $expressions,
     ) {
         $this->labels = new LabelParser($tokens);
     }

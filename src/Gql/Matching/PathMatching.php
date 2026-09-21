@@ -34,20 +34,20 @@ use App\Gql\Syntax\Pattern\PathTerm;
  *
  * @visibility App\Gql
  */
-final class PathMatching
+final readonly class PathMatching
 {
     /**
      * Crossing relations, once or repeatedly.
      */
-    private readonly EdgeMatching $edges;
+    private EdgeMatching $edges;
 
     /**
      * @param ElementGraph         $graph      The graph being matched against
      * @param ExpressionEvaluation $evaluation How a predicate written in a pattern is worked out
      */
     public function __construct(
-        private readonly ElementGraph $graph,
-        private readonly ExpressionEvaluation $evaluation,
+        private ElementGraph $graph,
+        private ExpressionEvaluation $evaluation,
     ) {
         $this->edges = new EdgeMatching($graph, $evaluation);
     }

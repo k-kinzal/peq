@@ -34,7 +34,7 @@ use App\Gql\Syntax\Expression\VariableExpression;
  *
  * @visibility App\Gql\Parsing
  */
-final class OperandParser
+final readonly class OperandParser
 {
     /**
      * The functions GQL writes as aggregates, and so the only ones a set quantifier may be written in.
@@ -43,15 +43,15 @@ final class OperandParser
      * ISO/IEC 39075: `<general set function> ::= <general set function type> <left
      * paren> [ <set quantifier> ] <value expression> <right paren>`.
      */
-    public const SET_FUNCTIONS = ['AVG', 'COUNT', 'MAX', 'MIN', 'SUM', 'COLLECT_LIST', 'STDDEV_SAMP', 'STDDEV_POP', 'PERCENTILE_CONT', 'PERCENTILE_DISC'];
+    public const array SET_FUNCTIONS = ['AVG', 'COUNT', 'MAX', 'MIN', 'SUM', 'COLLECT_LIST', 'STDDEV_SAMP', 'STDDEV_POP', 'PERCENTILE_CONT', 'PERCENTILE_DISC'];
 
     /**
      * @param TokenReader      $tokens      The pieces of the query being read
      * @param ExpressionParser $expressions Where a whole expression is read again, inside brackets
      */
     public function __construct(
-        private readonly TokenReader $tokens,
-        private readonly ExpressionParser $expressions,
+        private TokenReader $tokens,
+        private ExpressionParser $expressions,
     ) {}
 
     /**

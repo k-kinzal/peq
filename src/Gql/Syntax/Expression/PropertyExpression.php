@@ -14,15 +14,15 @@ use App\Gql\Syntax\Expression;
  * rather than a variable, so `e[0].line` — the line of the first edge of a path — is
  * one expression rather than a special case.
  */
-final class PropertyExpression implements Expression
+final readonly class PropertyExpression implements Expression
 {
     /**
      * @param Expression $subject  What the property is read off
      * @param string     $property The property name, as the query wrote it
      */
     public function __construct(
-        public readonly Expression $subject,
-        public readonly string $property,
+        public Expression $subject,
+        public string $property,
     ) {
         assert($this->property !== '', 'A property is named');
     }

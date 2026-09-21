@@ -26,12 +26,12 @@ use App\Gql\Syntax\Pattern\GraphPattern;
  *
  * @visibility App\Gql
  */
-final class PatternMatching
+final readonly class PatternMatching
 {
     /**
      * Finding every way one path matches.
      */
-    private readonly PathMatching $paths;
+    private PathMatching $paths;
 
     /**
      * @param ElementGraph         $graph      The graph being matched against

@@ -30,7 +30,7 @@ final readonly class Config
      * in practice. A quantifier with no upper bound is not limited by this, because GQL
      * allows one only under a restrictor that keeps its matches finite.
      */
-    public const HOPS = 10;
+    public const int HOPS = 10;
 
     /**
      * @param string              $basePath   The base path for the PHP project to analyze

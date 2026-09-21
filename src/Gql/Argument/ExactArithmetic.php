@@ -32,7 +32,7 @@ final class ExactArithmetic
     /**
      * The fewest digits after the point a division with a decimal in it keeps.
      */
-    public const DIVISION_SCALE = 6;
+    public const int DIVISION_SCALE = 6;
 
     /**
      * Adds two exact numbers.

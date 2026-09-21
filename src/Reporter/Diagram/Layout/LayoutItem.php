@@ -12,7 +12,7 @@ namespace App\Reporter\Diagram\Layout;
  *
  * @visibility App\Reporter\Diagram
  */
-final class LayoutItem
+final readonly class LayoutItem
 {
     /**
      * @param string         $key     What identifies the place in the layout
@@ -21,10 +21,10 @@ final class LayoutItem
      * @param int            $layer   The column it is drawn in, the first being column zero
      */
     public function __construct(
-        public readonly string $key,
-        public readonly LayoutItemKind $kind,
-        public readonly string $subject,
-        public readonly int $layer,
+        public string $key,
+        public LayoutItemKind $kind,
+        public string $subject,
+        public int $layer,
     ) {}
 
     /**

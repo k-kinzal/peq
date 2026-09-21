@@ -32,38 +32,38 @@ use Symfony\Component\Console\Output\OutputInterface;
  *
  * @visibility App\Reporter
  */
-final class TerminalRenderer implements DiagramRenderer
+final readonly class TerminalRenderer implements DiagramRenderer
 {
     /**
      * How wide a drawing is when nothing says how wide the terminal is.
      */
-    public const DEFAULT_WIDTH = 80;
+    public const int DEFAULT_WIDTH = 80;
 
     /**
      * What a symbol pointed at again is marked with, as the tree marks it.
      */
-    public const REFERENCE = ' (*)';
+    public const string REFERENCE = ' (*)';
 
     /**
      * What a symbol pointed at again by an arrow that closes a cycle is marked with, as the tree marks it.
      */
-    public const RECURSION = ' (recursive)';
+    public const string RECURSION = ' (recursive)';
 
     /**
      * What marks a drawing going on in the next band.
      */
-    public const CONTINUED = '…';
+    public const string CONTINUED = '…';
 
     /**
      * What an arrow is drawn arriving with.
      */
-    public const ARROWHEAD = '▶';
+    public const string ARROWHEAD = '▶';
 
     /**
      * @param int $width How many columns the drawing may take
      */
     public function __construct(
-        private readonly int $width = self::DEFAULT_WIDTH,
+        private int $width = self::DEFAULT_WIDTH,
     ) {}
 
     /**

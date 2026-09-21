@@ -31,12 +31,12 @@ use App\Gql\Syntax\Clause\MatchClause;
  *
  * @visibility App\Gql
  */
-final class MatchExecution
+final readonly class MatchExecution
 {
     /**
      * Finding every way a pattern matches.
      */
-    private readonly PatternMatching $patterns;
+    private PatternMatching $patterns;
 
     /**
      * @param ElementGraph         $graph      The graph being queried
@@ -44,7 +44,7 @@ final class MatchExecution
      */
     public function __construct(
         ElementGraph $graph,
-        private readonly ExpressionEvaluation $evaluation,
+        private ExpressionEvaluation $evaluation,
     ) {
         $this->patterns = new PatternMatching($graph, $evaluation);
     }

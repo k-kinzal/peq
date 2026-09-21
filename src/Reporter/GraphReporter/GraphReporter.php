@@ -26,7 +26,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  * symbols drawn as an arrow. How it is written down is the renderer's business — in
  * the terminal where the question was asked, or as Mermaid for a page that draws it.
  */
-final class GraphReporter implements Reporter
+final readonly class GraphReporter implements Reporter
 {
     /**
      * @param Traversal       $traversal The strategy deciding which relations the report follows
@@ -34,9 +34,9 @@ final class GraphReporter implements Reporter
      * @param DiagramRenderer $renderer  How a drawing is written
      */
     public function __construct(
-        private readonly Traversal $traversal,
-        private readonly ?int $level = null,
-        private readonly DiagramRenderer $renderer = new TerminalRenderer(),
+        private Traversal $traversal,
+        private ?int $level = null,
+        private DiagramRenderer $renderer = new TerminalRenderer(),
     ) {}
 
     /**

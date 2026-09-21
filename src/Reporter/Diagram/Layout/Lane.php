@@ -14,7 +14,7 @@ namespace App\Reporter\Diagram\Layout;
  *
  * @visibility App\Reporter\Diagram
  */
-final class Lane
+final readonly class Lane
 {
     /**
      * @param list<string> $origins    The places whose arrows enter the lane on their own line
@@ -23,10 +23,10 @@ final class Lane
      * @param list<int>    $departures The lines arrows go over to another lane on
      */
     public function __construct(
-        public readonly array $origins,
-        public readonly array $targets,
-        public readonly array $arrivals = [],
-        public readonly array $departures = [],
+        public array $origins,
+        public array $targets,
+        public array $arrivals = [],
+        public array $departures = [],
     ) {
         assert($this->origins !== [] || $this->arrivals !== [], 'Something enters a lane');
         assert($this->targets !== [] || $this->departures !== [], 'Something leaves a lane');

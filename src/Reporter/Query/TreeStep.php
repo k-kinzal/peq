@@ -13,7 +13,7 @@ namespace App\Reporter\Query;
  *
  * @visibility App\Reporter\Query
  */
-final class TreeStep
+final readonly class TreeStep
 {
     /**
      * @param string $label     What relation was followed to get here, empty at the start of a path
@@ -21,9 +21,9 @@ final class TreeStep
      * @param bool   $backwards Whether the relation was followed against its direction, from where it points to where it starts
      */
     public function __construct(
-        public readonly string $label,
-        public readonly string $id,
-        public readonly bool $backwards = false,
+        public string $label,
+        public string $id,
+        public bool $backwards = false,
     ) {}
 
     /**

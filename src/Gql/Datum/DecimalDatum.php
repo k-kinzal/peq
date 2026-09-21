@@ -21,15 +21,15 @@ use Override;
  * integer, which bounds the digits a value may have at eighteen; a value that would
  * need more is out of range rather than silently approximated.
  */
-final class DecimalDatum implements Datum
+final readonly class DecimalDatum implements Datum
 {
     /**
      * @param int $unscaled The digits, as one whole number
      * @param int $scale    How many of them come after the point
      */
     public function __construct(
-        public readonly int $unscaled,
-        public readonly int $scale,
+        public int $unscaled,
+        public int $scale,
     ) {
         assert($this->scale >= 0, 'An exact number has no fewer than no digits after its point');
     }

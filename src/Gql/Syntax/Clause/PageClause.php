@@ -18,15 +18,15 @@ use App\Gql\Syntax\Clause;
  * unbounded quantifier over a large codebase can match a great many paths, and a
  * limit is how a reader asks for an answer rather than for all of them.
  */
-final class PageClause implements Clause
+final readonly class PageClause implements Clause
 {
     /**
      * @param int      $offset How many rows to skip
      * @param null|int $limit  How many to keep after that, or null for all of them
      */
     public function __construct(
-        public readonly int $offset = 0,
-        public readonly ?int $limit = null,
+        public int $offset = 0,
+        public ?int $limit = null,
     ) {
         assert($this->offset >= 0, 'A page cannot skip a negative number of rows');
         assert($this->limit === null || $this->limit >= 0, 'A page cannot keep a negative number of rows');

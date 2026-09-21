@@ -13,15 +13,15 @@ use App\Gql\Syntax\Expression;
  * other, which is GQL's rule and worth stating where the binding lives: a name
  * defined here is available from the next clause on, not from the next comma.
  */
-final class VariableBinding
+final readonly class VariableBinding
 {
     /**
      * @param string     $name  The name being given
      * @param Expression $value What it is given to
      */
     public function __construct(
-        public readonly string $name,
-        public readonly Expression $value,
+        public string $name,
+        public Expression $value,
     ) {
         assert($this->name !== '', 'A binding names something');
     }

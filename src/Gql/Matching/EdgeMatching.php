@@ -29,15 +29,15 @@ use App\Gql\Syntax\Pattern\PathMode;
  *
  * @visibility App\Gql\Matching
  */
-final class EdgeMatching
+final readonly class EdgeMatching
 {
     /**
      * @param ElementGraph         $graph      The graph being matched against
      * @param ExpressionEvaluation $evaluation How a predicate written in a pattern is worked out
      */
     public function __construct(
-        private readonly ElementGraph $graph,
-        private readonly ExpressionEvaluation $evaluation,
+        private ElementGraph $graph,
+        private ExpressionEvaluation $evaluation,
     ) {}
 
     /**

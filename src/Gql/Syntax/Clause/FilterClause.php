@@ -15,12 +15,12 @@ use App\Gql\Syntax\Expression;
  * three-valued logic and the reason `FILTER NOT (p.line > 0)` does not keep the rows
  * that have no line.
  */
-final class FilterClause implements Clause
+final readonly class FilterClause implements Clause
 {
     /**
      * @param Expression $predicate What must hold of a row for it to be kept
      */
     public function __construct(
-        public readonly Expression $predicate,
+        public Expression $predicate,
     ) {}
 }

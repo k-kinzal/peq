@@ -24,13 +24,13 @@ use App\Gql\Lexing\TokenList;
  *
  * @visibility App\Gql
  */
-final class TokenReader
+final readonly class TokenReader
 {
     /**
      * @param TokenList $tokens The pieces of the query, with the text they were read from
      */
     public function __construct(
-        private readonly TokenList $tokens,
+        private TokenList $tokens,
     ) {}
 
     /**

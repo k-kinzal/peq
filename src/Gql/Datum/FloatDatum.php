@@ -12,13 +12,13 @@ use Override;
  * Every average a query computes is one of these, and so is every arithmetic
  * expression that met one, because GQL's coercion rule is that approximate spreads.
  */
-final class FloatDatum implements Datum
+final readonly class FloatDatum implements Datum
 {
     /**
      * @param float $value The number
      */
     public function __construct(
-        public readonly float $value,
+        public float $value,
     ) {}
 
     /**

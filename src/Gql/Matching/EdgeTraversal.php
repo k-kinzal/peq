@@ -23,15 +23,15 @@ use App\Gql\Syntax\Pattern\EdgeDirection;
  *
  * @visibility App\Gql
  */
-final class EdgeTraversal
+final readonly class EdgeTraversal
 {
     /**
      * @param EdgeDatum $edge  The relation that can be crossed
      * @param string    $other What identifies the symbol at the other end of it
      */
     public function __construct(
-        public readonly EdgeDatum $edge,
-        public readonly string $other,
+        public EdgeDatum $edge,
+        public string $other,
     ) {}
 
     /**

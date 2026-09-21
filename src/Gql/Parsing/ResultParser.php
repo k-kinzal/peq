@@ -27,15 +27,15 @@ use App\Gql\Syntax\Expression\VariableExpression;
  *
  * @visibility App\Gql\Parsing
  */
-final class ResultParser
+final readonly class ResultParser
 {
     /**
      * @param TokenReader      $tokens      The pieces of the query being read
      * @param ExpressionParser $expressions Where a column, a sort key or a group key is read
      */
     public function __construct(
-        private readonly TokenReader $tokens,
-        private readonly ExpressionParser $expressions,
+        private TokenReader $tokens,
+        private ExpressionParser $expressions,
     ) {}
 
     /**

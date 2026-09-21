@@ -14,13 +14,13 @@ use Override;
  * keeping, because it makes "this filter kept only the rows where the predicate was
  * true" a single rule rather than two.
  */
-final class BooleanDatum implements Datum
+final readonly class BooleanDatum implements Datum
 {
     /**
      * @param bool $value Whether it is true
      */
     public function __construct(
-        public readonly bool $value,
+        public bool $value,
     ) {}
 
     /**

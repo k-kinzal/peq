@@ -31,13 +31,13 @@ use App\Gql\Syntax\Expression\VariableExpression;
  *
  * @visibility App\Gql
  */
-final class ReturnExecution
+final readonly class ReturnExecution
 {
     /**
      * @param RowExecution $rows How rows are ordered and paged
      */
     public function __construct(
-        private readonly RowExecution $rows,
+        private RowExecution $rows,
     ) {}
 
     /**

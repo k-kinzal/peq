@@ -34,12 +34,12 @@ namespace App\Reporter\Diagram\Layout;
  *
  * @visibility App\Reporter\Diagram
  */
-final class LaneRouting
+final readonly class LaneRouting
 {
     /**
      * What sharing a stretch of line costs, against the one a crossing costs.
      */
-    public const SHARED_LINE = 1000;
+    public const int SHARED_LINE = 1000;
 
     /**
      * @param list<Lane>                  $lanes     The lanes, left to right
@@ -47,9 +47,9 @@ final class LaneRouting
      * @param list<array{int, int, int}>  $transfers The arrows that go over from one lane to another: the lane they leave, the lane they join, and the line they cross on
      */
     public function __construct(
-        public readonly array $lanes,
-        public readonly array $straight,
-        public readonly array $transfers = [],
+        public array $lanes,
+        public array $straight,
+        public array $transfers = [],
     ) {}
 
     /**

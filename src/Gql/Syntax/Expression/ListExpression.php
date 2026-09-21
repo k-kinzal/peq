@@ -13,12 +13,12 @@ use App\Gql\Syntax\Expression;
  * `[p.firstName, p.lastName]` is a list, and so is the right-hand side of an `IN`
  * that was written with something computed in it.
  */
-final class ListExpression implements Expression
+final readonly class ListExpression implements Expression
 {
     /**
      * @param list<Expression> $items The values, in the order they were written
      */
     public function __construct(
-        public readonly array $items = [],
+        public array $items = [],
     ) {}
 }

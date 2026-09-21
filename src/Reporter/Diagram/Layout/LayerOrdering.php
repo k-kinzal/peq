@@ -19,7 +19,7 @@ final class LayerOrdering
     /**
      * How many times the columns are swept, each time right and then left.
      */
-    public const SWEEPS = 4;
+    public const int SWEEPS = 4;
 
     /**
      * Orders each column so that as few arrows as can be found cross.

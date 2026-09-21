@@ -18,15 +18,15 @@ use App\Gql\Syntax\Expression;
  * Both are evaluated while matching rather than after it, which is what makes a
  * selective pattern cheap: an element that fails here is never followed.
  */
-final class ElementFilter
+final readonly class ElementFilter
 {
     /**
      * @param array<string, Expression> $properties The properties that must equal given values
      * @param null|Expression           $predicate  What must hold of the element, or null when nothing beyond the properties must
      */
     public function __construct(
-        public readonly array $properties = [],
-        public readonly ?Expression $predicate = null,
+        public array $properties = [],
+        public ?Expression $predicate = null,
     ) {}
 
     /**

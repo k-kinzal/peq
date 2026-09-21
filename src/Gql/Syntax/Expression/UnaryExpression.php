@@ -14,14 +14,14 @@ use App\Gql\Syntax\Expression;
  * one value, and holding them the same way is what keeps evaluation from needing a
  * separate shape for each side of the operand.
  */
-final class UnaryExpression implements Expression
+final readonly class UnaryExpression implements Expression
 {
     /**
      * @param UnaryOperator $operator What is applied
      * @param Expression    $operand  What it is applied to
      */
     public function __construct(
-        public readonly UnaryOperator $operator,
-        public readonly Expression $operand,
+        public UnaryOperator $operator,
+        public Expression $operand,
     ) {}
 }

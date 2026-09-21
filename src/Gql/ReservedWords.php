@@ -36,7 +36,7 @@ final class ReservedWords
      *
      * @var list<string> The reserved words
      */
-    public const WORDS = [
+    public const array WORDS = [
         'ABS',
         'ACOS',
         'ALL',

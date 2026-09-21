@@ -20,7 +20,7 @@ final class RowPlacement
     /**
      * How many lines apart two places in one column are, at the least.
      */
-    public const SPACING = 2;
+    public const int SPACING = 2;
 
     /**
      * Gives each place a line, near the middle of what it is joined to.

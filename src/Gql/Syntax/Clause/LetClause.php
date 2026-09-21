@@ -13,13 +13,13 @@ use App\Gql\Syntax\Clause;
  * filtered on, sorted by and returned without being written three times. It is also
  * how a query groups by something computed, since grouping is by name.
  */
-final class LetClause implements Clause
+final readonly class LetClause implements Clause
 {
     /**
      * @param list<VariableBinding> $bindings The names being given, and what to
      */
     public function __construct(
-        public readonly array $bindings,
+        public array $bindings,
     ) {
         assert($this->bindings !== [], 'A binding clause binds at least one name');
     }

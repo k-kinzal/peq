@@ -18,15 +18,15 @@ namespace App\Analyzer\Graph\Declaration;
  * recognised by the text between its parentheses, and evaluating it would need a
  * runtime this analysis deliberately does not have.
  */
-final class AttributeUsage
+final readonly class AttributeUsage
 {
     /**
      * @param string       $name      The fully qualified name of the attribute class
      * @param list<string> $arguments The arguments as they are written, in source order
      */
     public function __construct(
-        public readonly string $name,
-        public readonly array $arguments = [],
+        public string $name,
+        public array $arguments = [],
     ) {
         assert($this->name !== '', 'An attribute must name a class');
     }

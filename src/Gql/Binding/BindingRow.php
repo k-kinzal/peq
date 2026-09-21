@@ -23,13 +23,13 @@ use App\Gql\Datum\NullDatum;
  *
  * @visibility App\Gql
  */
-final class BindingRow
+final readonly class BindingRow
 {
     /**
      * @param array<string, Datum> $values What each bound name is bound to
      */
     public function __construct(
-        private readonly array $values = [],
+        private array $values = [],
     ) {}
 
     /**

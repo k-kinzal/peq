@@ -24,7 +24,7 @@ use App\Gql\Datum\PathDatum;
  *
  * @visibility App\Gql
  */
-final class MatchState
+final readonly class MatchState
 {
     /**
      * @param BindingRow          $row     What the attempt has bound so far
@@ -35,12 +35,12 @@ final class MatchState
      * @param null|string         $start   What identifies the symbol it started from, or null before it has started
      */
     public function __construct(
-        public readonly BindingRow $row,
-        public readonly ?NodeDatum $current = null,
-        public readonly ?PathDatum $path = null,
-        private readonly array $edges = [],
-        private readonly array $nodes = [],
-        private readonly ?string $start = null,
+        public BindingRow $row,
+        public ?NodeDatum $current = null,
+        public ?PathDatum $path = null,
+        private array $edges = [],
+        private array $nodes = [],
+        private ?string $start = null,
     ) {}
 
     /**

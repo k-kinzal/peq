@@ -16,15 +16,15 @@ namespace App\Gql\Syntax\Pattern;
  * cycles that is only finite because a path mode makes it so, which is why GQL
  * allows it only under a restrictor — `TRAIL`, `SIMPLE` or `ACYCLIC`.
  */
-final class Quantifier
+final readonly class Quantifier
 {
     /**
      * @param int      $least The fewest repetitions that match
      * @param null|int $most  The most that match, or null for as many as the graph allows
      */
     public function __construct(
-        public readonly int $least = 0,
-        public readonly ?int $most = null,
+        public int $least = 0,
+        public ?int $most = null,
     ) {
         assert($this->least >= 0, 'A pattern cannot repeat fewer than no times');
         assert($this->most === null || $this->most >= $this->least, 'A pattern cannot repeat fewer times at most than at least');

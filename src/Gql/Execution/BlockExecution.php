@@ -34,22 +34,22 @@ use App\Gql\Syntax\QueryBlock;
  *
  * @visibility App\Gql
  */
-final class BlockExecution
+final readonly class BlockExecution
 {
     /**
      * Running the clause that looks for a shape in the graph.
      */
-    private readonly MatchExecution $matches;
+    private MatchExecution $matches;
 
     /**
      * Running the clauses that work on rows without touching the graph.
      */
-    private readonly RowExecution $rows;
+    private RowExecution $rows;
 
     /**
      * Running the clause that decides what the reader is shown.
      */
-    private readonly ReturnExecution $projection;
+    private ReturnExecution $projection;
 
     /**
      * @param ElementGraph $graph The graph being queried

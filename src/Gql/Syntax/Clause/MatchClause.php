@@ -20,7 +20,7 @@ use App\Gql\Syntax\Pattern\GraphPattern;
  * variables absent, which is the only way to ask "and what, if anything, does each of
  * these do" without silently dropping the ones that do nothing.
  */
-final class MatchClause implements Clause
+final readonly class MatchClause implements Clause
 {
     /**
      * @param GraphPattern    $pattern  The shape to look for
@@ -28,8 +28,8 @@ final class MatchClause implements Clause
      * @param bool            $optional Whether a row that matches nothing is kept rather than dropped
      */
     public function __construct(
-        public readonly GraphPattern $pattern,
-        public readonly ?Expression $where = null,
-        public readonly bool $optional = false,
+        public GraphPattern $pattern,
+        public ?Expression $where = null,
+        public bool $optional = false,
     ) {}
 }

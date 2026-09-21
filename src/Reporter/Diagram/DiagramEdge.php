@@ -11,7 +11,7 @@ namespace App\Reporter\Diagram;
  * Both ends are identities rather than symbols, so the drawing can be built up in any
  * order and can leave out an arrow whose far end it never reached.
  */
-final class DiagramEdge
+final readonly class DiagramEdge
 {
     /**
      * @param string $origin What identifies the symbol the arrow leaves
@@ -19,9 +19,9 @@ final class DiagramEdge
      * @param string $label  What the relation is
      */
     public function __construct(
-        public readonly string $origin,
-        public readonly string $target,
-        public readonly string $label = '',
+        public string $origin,
+        public string $target,
+        public string $label = '',
     ) {}
 
     /**

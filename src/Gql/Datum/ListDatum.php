@@ -14,13 +14,13 @@ use Override;
  * that matters most here, because it is what lets a query ask how far away something
  * is without knowing in advance how far it will turn out to be.
  */
-final class ListDatum implements Datum
+final readonly class ListDatum implements Datum
 {
     /**
      * @param list<Datum> $items The values, in order
      */
     public function __construct(
-        public readonly array $items,
+        public array $items,
     ) {}
 
     /**

@@ -19,7 +19,7 @@ namespace App\Analyzer\Graph\Declaration;
  * ever saw referenced has none of them. Absence here means "the source says nothing",
  * never "the analysis did not look".
  */
-final class SymbolDeclaration
+final readonly class SymbolDeclaration
 {
     /**
      * @param null|Visibility      $visibility The visibility written on it, or null when its kind carries none
@@ -31,13 +31,13 @@ final class SymbolDeclaration
      * @param bool                 $deprecated Whether the declaration marks itself deprecated
      */
     public function __construct(
-        public readonly ?Visibility $visibility = null,
-        public readonly Modifiers $modifiers = new Modifiers(),
-        public readonly ?Signature $signature = null,
-        public readonly array $attributes = [],
-        public readonly ?string $type = null,
-        public readonly ?string $value = null,
-        public readonly bool $deprecated = false,
+        public ?Visibility $visibility = null,
+        public Modifiers $modifiers = new Modifiers(),
+        public ?Signature $signature = null,
+        public array $attributes = [],
+        public ?string $type = null,
+        public ?string $value = null,
+        public bool $deprecated = false,
     ) {}
 
     /**

@@ -23,7 +23,7 @@ use App\Gql\GqlException;
  *
  * @visibility App\Gql
  */
-final class Lexer
+final readonly class Lexer
 {
     /**
      * The operators written as two characters, longest-match first.
@@ -33,20 +33,20 @@ final class Lexer
      * written, which is a smaller surprise than learning later that peq accepts a
      * spelling the language does not.
      */
-    private const PAIRS = ['<>', '<=', '>=', '||'];
+    private const array PAIRS = ['<>', '<=', '>=', '||'];
 
     /**
      * The operators and punctuation written as one character.
      */
-    private const SINGLES = ['(', ')', '[', ']', '{', '}', ',', '.', ':', '=', '<', '>', '+', '-', '*', '/', '|', '&', '!', '%', '~'];
+    private const array SINGLES = ['(', ')', '[', ']', '{', '}', ',', '.', ':', '=', '<', '>', '+', '-', '*', '/', '|', '&', '!', '%', '~'];
 
     /**
      * @param SourceCursor $cursor The place in the query text reading continues from
      * @param string       $source The whole query text, kept so a piece of it can be quoted back
      */
     public function __construct(
-        private readonly SourceCursor $cursor,
-        private readonly string $source = '',
+        private SourceCursor $cursor,
+        private string $source = '',
     ) {}
 
     /**

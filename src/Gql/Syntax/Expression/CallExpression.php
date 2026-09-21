@@ -19,7 +19,7 @@ use App\Gql\Syntax\Expression;
  * summarising, and the star of `count(*)`, which counts rows rather than values and
  * so counts the ones whose value is absent.
  */
-final class CallExpression implements Expression
+final readonly class CallExpression implements Expression
 {
     /**
      * @param string           $name      The function name, as the query wrote it
@@ -28,10 +28,10 @@ final class CallExpression implements Expression
      * @param bool             $star      Whether it was written over rows rather than over a value
      */
     public function __construct(
-        public readonly string $name,
-        public readonly array $arguments = [],
-        public readonly bool $distinct = false,
-        public readonly bool $star = false,
+        public string $name,
+        public array $arguments = [],
+        public bool $distinct = false,
+        public bool $star = false,
     ) {
         assert($this->name !== '', 'A function is named');
     }

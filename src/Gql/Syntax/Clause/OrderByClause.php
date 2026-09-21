@@ -14,13 +14,13 @@ use App\Gql\Syntax\Clause;
  * `LIMIT`: the limit takes the first rows of the order, and anything between them
  * would be free to lose it.
  */
-final class OrderByClause implements Clause
+final readonly class OrderByClause implements Clause
 {
     /**
      * @param list<SortKey> $keys What to order by, most significant first
      */
     public function __construct(
-        public readonly array $keys,
+        public array $keys,
     ) {
         assert($this->keys !== [], 'An ordering orders by at least one thing');
     }

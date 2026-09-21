@@ -13,7 +13,7 @@ namespace App\Gql\Lexing;
  * resolved, the name inside a pair of backticks. Keeping both is what lets a message
  * say `found "\n"` while the engine works with a newline.
  */
-final class Token
+final readonly class Token
 {
     /**
      * @param TokenKind $kind   What kind of thing it is
@@ -24,12 +24,12 @@ final class Token
      * @param int       $offset How far into the query text it starts
      */
     public function __construct(
-        public readonly TokenKind $kind,
-        public readonly string $lexeme,
-        public readonly string $value,
-        public readonly int $line,
-        public readonly int $column,
-        public readonly int $offset = 0,
+        public TokenKind $kind,
+        public string $lexeme,
+        public string $value,
+        public int $line,
+        public int $column,
+        public int $offset = 0,
     ) {
         assert($this->line > 0, 'A token is written on a line, counted from one');
         assert($this->column > 0, 'A token is written at a column, counted from one');

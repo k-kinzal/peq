@@ -17,13 +17,13 @@ use App\Gql\Syntax\Pattern\Quantifier;
  *
  * @visibility App\Gql\Parsing
  */
-final class QuantifierParser
+final readonly class QuantifierParser
 {
     /**
      * @param TokenReader $tokens The pieces of the query being read
      */
     public function __construct(
-        private readonly TokenReader $tokens,
+        private TokenReader $tokens,
     ) {}
 
     /**
