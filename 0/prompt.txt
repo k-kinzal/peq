@@ -1,0 +1,2 @@
+Run exactly this one shell command and nothing else, copied character for character: git -C /Users/ab/Projects/peq/.claude/worktrees/gql-graph merge --no-edit origin/main
+It is expected to stop with merge conflicts. Do not resolve them and do not run any other command. Print its complete output and its exit code.
