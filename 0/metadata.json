@@ -1,0 +1,65 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M31MRDBG88AVC1E96NXSRFNT",
+  "session_id": "13aee1eb-db07-4097-87aa-e324e1c2554c",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-21T09:29:07.186466Z",
+  "branch": "add-peq-skill",
+  "checkpoints_count": 2,
+  "save_step_count": 2,
+  "files_touched": [
+    "skills/peq/SKILL.md",
+    "skills/peq/references/graph.md",
+    "skills/peq/references/inspect.md",
+    "skills/peq/references/troubleshooting.md"
+  ],
+  "agent": "Cursor",
+  "model": "cursor-grok-4.6-high",
+  "turn_id": "bab0153609f7",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 447405,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 2554368,
+    "output_tokens": 28384,
+    "api_call_count": 2
+  },
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-21T09:29:07.146706Z",
+    "agent_lines": 516,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 516,
+    "total_lines_changed": 516,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 466,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 516,
+      "agent_lines_removed": 0
+    }
+  ]
+}
