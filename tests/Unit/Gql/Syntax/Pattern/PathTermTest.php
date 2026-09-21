@@ -19,12 +19,11 @@ use PHPUnit\Framework\TestCase;
 /**
  * @internal
  */
-#[CoversClass(PathTerm::class)]
+#[CoversClass(EdgePattern::class)]
+#[CoversClass(GroupPattern::class)]
+#[CoversClass(NodePattern::class)]
 #[UsesClass(EdgeDirection::class)]
-#[UsesClass(EdgePattern::class)]
 #[UsesClass(ElementFilter::class)]
-#[UsesClass(GroupPattern::class)]
-#[UsesClass(NodePattern::class)]
 #[Small]
 final class PathTermTest extends TestCase
 {

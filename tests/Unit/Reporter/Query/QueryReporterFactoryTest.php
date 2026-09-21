@@ -10,6 +10,7 @@ use App\Config\Config;
 use App\Config\ConfigException;
 use App\Config\DebugAnalyzerConfig;
 use App\Config\OutputFormat;
+use App\Config\PhpVersion;
 use App\Config\RawConfig;
 use App\Gql\Datum\EdgeDatum;
 use App\Gql\Datum\NodeDatum;
@@ -80,6 +81,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 #[UsesClass(LayeredLayout::class)]
 #[UsesClass(LayoutItem::class)]
 #[UsesClass(RowPlacement::class)]
+#[UsesClass(PhpVersion::class)]
 #[Small]
 final class QueryReporterFactoryTest extends TestCase
 {

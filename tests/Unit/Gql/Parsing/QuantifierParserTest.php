@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Gql\Parsing;
 
+use App\Gql\Datum\DecimalDatum;
 use App\Gql\GqlException;
 use App\Gql\Lexing\Lexer;
 use App\Gql\Lexing\SourceCursor;
@@ -46,6 +47,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(GroupPattern::class)]
 #[UsesClass(NodePattern::class)]
 #[UsesClass(Quantifier::class)]
+#[UsesClass(DecimalDatum::class)]
 #[Small]
 final class QuantifierParserTest extends TestCase
 {

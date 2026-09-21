@@ -26,17 +26,16 @@ use PHPUnit\Framework\TestCase;
 /**
  * @internal
  */
-#[CoversClass(Accumulator::class)]
-#[UsesClass(AverageAccumulator::class)]
-#[UsesClass(CollectAccumulator::class)]
-#[UsesClass(CountAccumulator::class)]
+#[CoversClass(AverageAccumulator::class)]
+#[CoversClass(CollectAccumulator::class)]
+#[CoversClass(CountAccumulator::class)]
+#[CoversClass(DistinctAccumulator::class)]
+#[CoversClass(ExtremeAccumulator::class)]
+#[CoversClass(SumAccumulator::class)]
 #[UsesClass(DatumIdentity::class)]
 #[UsesClass(DatumKind::class)]
-#[UsesClass(DistinctAccumulator::class)]
-#[UsesClass(ExtremeAccumulator::class)]
 #[UsesClass(IntegerDatum::class)]
 #[UsesClass(NullDatum::class)]
-#[UsesClass(SumAccumulator::class)]
 #[Small]
 final class AccumulatorTest extends TestCase
 {

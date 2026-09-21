@@ -27,13 +27,12 @@ use PHPUnit\Framework\TestCase;
 /**
  * @internal
  */
-#[CoversClass(Clause::class)]
-#[UsesClass(FilterClause::class)]
-#[UsesClass(LetClause::class)]
-#[UsesClass(MatchClause::class)]
-#[UsesClass(OrderByClause::class)]
-#[UsesClass(PageClause::class)]
-#[UsesClass(ReturnClause::class)]
+#[CoversClass(FilterClause::class)]
+#[CoversClass(LetClause::class)]
+#[CoversClass(MatchClause::class)]
+#[CoversClass(OrderByClause::class)]
+#[CoversClass(PageClause::class)]
+#[CoversClass(ReturnClause::class)]
 #[UsesClass(SortKey::class)]
 #[UsesClass(VariableBinding::class)]
 #[UsesClass(VariableExpression::class)]

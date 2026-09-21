@@ -8,12 +8,14 @@ use App\Action\AnalyzerChoice;
 use App\Analyzer\DebugAnalyzer\DebugAnalyzer;
 use App\Analyzer\Graph\Direction;
 use App\Analyzer\NativeAnalyzer\NativeAnalyzer;
+use App\Analyzer\PhpStanAnalyzer\ContainerFactory;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use App\Config\AnalyzerKind;
 use App\Config\Config;
 use App\Config\ConfigException;
 use App\Config\DebugAnalyzerConfig;
 use App\Config\OutputFormat;
+use App\Config\PhpVersion;
 use App\Config\RawConfig;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -35,6 +37,8 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(OutputFormat::class)]
 #[UsesClass(RawConfig::class)]
 #[UsesClass(Direction::class)]
+#[UsesClass(PhpVersion::class)]
+#[UsesClass(ContainerFactory::class)]
 #[Small]
 final class AnalyzerChoiceTest extends TestCase
 {

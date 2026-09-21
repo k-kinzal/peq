@@ -55,6 +55,8 @@ use App\Gql\Execution\ReturnExecution;
 use App\Gql\Execution\RowExecution;
 use App\Gql\Execution\SetOperation;
 use App\Gql\GqlException;
+use App\Gql\Invocation\AggregateCatalog;
+use App\Gql\Invocation\CountAccumulator;
 use App\Gql\Lexing\Lexer;
 use App\Gql\Lexing\QuotedScanner;
 use App\Gql\Lexing\SourceCursor;
@@ -92,6 +94,7 @@ use App\Gql\Syntax\Clause\ReturnClause;
 use App\Gql\Syntax\Clause\SortDirection;
 use App\Gql\Syntax\Clause\SortKey;
 use App\Gql\Syntax\Expression\BinaryExpression;
+use App\Gql\Syntax\Expression\CallExpression;
 use App\Gql\Syntax\Expression\LiteralExpression;
 use App\Gql\Syntax\Expression\PropertyExpression;
 use App\Gql\Syntax\Expression\VariableExpression;
@@ -99,6 +102,7 @@ use App\Gql\Syntax\Pattern\EdgeDirection;
 use App\Gql\Syntax\Pattern\EdgePattern;
 use App\Gql\Syntax\Pattern\ElementFilter;
 use App\Gql\Syntax\Pattern\GraphPattern;
+use App\Gql\Syntax\Pattern\GroupPattern;
 use App\Gql\Syntax\Pattern\LabelPattern;
 use App\Gql\Syntax\Pattern\NodePattern;
 use App\Gql\Syntax\Pattern\PathMode;
@@ -217,6 +221,10 @@ use Tests\Fixture\Gql\SampleGraph;
 #[UsesClass(Quantifier::class)]
 #[UsesClass(Query::class)]
 #[UsesClass(QueryBlock::class)]
+#[UsesClass(GroupPattern::class)]
+#[UsesClass(CallExpression::class)]
+#[UsesClass(CountAccumulator::class)]
+#[UsesClass(AggregateCatalog::class)]
 #[Small]
 final class QueryExecutionTest extends TestCase
 {

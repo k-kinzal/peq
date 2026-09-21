@@ -27,20 +27,19 @@ use PHPUnit\Framework\TestCase;
 /**
  * @internal
  */
-#[CoversClass(Expression::class)]
+#[CoversClass(BinaryExpression::class)]
+#[CoversClass(CallExpression::class)]
+#[CoversClass(CaseExpression::class)]
+#[CoversClass(ListExpression::class)]
+#[CoversClass(LiteralExpression::class)]
+#[CoversClass(PropertyExpression::class)]
+#[CoversClass(UnaryExpression::class)]
+#[CoversClass(VariableExpression::class)]
 #[UsesClass(DatumKind::class)]
 #[UsesClass(IntegerDatum::class)]
-#[UsesClass(BinaryExpression::class)]
 #[UsesClass(BinaryOperator::class)]
-#[UsesClass(CallExpression::class)]
 #[UsesClass(CaseBranch::class)]
-#[UsesClass(CaseExpression::class)]
-#[UsesClass(ListExpression::class)]
-#[UsesClass(LiteralExpression::class)]
-#[UsesClass(PropertyExpression::class)]
-#[UsesClass(UnaryExpression::class)]
 #[UsesClass(UnaryOperator::class)]
-#[UsesClass(VariableExpression::class)]
 #[Small]
 final class ExpressionTest extends TestCase
 {

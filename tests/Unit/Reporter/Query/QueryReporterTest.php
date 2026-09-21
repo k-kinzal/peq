@@ -44,15 +44,14 @@ use Symfony\Component\Console\Output\BufferedOutput;
 /**
  * @internal
  */
-#[CoversClass(QueryReporter::class)]
+#[CoversClass(DiagramWriter::class)]
+#[CoversClass(DotWriter::class)]
+#[CoversClass(JsonWriter::class)]
+#[CoversClass(TableWriter::class)]
+#[CoversClass(TreeWriter::class)]
 #[UsesClass(DatumJson::class)]
-#[UsesClass(DiagramWriter::class)]
-#[UsesClass(DotWriter::class)]
-#[UsesClass(JsonWriter::class)]
 #[UsesClass(ResultElements::class)]
-#[UsesClass(TableWriter::class)]
 #[UsesClass(TreeStep::class)]
-#[UsesClass(TreeWriter::class)]
 #[UsesClass(Diagram::class)]
 #[UsesClass(DiagramEdge::class)]
 #[UsesClass(DiagramNode::class)]

@@ -11,6 +11,7 @@ use App\Config\Config;
 use App\Config\ConfigException;
 use App\Config\DebugAnalyzerConfig;
 use App\Config\OutputFormat;
+use App\Config\PhpVersion;
 use App\Config\RawConfig;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
@@ -28,6 +29,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(OutputFormat::class)]
 #[UsesClass(Direction::class)]
 #[UsesClass(DebugAnalyzerConfig::class)]
+#[UsesClass(PhpVersion::class)]
 #[Small]
 final class QueryActionInputTest extends TestCase
 {

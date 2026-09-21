@@ -35,6 +35,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(ResultRow::class)]
 #[UsesClass(ResultTable::class)]
 #[UsesClass(StatusCode::class)]
+#[UsesClass(StringDatum::class)]
 #[Small]
 final class SetOperationTest extends TestCase
 {

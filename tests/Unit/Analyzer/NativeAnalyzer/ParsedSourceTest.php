@@ -9,6 +9,7 @@ use App\Analyzer\NativeAnalyzer\AutoloadIndex;
 use App\Analyzer\NativeAnalyzer\ClassLikeDeclaration;
 use App\Analyzer\NativeAnalyzer\ParsedSource;
 use App\Analyzer\NativeAnalyzer\SourceIndex;
+use App\Analyzer\SourceParser;
 use org\bovigo\vfs\vfsStream;
 use PhpParser\Node\Identifier;
 use PhpParser\PrettyPrinter\Standard;
@@ -25,6 +26,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(AutoloadIndex::class)]
 #[UsesClass(ClassLikeDeclaration::class)]
 #[UsesClass(SourceIndex::class)]
+#[UsesClass(SourceParser::class)]
 #[Small]
 final class ParsedSourceTest extends TestCase
 {
