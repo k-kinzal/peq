@@ -60,4 +60,43 @@ final class AssignmentsTest extends TestCase
         self::assertSame('read', $graph->nodes[$input->to]->kind);
         self::assertSame('$a', $graph->nodes[$input->to]->variable);
     }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('providerEvaluatedAddresses')]
+    public function testWriteDoesNotEvaluateAnAddressTwice(string $body): void
+    {
+        $source = '<?php function f($a, $i) { '.$body.' return $i; }';
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
+        self::assertNotNull($parsed);
+        self::assertInstanceOf(Function_::class, $parsed[0]);
+        $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
+        $inputs = array_values(array_map(
+            static fn (Dependency $edge): array => [$graph->nodes[$edge->from]->text, $graph->nodes[$edge->to]->kind],
+            array_filter($graph->edges, static fn (Dependency $edge): bool => $edge->kind === 'reaching-definition' && $graph->nodes[$edge->from]->variable === '$i'),
+        ));
+        self::assertSame([['$i', 'parameter'], ['$i', 'write']], $inputs);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function providerEvaluatedAddresses(): iterable
+    {
+        yield 'compound' => ['$a[$i++] += 1;'];
+
+        yield 'increment' => ['$a[$i++]++;'];
+
+        yield 'coalescing' => ['$a[$i++] ??= 1;'];
+
+        yield 'reference output' => ['preg_match("/x/", "x", $a[$i++]);'];
+    }
+
+    public function testIncrementDoesNotWriteAnAddressWhoseEvaluationThrows(): void
+    {
+        $source = '<?php function f($a) { $a[throw new Exception()]++; }';
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
+        self::assertNotNull($parsed);
+        self::assertInstanceOf(Function_::class, $parsed[0]);
+        $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
+        self::assertSame([], array_values(array_filter($graph->nodes, static fn (Occurrence $node): bool => $node->kind === 'aggregate-write')));
+    }
 }

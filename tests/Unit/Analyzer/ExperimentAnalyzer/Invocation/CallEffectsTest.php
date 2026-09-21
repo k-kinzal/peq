@@ -33,6 +33,10 @@ final class CallEffectsTest extends TestCase
         $writes = array_values(array_filter($graph->nodes, static fn (Occurrence $node): bool => $node->kind === 'call-write'));
         self::assertCount(1, $writes);
         self::assertSame('$matches', $writes[0]->variable);
+        $inputs = array_values(array_filter($graph->edges, static fn (\App\Analyzer\ExperimentAnalyzer\DataFlow\Dependency $edge): bool => $edge->from === $writes[0]->id && $edge->kind === 'data'));
+        self::assertCount(1, $inputs);
+        self::assertSame('call', $graph->nodes[$inputs[0]->to]->kind);
+
     }
 
     public function testSignaturePrefersWrittenFunctionsOverBuiltinNames(): void
@@ -75,5 +79,76 @@ final class CallEffectsTest extends TestCase
         $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source), $calls);
         $writes = array_values(array_map(static fn (Occurrence $node): ?string => $node->variable, array_filter($graph->nodes, static fn (Occurrence $node): bool => $node->kind === 'call-write')));
         self::assertSame(['$a', '$b'], $writes);
+    }
+
+    /**
+     * @param list<null|string> $reads
+     * @param list<null|string> $writes
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('providerCallArguments')]
+    public function testApplyDistinguishesNamedOutputsFromOrdinaryArguments(string $call, array $reads, array $writes): void
+    {
+        $source = '<?php function f($text, $output, $args) { '.$call.'; }';
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
+        self::assertNotNull($parsed);
+        self::assertInstanceOf(Function_::class, $parsed[0]);
+        $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
+        self::assertSame($reads, array_values(array_map(static fn (Occurrence $node): ?string => $node->variable, array_filter($graph->nodes, static fn (Occurrence $node): bool => $node->kind === 'read'))));
+        self::assertSame($writes, array_values(array_map(static fn (Occurrence $node): ?string => $node->variable, array_filter($graph->nodes, static fn (Occurrence $node): bool => $node->kind === 'call-write'))));
+
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>, list<string>}>
+     */
+    public static function providerCallArguments(): iterable
+    {
+        yield 'named regex output' => ['PREG_MATCH(matches: $output, subject: $text, pattern: "/x/")', ['$text'], ['$output']];
+
+        yield 'ordinary input' => ['unknown_function($output)', ['$output'], []];
+
+        yield 'unpacked inputs' => ['preg_match(...$args)', ['$args'], []];
+
+        yield 'callable creation' => ['preg_match(...)', [], []];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('providerCallNames')]
+    public function testNameResolvesOnlyStaticallyKnownReceivers(string $expression, ?string $expected): void
+    {
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse('<?php '.$expression.';');
+        self::assertNotNull($parsed);
+        self::assertInstanceOf(\PhpParser\Node\Stmt\Expression::class, $parsed[0]);
+        $node = $parsed[0]->expr;
+        self::assertTrue($node instanceof \PhpParser\Node\Expr\FuncCall || $node instanceof \PhpParser\Node\Expr\MethodCall || $node instanceof \PhpParser\Node\Expr\New_ || $node instanceof StaticCall);
+        self::assertSame($expected, (new CallEffects([], 'Example'))->name($node));
+    }
+
+    /**
+     * @return iterable<string, array{string, null|string}>
+     */
+    public static function providerCallNames(): iterable
+    {
+        yield 'constructor' => ['new Other()', 'Other::__construct'];
+
+        yield 'self constructor' => ['new self()', 'Example::__construct'];
+
+        yield 'parent constructor' => ['new PARENT()', null];
+
+        yield 'parent static call' => ['PARENT::replace()', null];
+
+        yield 'this call' => ['$this->replace()', 'Example::replace'];
+
+        yield 'other receiver' => ['$other->replace()', null];
+
+        yield 'dynamic method' => ['$this->$method()', null];
+
+        yield 'dynamic function' => ['$function()', null];
+    }
+
+    public function testSignatureFindsNamespacedFunctionsCaseInsensitively(): void
+    {
+        $name = new Name('Replace', ['namespacedName' => new Name('Example\Replace')]);
+        $effects = new CallEffects(['example\replace' => [true]]);
+        self::assertSame([true], $effects->signature(new \PhpParser\Node\Expr\FuncCall($name)));
     }
 }

@@ -74,6 +74,9 @@ final readonly class Loops
     {
         if ($node instanceof Stmt\For_) {
             foreach ($node->init as $expression) {
+                if (!$state->reachable) {
+                    break;
+                }
                 $this->statements->expressions->read($expression, $state);
             }
         }
@@ -92,6 +95,9 @@ final readonly class Loops
         $conditions = $node instanceof Stmt\For_ ? $node->cond : [$node->cond];
         $last = null;
         foreach ($conditions as $condition) {
+            if (!$state->reachable) {
+                break;
+            }
             $last = $this->statements->expressions->read($condition, $state);
         }
 
@@ -103,7 +109,7 @@ final readonly class Loops
      */
     public function iteration(Stmt\Do_|Stmt\For_|Stmt\Foreach_|Stmt\While_ $node, State $state, ?string $iterable): void
     {
-        if ($node instanceof Stmt\Foreach_ && $iterable !== null) {
+        if ($state->reachable && $node instanceof Stmt\Foreach_ && $iterable !== null) {
             $assignment = new Assignments($this->statements->expressions);
             $assignment->write($node->valueVar, [$iterable], $state);
             if ($node->keyVar !== null) {
@@ -119,6 +125,9 @@ final readonly class Loops
     {
         if ($node instanceof Stmt\For_) {
             foreach ($node->loop as $expression) {
+                if (!$state->reachable) {
+                    break;
+                }
                 $this->statements->expressions->read($expression, $state);
             }
         }

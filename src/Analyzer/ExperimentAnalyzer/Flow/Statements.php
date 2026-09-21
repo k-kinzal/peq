@@ -94,6 +94,9 @@ final readonly class Statements
             $inputs = [];
             foreach ($node->exprs as $expression) {
                 $inputs[] = $this->expressions->read($expression, $state);
+                if (!$state->reachable) {
+                    return new Exits(null);
+                }
             }
             $this->expressions->recording->value($node, 'output', $inputs, $state);
         } elseif ($node instanceof Stmt\Unset_) {

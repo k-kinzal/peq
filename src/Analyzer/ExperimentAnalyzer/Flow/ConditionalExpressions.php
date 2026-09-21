@@ -93,10 +93,15 @@ final readonly class ConditionalExpressions
         $condition = $this->expressions->read($node->var, $state);
         $assigned = clone $state;
         $assigned->controls[$condition] = 'null-or-unset';
-        $value = $this->expressions->read($node->expr, $assigned);
         $inputs = [$condition];
         if ($assigned->reachable) {
-            $inputs[] = (new Assignments($this->expressions))->write($node->var, [$value], $assigned);
+            $values = $this->expressions->values($node->expr, $assigned);
+            if ($values !== []) {
+                if (!$node->var instanceof Expr\Variable) {
+                    $values[] = $condition;
+                }
+                $inputs[] = (new Assignments($this->expressions))->write($node->var, $values, $assigned, true);
+            }
         }
         $skipped = clone $state;
         $skipped->controls[$condition] = 'non-null';
@@ -123,8 +128,14 @@ final readonly class ConditionalExpressions
             }
             $matched = [];
             foreach ($arm->conds as $condition) {
-                $value = $this->expressions->read($condition, $remaining);
-                $test = $this->expressions->recording->value($condition, 'condition', [$subject, $value], $remaining);
+                if (!$remaining->reachable) {
+                    break;
+                }
+                $values = $this->expressions->values($condition, $remaining);
+                if ($values === []) {
+                    break;
+                }
+                $test = $this->expressions->recording->value($condition, 'condition', [$subject, ...$values], $remaining);
                 $branch = clone $remaining;
                 $branch->controls[$test] = 'match';
                 $matched[] = $branch;
@@ -140,11 +151,8 @@ final readonly class ConditionalExpressions
                 $states[] = $branch;
             }
         }
-        if ($default !== null) {
-            $value = $this->expressions->read($default->body, $remaining);
-            if ($remaining->reachable) {
-                $inputs[] = $value;
-            }
+        if ($default !== null && $remaining->reachable) {
+            array_push($inputs, ...$this->expressions->values($default->body, $remaining));
             $states[] = $remaining;
         }
         $state->continueWith($states);

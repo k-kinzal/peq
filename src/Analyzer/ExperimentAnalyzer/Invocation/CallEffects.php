@@ -73,7 +73,7 @@ final readonly class CallEffects
                 if ($argument->value instanceof Expr\Variable) {
                     $expressions->recording->write($argument->value, [$call], $state, 'call-write');
                 } else {
-                    (new Assignments($expressions))->write($argument->value, [$call], $state);
+                    (new Assignments($expressions))->write($argument->value, [$call], $state, true);
                 }
             }
         }

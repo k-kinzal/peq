@@ -64,6 +64,55 @@ final class InspectionTest extends TestCase
      */
     public static function providerPrograms(): iterable
     {
+        yield 'nested break exits both loops without visiting their tails' => [
+            '<?php function f() {
+$a = 0;
+while (true) {
+while (true) { $a = 1; break 2; }
+$a = 2;
+}
+return $a;
+}', [[7, '$a', 4, 'write']],
+        ];
+
+        yield 'switch continue exits the switch as break does' => [
+            '<?php function f($flag) {
+$a = 0;
+switch ($flag) { default: $a = 1; continue; }
+return $a;
+}', [[3, '$flag', 1, 'parameter'], [4, '$a', 3, 'write']],
+        ];
+
+        yield 'switch break two exits its enclosing loop' => [
+            '<?php function f($flag) {
+$a = 0;
+while (true) {
+switch ($flag) { default: $a = 1; break 2; }
+$a = 2;
+}
+return $a;
+}', [[4, '$flag', 1, 'parameter'], [7, '$a', 4, 'write']],
+        ];
+
+        yield 'fallthrough does not evaluate another case condition' => [
+            '<?php function f($flag) {
+$a = 0;
+switch ($flag) {
+case 1: $a = 1;
+case throw new Exception(): $a = 2; break;
+default: $a = 3;
+}
+return $a;
+}', [[3, '$flag', 1, 'parameter'], [8, '$a', 5, 'write']],
+        ];
+
+        yield 'constant ternary prunes its unused value' => [
+            '<?php function f($a) {
+$value = true ? $a : ($a = 2);
+return $a;
+}', [[2, '$a', 1, 'parameter'], [3, '$a', 1, 'parameter']],
+        ];
+
         yield 'builtin reference output reaches its later use' => [
             '<?php function f($text) {
 preg_match("/x/", $text, $matches);
@@ -307,5 +356,154 @@ return $a;
         yield 'suspension' => ['yield $a;'];
 
         yield 'dynamic code' => ['eval($a);'];
+    }
+
+    /**
+     * @param list<array{int, string, null|string}> $expected
+     */
+    #[DataProvider('providerValueSlices')]
+    public function testAnalyzeKeepsOnlyTheDefinitionsThatDetermineTheSelectedValue(string $source, int $line, string $variable, array $expected): void
+    {
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
+        self::assertNotNull($parsed);
+        self::assertInstanceOf(Function_::class, $parsed[0]);
+        $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
+        $slice = \App\Analyzer\ExperimentAnalyzer\DataFlow\Slice::of($graph, $graph->select($line, $variable), \App\Analyzer\Graph\Direction::Uses, null);
+        $actual = array_map(static fn (\App\Analyzer\ExperimentAnalyzer\DataFlow\Occurrence $node): array => [$node->line, $node->kind, $node->variable], $slice->nodes);
+        sort($actual);
+        sort($expected);
+        self::assertSame($expected, $actual);
+    }
+
+    /**
+     * @return iterable<string, array{string, int, string, list<array{int, string, null|string}>}>
+     */
+    public static function providerValueSlices(): iterable
+    {
+        yield 'arithmetic keeps both inputs' => [
+            '<?php function f($left, $right) {
+$value = $left + $right;
+return $value;
+}', 3, 'value', [[1, 'parameter', '$left'], [1, 'parameter', '$right'], [2, 'read', '$left'], [2, 'read', '$right'], [2, 'expression', null], [2, 'write', '$value'], [3, 'read', '$value']],
+        ];
+
+        yield 'ternary value includes its condition and both arms' => [
+            '<?php function f($flag, $left, $right) {
+$value = $flag ? $left : $right;
+return $value;
+}', 3, 'value', [[1, 'parameter', '$flag'], [1, 'parameter', '$left'], [1, 'parameter', '$right'], [2, 'read', '$flag'], [2, 'read', '$left'], [2, 'read', '$right'], [2, 'expression', null], [2, 'write', '$value'], [3, 'read', '$value']],
+        ];
+
+        yield 'coalescing assignment carries the original or fallback value' => [
+            '<?php function f($a, $fallback) {
+$a ??= $fallback;
+return $a;
+}', 3, 'a', [[1, 'parameter', '$a'], [1, 'parameter', '$fallback'], [2, 'read', '$a'], [2, 'read', '$fallback'], [2, 'write', '$a'], [3, 'read', '$a']],
+        ];
+
+        yield 'foreach key depends on the iterable' => [
+            '<?php function f($items) {
+foreach ($items as $key => $value) {
+return $key;
+}
+}', 3, 'key', [[1, 'parameter', '$items'], [2, 'read', '$items'], [2, 'write', '$key'], [3, 'read', '$key']],
+        ];
+
+        yield 'a copied value excludes a later overwrite' => [
+            '<?php function f($input) {
+$a = $input;
+$copy = $a;
+$a = 9;
+return $copy;
+}', 5, 'copy', [[1, 'parameter', '$input'], [2, 'read', '$input'], [2, 'write', '$a'], [3, 'read', '$a'], [3, 'write', '$copy'], [5, 'read', '$copy']],
+        ];
+
+        yield 'prefix increment supplies the new value' => [
+            '<?php function f($a) {
+$b = ++$a;
+return $b;
+}', 3, 'b', [[1, 'parameter', '$a'], [2, 'read', '$a'], [2, 'write', '$a'], [2, 'write', '$b'], [3, 'read', '$b']],
+        ];
+
+        yield 'postfix decrement supplies the old value' => [
+            '<?php function f($a) {
+$b = $a--;
+return $b;
+}', 3, 'b', [[1, 'parameter', '$a'], [2, 'read', '$a'], [2, 'write', '$b'], [3, 'read', '$b']],
+        ];
+
+        yield 'compound assignment includes both inputs' => [
+            '<?php function f($a, $b) {
+$a += $b;
+return $a;
+}', 3, 'a', [[1, 'parameter', '$a'], [1, 'parameter', '$b'], [2, 'read', '$a'], [2, 'read', '$b'], [2, 'write', '$a'], [3, 'read', '$a']],
+        ];
+
+        yield 'conditional assignment retains the predicate and both alternatives' => [
+            '<?php function f($flag) {
+$a = 0;
+if ($flag) {
+$a = 1;
+}
+return $a;
+}', 6, 'a', [[1, 'parameter', '$flag'], [2, 'literal', null], [2, 'write', '$a'], [3, 'read', '$flag'], [4, 'literal', null], [4, 'write', '$a'], [6, 'read', '$a']],
+        ];
+    }
+
+    #[DataProvider('providerTerminatedOperands')]
+    public function testAnalyzeDoesNotVisitOperandsAfterTermination(string $body): void
+    {
+        $source = '<?php function f($flag, $a, $later) { '.$body.' }';
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
+        self::assertNotNull($parsed);
+        self::assertInstanceOf(Function_::class, $parsed[0]);
+        $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
+        self::assertSame([], array_values(array_filter($graph->nodes, static fn (\App\Analyzer\ExperimentAnalyzer\DataFlow\Occurrence $node): bool => $node->variable === '$later' && $node->kind === 'read')));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function providerTerminatedOperands(): iterable
+    {
+        yield 'echo' => ['echo throw new Exception(), $later;'];
+
+        yield 'for initialization' => ['for (throw new Exception(), $later; true;) {}'];
+
+        yield 'for conditions' => ['for (; throw new Exception(), $later;) {}'];
+
+        yield 'for updates' => ['for (;; throw new Exception(), $later) {}'];
+
+        yield 'switch conditions' => ['switch ($flag) { case throw new Exception(): break; case $later: break; }'];
+
+        yield 'match conditions' => ['$a = match ($flag) { throw new Exception() => 1, $later => 2 };'];
+
+        yield 'compound address' => ['$a[throw new Exception()] += $later;'];
+
+        yield 'destructuring key' => ['[throw new Exception() => $a, $later => $a] = [];'];
+    }
+
+    public function testInspectUsesWrittenReferenceSignaturesAndCaseInsensitiveTargets(): void
+    {
+        $file = dirname(__DIR__, 4).'/Fixture/Experimental/Flow.php';
+        $index = \App\Analyzer\ExperimentAnalyzer\SourceIndex::of([$file], dirname($file));
+        $graph = (new Inspection())->inspect($index, '\tests\fixture\experimental\flow::referenced');
+        self::assertSame('Tests\Fixture\Experimental\Flow::referenced', $graph->target);
+        self::assertSame($file, $graph->file);
+        $definitions = array_values(array_map(
+            static fn (\App\Analyzer\ExperimentAnalyzer\DataFlow\Dependency $edge): array => [$graph->nodes[$edge->from]->line, $graph->nodes[$edge->to]->line, $graph->nodes[$edge->to]->kind],
+            array_filter($graph->edges, static fn (\App\Analyzer\ExperimentAnalyzer\DataFlow\Dependency $edge): bool => $edge->kind === 'reaching-definition'),
+        ));
+        self::assertSame([[29, 28, 'write'], [31, 29, 'call-write']], $definitions);
+    }
+
+    public function testCallablesFindsMultipleNamespacedFunctionsAndConcreteMethods(): void
+    {
+        $source = '<?php namespace Test; function one() {} function two() {} abstract class C { abstract function absent(); function present() {} }';
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
+        self::assertNotNull($parsed);
+        $traverser = new \PhpParser\NodeTraverser(new \PhpParser\NodeVisitor\NameResolver());
+        $callables = (new Inspection())->callables(array_values(array_filter($traverser->traverse($parsed), static fn (\PhpParser\Node $node): bool => $node instanceof \PhpParser\Node\Stmt)));
+        self::assertSame(['Test\one', 'Test\two', 'Test\C::present'], array_keys($callables));
     }
 }

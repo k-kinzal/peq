@@ -26,17 +26,21 @@ final readonly class Assignments
         }
         $inputs = [];
         if ($node instanceof Expr\AssignOp) {
-            $inputs[] = $this->expressions->read($node->var, $state);
+            $old = $this->expressions->read($node->var, $state);
+            if (!$state->reachable) {
+                return $old;
+            }
+            $inputs[] = $old;
         }
         $inputs[] = $this->expressions->read($node->expr, $state);
 
-        return $state->reachable ? $this->write($node->var, $inputs, $state) : $inputs[array_key_last($inputs)];
+        return $state->reachable ? $this->write($node->var, $inputs, $state, $node instanceof Expr\AssignOp) : $inputs[array_key_last($inputs)];
     }
 
     /**
      * @param list<string> $inputs
      */
-    public function write(Expr $target, array $inputs, State $state): string
+    public function write(Expr $target, array $inputs, State $state, bool $evaluated = false): string
     {
         if ($target instanceof Expr\Variable) {
             return $this->expressions->recording->write($target, $inputs, $state);
@@ -46,6 +50,9 @@ final readonly class Assignments
             foreach ($target->items as $item) {
                 if ($item !== null) {
                     $keys = $item->key === null ? [] : [$this->expressions->read($item->key, $state)];
+                    if (!$state->reachable) {
+                        break;
+                    }
                     $this->write($item->value, [$id, ...$keys], $state);
                 }
             }
@@ -54,18 +61,25 @@ final readonly class Assignments
         }
         $root = $target;
         while ($root instanceof Expr\ArrayDimFetch) {
-            if ($root->dim !== null) {
+            if (!$evaluated && $root->dim !== null) {
                 $inputs[] = $this->expressions->read($root->dim, $state);
+                if (!$state->reachable) {
+                    return $inputs[array_key_last($inputs)];
+                }
             }
             $root = $root->var;
         }
         if ($root instanceof Expr\Variable) {
-            $inputs[] = $this->expressions->read($root, $state);
+            if (!$evaluated) {
+                $inputs[] = $this->expressions->read($root, $state);
+            }
             $this->expressions->recording->graph->diagnose($target, 'Array boundary: elements are tracked together; aggregate dependencies are possible dependencies.');
 
             return $this->expressions->recording->write($root, $inputs, $state, 'aggregate-write');
         }
-        $inputs[] = $this->expressions->read($target, $state);
+        if (!$evaluated) {
+            $inputs[] = $this->expressions->read($target, $state);
+        }
 
         return $this->expressions->recording->value($target, 'heap-write', $inputs, $state);
     }
@@ -76,7 +90,10 @@ final readonly class Assignments
     public function increment(Expr\PostDec|Expr\PostInc|Expr\PreDec|Expr\PreInc $node, State $state): string
     {
         $old = $this->expressions->read($node->var, $state);
-        $written = $this->write($node->var, [$old], $state);
+        if (!$state->reachable) {
+            return $old;
+        }
+        $written = $this->write($node->var, [$old], $state, true);
 
         return $node instanceof Expr\PostInc || $node instanceof Expr\PostDec ? $old : $written;
     }

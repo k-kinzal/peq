@@ -32,4 +32,21 @@ final class SwitchesTest extends TestCase
         $definitions = array_values(array_filter($graph->edges, static fn (Dependency $edge): bool => $edge->from === $reads[0]->id && $edge->kind === 'reaching-definition'));
         self::assertCount(2, $definitions);
     }
+
+    public function testSelectTestsEveryCaseBeforeChoosingTheDefault(): void
+    {
+        $source = '<?php switch ($flag) { default: break; case 1: break; }';
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
+        self::assertNotNull($parsed);
+        self::assertInstanceOf(\PhpParser\Node\Stmt\Switch_::class, $parsed[0]);
+        $graph = new DependencyGraph('f', '/f.php', $source);
+        $state = new \App\Analyzer\ExperimentAnalyzer\Flow\State();
+        $expressions = new \App\Analyzer\ExperimentAnalyzer\Flow\Expressions(new \App\Analyzer\ExperimentAnalyzer\Flow\Recording($graph));
+        $subject = $expressions->read($parsed[0]->cond, $state);
+        [$entries, $exits] = (new \App\Analyzer\ExperimentAnalyzer\Flow\Switches(new \App\Analyzer\ExperimentAnalyzer\Flow\Statements($expressions)))->select($parsed[0], $state, $subject);
+        self::assertSame([1, 0], array_keys($entries));
+        self::assertSame(['match'], array_values($entries[1]->controls));
+        self::assertSame(['no-match'], array_values($entries[0]->controls));
+        self::assertSame([], $exits);
+    }
 }

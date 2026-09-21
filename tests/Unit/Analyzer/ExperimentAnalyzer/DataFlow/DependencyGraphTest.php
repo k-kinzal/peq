@@ -57,4 +57,33 @@ final class DependencyGraphTest extends TestCase
         self::assertSame(['second'], $graph->select(4, 'a', 10));
         self::assertSame(['first', 'second'], $graph->select(4, '$a'));
     }
+
+    public function testRecordPreservesMultilineSourceLocationsAndText(): void
+    {
+        $source = "<?php\n  \$a +\n    \$b;\n";
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
+        self::assertNotNull($parsed);
+        self::assertInstanceOf(\PhpParser\Node\Stmt\Expression::class, $parsed[0]);
+        $graph = new DependencyGraph('f', '/f.php', $source);
+        $id = $graph->record($parsed[0]->expr, 'expression');
+        $node = $graph->nodes[$id];
+        self::assertSame([2, 3, 3, '$a +'."\n".'    $b', 'expression', null], [$node->line, $node->column, $node->endLine, $node->text, $node->kind, $node->variable]);
+        self::assertSame($id, $graph->record($parsed[0]->expr, 'expression'));
+        self::assertCount(1, $graph->nodes);
+    }
+
+    public function testSelectExcludesSyntheticDefinitionsAndOtherLinesAndVariables(): void
+    {
+        $graph = new DependencyGraph('f', '/f.php', '');
+        $graph->nodes['unbound'] = new Occurrence('unbound', 'unbound', '$a', 4, 3, 4, '$a');
+        $graph->nodes['receiver'] = new Occurrence('receiver', 'receiver', '$this', 4, 3, 4, '$this');
+        $graph->nodes['read'] = new Occurrence('read', 'read', '$a', 4, 3, 4, '$a');
+        $graph->nodes['other'] = new Occurrence('other', 'read', '$b', 4, 8, 4, '$b');
+        $graph->nodes['later'] = new Occurrence('later', 'read', '$a', 5, 3, 5, '$a');
+        self::assertSame(['read', 'other'], $graph->select(4, null));
+        self::assertSame(['read'], $graph->select(4, 'a'));
+        $this->expectException(\App\Analyzer\ExperimentAnalyzer\DataFlow\InspectionException::class);
+        $this->expectExceptionMessage('No $a occurrence at line 4, column 2 in f.');
+        $graph->select(4, '$a', 2);
+    }
 }
