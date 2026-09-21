@@ -43,6 +43,9 @@ final readonly class CallEffects
     public function inputs(Expr\FuncCall|Expr\MethodCall|Expr\New_|Expr\StaticCall $node, Expressions $expressions, State $state): array
     {
         $name = strtolower($this->name($node) ?? '');
+        if ($node instanceof Expr\FuncCall && $name === 'compact' && !isset($this->signatures[$name]) && !$node->isFirstClassCallable()) {
+            return (new CompactVariables())->inputs($node, $expressions, $state);
+        }
         $output = self::OUTPUTS[$name] ?? null;
         if (!$node instanceof Expr\FuncCall || $output === null || isset($this->signatures[$name]) || $node->isFirstClassCallable()) {
             return $expressions->children($node, $state);

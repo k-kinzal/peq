@@ -80,6 +80,13 @@ of argument unpacking are not inferred. Builtin output-only parameters of `preg_
 previous value. Other known reference parameters are treated as opaque input/output
 boundaries. Builtin signatures reflect the runtime used to run peq.
 
+`compact('name')` also reads the named local variable. Literal names and nested unkeyed
+literal lists are supported; runtime names, keyed lists and unpacking are rejected.
+These reads have kind `implicit-read`, with the string literal's source span, and can
+be selected with `--variable name`. Their reaching definitions include possibly unbound
+or unset values, which PHP can omit from the resulting array. The call remains an
+explicit boundary; the analyzer does not evaluate the returned array.
+
 Closure captures are read at closure creation; their bodies do not execute in the outer
 scope. Lexical parameters in nested arrows do not become outer variable dependencies.
 Explicit reference aliases/captures, reference iteration, shared global/static storage,
@@ -99,3 +106,8 @@ dangling edges, definitions belonging to another variable, and direct self depen
 It also keeps manually audited expectations for `ConfigLoader::load`,
 `SourceCursor::capture`, `PhpVersion::parse`, and `RowPlacement::fit`. These checks are
 regressions for the stated local semantics, not a claim of complete PHP data-flow analysis.
+
+The [WordPress 7.1.1 validation](wordpress-variable-validation.md) records a separate
+external corpus audit, manually checked source-to-graph expectations in both directions,
+and a `compact()` dependency omission found and fixed by that exercise. Its pinned
+download and external tests can be rerun without adding WordPress to this repository.
