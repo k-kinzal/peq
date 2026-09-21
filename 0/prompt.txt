@@ -1,17 +1,1 @@
-ブランチを切ってPJルートにskillsディレクトリを作成し、peqスキルを作成してください。
-skills/peq/references/inspect.md
-skills/peq/references/graph.md
-skills/peq/SKILL.md
-の3つを作る感じですね。あとそのskillsは~/.agentsと~/.claudeのskillsにシムリンクで配置ください。
-
----
-
-ブランチを切ってPJルートにskillsディレクトリを作成し、peqスキルを作成してください。
-skills/peq/references/inspect.md
-skills/peq/references/graph.md
-skills/peq/SKILL.md
-の3つを作る感じですね。あとそのskillsは~/.agentsと~/.claudeのskillsにシムリンクで配置ください。
-
----
-
-descriptionが長いのでもう少し簡潔にしてください。また本リポジトリの言及は消してください。peqは独立したコマンドであり、それに対するスキルなので。Resolve the binary、WorkflowやShared optionsの記載はなくしてください。オプションなんかはreferenceのそれぞれにあるべき情報です。またreferences/troubleshooting.mdで想定できる失敗と対策を記載ください。
+ありがとうございます。コミットしてPRを作成ください。
