@@ -99,4 +99,17 @@ final class LoopsTest extends TestCase
         $loops = new \App\Analyzer\ExperimentAnalyzer\Flow\Loops(new Statements(new Expressions(new Recording($graph))));
         self::assertNull($loops->truth($parsed[0]));
     }
+
+    public function testRepeatConnectsAnAccumulatorToTheDoWhilePredicate(): void
+    {
+        $source = '<?php function f($flag) { $a = 0; do { $a++; } while ($flag); return $a; }';
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
+        self::assertNotNull($parsed);
+        self::assertInstanceOf(Function_::class, $parsed[0]);
+        $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
+        $repetition = array_values(array_filter($graph->edges, static fn (Dependency $edge): bool => $edge->kind === 'control' && $edge->branch === 'repeat' && $graph->nodes[$edge->from]->kind === 'write'));
+        self::assertCount(1, $repetition);
+        self::assertSame('$flag', $graph->nodes[$repetition[0]->to]->variable);
+        self::assertSame('$a', $graph->nodes[$repetition[0]->from]->variable);
+    }
 }

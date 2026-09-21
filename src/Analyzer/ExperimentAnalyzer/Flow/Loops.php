@@ -32,13 +32,16 @@ final readonly class Loops
                 $body->controls[$condition] = 'iterate';
             }
             $this->iteration($node, $body, $iterable);
+            $before = count($this->statements->expressions->recording->graph->nodes);
             $result = $truth === false && !$node instanceof Stmt\Do_ ? new Exits(null) : $this->statements->read($node->stmts, $body);
+            $bodyNodes = array_slice(array_keys($this->statements->expressions->recording->graph->nodes), $before);
             $back = $result->continues[1] ?? [];
             if ($result->normal !== null) {
                 $back[] = $result->normal;
             }
             foreach ($back as $path) {
-                $this->advance($node, $path, $iterable);
+                $test = $this->advance($node, $path, $iterable);
+                $this->repeat($node, $bodyNodes, $test);
             }
             $back = array_values(array_filter($back, static fn (State $path): bool => $path->reachable));
             $header = $truth === false ? clone $state : State::join([$state, ...$back]);
@@ -112,7 +115,7 @@ final readonly class Loops
     /**
      * Evaluates a for update or do-while test on each back edge.
      */
-    public function advance(Stmt\Do_|Stmt\For_|Stmt\Foreach_|Stmt\While_ $node, State $state, ?string $iterable): void
+    public function advance(Stmt\Do_|Stmt\For_|Stmt\Foreach_|Stmt\While_ $node, State $state, ?string $iterable): ?string
     {
         if ($node instanceof Stmt\For_) {
             foreach ($node->loop as $expression) {
@@ -120,7 +123,23 @@ final readonly class Loops
             }
         }
         if ($node instanceof Stmt\Do_) {
-            $this->condition($node, $state, $iterable);
+            return $this->condition($node, $state, $iterable);
+        }
+
+        return null;
+    }
+
+    /**
+     * A do-while predicate controls repetition, even though the first visit is unconditional.
+     *
+     * @param list<string> $bodyNodes Occurrences first encountered in the loop body
+     */
+    public function repeat(Stmt\Do_|Stmt\For_|Stmt\Foreach_|Stmt\While_ $node, array $bodyNodes, ?string $condition): void
+    {
+        if ($node instanceof Stmt\Do_ && $condition !== null && Truth::of($node->cond) !== false) {
+            foreach ($bodyNodes as $id) {
+                $this->statements->expressions->recording->graph->connect($id, $condition, 'control', 'repeat');
+            }
         }
     }
 
