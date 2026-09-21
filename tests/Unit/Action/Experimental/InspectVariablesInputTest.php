@@ -11,6 +11,8 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(\App\Action\Experimental\InspectVariablesInput::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Config\Config::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Config\DebugAnalyzerConfig::class)]
 final class InspectVariablesInputTest extends TestCase
 {
     public function testInputKeepsTheExactOccurrenceSelection(): void

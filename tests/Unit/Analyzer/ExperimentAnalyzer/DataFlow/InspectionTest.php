@@ -17,6 +17,7 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversNamespace('App\Analyzer\ExperimentAnalyzer')]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\SourceParser::class)]
 final class InspectionTest extends TestCase
 {
     public function testInspectRejectsAMissingCallable(): void

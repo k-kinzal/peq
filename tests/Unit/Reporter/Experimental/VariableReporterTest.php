@@ -12,6 +12,13 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(\App\Reporter\Experimental\VariableReporter::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\Dependency::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\Occurrence::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\Slice::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Reporter\Diagram\Diagram::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Reporter\Diagram\DiagramEdge::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Reporter\Diagram\DiagramNode::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Reporter\Diagram\MermaidRenderer::class)]
 final class VariableReporterTest extends TestCase
 {
     /**

@@ -11,6 +11,7 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(\App\Analyzer\ExperimentAnalyzer\Flow\Exits::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\State::class)]
 final class ExitsTest extends TestCase
 {
     public function testAbsorbKeepsOnlyExitsForAnOuterLoop(): void

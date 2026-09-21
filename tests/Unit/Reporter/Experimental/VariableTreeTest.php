@@ -11,6 +11,9 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(\App\Reporter\Experimental\VariableTree::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\Dependency::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\Occurrence::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\Slice::class)]
 final class VariableTreeTest extends TestCase
 {
     public function testRenderTerminatesACycleWithAnExplicitReference(): void

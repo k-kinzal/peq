@@ -15,6 +15,32 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(InspectVariablesAction::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(InspectVariablesInput::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\AnonymousClassNaming::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\AutoloadIndex::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\ClassLikeDeclaration::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\Dependency::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\DependencyGraph::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\Inspection::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\Occurrence::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\Slice::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\SupportedSyntax::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\ExperimentAnalyzer::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\Assignments::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\Branches::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\Exits::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\Expressions::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\Recording::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\State::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\Statements::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\Truth::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Invocation\CallEffects::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\ParsedSource::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\SourceIndex::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\PhpFileCollector::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\SourceParser::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(Config::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Config\DebugAnalyzerConfig::class)]
 final class InspectVariablesActionTest extends TestCase
 {
     public function testExecuteSelectsARealVariableOccurrence(): void

@@ -16,6 +16,8 @@ use Symfony\Component\Console\Input\InputOption;
  * @internal
  */
 #[CoversClass(ExperimentalConfigReader::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(InputConfigReader::class)]
+#[\PHPUnit\Framework\Attributes\UsesClass(\App\Config\RawConfig::class)]
 final class ExperimentalConfigReaderTest extends TestCase
 {
     /**
