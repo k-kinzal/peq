@@ -247,7 +247,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          ./dist/peq.phar --help inspect | grep -q -- '--output=OUTPUT *Output format (tree|json|dot|table)'
+          ./dist/peq.phar --help inspect | grep -q -- '--output=OUTPUT *Output format (tree|json|dot|table|graph|mermaid)'
 
           ./dist/peq.phar 'App\Analyzer\Graph\Graph' src -L 1 --output=json \
             | php -r 'json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);'
@@ -255,6 +255,19 @@ jobs:
           ./dist/peq.phar 'App\Analyzer\Graph\Graph' src -L 1 --output=dot | grep -q '^digraph '
 
           ./dist/peq.phar 'App\Analyzer\Graph\Graph' src -L 1 --output=table | grep -q '| Depth | Symbol'
+
+          ./dist/peq.phar 'App\Analyzer\Graph\Graph' src -L 1 --output=graph | grep -q '──▶ App\\Analyzer\\Graph\\Graph::addEdge'
+
+          ./dist/peq.phar 'App\Analyzer\Graph\Graph' src -L 1 --output=mermaid | grep -q '^flowchart LR$'
+
+      - name: Check the PHAR answers a GQL query
+        run: |
+          set -euo pipefail
+
+          ./dist/peq.phar --help graph | grep -q -- '--type=TYPE *Analyzer type (native|debug)'
+
+          ./dist/peq.phar graph 'MATCH (c:Class) WHERE c.id = "App\\Analyzer\\Graph\\Graph" RETURN c.id' src \
+            | grep -q '| App\\Analyzer\\Graph\\Graph |'
 
       - name: Upload the PHAR
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
