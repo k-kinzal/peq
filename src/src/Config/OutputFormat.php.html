@@ -65,24 +65,30 @@
 <span class="src-line" id="L29"><a class="ln" href="#L29">29</a>    <span class="tok-com">/** Writes the walk as a table, one row per symbol it reached */</span></span>
 <span class="src-line" id="L30"><a class="ln" href="#L30">30</a>    <span class="tok-kw">case</span> <span class="tok-id">Table</span> = <span class="tok-str">&#039;table&#039;</span>;</span>
 <span class="src-line" id="L31"><a class="ln" href="#L31">31</a></span>
-<span class="src-line" id="L32"><a class="ln" href="#L32">32</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L33"><a class="ln" href="#L33">33</a><span class="tok-com">     * Writes out the formats a report can be asked for, as they are written.</span></span>
-<span class="src-line" id="L34"><a class="ln" href="#L34">34</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L35"><a class="ln" href="#L35">35</a><span class="tok-com">     * The command line documents its own choices from this rather than from a</span></span>
-<span class="src-line" id="L36"><a class="ln" href="#L36">36</a><span class="tok-com">     * sentence someone has to remember to update, so a format that exists is a</span></span>
-<span class="src-line" id="L37"><a class="ln" href="#L37">37</a><span class="tok-com">     * format the help text offers.</span></span>
-<span class="src-line" id="L38"><a class="ln" href="#L38">38</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L39"><a class="ln" href="#L39">39</a><span class="tok-com">     * @example The choices are written the way the command line spells them</span></span>
-<span class="src-line" id="L40"><a class="ln" href="#L40">40</a><span class="tok-com">     *     \App\Config\OutputFormat::spell() // =&gt; &#039;tree|json|dot|table&#039;</span></span>
-<span class="src-line" id="L41"><a class="ln" href="#L41">41</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L42"><a class="ln" href="#L42">42</a><span class="tok-com">     * @return string The formats, separated by the character that separates them on the command line</span></span>
-<span class="src-line" id="L43"><a class="ln" href="#L43">43</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L44"><a class="ln" href="#L44">44</a>    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">function</span> <span class="tok-id">spell</span>(): <span class="tok-id">string</span></span>
-<span class="src-line" id="L45"><a class="ln" href="#L45">45</a>    {</span>
-<span class="src-line" id="L46"><a class="ln" href="#L46">46</a>        <span class="tok-kw">return</span> <span class="tok-id">implode</span>(<span class="tok-str">&#039;|&#039;</span>, <span class="tok-id">array_map</span>(<span class="tok-kw">static</span> <span class="tok-kw">fn</span> (<span class="tok-id">self</span> <span class="tok-var">$format</span>): <span class="tok-id">string</span> =&gt; <span class="tok-var">$format</span>-&gt;<span class="tok-id">value</span>, <span class="tok-id">self</span>::<span class="tok-id">cases</span>()));</span>
-<span class="src-line" id="L47"><a class="ln" href="#L47">47</a>    }</span>
-<span class="src-line" id="L48"><a class="ln" href="#L48">48</a>}</span>
-<span class="src-line" id="L49"><a class="ln" href="#L49">49</a></span>
+<span class="src-line" id="L32"><a class="ln" href="#L32">32</a>    <span class="tok-com">/** Draws the graph itself in the terminal: every symbol once, joined by arrows, left to right */</span></span>
+<span class="src-line" id="L33"><a class="ln" href="#L33">33</a>    <span class="tok-kw">case</span> <span class="tok-id">Graph</span> = <span class="tok-str">&#039;graph&#039;</span>;</span>
+<span class="src-line" id="L34"><a class="ln" href="#L34">34</a></span>
+<span class="src-line" id="L35"><a class="ln" href="#L35">35</a>    <span class="tok-com">/** Writes the graph itself as a Mermaid flowchart, for a page that renders one */</span></span>
+<span class="src-line" id="L36"><a class="ln" href="#L36">36</a>    <span class="tok-kw">case</span> <span class="tok-id">Mermaid</span> = <span class="tok-str">&#039;mermaid&#039;</span>;</span>
+<span class="src-line" id="L37"><a class="ln" href="#L37">37</a></span>
+<span class="src-line" id="L38"><a class="ln" href="#L38">38</a>    <span class="tok-com">/**</span></span>
+<span class="src-line" id="L39"><a class="ln" href="#L39">39</a><span class="tok-com">     * Writes out the formats a report can be asked for, as they are written.</span></span>
+<span class="src-line" id="L40"><a class="ln" href="#L40">40</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L41"><a class="ln" href="#L41">41</a><span class="tok-com">     * The command line documents its own choices from this rather than from a</span></span>
+<span class="src-line" id="L42"><a class="ln" href="#L42">42</a><span class="tok-com">     * sentence someone has to remember to update, so a format that exists is a</span></span>
+<span class="src-line" id="L43"><a class="ln" href="#L43">43</a><span class="tok-com">     * format the help text offers.</span></span>
+<span class="src-line" id="L44"><a class="ln" href="#L44">44</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L45"><a class="ln" href="#L45">45</a><span class="tok-com">     * @example The choices are written the way the command line spells them</span></span>
+<span class="src-line" id="L46"><a class="ln" href="#L46">46</a><span class="tok-com">     *     \App\Config\OutputFormat::spell() // =&gt; &#039;tree|json|dot|table|graph|mermaid&#039;</span></span>
+<span class="src-line" id="L47"><a class="ln" href="#L47">47</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L48"><a class="ln" href="#L48">48</a><span class="tok-com">     * @return string The formats, separated by the character that separates them on the command line</span></span>
+<span class="src-line" id="L49"><a class="ln" href="#L49">49</a><span class="tok-com">     */</span></span>
+<span class="src-line" id="L50"><a class="ln" href="#L50">50</a>    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">function</span> <span class="tok-id">spell</span>(): <span class="tok-id">string</span></span>
+<span class="src-line" id="L51"><a class="ln" href="#L51">51</a>    {</span>
+<span class="src-line" id="L52"><a class="ln" href="#L52">52</a>        <span class="tok-kw">return</span> <span class="tok-id">implode</span>(<span class="tok-str">&#039;|&#039;</span>, <span class="tok-id">array_map</span>(<span class="tok-kw">static</span> <span class="tok-kw">fn</span> (<span class="tok-id">self</span> <span class="tok-var">$format</span>): <span class="tok-id">string</span> =&gt; <span class="tok-var">$format</span>-&gt;<span class="tok-id">value</span>, <span class="tok-id">self</span>::<span class="tok-id">cases</span>()));</span>
+<span class="src-line" id="L53"><a class="ln" href="#L53">53</a>    }</span>
+<span class="src-line" id="L54"><a class="ln" href="#L54">54</a>}</span>
+<span class="src-line" id="L55"><a class="ln" href="#L55">55</a></span>
 </code></pre>
 </main>
 <footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>
