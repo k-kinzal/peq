@@ -1,0 +1,39 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M320062ECR4PX8WY3004FB72",
+  "strategy": "manual-commit",
+  "branch": "feat/experimental-variable-dependencies",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/Analyzer/ExperimentAnalyzer/Flow/Assignments.php",
+    "src/Analyzer/ExperimentAnalyzer/Flow/ConditionalExpressions.php",
+    "src/Analyzer/ExperimentAnalyzer/Flow/Loops.php",
+    "src/Analyzer/ExperimentAnalyzer/Flow/Statements.php",
+    "src/Analyzer/ExperimentAnalyzer/Flow/Switches.php",
+    "src/Analyzer/ExperimentAnalyzer/Invocation/CallEffects.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/DataFlow/DependencyGraphTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/DataFlow/InspectionTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/DataFlow/SliceTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/DataFlow/SupportedSyntaxTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/AssignmentsTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/CapturesTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/SwitchesTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Invocation/CallEffectsTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 117318,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 3986816,
+    "output_tokens": 28480,
+    "api_call_count": 43
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M320062ECR4PX8WY3004FB72",
+  "session_id": "01a0c3bf-0658-7a62-a151-5cc263588008",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-21T12:45:40.867387Z",
+  "branch": "feat/experimental-variable-dependencies",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/Analyzer/ExperimentAnalyzer/Flow/Assignments.php",
+    "src/Analyzer/ExperimentAnalyzer/Flow/ConditionalExpressions.php",
+    "src/Analyzer/ExperimentAnalyzer/Flow/Loops.php",
+    "src/Analyzer/ExperimentAnalyzer/Flow/Statements.php",
+    "src/Analyzer/ExperimentAnalyzer/Flow/Switches.php",
+    "src/Analyzer/ExperimentAnalyzer/Invocation/CallEffects.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/DataFlow/DependencyGraphTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/DataFlow/InspectionTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/DataFlow/SliceTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/DataFlow/SupportedSyntaxTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/AssignmentsTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/CapturesTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/SwitchesTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Invocation/CallEffectsTest.php"
+  ],
+  "agent": "Codex",
+  "model": "gpt-6-astra",
+  "turn_id": "9d2247437528",
+  "checkpoint_transcript_start": 652,
+  "transcript_lines_at_start": 652,
+  "compact_transcript_start": 81,
+  "token_usage": {
+    "input_tokens": 117318,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 3986816,
+    "output_tokens": 28480,
+    "api_call_count": 43
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-21T12:45:39.640721Z",
+    "agent_lines": 1915,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1915,
+    "total_lines_changed": 1915,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
