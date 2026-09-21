@@ -1,0 +1,66 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Analyzer\ExperimentAnalyzer\Flow;
+
+use App\Analyzer\ExperimentAnalyzer\DataFlow\DependencyGraph;
+use PhpParser\Node;
+use PhpParser\Node\Expr\Variable;
+
+/**
+ * Connects source occurrences without losing assignment identity or guards.
+ */
+final readonly class Recording
+{
+    /**
+     * Creates this value with its explicit analysis inputs.
+     */
+    public function __construct(public DependencyGraph $graph) {}
+
+    /**
+     * @param list<string> $inputs
+     */
+    public function value(Node $node, string $kind, array $inputs, State $state, ?string $variable = null): string
+    {
+        $id = $this->graph->record($node, $kind, $variable);
+        foreach ($inputs as $input) {
+            $this->graph->connect($id, $input, $kind === 'call' ? 'call-input' : ($kind === 'boundary' ? 'boundary-input' : 'data'));
+        }
+        foreach ($state->controls as $condition => $branch) {
+            if ($id !== $condition) {
+                $this->graph->connect($id, $condition, 'control', $branch);
+            }
+        }
+
+        return $id;
+    }
+
+    /**
+     * Reads dependencies and updates the environments of continuing paths.
+     */
+    public function read(Variable $node, State $state): string
+    {
+        assert(is_string($node->name));
+        $name = '$'.$node->name;
+        $id = $this->value($node, 'read', [], $state, $name);
+        foreach ($state->definitions[$name] ?? [] as $definition => $_) {
+            $this->graph->connect($id, $definition, 'reaching-definition');
+        }
+
+        return $id;
+    }
+
+    /**
+     * @param list<string> $inputs
+     */
+    public function write(Variable $node, array $inputs, State $state, string $kind = 'write'): string
+    {
+        assert(is_string($node->name));
+        $name = '$'.$node->name;
+        $id = $this->value($node, $kind, $inputs, $state, $name);
+        $state->definitions[$name] = [$id => true];
+
+        return $id;
+    }
+}

@@ -37,6 +37,16 @@ deptrac:
         - type: directory
           value: src/Analyzer/NativeAnalyzer/.*
 
+    - name: ExperimentAnalyzer
+      collectors:
+        - type: directory
+          value: src/Analyzer/ExperimentAnalyzer/.*
+
+    - name: ExperimentalReporter
+      collectors:
+        - type: directory
+          value: src/Reporter/Experimental/.*
+
     - name: DebugAnalyzer
       collectors:
         - type: directory
@@ -168,6 +178,7 @@ deptrac:
       - Config
       - Reporter
       - QueryReporter
+      - ExperimentalReporter
       - Gql
       - GqlElement
       - GqlResult
@@ -180,6 +191,7 @@ deptrac:
       - Analyzer
       - PhpStanAnalyzer
       - NativeAnalyzer
+      - ExperimentAnalyzer
       - DebugAnalyzer
       - Graph
       - Config
@@ -199,6 +211,16 @@ deptrac:
       - Analyzer
       - Declaration
       - Graph
+
+    ExperimentAnalyzer:
+      - Analyzer
+      - Declaration
+      - Graph
+
+    ExperimentalReporter:
+      - ExperimentAnalyzer
+      - Config
+      - Diagram
 
     DebugAnalyzer:
       - Analyzer
