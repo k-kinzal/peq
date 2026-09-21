@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M30Z0G24N2EYBGAG0E7WG166",
+  "strategy": "manual-commit",
+  "branch": "feat/gql-graph",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "tests/Contract/Gql/GqlRefusalContractTest.php",
+    "tests/Contract/Gql/GqlStatusContractTest.php",
+    "tests/Contract/Gql/GqlVocabularyContractTest.php",
+    "tests/Fixture/Gql/QueryVocabulary.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 3308,
+    "cache_creation_tokens": 4576112,
+    "cache_read_tokens": 836724416,
+    "output_tokens": 1399968,
+    "api_call_count": 1654
+  }
+}
