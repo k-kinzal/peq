@@ -7,6 +7,9 @@ namespace App\Reporter\Query;
 use App\Config\Config;
 use App\Config\OutputFormat;
 use App\Gql\Element\ElementGraph;
+use App\Reporter\Diagram\MermaidRenderer;
+use App\Reporter\Diagram\TerminalRenderer;
+use Symfony\Component\Console\Terminal;
 
 /**
  * Chooses and assembles the reporter a configuration asks a query for.
@@ -46,7 +49,8 @@ final class QueryReporterFactory
         return match ($config->output) {
             OutputFormat::Table => new TableWriter(),
             OutputFormat::Json => new JsonWriter(),
-            OutputFormat::Graph => new DiagramWriter($graph),
+            OutputFormat::Graph => new DiagramWriter($graph, new TerminalRenderer((new Terminal())->getWidth())),
+            OutputFormat::Mermaid => new DiagramWriter($graph, new MermaidRenderer()),
             OutputFormat::Dot => new DotWriter($graph),
             OutputFormat::Tree => new TreeWriter(),
         };

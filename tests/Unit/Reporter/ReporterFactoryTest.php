@@ -15,7 +15,10 @@ use App\Analyzer\Graph\NodeId\ClassNodeId;
 use App\Analyzer\Graph\NodeId\MethodNodeId;
 use App\Config\Config;
 use App\Config\OutputFormat;
+use App\Reporter\Diagram\MermaidRenderer;
+use App\Reporter\Diagram\TerminalRenderer;
 use App\Reporter\DotReporter\DotReporter;
+use App\Reporter\GraphReporter\GraphReporter;
 use App\Reporter\JsonReporter\JsonReporter;
 use App\Reporter\Reporter;
 use App\Reporter\ReporterFactory;
@@ -53,7 +56,23 @@ use Symfony\Component\Console\Output\BufferedOutput;
 #[UsesClass(\App\Reporter\DotReporter\StatementRenderer::class)]
 #[UsesClass(\App\Reporter\JsonReporter\JsonCursor::class)]
 #[UsesClass(\App\Reporter\TableReporter\TableCursor::class)]
+#[UsesClass(\App\Reporter\GraphReporter\GraphCursor::class)]
+#[UsesClass(\App\Reporter\Diagram\Diagram::class)]
+#[UsesClass(\App\Reporter\Diagram\DiagramCanvas::class)]
+#[UsesClass(\App\Reporter\Diagram\DiagramEdge::class)]
+#[UsesClass(\App\Reporter\Diagram\DiagramNode::class)]
+#[UsesClass(\App\Reporter\Diagram\Layout\DiagramLayout::class)]
+#[UsesClass(\App\Reporter\Diagram\Layout\Lane::class)]
+#[UsesClass(\App\Reporter\Diagram\Layout\LaneRouting::class)]
+#[UsesClass(\App\Reporter\Diagram\Layout\LayeredLayout::class)]
+#[UsesClass(\App\Reporter\Diagram\Layout\LayerOrdering::class)]
+#[UsesClass(\App\Reporter\Diagram\Layout\LayoutItem::class)]
+#[UsesClass(\App\Reporter\Diagram\Layout\LayoutItemKind::class)]
+#[UsesClass(\App\Reporter\Diagram\Layout\RowPlacement::class)]
+#[UsesClass(MermaidRenderer::class)]
+#[UsesClass(TerminalRenderer::class)]
 #[UsesClass(DotReporter::class)]
+#[UsesClass(GraphReporter::class)]
 #[UsesClass(JsonReporter::class)]
 #[UsesClass(TableReporter::class)]
 #[UsesClass(\App\Reporter\Traversal\DepthFirstTraversal::class)]
@@ -91,6 +110,55 @@ final class ReporterFactoryTest extends TestCase
         yield 'a Graphviz digraph' => [OutputFormat::Dot, DotReporter::class];
 
         yield 'a table of rows' => [OutputFormat::Table, TableReporter::class];
+
+        yield 'a drawing of the graph' => [OutputFormat::Graph, GraphReporter::class];
+
+        yield 'a Mermaid flowchart of the graph' => [OutputFormat::Mermaid, GraphReporter::class];
+    }
+
+    public function testCreateDrawsTheGraphFormatInTheTerminal(): void
+    {
+        $meta = new FileMeta('/project/src/Domain/Invoice.php', 12, 1);
+        $invoice = new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true, $meta);
+        $total = new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true, $meta);
+        $graph = new Graph();
+        $graph->addNodes([$invoice, $total]);
+        $graph->addEdges([new MethodEdge($invoice, $total, $meta)]);
+        $output = new BufferedOutput();
+
+        (new ReporterFactory())
+            ->create(new Config('.', Direction::Uses, output: OutputFormat::Graph))
+            ->report($graph, ClassNodeId::of('App\Domain\Invoice'), $output)
+        ;
+
+        self::assertSame("App\\Domain\\Invoice ──▶ App\\Domain\\Invoice::total\n", $output->fetch());
+    }
+
+    public function testCreateWritesTheMermaidFormatAsAFlowchart(): void
+    {
+        $meta = new FileMeta('/project/src/Domain/Invoice.php', 12, 1);
+        $invoice = new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true, $meta);
+        $total = new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true, $meta);
+        $graph = new Graph();
+        $graph->addNodes([$invoice, $total]);
+        $graph->addEdges([new MethodEdge($invoice, $total, $meta)]);
+        $output = new BufferedOutput();
+
+        (new ReporterFactory())
+            ->create(new Config('.', Direction::Uses, output: OutputFormat::Mermaid))
+            ->report($graph, ClassNodeId::of('App\Domain\Invoice'), $output)
+        ;
+
+        self::assertSame(
+            <<<'MERMAID'
+                flowchart LR
+                    n1["App\Domain\Invoice"]
+                    n2["App\Domain\Invoice::total"]
+                    n1 -->|"declaration-method"| n2
+
+                MERMAID,
+            $output->fetch(),
+        );
     }
 
     #[DataProvider('providerEveryFormatOverTheInvoiceGraph')]

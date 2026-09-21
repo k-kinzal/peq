@@ -7,6 +7,7 @@ namespace App\Reporter\Query;
 use App\Gql\Element\ElementGraph;
 use App\Gql\Result\ResultTable;
 use App\Reporter\Diagram\DiagramRenderer;
+use App\Reporter\Diagram\TerminalRenderer;
 use Override;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -32,7 +33,7 @@ final class DiagramWriter implements QueryReporter
      */
     public function __construct(
         private readonly ?ElementGraph $graph = null,
-        private readonly DiagramRenderer $renderer = new DiagramRenderer(),
+        private readonly DiagramRenderer $renderer = new TerminalRenderer(),
     ) {}
 
     /**

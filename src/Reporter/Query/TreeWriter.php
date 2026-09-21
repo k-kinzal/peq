@@ -97,22 +97,27 @@ final class TreeWriter implements QueryReporter
      * @example A path that crosses one relation is two
      *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('a'))->continuedBy(new \App\Gql\Datum\EdgeDatum('e', ['calls'], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('b'));
      *     count(\App\Reporter\Query\TreeWriter::steps($path)) // => 2
+     * @example A relation crossed against its direction is a step taken backwards
+     *     $path = \App\Gql\Datum\PathDatum::at(new \App\Gql\Datum\NodeDatum('b'))->continuedBy(new \App\Gql\Datum\EdgeDatum('e', ['calls'], [], 'a', 'b'), new \App\Gql\Datum\NodeDatum('a'));
+     *     \App\Reporter\Query\TreeWriter::steps($path)[1]->backwards // => true
      *
      * @return list<TreeStep> The steps, beginning where the path begins
      */
     public static function steps(PathDatum $path): array
     {
         $steps = [];
-        $label = '';
+        $crossed = null;
         foreach ($path->elements as $element) {
             if ($element instanceof EdgeDatum) {
-                $label = $element->label();
+                $crossed = $element;
 
                 continue;
             }
             if ($element instanceof NodeDatum) {
-                $steps[] = new TreeStep($label, $element->id);
-                $label = '';
+                $steps[] = $crossed === null
+                    ? new TreeStep('', $element->id)
+                    : new TreeStep($crossed->label(), $element->id, $crossed->origin === $element->id && $crossed->target !== $element->id);
+                $crossed = null;
             }
         }
 
@@ -208,6 +213,9 @@ final class TreeWriter implements QueryReporter
      * @example A step is drawn as the relation that reached it
      *     $path = [new \App\Reporter\Query\TreeStep('', 'a'), new \App\Reporter\Query\TreeStep('calls', 'b')];
      *     \App\Reporter\Query\TreeWriter::line($path, 1, [1 => false]) // => '└── calls ──> b'
+     * @example A relation followed backwards points back, so that `a` is read as what `b` calls
+     *     $path = [new \App\Reporter\Query\TreeStep('', 'a'), new \App\Reporter\Query\TreeStep('calls', 'b', true)];
+     *     \App\Reporter\Query\TreeWriter::line($path, 1, [1 => false]) // => '└── calls <── b'
      *
      * @return string The line, without a trailing newline
      */
@@ -223,6 +231,6 @@ final class TreeWriter implements QueryReporter
             $line .= ($continues[$above] ?? false) ? '│   ' : '    ';
         }
 
-        return $line.(($continues[$depth] ?? false) ? '├── ' : '└── ').$step->label.' ──> '.$step->id;
+        return $line.(($continues[$depth] ?? false) ? '├── ' : '└── ').$step->label.($step->backwards ? ' <── ' : ' ──> ').$step->id;
     }
 }

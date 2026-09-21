@@ -4,26 +4,28 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Reporter\Query;
 
-use App\Gql\Binding\BindingRow;
-use App\Gql\Binding\BindingTable;
-use App\Gql\Datum\DatumJson;
-use App\Gql\Datum\DatumKind;
 use App\Gql\Datum\EdgeDatum;
-use App\Gql\Datum\IntegerDatum;
-use App\Gql\Datum\ListDatum;
 use App\Gql\Datum\NodeDatum;
 use App\Gql\Datum\NullDatum;
 use App\Gql\Datum\PathDatum;
 use App\Gql\Datum\StringDatum;
-use App\Gql\Element\ElementGraph;
 use App\Gql\Result\ResultColumn;
 use App\Gql\Result\ResultRow;
 use App\Gql\Result\ResultTable;
 use App\Gql\StatusCode;
 use App\Reporter\Diagram\Diagram;
+use App\Reporter\Diagram\DiagramCanvas;
 use App\Reporter\Diagram\DiagramEdge;
 use App\Reporter\Diagram\DiagramNode;
-use App\Reporter\Diagram\DiagramRenderer;
+use App\Reporter\Diagram\Layout\DiagramLayout;
+use App\Reporter\Diagram\Layout\LaneRouting;
+use App\Reporter\Diagram\Layout\LayeredLayout;
+use App\Reporter\Diagram\Layout\LayerOrdering;
+use App\Reporter\Diagram\Layout\LayoutItem;
+use App\Reporter\Diagram\Layout\RowPlacement;
+use App\Reporter\Diagram\MermaidRenderer;
+use App\Reporter\Diagram\TerminalRenderer;
+use App\Reporter\Query\DatumJson;
 use App\Reporter\Query\DiagramWriter;
 use App\Reporter\Query\DotWriter;
 use App\Reporter\Query\JsonWriter;
@@ -43,88 +45,202 @@ use Symfony\Component\Console\Output\BufferedOutput;
  * @internal
  */
 #[CoversClass(QueryReporter::class)]
-#[UsesClass(BindingRow::class)]
-#[UsesClass(BindingTable::class)]
 #[UsesClass(DatumJson::class)]
-#[UsesClass(DatumKind::class)]
-#[UsesClass(EdgeDatum::class)]
-#[UsesClass(IntegerDatum::class)]
-#[UsesClass(ListDatum::class)]
-#[UsesClass(NodeDatum::class)]
-#[UsesClass(NullDatum::class)]
-#[UsesClass(PathDatum::class)]
-#[UsesClass(StringDatum::class)]
-#[UsesClass(ResultColumn::class)]
-#[UsesClass(ResultRow::class)]
-#[UsesClass(ResultTable::class)]
-#[UsesClass(StatusCode::class)]
-#[UsesClass(ElementGraph::class)]
 #[UsesClass(DiagramWriter::class)]
 #[UsesClass(DotWriter::class)]
 #[UsesClass(JsonWriter::class)]
+#[UsesClass(ResultElements::class)]
 #[UsesClass(TableWriter::class)]
+#[UsesClass(TreeStep::class)]
 #[UsesClass(TreeWriter::class)]
 #[UsesClass(Diagram::class)]
 #[UsesClass(DiagramEdge::class)]
 #[UsesClass(DiagramNode::class)]
-#[UsesClass(DiagramRenderer::class)]
-#[UsesClass(ResultElements::class)]
-#[UsesClass(TreeStep::class)]
+#[UsesClass(MermaidRenderer::class)]
+#[UsesClass(TerminalRenderer::class)]
+#[UsesClass(ResultColumn::class)]
+#[UsesClass(ResultRow::class)]
+#[UsesClass(ResultTable::class)]
+#[UsesClass(StatusCode::class)]
+#[UsesClass(EdgeDatum::class)]
+#[UsesClass(NodeDatum::class)]
+#[UsesClass(PathDatum::class)]
+#[UsesClass(StringDatum::class)]
+#[UsesClass(NullDatum::class)]
+#[UsesClass(DiagramCanvas::class)]
+#[UsesClass(DiagramLayout::class)]
+#[UsesClass(LaneRouting::class)]
+#[UsesClass(LayerOrdering::class)]
+#[UsesClass(LayeredLayout::class)]
+#[UsesClass(LayoutItem::class)]
+#[UsesClass(RowPlacement::class)]
 #[Small]
 final class QueryReporterTest extends TestCase
 {
-    #[DataProvider('providerEveryWayOfWritingAnAnswer')]
-    public function testReportWritesNothingForAnAnswerThatFoundNothing(QueryReporter $reporter): void
+    #[DataProvider('providerEveryWayOfWritingAnAnswerThatFoundNothing')]
+    public function testReportWritesAnAnswerThatFoundNothing(QueryReporter $reporter, string $expected): void
     {
         $output = new BufferedOutput();
+
         $reporter->report(ResultTable::nothing(), $output);
 
-        self::assertSame('', $output->fetch());
+        self::assertSame($expected, $output->fetch());
     }
 
     /**
-     * @return iterable<string, array{QueryReporter}>
+     * @return iterable<string, array{QueryReporter, string}>
      */
-    public static function providerEveryWayOfWritingAnAnswer(): iterable
+    public static function providerEveryWayOfWritingAnAnswerThatFoundNothing(): iterable
     {
-        yield 'a table to scan' => [new TableWriter()];
+        yield 'a table, which leaves the status to say it' => [new TableWriter(), ''];
 
-        yield 'a drawing of how the answer is wired' => [new DiagramWriter()];
+        yield 'fields a program can address, which carry the status' => [
+            new JsonWriter(),
+            <<<'JSON'
+                {"status":"02000","condition":"note: no data","columns":[],"rows":[]}
 
-        yield 'a digraph for a renderer' => [new DotWriter()];
+                JSON,
+        ];
 
-        yield 'a tree of the paths it bound' => [new TreeWriter()];
+        yield 'a drawing in the terminal' => [new DiagramWriter(null, new TerminalRenderer()), ''];
+
+        yield 'a flowchart' => [new DiagramWriter(null, new MermaidRenderer()), ''];
+
+        yield 'a digraph' => [new DotWriter(), ''];
+
+        yield 'a tree of the paths it bound' => [new TreeWriter(), ''];
     }
 
-    #[DataProvider('providerEveryWayOfWritingAnAnswerToLookAt')]
-    public function testReportWritesSomethingForAnAnswerThatFoundSomething(QueryReporter $reporter): void
+    #[DataProvider('providerEveryWayOfWritingAnAnswerHoldingOneSymbol')]
+    public function testReportWritesAnAnswerHoldingOneSymbol(QueryReporter $reporter, string $expected): void
     {
-        $row = BindingRow::unit()->with('p', new NodeDatum('App\Invoice', ['Class']));
+        $invoice = new NodeDatum('App\Invoice', ['Class'], ['kind' => new StringDatum('class')]);
         $output = new BufferedOutput();
-        $reporter->report(ResultTable::of(['p'], new BindingTable([$row])), $output);
 
-        self::assertNotSame('', $output->fetch());
+        $reporter->report(new ResultTable([new ResultColumn('p', 'NODE')], [new ResultRow([$invoice])]), $output);
+
+        self::assertSame($expected, $output->fetch());
     }
 
     /**
-     * @return iterable<string, array{QueryReporter}>
+     * @return iterable<string, array{QueryReporter, string}>
      */
-    public static function providerEveryWayOfWritingAnAnswerToLookAt(): iterable
+    public static function providerEveryWayOfWritingAnAnswerHoldingOneSymbol(): iterable
     {
-        yield 'a table to scan' => [new TableWriter()];
+        yield 'a table' => [
+            new TableWriter(),
+            <<<'TABLE'
+                +-------------+
+                | p (NODE)    |
+                +-------------+
+                | App\Invoice |
+                +-------------+
 
-        yield 'fields a program can address' => [new JsonWriter()];
+                TABLE,
+        ];
 
-        yield 'a drawing of how the answer is wired' => [new DiagramWriter()];
+        yield 'fields a program can address' => [
+            new JsonWriter(),
+            <<<'JSON'
+                {"status":"00000","condition":"note: successful completion","columns":[{"name":"p","type":"NODE"}],"rows":[[{"id":"App\\Invoice","labels":["Class"],"properties":{"kind":"class"}}]]}
 
-        yield 'a digraph for a renderer' => [new DotWriter()];
+                JSON,
+        ];
+
+        yield 'a drawing in the terminal' => [new DiagramWriter(null, new TerminalRenderer()), "App\\Invoice\n"];
+
+        yield 'a flowchart' => [
+            new DiagramWriter(null, new MermaidRenderer()),
+            <<<'MERMAID'
+                flowchart LR
+                    n1["App\Invoice"]
+
+                MERMAID,
+        ];
+
+        yield 'a digraph' => [
+            new DotWriter(),
+            <<<'DOT'
+                digraph peq {
+                    rankdir=LR;
+                    "App\\Invoice" [label="App\\Invoice\nclass"];
+                }
+
+                DOT,
+        ];
+
+        yield 'a tree of the paths it bound, which is none' => [new TreeWriter(), ''];
     }
 
-    public function testReportWritesTheStatusEvenForAnAnswerThatFoundNothing(): void
+    #[DataProvider('providerEveryWayOfWritingAnAnswerHoldingOnePath')]
+    public function testReportWritesAnAnswerHoldingOnePath(QueryReporter $reporter, string $expected): void
     {
+        $path = PathDatum::at(new NodeDatum('a'))->continuedBy(new EdgeDatum('e', ['calls'], [], 'a', 'b'), new NodeDatum('b'));
         $output = new BufferedOutput();
-        (new JsonWriter())->report(ResultTable::nothing(), $output);
 
-        self::assertStringContainsString('"status":"02000"', $output->fetch());
+        $reporter->report(new ResultTable([new ResultColumn('p', 'PATH')], [new ResultRow([$path])]), $output);
+
+        self::assertSame($expected, $output->fetch());
+    }
+
+    /**
+     * @return iterable<string, array{QueryReporter, string}>
+     */
+    public static function providerEveryWayOfWritingAnAnswerHoldingOnePath(): iterable
+    {
+        yield 'a table' => [
+            new TableWriter(),
+            <<<'TABLE'
+                +----------------+
+                | p (PATH)       |
+                +----------------+
+                | a -[calls]-> b |
+                +----------------+
+
+                TABLE,
+        ];
+
+        yield 'fields a program can address' => [
+            new JsonWriter(),
+            <<<'JSON'
+                {"status":"00000","condition":"note: successful completion","columns":[{"name":"p","type":"PATH"}],"rows":[[[{"id":"a","labels":[],"properties":{}},{"id":"e","labels":["calls"],"origin":"a","target":"b","properties":{}},{"id":"b","labels":[],"properties":{}}]]]}
+
+                JSON,
+        ];
+
+        yield 'a drawing in the terminal' => [new DiagramWriter(null, new TerminalRenderer()), "a ──▶ b\n"];
+
+        yield 'a flowchart' => [
+            new DiagramWriter(null, new MermaidRenderer()),
+            <<<'MERMAID'
+                flowchart LR
+                    n1["a"]
+                    n2["b"]
+                    n1 -->|"calls"| n2
+
+                MERMAID,
+        ];
+
+        yield 'a digraph' => [
+            new DotWriter(),
+            <<<'DOT'
+                digraph peq {
+                    rankdir=LR;
+                    "a" [label="a"];
+                    "b" [label="b"];
+                    "a" -> "b" [label="calls"];
+                }
+
+                DOT,
+        ];
+
+        yield 'a tree' => [
+            new TreeWriter(),
+            <<<'TREE'
+                a
+                └── calls ──> b
+
+                TREE,
+        ];
     }
 }

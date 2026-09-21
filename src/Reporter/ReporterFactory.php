@@ -6,6 +6,8 @@ namespace App\Reporter;
 
 use App\Config\Config;
 use App\Config\OutputFormat;
+use App\Reporter\Diagram\MermaidRenderer;
+use App\Reporter\Diagram\TerminalRenderer;
 use App\Reporter\DotReporter\DotReporter;
 use App\Reporter\GraphReporter\GraphReporter;
 use App\Reporter\JsonReporter\JsonReporter;
@@ -13,6 +15,7 @@ use App\Reporter\TableReporter\TableReporter;
 use App\Reporter\Traversal\DepthFirstTraversal;
 use App\Reporter\TreeReporter\TreeReporter;
 use App\Reporter\TreeReporter\TreeReporterOptions;
+use Symfony\Component\Console\Terminal;
 
 /**
  * Chooses and assembles the reporter a configuration asks for.
@@ -53,7 +56,12 @@ final class ReporterFactory
             OutputFormat::Json => new JsonReporter(traversal: $traversal, level: $config->level),
             OutputFormat::Dot => new DotReporter(traversal: $traversal, level: $config->level),
             OutputFormat::Table => new TableReporter(traversal: $traversal, level: $config->level),
-            OutputFormat::Graph => new GraphReporter(traversal: $traversal, level: $config->level),
+            OutputFormat::Graph => new GraphReporter(
+                traversal: $traversal,
+                level: $config->level,
+                renderer: new TerminalRenderer((new Terminal())->getWidth()),
+            ),
+            OutputFormat::Mermaid => new GraphReporter(traversal: $traversal, level: $config->level, renderer: new MermaidRenderer()),
         };
     }
 }

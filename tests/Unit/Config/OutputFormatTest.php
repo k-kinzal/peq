@@ -19,7 +19,7 @@ final class OutputFormatTest extends TestCase
 {
     public function testSpellWritesTheFormatsTheWayTheCommandLineSeparatesThem(): void
     {
-        self::assertSame('tree|json|dot|table|graph', OutputFormat::spell());
+        self::assertSame('tree|json|dot|table|graph|mermaid', OutputFormat::spell());
     }
 
     #[DataProvider('providerEveryFormat')]
@@ -58,6 +58,8 @@ final class OutputFormatTest extends TestCase
         yield 'a table of rows' => ['table', OutputFormat::Table];
 
         yield 'a drawing of the graph' => ['graph', OutputFormat::Graph];
+
+        yield 'a Mermaid flowchart of the graph' => ['mermaid', OutputFormat::Mermaid];
     }
 
     public function testTheTreeIsTheFormatAReportIsWrittenInUnlessAnotherIsAsked(): void

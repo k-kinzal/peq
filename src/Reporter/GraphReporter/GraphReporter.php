@@ -8,23 +8,23 @@ use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId;
 use App\Reporter\Diagram\DiagramRenderer;
+use App\Reporter\Diagram\TerminalRenderer;
 use App\Reporter\Reporter;
 use App\Reporter\Traversal;
 use Override;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * Reports analysis results as a drawing of the graph, in the terminal.
+ * Reports analysis results as a drawing of the graph.
  *
  * The tree is the right shape for the question "what does this reach, and how deep",
  * and the wrong one for "how is this wired". A symbol four branches reach is drawn
  * four times in a tree and marked as repeated three of them; a cycle is a word. Both
  * are the tree telling the truth about itself and not about the graph.
  *
- * This draws the graph instead: every symbol once, numbered, with every relation
- * between the symbols drawn as an arrow to a number. It needs no external renderer,
- * unlike the digraph, which is the point — it is for looking at, now, in the terminal
- * where the question was asked.
+ * This draws the graph instead: every symbol once, with every relation between the
+ * symbols drawn as an arrow. How it is written down is the renderer's business — in
+ * the terminal where the question was asked, or as Mermaid for a page that draws it.
  */
 final class GraphReporter implements Reporter
 {
@@ -36,7 +36,7 @@ final class GraphReporter implements Reporter
     public function __construct(
         private readonly Traversal $traversal,
         private readonly ?int $level = null,
-        private readonly DiagramRenderer $renderer = new DiagramRenderer(),
+        private readonly DiagramRenderer $renderer = new TerminalRenderer(),
     ) {}
 
     /**

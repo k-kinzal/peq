@@ -16,18 +16,53 @@ use PHPUnit\Framework\TestCase;
 #[Small]
 final class TreeStepTest extends TestCase
 {
-    public function testAStepRemembersHowItWasReachedAndWhereItArrived(): void
+    public function testAStepRemembersTheRelationThatReachedIt(): void
+    {
+        self::assertSame('calls', (new TreeStep('calls', 'App\Money::add'))->label);
+    }
+
+    public function testAStepRemembersTheSymbolItArrivedAt(): void
     {
         self::assertSame('App\Money::add', (new TreeStep('calls', 'App\Money::add'))->id);
     }
 
-    public function testKeyTellsAStepApartByHowItWasReachedAndWhereItArrived(): void
+    public function testAStepIsTakenTheWayItsRelationPointsUnlessToldOtherwise(): void
     {
-        self::assertSame("calls\0App\\Money::add", (new TreeStep('calls', 'App\Money::add'))->key());
+        self::assertFalse((new TreeStep('calls', 'App\Money::add'))->backwards);
     }
 
-    public function testKeyTellsApartTheSameSymbolReachedTwoDifferentWays(): void
+    public function testAStepRemembersThatItWasTakenAgainstItsRelation(): void
+    {
+        self::assertTrue((new TreeStep('calls', 'App\Money::add', true))->backwards);
+    }
+
+    public function testKeyTellsAStepApartByHowItWasReachedAndWhereItArrived(): void
+    {
+        self::assertSame("calls\0>\0App\\Money::add", (new TreeStep('calls', 'App\Money::add'))->key());
+    }
+
+    public function testKeyMarksAStepTakenAgainstItsRelation(): void
+    {
+        self::assertSame("calls\0<\0App\\Money::add", (new TreeStep('calls', 'App\Money::add', true))->key());
+    }
+
+    public function testKeyOfTheStartOfAPathIsTheSymbolItStartsAt(): void
+    {
+        self::assertSame("\0>\0App\\Money", (new TreeStep('', 'App\Money'))->key());
+    }
+
+    public function testKeyTellsApartTheSameSymbolReachedByTwoDifferentRelations(): void
     {
         self::assertNotSame((new TreeStep('calls', 'a'))->key(), (new TreeStep('extends', 'a'))->key());
+    }
+
+    public function testKeyTellsApartTheSameSymbolReachedByTheSameRelationEachWayRound(): void
+    {
+        self::assertNotSame((new TreeStep('calls', 'a'))->key(), (new TreeStep('calls', 'a', true))->key());
+    }
+
+    public function testKeyTellsApartARelationNameThatRunsIntoTheSymbolName(): void
+    {
+        self::assertNotSame((new TreeStep('call', 'sa'))->key(), (new TreeStep('calls', 'a'))->key());
     }
 }

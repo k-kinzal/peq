@@ -5,10 +5,22 @@ declare(strict_types=1);
 namespace Tests\Unit\Reporter\Diagram;
 
 use App\Reporter\Diagram\Diagram;
+use App\Reporter\Diagram\DiagramCanvas;
 use App\Reporter\Diagram\DiagramEdge;
 use App\Reporter\Diagram\DiagramNode;
 use App\Reporter\Diagram\DiagramRenderer;
+use App\Reporter\Diagram\Layout\DiagramLayout;
+use App\Reporter\Diagram\Layout\Lane;
+use App\Reporter\Diagram\Layout\LaneRouting;
+use App\Reporter\Diagram\Layout\LayeredLayout;
+use App\Reporter\Diagram\Layout\LayerOrdering;
+use App\Reporter\Diagram\Layout\LayoutItem;
+use App\Reporter\Diagram\Layout\LayoutItemKind;
+use App\Reporter\Diagram\Layout\RowPlacement;
+use App\Reporter\Diagram\MermaidRenderer;
+use App\Reporter\Diagram\TerminalRenderer;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -17,85 +29,117 @@ use Symfony\Component\Console\Output\BufferedOutput;
 /**
  * @internal
  */
-#[CoversClass(DiagramRenderer::class)]
+#[CoversClass(TerminalRenderer::class)]
+#[CoversClass(MermaidRenderer::class)]
 #[UsesClass(Diagram::class)]
+#[UsesClass(DiagramCanvas::class)]
 #[UsesClass(DiagramEdge::class)]
 #[UsesClass(DiagramNode::class)]
+#[UsesClass(DiagramLayout::class)]
+#[UsesClass(Lane::class)]
+#[UsesClass(LaneRouting::class)]
+#[UsesClass(LayeredLayout::class)]
+#[UsesClass(LayerOrdering::class)]
+#[UsesClass(LayoutItem::class)]
+#[UsesClass(LayoutItemKind::class)]
+#[UsesClass(RowPlacement::class)]
 #[Small]
 final class DiagramRendererTest extends TestCase
 {
-    public function testRenderWritesEverySymbolOnceWithItsRelationsUnderIt(): void
-    {
-        $diagram = new Diagram();
-        $diagram->add(new DiagramNode('App\Invoice', 'class', 'src/Invoice.php:12'));
-        $diagram->add(new DiagramNode('App\Invoice::total', 'method', 'src/Invoice.php:20'));
-        $diagram->add(new DiagramNode('App\Money::add', 'method', 'src/Money.php:8'));
-        $diagram->relate(new DiagramEdge('App\Invoice', 'App\Invoice::total', 'declaresMethod'));
-        $diagram->relate(new DiagramEdge('App\Invoice::total', 'App\Money::add', 'methodCall'));
-
-        $output = new BufferedOutput();
-        (new DiagramRenderer())->render($diagram, $output);
-
-        self::assertSame(
-            <<<'DIAGRAM'
-                (1) App\Invoice [class] src/Invoice.php:12
-                    └── declaresMethod ──> (2) App\Invoice::total
-                (2) App\Invoice::total [method] src/Invoice.php:20
-                    └── methodCall ──> (3) App\Money::add
-                (3) App\Money::add [method] src/Money.php:8
-
-                DIAGRAM,
-            $output->fetch(),
-        );
-    }
-
-    public function testRenderWritesNothingForADrawingWithNothingInIt(): void
+    #[DataProvider('providerEveryRenderer')]
+    public function testRenderWritesNothingForADrawingThatHoldsNothing(DiagramRenderer $renderer): void
     {
         $output = new BufferedOutput();
-        (new DiagramRenderer())->render(new Diagram(), $output);
+
+        $renderer->render(new Diagram(), $output);
 
         self::assertSame('', $output->fetch());
     }
 
-    public function testHeadingIntroducesASymbolByItsNumberItsNameAndWhatItIs(): void
+    #[DataProvider('providerEveryRenderer')]
+    public function testRenderWritesNowhereElseThanTheGivenOutput(DiagramRenderer $renderer): void
     {
         $diagram = new Diagram();
-        $node = new DiagramNode('App\Invoice', 'class', 'src/Invoice.php:12');
-        $diagram->add($node);
+        $diagram->add(new DiagramNode('App\Invoice'));
+        $diagram->add(new DiagramNode('App\Invoice::total'));
+        $diagram->relate(new DiagramEdge('App\Invoice', 'App\Invoice::total', 'declaration-method'));
+        $output = new BufferedOutput();
+        $this->expectOutputString('');
 
-        self::assertSame('(1) App\Invoice [class] src/Invoice.php:12', (new DiagramRenderer())->heading($diagram, $node));
+        $renderer->render($diagram, $output);
+
+        self::assertStringContainsString('App\Invoice::total', $output->fetch());
     }
 
-    public function testHeadingIntroducesASymbolNothingIsKnownAboutByItsNameAlone(): void
+    #[DataProvider('providerEveryRenderer')]
+    public function testRenderMentionsEverySymbolOfTheDrawingByItsName(DiagramRenderer $renderer): void
     {
         $diagram = new Diagram();
-        $node = new DiagramNode('App\Invoice');
-        $diagram->add($node);
+        $diagram->add(new DiagramNode('App\Http\Controller'));
+        $diagram->add(new DiagramNode('App\Http\Kernel'));
+        $diagram->add(new DiagramNode('App\Domain\Invoice'));
+        $diagram->add(new DiagramNode('App\Cache\Store'));
+        $diagram->relate(new DiagramEdge('App\Http\Controller', 'App\Http\Kernel', 'declaration-extends'));
+        $diagram->relate(new DiagramEdge('App\Http\Controller', 'App\Domain\Invoice', 'type-parameter'));
+        $diagram->relate(new DiagramEdge('App\Http\Kernel', 'App\Cache\Store', 'type-property'));
+        $diagram->relate(new DiagramEdge('App\Domain\Invoice', 'App\Cache\Store', 'type-property'));
+        $output = new BufferedOutput();
 
-        self::assertSame('(1) App\Invoice', (new DiagramRenderer())->heading($diagram, $node));
+        $renderer->render($diagram, $output);
+        $written = $output->fetch();
+
+        self::assertStringContainsString('App\Http\Controller', $written);
+        self::assertStringContainsString('App\Http\Kernel', $written);
+        self::assertStringContainsString('App\Domain\Invoice', $written);
+        self::assertStringContainsString('App\Cache\Store', $written);
     }
 
-    public function testArrowDrawsARelationAsAnArrowToANumberedSymbol(): void
+    #[DataProvider('providerEveryRenderer')]
+    public function testRenderMentionsASymbolNothingIsJoinedTo(DiagramRenderer $renderer): void
     {
         $diagram = new Diagram();
-        $diagram->add(new DiagramNode('a'));
-        $diagram->add(new DiagramNode('b'));
+        $diagram->add(new DiagramNode('App\Invoice'));
+        $output = new BufferedOutput();
 
-        self::assertSame(
-            '    └── calls ──> (2) b',
-            (new DiagramRenderer())->arrow($diagram, new DiagramEdge('a', 'b', 'calls'), true),
-        );
+        $renderer->render($diagram, $output);
+
+        self::assertStringContainsString('App\Invoice', $output->fetch());
     }
 
-    public function testArrowKeepsTheBranchOpenWhenAnotherRelationFollowsIt(): void
+    #[DataProvider('providerEveryRenderer')]
+    public function testRenderLeavesOutASymbolTheDrawingDoesNotHold(DiagramRenderer $renderer): void
     {
         $diagram = new Diagram();
-        $diagram->add(new DiagramNode('a'));
-        $diagram->add(new DiagramNode('b'));
+        $diagram->add(new DiagramNode('App\Invoice'));
+        $diagram->relate(new DiagramEdge('App\Invoice', 'App\Money', 'method-call'));
+        $output = new BufferedOutput();
 
-        self::assertSame(
-            '    ├── calls ──> (2) b',
-            (new DiagramRenderer())->arrow($diagram, new DiagramEdge('a', 'b', 'calls'), false),
-        );
+        $renderer->render($diagram, $output);
+
+        self::assertStringNotContainsString('App\Money', $output->fetch());
+    }
+
+    #[DataProvider('providerEveryRenderer')]
+    public function testRenderEndsWhatItWritesWithANewLine(DiagramRenderer $renderer): void
+    {
+        $diagram = new Diagram();
+        $diagram->add(new DiagramNode('App\Invoice'));
+        $output = new BufferedOutput();
+
+        $renderer->render($diagram, $output);
+
+        self::assertStringEndsWith("\n", $output->fetch());
+    }
+
+    /**
+     * @return iterable<string, array{DiagramRenderer}>
+     */
+    public static function providerEveryRenderer(): iterable
+    {
+        yield 'the drawing in the terminal' => [new TerminalRenderer(80)];
+
+        yield 'the drawing in a narrow terminal' => [new TerminalRenderer(1)];
+
+        yield 'the Mermaid flowchart' => [new MermaidRenderer()];
     }
 }

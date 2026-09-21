@@ -9,6 +9,7 @@ use App\Gql\Result\ResultColumn;
 use App\Gql\Result\ResultRow;
 use App\Gql\Result\ResultTable;
 use Override;
+use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -21,9 +22,9 @@ use Symfony\Component\Console\Output\OutputInterface;
  * which a reader who is about to write a second query needs in order to know what
  * they can compare the first one's answer against.
  *
- * A query that found nothing writes nothing at all. The status says it found nothing;
- * a table with headings and no rows would say it twice, and would look like an
- * answer.
+ * A query that found nothing writes nothing at all: a table with headings and no rows
+ * would look like an answer. What it found is said by its status, 02000 no data,
+ * which the JSON format carries.
  *
  * @visibility App\Reporter
  */
@@ -61,7 +62,7 @@ final class TableWriter implements QueryReporter
      */
     public static function heading(ResultColumn $column): string
     {
-        return sprintf('%s (%s)', $column->heading, $column->type);
+        return OutputFormatter::escape(sprintf('%s (%s)', $column->heading, $column->type));
     }
 
     /**
@@ -76,6 +77,6 @@ final class TableWriter implements QueryReporter
      */
     public static function cells(ResultRow $row): array
     {
-        return array_map(static fn (Datum $value): string => $value->toText(), $row->values);
+        return array_map(static fn (Datum $value): string => OutputFormatter::escape($value->toText()), $row->values);
     }
 }

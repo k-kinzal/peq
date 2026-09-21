@@ -31,9 +31,19 @@ use App\Analyzer\Graph\NodePrecedence;
 use App\Analyzer\Graph\QualifiedName;
 use App\Reporter\Continuation;
 use App\Reporter\Diagram\Diagram;
+use App\Reporter\Diagram\DiagramCanvas;
 use App\Reporter\Diagram\DiagramEdge;
 use App\Reporter\Diagram\DiagramNode;
-use App\Reporter\Diagram\DiagramRenderer;
+use App\Reporter\Diagram\Layout\DiagramLayout;
+use App\Reporter\Diagram\Layout\Lane;
+use App\Reporter\Diagram\Layout\LaneRouting;
+use App\Reporter\Diagram\Layout\LayeredLayout;
+use App\Reporter\Diagram\Layout\LayerOrdering;
+use App\Reporter\Diagram\Layout\LayoutItem;
+use App\Reporter\Diagram\Layout\LayoutItemKind;
+use App\Reporter\Diagram\Layout\RowPlacement;
+use App\Reporter\Diagram\MermaidRenderer;
+use App\Reporter\Diagram\TerminalRenderer;
 use App\Reporter\Expansion;
 use App\Reporter\GraphReporter\GraphCursor;
 use App\Reporter\GraphReporter\GraphReporter;
@@ -78,16 +88,45 @@ use Tests\Fixture\Gql\SampleGraph;
 #[UsesClass(Continuation::class)]
 #[UsesClass(Expansion::class)]
 #[UsesClass(Diagram::class)]
+#[UsesClass(DiagramCanvas::class)]
 #[UsesClass(DiagramEdge::class)]
 #[UsesClass(DiagramNode::class)]
+#[UsesClass(DiagramLayout::class)]
+#[UsesClass(Lane::class)]
+#[UsesClass(LaneRouting::class)]
+#[UsesClass(LayeredLayout::class)]
+#[UsesClass(LayerOrdering::class)]
+#[UsesClass(LayoutItem::class)]
+#[UsesClass(LayoutItemKind::class)]
+#[UsesClass(RowPlacement::class)]
+#[UsesClass(MermaidRenderer::class)]
+#[UsesClass(TerminalRenderer::class)]
 #[UsesClass(DepthFirstTraversal::class)]
 #[UsesClass(DepthFirstWalk::class)]
-#[UsesClass(DiagramRenderer::class)]
 #[UsesClass(GraphCursor::class)]
 #[Small]
 final class GraphReporterTest extends TestCase
 {
-    public function testReportDrawsTheWholeWalkAsNumberedSymbolsAndArrows(): void
+    public function testReportDrawsTheWholeWalkLeftToRightEverySymbolOnce(): void
+    {
+        $output = new BufferedOutput();
+        (new GraphReporter(new DepthFirstTraversal(Direction::Uses), null, new TerminalRenderer(120)))
+            ->report(SampleGraph::analysed(), ClassNodeId::of('App\Http\Controller'), $output)
+        ;
+
+        self::assertSame(
+            <<<'DIAGRAM'
+                                      ┌──▶ App\Http\Kernel
+                App\Http\Controller ──┼──▶ App\Http\Controller::show ───┐
+                                      │                                 ├──▶ App\Domain\Invoice::total ──▶ App\Cache\Store::get
+                                      └──▶ App\Http\Controller::store ──┘
+
+                DIAGRAM,
+            $output->fetch(),
+        );
+    }
+
+    public function testReportCutsTheDrawingIntoBandsAsWideAsTheTerminalByDefault(): void
     {
         $output = new BufferedOutput();
         (new GraphReporter(new DepthFirstTraversal(Direction::Uses)))
@@ -96,18 +135,15 @@ final class GraphReporterTest extends TestCase
 
         self::assertSame(
             <<<'DIAGRAM'
-                (1) App\Http\Controller [class] /project/src/Http/Controller.php:10
-                    ├── declaration-extends ──> (2) App\Http\Kernel
-                    ├── declaration-method ──> (3) App\Http\Controller::show
-                    └── declaration-method ──> (6) App\Http\Controller::store
-                (2) App\Http\Kernel [class] /project/src/Http/Kernel.php:7
-                (3) App\Http\Controller::show [method] /project/src/Http/Controller.php:20
-                    └── method-call ──> (4) App\Domain\Invoice::total
-                (4) App\Domain\Invoice::total [method] /project/src/Domain/Invoice.php:12
-                    └── method-call ──> (5) App\Cache\Store::get
-                (5) App\Cache\Store::get [method] /project/src/Cache/Store.php:8
-                (6) App\Http\Controller::store [method] /project/src/Http/Controller.php:30
-                    └── method-call ──> (4) App\Domain\Invoice::total
+                                      ┌──▶ App\Http\Kernel
+                App\Http\Controller ──┼──▶ App\Http\Controller::show …
+                                      └──▶ App\Http\Controller::store …
+
+                App\Http\Controller::show ───┐
+                                             ├──▶ App\Domain\Invoice::total …
+                App\Http\Controller::store ──┘
+
+                App\Domain\Invoice::total ──▶ App\Cache\Store::get
 
                 DIAGRAM,
             $output->fetch(),
@@ -121,7 +157,15 @@ final class GraphReporterTest extends TestCase
             ->report(SampleGraph::analysed(), ClassNodeId::of('App\Http\Controller'), $output)
         ;
 
-        self::assertStringNotContainsString('Invoice::total', $output->fetch());
+        self::assertSame(
+            <<<'DIAGRAM'
+                                      ┌──▶ App\Http\Kernel
+                App\Http\Controller ──┼──▶ App\Http\Controller::show
+                                      └──▶ App\Http\Controller::store
+
+                DIAGRAM,
+            $output->fetch(),
+        );
     }
 
     public function testReportReadsTheGraphTheWayItsTraversalDoes(): void
@@ -131,13 +175,67 @@ final class GraphReporterTest extends TestCase
             ->report(SampleGraph::analysed(), MethodNodeId::of('App\Cache\Store', 'get'), $output)
         ;
 
-        self::assertStringContainsString('used-by ──> (3) App\Domain\Invoice::total', $output->fetch());
+        self::assertSame(
+            <<<'DIAGRAM'
+                                       ┌──▶ App\Cache\Store
+                App\Cache\Store::get ──┤
+                                       └──▶ App\Domain\Invoice::total …
+
+                                            ┌──▶ App\Domain\Invoice
+                App\Domain\Invoice::total ──┼──▶ App\Http\Controller::show …
+                                            └──▶ App\Http\Controller::store …
+
+                App\Http\Controller::show ───┐
+                                             ├──▶ App\Http\Controller
+                App\Http\Controller::store ──┘
+
+                DIAGRAM,
+            $output->fetch(),
+        );
+    }
+
+    public function testReportWritesTheWalkAsAMermaidFlowchartWhenGivenThatRenderer(): void
+    {
+        $output = new BufferedOutput();
+        (new GraphReporter(new DepthFirstTraversal(Direction::Uses), null, new MermaidRenderer()))
+            ->report(SampleGraph::analysed(), ClassNodeId::of('App\Http\Controller'), $output)
+        ;
+
+        self::assertSame(
+            <<<'MERMAID'
+                flowchart LR
+                    n1["App\Http\Controller"]
+                    n2["App\Http\Kernel"]
+                    n3["App\Http\Controller::show"]
+                    n4["App\Domain\Invoice::total"]
+                    n5["App\Cache\Store::get"]
+                    n6["App\Http\Controller::store"]
+                    n1 -->|"declaration-extends"| n2
+                    n1 -->|"declaration-method"| n3
+                    n1 -->|"declaration-method"| n6
+                    n3 -->|"method-call"| n4
+                    n4 -->|"method-call"| n5
+                    n6 -->|"method-call"| n4
+
+                MERMAID,
+            $output->fetch(),
+        );
     }
 
     public function testReportWritesNothingAtAllForASymbolTheGraphDoesNotHold(): void
     {
         $output = new BufferedOutput();
         (new GraphReporter(new DepthFirstTraversal(Direction::Uses)))
+            ->report(SampleGraph::analysed(), ClassNodeId::of('App\Nothing'), $output)
+        ;
+
+        self::assertSame('', $output->fetch());
+    }
+
+    public function testReportWritesNothingAtAllAsMermaidForASymbolTheGraphDoesNotHold(): void
+    {
+        $output = new BufferedOutput();
+        (new GraphReporter(new DepthFirstTraversal(Direction::Uses), null, new MermaidRenderer()))
             ->report(SampleGraph::analysed(), ClassNodeId::of('App\Nothing'), $output)
         ;
 

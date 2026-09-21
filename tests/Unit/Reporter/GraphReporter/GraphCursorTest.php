@@ -131,6 +131,57 @@ final class GraphCursorTest extends TestCase
         self::assertNotContains('used-by', $labels);
     }
 
+    public function testDiagramDescribesEachSymbolByWhatItIsAndWhereItIsWritten(): void
+    {
+        $cursor = new GraphCursor(SampleGraph::analysed(), new DepthFirstTraversal(Direction::Uses), 1);
+        (new DepthFirstTraversal(Direction::Uses))->traverse(
+            SampleGraph::analysed(),
+            ClassNodeId::of('App\Http\Controller'),
+            $cursor->visit(...),
+        );
+
+        self::assertEquals(
+            [
+                new DiagramNode('App\Http\Controller', 'class', '/project/src/Http/Controller.php:10'),
+                new DiagramNode('App\Http\Kernel', 'class', '/project/src/Http/Kernel.php:7'),
+                new DiagramNode('App\Http\Controller::show', 'method', '/project/src/Http/Controller.php:20'),
+                new DiagramNode('App\Http\Controller::store', 'method', '/project/src/Http/Controller.php:30'),
+            ],
+            $cursor->diagram()->nodes(),
+        );
+    }
+
+    public function testDiagramNamesEachRelationByWhatItIsAndLeavesOutOnesOutOfReach(): void
+    {
+        $cursor = new GraphCursor(SampleGraph::analysed(), new DepthFirstTraversal(Direction::Uses), 1);
+        (new DepthFirstTraversal(Direction::Uses))->traverse(
+            SampleGraph::analysed(),
+            ClassNodeId::of('App\Http\Controller'),
+            $cursor->visit(...),
+        );
+
+        self::assertEquals(
+            [
+                new DiagramEdge('App\Http\Controller', 'App\Http\Kernel', 'declaration-extends'),
+                new DiagramEdge('App\Http\Controller', 'App\Http\Controller::show', 'declaration-method'),
+                new DiagramEdge('App\Http\Controller', 'App\Http\Controller::store', 'declaration-method'),
+            ],
+            $cursor->diagram()->edges(),
+        );
+    }
+
+    public function testDiagramDoesNotSayWhereASymbolAnalysisOnlySawReferredToIsWritten(): void
+    {
+        $cursor = new GraphCursor(SampleGraph::analysed(), new DepthFirstTraversal(Direction::Uses));
+        (new DepthFirstTraversal(Direction::Uses))->traverse(
+            SampleGraph::analysed(),
+            new UnknownNodeId('App\Missing'),
+            $cursor->visit(...),
+        );
+
+        self::assertEquals([new DiagramNode('App\Missing', 'unknown')], $cursor->diagram()->nodes());
+    }
+
     public function testDiagramDrawsNothingForASymbolTheGraphDoesNotHold(): void
     {
         $cursor = new GraphCursor(SampleGraph::analysed(), new DepthFirstTraversal(Direction::Uses));

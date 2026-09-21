@@ -62,15 +62,15 @@ final class DotWriter implements QueryReporter
      * @param DiagramNode $node The symbol
      *
      * @example A symbol is a box labelled with its name and what it is
-     *     \App\Reporter\Query\DotWriter::vertex(new \App\Reporter\Diagram\DiagramNode('App\\Invoice', 'class')) // => '    "App\\\\Invoice" [label="App\\\\Invoice\\\\nclass"];'
+     *     \App\Reporter\Query\DotWriter::vertex(new \App\Reporter\Diagram\DiagramNode('App\\Invoice', 'class')) // => '    "App\\\\Invoice" [label="App\\\\Invoice\\nclass"];'
      *
      * @return string The statement
      */
     public static function vertex(DiagramNode $node): string
     {
-        $label = $node->kind === '' ? $node->id : $node->id.'\n'.$node->kind;
+        $label = $node->kind === '' ? self::quoted($node->id) : self::quoted($node->id).'\n'.self::quoted($node->kind);
 
-        return sprintf('    "%s" [label="%s"];', self::quoted($node->id), self::quoted($label));
+        return sprintf('    "%s" [label="%s"];', self::quoted($node->id), $label);
     }
 
     /**
