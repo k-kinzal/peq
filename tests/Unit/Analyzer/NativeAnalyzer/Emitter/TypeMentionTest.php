@@ -4,23 +4,31 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\NativeAnalyzer\Emitter;
 
+use App\Analyzer\Graph\FileMeta;
+use App\Analyzer\Graph\Node\ClassNode;
+use App\Analyzer\Graph\NodeId\ClassNodeId;
+use App\Analyzer\Graph\QualifiedName;
 use App\Analyzer\NativeAnalyzer\Emitter\TypeMention;
 use PhpParser\Node\Name;
+use PhpParser\Node\Stmt\Property;
+use PhpParser\NodeFinder;
+use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor\NameResolver;
+use PhpParser\ParserFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\ParsedSnippet;
 
 /**
  * @internal
  */
 #[CoversClass(TypeMention::class)]
-#[UsesClass(\App\Analyzer\Graph\FileMeta::class)]
-#[UsesClass(\App\Analyzer\Graph\NodeId\ClassNodeId::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\ClassNode::class)]
-#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(FileMeta::class)]
+#[UsesClass(ClassNodeId::class)]
+#[UsesClass(ClassNode::class)]
+#[UsesClass(QualifiedName::class)]
 #[Small]
 final class TypeMentionTest extends TestCase
 {
@@ -28,9 +36,13 @@ final class TypeMentionTest extends TestCase
      * @param list<string> $expected The names the type is expected to mention
      */
     #[DataProvider('providerWrittenTypes')]
-    public function testNamesOfReadsTheClassLikesAWrittenTypeNames(string $written, array $expected): void
+    public function testNamesOfReadsTheClassLikesAWrittenTypeNames(string $code, array $expected): void
     {
-        self::assertSame($expected, array_map(static fn (Name $name): string => $name->toString(), TypeMention::namesOf(ParsedSnippet::writtenType($written))));
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse($code) ?? []);
+        $property = (new NodeFinder())->findFirstInstanceOf($parsed, Property::class);
+        self::assertNotNull($property);
+
+        self::assertSame($expected, array_map(static fn (Name $name): string => $name->toString(), TypeMention::namesOf($property->type)));
     }
 
     /**
@@ -38,17 +50,17 @@ final class TypeMentionTest extends TestCase
      */
     public static function providerWrittenTypes(): iterable
     {
-        yield 'a single name' => ['\App\Money', ['App\Money']];
+        yield 'a single name' => ["<?php\nclass Written { public \\App\\Money \$held; }\n", ['App\Money']];
 
-        yield 'a nullable name' => ['?\App\Money', ['App\Money']];
+        yield 'a nullable name' => ["<?php\nclass Written { public ?\\App\\Money \$held; }\n", ['App\Money']];
 
-        yield 'a union' => ['\App\Money|\App\Rate', ['App\Money', 'App\Rate']];
+        yield 'a union' => ["<?php\nclass Written { public \\App\\Money|\\App\\Rate \$held; }\n", ['App\Money', 'App\Rate']];
 
-        yield 'an intersection' => ['\App\Money&\Countable', ['App\Money', 'Countable']];
+        yield 'an intersection' => ["<?php\nclass Written { public \\App\\Money&\\Countable \$held; }\n", ['App\Money', 'Countable']];
 
-        yield 'a union of intersections' => ['(\App\Money&\Countable)|null', ['App\Money', 'Countable']];
+        yield 'a union of intersections' => ["<?php\nclass Written { public (\\App\\Money&\\Countable)|null \$held; }\n", ['App\Money', 'Countable']];
 
-        yield 'a builtin type names nothing' => ['int', []];
+        yield 'a builtin type names nothing' => ["<?php\nclass Written { public int \$held; }\n", []];
     }
 
     public function testNamesOfReadsNothingWhereNoTypeIsWritten(): void
@@ -58,27 +70,34 @@ final class TypeMentionTest extends TestCase
 
     public function testOfMentionsNothingForATypeThatNamesNoClassLike(): void
     {
-        self::assertSame([], TypeMention::of(ParsedSnippet::writtenType('int'), '/project/Invoice.php'));
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nclass Written { public int \$held; }\n") ?? []);
+        $property = (new NodeFinder())->findFirstInstanceOf($parsed, Property::class);
+        self::assertNotNull($property);
+
+        self::assertSame([], TypeMention::of($property->type, '/project/Invoice.php'));
     }
 
-    public function testOfMentionsTheClassLikeAWrittenTypeNames(): void
+    public function testOfMentionsTheClassLikeAWrittenTypeNamesWhereItIsWritten(): void
     {
-        $mentions = TypeMention::of(ParsedSnippet::writtenType('\App\Money'), '/project/Invoice.php');
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nclass Written {\n    public \\App\\Money \$held;\n}\n") ?? []);
+        $property = (new NodeFinder())->findFirstInstanceOf($parsed, Property::class);
+        self::assertNotNull($property);
 
-        self::assertSame('App\Money', $mentions[0]->node->id()->toString());
-    }
-
-    public function testOfRemembersWhereTheNameIsWritten(): void
-    {
-        $mentions = TypeMention::of(ParsedSnippet::writtenType('\App\Money'), '/project/Invoice.php');
-
-        self::assertSame(['/project/Invoice.php', 2], [$mentions[0]->meta->path, $mentions[0]->meta->line]);
+        self::assertEquals(
+            [new TypeMention(new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('/project/Invoice.php', 3, 1))],
+            TypeMention::of($property->type, '/project/Invoice.php'),
+        );
     }
 
     public function testOfLeavesOutTheBuiltinPartsOfAWrittenType(): void
     {
-        $mentions = TypeMention::of(ParsedSnippet::writtenType('\App\Money|null'), '/project/Invoice.php');
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nclass Written { public \\App\\Money|null \$held; }\n") ?? []);
+        $property = (new NodeFinder())->findFirstInstanceOf($parsed, Property::class);
+        self::assertNotNull($property);
 
-        self::assertCount(1, $mentions);
+        self::assertEquals(
+            [new TypeMention(new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('/project/Invoice.php', 2, 1))],
+            TypeMention::of($property->type, '/project/Invoice.php'),
+        );
     }
 }

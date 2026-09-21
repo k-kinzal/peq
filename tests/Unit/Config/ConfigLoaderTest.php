@@ -14,7 +14,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Config\StubConfigReader;
 
 /**
  * @internal
@@ -38,8 +37,18 @@ final class ConfigLoaderTest extends TestCase
     public function testLoadLetsALaterSourceOverruleAnEarlierOne(): void
     {
         $config = (new ConfigLoader([
-            new StubConfigReader(['basePath' => '/default', 'direction' => 'uses', 'type' => 'debug']),
-            new StubConfigReader(['basePath' => '/project']),
+            new class () implements ConfigReader {
+                public function read(): array
+                {
+                    return ['basePath' => '/default', 'direction' => 'uses', 'type' => 'debug'];
+                }
+            },
+            new class () implements ConfigReader {
+                public function read(): array
+                {
+                    return ['basePath' => '/project'];
+                }
+            },
         ]))->load();
 
         self::assertSame('/project', $config->basePath);
@@ -51,8 +60,18 @@ final class ConfigLoaderTest extends TestCase
     public function testLoadKeepsWhatALaterSourceSaysNothingAbout(): void
     {
         $config = (new ConfigLoader([
-            new StubConfigReader(['basePath' => '/default', 'direction' => 'used-by', 'type' => 'debug']),
-            new StubConfigReader(['basePath' => '/project']),
+            new class () implements ConfigReader {
+                public function read(): array
+                {
+                    return ['basePath' => '/default', 'direction' => 'used-by', 'type' => 'debug'];
+                }
+            },
+            new class () implements ConfigReader {
+                public function read(): array
+                {
+                    return ['basePath' => '/project'];
+                }
+            },
         ]))->load();
 
         self::assertSame(Direction::UsedBy, $config->direction);
@@ -64,8 +83,18 @@ final class ConfigLoaderTest extends TestCase
     public function testLoadCombinesAGroupSettingBySetting(): void
     {
         $config = (new ConfigLoader([
-            new StubConfigReader(['basePath' => '.', 'direction' => 'uses', 'type' => 'debug', 'debug' => ['depth' => 9, 'seed' => 1]]),
-            new StubConfigReader(['debug' => ['seed' => 42]]),
+            new class () implements ConfigReader {
+                public function read(): array
+                {
+                    return ['basePath' => '.', 'direction' => 'uses', 'type' => 'debug', 'debug' => ['depth' => 9, 'seed' => 1]];
+                }
+            },
+            new class () implements ConfigReader {
+                public function read(): array
+                {
+                    return ['debug' => ['seed' => 42]];
+                }
+            },
         ]))->load();
 
         self::assertSame(9, $config->debug->depth);
@@ -78,8 +107,18 @@ final class ConfigLoaderTest extends TestCase
     public function testLoadReplacesAListRatherThanAddingToIt(): void
     {
         $config = (new ConfigLoader([
-            new StubConfigReader(['basePath' => '.', 'direction' => 'uses', 'type' => 'debug', 'excludes' => ['vendor', 'build']]),
-            new StubConfigReader(['excludes' => ['vendor']]),
+            new class () implements ConfigReader {
+                public function read(): array
+                {
+                    return ['basePath' => '.', 'direction' => 'uses', 'type' => 'debug', 'excludes' => ['vendor', 'build']];
+                }
+            },
+            new class () implements ConfigReader {
+                public function read(): array
+                {
+                    return ['excludes' => ['vendor']];
+                }
+            },
         ]))->load();
 
         self::assertSame(['vendor'], $config->excludes);
@@ -92,7 +131,12 @@ final class ConfigLoaderTest extends TestCase
     {
         $this->expectException(ConfigException::class);
 
-        (new ConfigLoader([new StubConfigReader(['direction' => 'uses'])]))->load();
+        (new ConfigLoader([new class () implements ConfigReader {
+            public function read(): array
+            {
+                return ['direction' => 'uses'];
+            }
+        }]))->load();
     }
 
     /**

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Analyzer\Graph;
 
+use App\Analyzer\Graph\Declaration\SymbolDeclaration;
+
 /**
  * Represents a node in the dependency graph.
  *
  * A node represents a PHP code element (class, method, function, etc.) in the
  * dependency graph. All nodes have a unique identifier, kind, optional metadata,
- * and resolution status.
+ * resolution status, and whatever the source declares about them.
  */
 interface Node
 {
@@ -40,4 +42,16 @@ interface Node
      * @return null|FileMeta The file metadata or null if not available
      */
     public function meta(): ?FileMeta;
+
+    /**
+     * Returns what the source declares about this symbol, if analysis read it.
+     *
+     * A node stands for a symbol whether or not the analysed sources declare it. One
+     * that was only ever referred to — a class from a dependency, a method reached
+     * past the analysed boundary — has a name and nothing else, and says so by
+     * answering null rather than by answering a declaration that is empty.
+     *
+     * @return null|SymbolDeclaration What the declaration says, or null when none was read
+     */
+    public function declaration(): ?SymbolDeclaration;
 }

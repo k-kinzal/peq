@@ -4,16 +4,33 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\NativeAnalyzer;
 
+use App\Analyzer\Graph\Declaration\Modifiers;
+use App\Analyzer\Graph\Declaration\Signature;
+use App\Analyzer\Graph\Declaration\SymbolDeclaration;
+use App\Analyzer\Graph\Declaration\Visibility;
+use App\Analyzer\Graph\Edge\Usage\InstantiationEdge;
+use App\Analyzer\Graph\EdgeKind;
+use App\Analyzer\Graph\FileMeta;
+use App\Analyzer\Graph\Node\ClassNode;
+use App\Analyzer\Graph\Node\MethodNode;
+use App\Analyzer\Graph\NodeId\ClassNodeId;
 use App\Analyzer\Graph\NodeId\MethodNodeId;
 use App\Analyzer\Graph\NodeId\PropertyNodeId;
 use App\Analyzer\Graph\NodeKind;
+use App\Analyzer\NativeAnalyzer\AnalysisScope;
 use App\Analyzer\NativeAnalyzer\ClassWalker;
+use App\Analyzer\NativeAnalyzer\GraphRecorder;
+use App\Analyzer\NativeAnalyzer\SourceIndex;
+use App\Analyzer\NativeAnalyzer\SourceWalker;
+use org\bovigo\vfs\vfsStream;
 use PhpParser\Node\Stmt;
+use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
+use PhpParser\NodeFinder;
+use PhpParser\ParserFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Medium;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\ParsedSnippet;
 
 /**
  * @internal
@@ -24,91 +41,184 @@ final class ClassWalkerTest extends TestCase
 {
     public function testWalkReadsTheMethodsAClassDeclares(): void
     {
-        self::assertSame(NodeKind::Method, ParsedSnippet::walked("<?php\nnamespace App;\nclass Invoice { public function total(): void {} }\n")->nodeNamed('App\Invoice::total')?->kind());
+        $root = vfsStream::setup('project', null, ['Walked.php' => "<?php\nnamespace App;\nclass Invoice { public function total(): void {} }\n"]);
+        $index = SourceIndex::of([$root->url().'/Walked.php'], $root->url());
+        $source = $index->sources()[0];
+        $class = $source->declarationOf('App\Invoice');
+        self::assertNotNull($class);
+        $recorder = new GraphRecorder();
+        $walker = new ClassWalker($index, $recorder, new SourceWalker($index, $recorder));
+
+        $walker->walk($class, NodeKind::Klass, 'App\Invoice', AnalysisScope::inFile($index, $source->path), $source);
+
+        self::assertEquals(
+            new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, new FileMeta('vfs://project/Walked.php', 3, 1), new SymbolDeclaration(Visibility::Public, new Modifiers(), new Signature([], 'void'))),
+            $recorder->graph()->nodeNamed('App\Invoice::total'),
+        );
     }
 
     public function testMemberReadsTheStateAClassDeclares(): void
     {
-        $graph = ParsedSnippet::walked("<?php\nnamespace App;\nclass Invoice { public int \$amount = 0; public const KIND = 'invoice'; }\n");
+        $root = vfsStream::setup('project', null, ['Walked.php' => "<?php\nnamespace App;\nclass Invoice { public int \$amount = 0; public const KIND = 'invoice'; }\n"]);
+        $index = SourceIndex::of([$root->url().'/Walked.php'], $root->url());
+        $source = $index->sources()[0];
+        $class = $source->declarationOf('App\Invoice');
+        self::assertNotNull($class);
+        $scope = AnalysisScope::inFile($index, $source->path)->enteringClass('App\Invoice', null);
+        $recorder = new GraphRecorder();
+        $walker = new ClassWalker($index, $recorder, new SourceWalker($index, $recorder));
+
+        $walker->member($class->stmts[0], $class, NodeKind::Klass, $scope, $source);
+        $walker->member($class->stmts[1], $class, NodeKind::Klass, $scope, $source);
 
         self::assertSame(
             [NodeKind::Property, NodeKind::Constant],
-            [$graph->nodeNamed('App\Invoice::amount')?->kind(), $graph->nodeNamed('App\Invoice::KIND')?->kind()],
+            [$recorder->graph()->nodeNamed('App\Invoice::amount')?->kind(), $recorder->graph()->nodeNamed('App\Invoice::KIND')?->kind()],
         );
     }
 
     public function testMemberReadsTheCasesAnEnumDeclares(): void
     {
-        self::assertSame(NodeKind::EnumCase, ParsedSnippet::walked("<?php\nnamespace App;\nenum Status { case Open; }\n")->nodeNamed('App\Status::Open')?->kind());
+        $root = vfsStream::setup('project', null, ['Walked.php' => "<?php\nnamespace App;\nenum Status { case Open; }\n"]);
+        $index = SourceIndex::of([$root->url().'/Walked.php'], $root->url());
+        $source = $index->sources()[0];
+        $enum = $source->declarationOf('App\Status');
+        self::assertNotNull($enum);
+        $recorder = new GraphRecorder();
+        $walker = new ClassWalker($index, $recorder, new SourceWalker($index, $recorder));
+
+        $walker->member($enum->stmts[0], $enum, NodeKind::Enum, AnalysisScope::inFile($index, $source->path)->enteringClass('App\Status', null), $source);
+
+        self::assertSame(NodeKind::EnumCase, $recorder->graph()->nodeNamed('App\Status::Open')?->kind());
     }
 
     public function testMethodReadsWhatAMethodBodyReachesOutTo(): void
     {
-        $graph = ParsedSnippet::walked("<?php\nnamespace App;\nclass Money {}\nclass Invoice { public function total(): void { \$money = new Money(); } }\n");
+        $root = vfsStream::setup('project', null, ['Walked.php' => "<?php\nnamespace App;\nclass Money {}\nclass Invoice { public function total(): void { \$money = new Money(); } }\n"]);
+        $index = SourceIndex::of([$root->url().'/Walked.php'], $root->url());
+        $source = $index->sources()[0];
+        $class = $source->declarationOf('App\Invoice');
+        $method = $class?->getMethod('total');
+        self::assertNotNull($class);
+        self::assertNotNull($method);
+        $recorder = new GraphRecorder();
+        $walker = new ClassWalker($index, $recorder, new SourceWalker($index, $recorder));
 
-        self::assertNotNull($graph->edge(MethodNodeId::of('App\Invoice', 'total'), \App\Analyzer\Graph\NodeId\ClassNodeId::of('App\Money')));
+        $walker->method($method, $class, NodeKind::Klass, AnalysisScope::inFile($index, $source->path)->enteringClass('App\Invoice', null), $source);
+
+        self::assertEquals(
+            new InstantiationEdge(new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 4, 1)),
+            $recorder->graph()->edge(MethodNodeId::of('App\Invoice', 'total'), ClassNodeId::of('App\Money')),
+        );
     }
 
     public function testMethodReadsThePropertyAPromotedParameterDeclares(): void
     {
-        $graph = ParsedSnippet::walked("<?php\nnamespace App;\nclass Money {}\nclass Invoice { public function __construct(private readonly Money \$money) {} }\n");
+        $root = vfsStream::setup('project', null, ['Walked.php' => "<?php\nnamespace App;\nclass Money {}\nclass Invoice { public function __construct(private readonly Money \$money) {} }\n"]);
+        $index = SourceIndex::of([$root->url().'/Walked.php'], $root->url());
+        $source = $index->sources()[0];
+        $class = $source->declarationOf('App\Invoice');
+        $method = $class?->getMethod('__construct');
+        self::assertNotNull($class);
+        self::assertNotNull($method);
+        $recorder = new GraphRecorder();
+        $walker = new ClassWalker($index, $recorder, new SourceWalker($index, $recorder));
 
-        self::assertNotNull($graph->edge(PropertyNodeId::of('App\Invoice', 'money'), \App\Analyzer\Graph\NodeId\ClassNodeId::of('App\Money')));
+        $walker->method($method, $class, NodeKind::Klass, AnalysisScope::inFile($index, $source->path)->enteringClass('App\Invoice', null), $source);
+
+        self::assertSame(EdgeKind::DeclarationTypeProperty, $recorder->graph()->edge(PropertyNodeId::of('App\Invoice', 'money'), ClassNodeId::of('App\Money'))?->kind());
     }
 
     public function testTraitUseReadsWhatAClassTakesOnFromATrait(): void
     {
-        $graph = ParsedSnippet::walked("<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Invoice { use Shared; }\n");
+        $root = vfsStream::setup('project', null, ['Walked.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Invoice { use Shared; }\n"]);
+        $index = SourceIndex::of([$root->url().'/Walked.php'], $root->url());
+        $source = $index->sources()[0];
+        $class = $source->declarationOf('App\Invoice');
+        self::assertNotNull($class);
+        $recorder = new GraphRecorder();
+        $walker = new ClassWalker($index, $recorder, new SourceWalker($index, $recorder));
 
-        self::assertNotNull($graph->nodeNamed('App\Invoice::shared'));
+        $walker->traitUse($class->getTraitUses()[0], $class, NodeKind::Klass, AnalysisScope::inFile($index, $source->path)->enteringClass('App\Invoice', null));
+
+        self::assertSame(NodeKind::Method, $recorder->graph()->nodeNamed('App\Invoice::shared')?->kind());
     }
 
-    public function testTraitUseLeavesTheTraitsCopyOfAMethodTheClassWritesItself(): void
+    public function testTraitUseLeavesOutTheTraitsCopyOfAMethodTheClassWritesItself(): void
     {
-        $graph = ParsedSnippet::walked("<?php\nnamespace App;\ntrait Shared { public function shared(): int { return 1; } }\nclass Invoice { use Shared; public function shared(): int { return 2; } }\n");
+        $root = vfsStream::setup('project', null, ['Walked.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): int { return 1; } public function kept(): int { return 3; } }\nclass Invoice { use Shared; public function shared(): int { return 2; } }\n"]);
+        $index = SourceIndex::of([$root->url().'/Walked.php'], $root->url());
+        $source = $index->sources()[0];
+        $class = $source->declarationOf('App\Invoice');
+        self::assertNotNull($class);
+        $recorder = new GraphRecorder();
+        $walker = new ClassWalker($index, $recorder, new SourceWalker($index, $recorder));
 
-        self::assertSame(4, $graph->nodeNamed('App\Invoice::shared')?->meta()?->line);
+        $walker->traitUse($class->getTraitUses()[0], $class, NodeKind::Klass, AnalysisScope::inFile($index, $source->path)->enteringClass('App\Invoice', null));
+
+        self::assertSame(
+            [null, NodeKind::Method],
+            [$recorder->graph()->nodeNamed('App\Invoice::shared')?->kind(), $recorder->graph()->nodeNamed('App\Invoice::kept')?->kind()],
+        );
     }
 
     public function testTraitUseTakesAMethodOnUnderTheNameItIsRenamedTo(): void
     {
-        $graph = ParsedSnippet::walked("<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Invoice { use Shared { shared as renamed; } }\n");
+        $root = vfsStream::setup('project', null, ['Walked.php' => "<?php\nnamespace App;\ntrait Shared { public function shared(): void {} }\nclass Invoice { use Shared { shared as renamed; } }\n"]);
+        $index = SourceIndex::of([$root->url().'/Walked.php'], $root->url());
+        $source = $index->sources()[0];
+        $class = $source->declarationOf('App\Invoice');
+        self::assertNotNull($class);
+        $recorder = new GraphRecorder();
+        $walker = new ClassWalker($index, $recorder, new SourceWalker($index, $recorder));
+
+        $walker->traitUse($class->getTraitUses()[0], $class, NodeKind::Klass, AnalysisScope::inFile($index, $source->path)->enteringClass('App\Invoice', null));
 
         self::assertSame(
             [null, NodeKind::Method],
-            [$graph->nodeNamed('App\Invoice::shared')?->kind(), $graph->nodeNamed('App\Invoice::renamed')?->kind()],
+            [$recorder->graph()->nodeNamed('App\Invoice::shared')?->kind(), $recorder->graph()->nodeNamed('App\Invoice::renamed')?->kind()],
         );
     }
 
     public function testInReadingOrderPutsAPropertyAfterTheMethodsThatMayHaveDeclaredIt(): void
     {
-        $statements = ParsedSnippet::classLike("<?php\nclass Ordered { public int \$held = 0; public function instance(): void {} public static function stat(): void {} public function __construct() {} }\n")->stmts;
+        $statements = (new ParserFactory())->createForHostVersion()->parse("<?php\nclass Ordered { public int \$held = 0; public function instance(): void {} public static function stat(): void {} public function __construct() {} }\n") ?? [];
+        $class = (new NodeFinder())->findFirstInstanceOf($statements, Class_::class);
+        self::assertNotNull($class);
 
         self::assertSame(
             ['stat', '__construct', 'instance', 'property'],
-            array_map(static fn (Stmt $statement): string => $statement instanceof ClassMethod ? $statement->name->toString() : 'property', ClassWalker::inReadingOrder($statements)),
+            array_map(static fn (Stmt $statement): string => $statement instanceof ClassMethod ? $statement->name->toString() : 'property', ClassWalker::inReadingOrder($class->stmts)),
         );
     }
 
     public function testRenamedLeavesAMethodAloneWhenNothingRenamesIt(): void
     {
-        $method = ParsedSnippet::method("<?php\nclass Named { public function written(): void {} }\n");
+        $statements = (new ParserFactory())->createForHostVersion()->parse("<?php\nclass Named { public function written(): void {} }\n") ?? [];
+        $method = (new NodeFinder())->findFirstInstanceOf($statements, ClassMethod::class);
+        self::assertNotNull($method);
 
         self::assertSame($method, ClassWalker::renamed($method, ['other' => 'renamed']));
     }
 
     public function testRenamedLeavesAStatementThatIsNotAMethodAlone(): void
     {
-        $statement = ParsedSnippet::classLike("<?php\nclass Named { public int \$held = 0; }\n")->stmts[0];
+        $statements = (new ParserFactory())->createForHostVersion()->parse("<?php\nclass Named { public int \$held = 0; }\n") ?? [];
+        $class = (new NodeFinder())->findFirstInstanceOf($statements, Class_::class);
+        self::assertNotNull($class);
 
-        self::assertSame($statement, ClassWalker::renamed($statement, ['held' => 'renamed']));
+        self::assertSame($class->stmts[0], ClassWalker::renamed($class->stmts[0], ['held' => 'renamed']));
     }
 
     public function testRenamedKeepsWhereAMethodIsWritten(): void
     {
-        $method = ParsedSnippet::method("<?php\nclass Named { public function written(): void {} }\n");
+        $statements = (new ParserFactory())->createForHostVersion()->parse("<?php\nclass Named {\n    public function written(): void {}\n}\n") ?? [];
+        $method = (new NodeFinder())->findFirstInstanceOf($statements, ClassMethod::class);
+        self::assertNotNull($method);
+
         $renamed = ClassWalker::renamed($method, ['written' => 'taken']);
 
-        self::assertSame(['taken', $method->getStartLine()], [$renamed instanceof ClassMethod ? $renamed->name->toString() : '', $renamed->getStartLine()]);
+        self::assertInstanceOf(ClassMethod::class, $renamed);
+        self::assertSame(['taken', 3], [$renamed->name->toString(), $renamed->getStartLine()]);
     }
 }

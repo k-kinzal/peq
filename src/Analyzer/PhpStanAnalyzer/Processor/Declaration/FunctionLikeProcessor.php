@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer\PhpStanAnalyzer\Processor\Declaration;
 
+use App\Analyzer\Declaration\DeclarationReader;
 use App\Analyzer\Graph\Edge\Declaration\AttributeEdge;
 use App\Analyzer\Graph\Edge\Declaration\MethodEdge;
 use App\Analyzer\Graph\Edge\Declaration\TypeParameterEdge;
@@ -61,7 +62,12 @@ final class FunctionLikeProcessor
                 return [];
             }
 
-            $declared = new MethodNode(MethodNodeId::of($classReflection->getName(), $node->name->toString()), true, $meta);
+            $declared = new MethodNode(
+                MethodNodeId::of($classReflection->getName(), $node->name->toString()),
+                true,
+                $meta,
+                DeclarationReader::forCallable($node, AttributeProcessor::usages($node->getAttrGroups(), $scope)),
+            );
 
             return [
                 new MethodEdge(self::declaringNode($classReflection), $declared, $meta),
@@ -71,7 +77,12 @@ final class FunctionLikeProcessor
         }
 
         if ($node instanceof Function_ && $node->namespacedName !== null) {
-            $declared = new FunctionNode(FunctionNodeId::of($node->namespacedName->toString()), true, $meta);
+            $declared = new FunctionNode(
+                FunctionNodeId::of($node->namespacedName->toString()),
+                true,
+                $meta,
+                DeclarationReader::forCallable($node, AttributeProcessor::usages($node->getAttrGroups(), $scope)),
+            );
 
             return [$declared, ...self::signature($node, $declared, $scope, $meta)];
         }

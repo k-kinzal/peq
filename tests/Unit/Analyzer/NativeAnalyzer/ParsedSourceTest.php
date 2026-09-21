@@ -5,78 +5,111 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer\NativeAnalyzer;
 
 use App\Analyzer\NativeAnalyzer\AnonymousClassNaming;
+use App\Analyzer\NativeAnalyzer\AutoloadIndex;
+use App\Analyzer\NativeAnalyzer\ClassLikeDeclaration;
 use App\Analyzer\NativeAnalyzer\ParsedSource;
+use App\Analyzer\NativeAnalyzer\SourceIndex;
+use App\Analyzer\SourceParser;
+use org\bovigo\vfs\vfsStream;
 use PhpParser\Node\Identifier;
 use PhpParser\PrettyPrinter\Standard;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\ParsedSnippet;
 
 /**
  * @internal
  */
 #[CoversClass(ParsedSource::class)]
 #[UsesClass(AnonymousClassNaming::class)]
+#[UsesClass(AutoloadIndex::class)]
+#[UsesClass(ClassLikeDeclaration::class)]
+#[UsesClass(SourceIndex::class)]
+#[UsesClass(SourceParser::class)]
 #[Small]
 final class ParsedSourceTest extends TestCase
 {
     public function testDeclarationOfFindsWhatTheFileDeclares(): void
     {
-        self::assertNotNull(ParsedSnippet::source('/project/Invoice.php', "<?php\nnamespace App;\nclass Invoice {}\n")->declarationOf('App\Invoice'));
+        $root = vfsStream::setup('project', null, ['Invoice.php' => "<?php\nnamespace App;\nclass Invoice {}\n"]);
+        $source = SourceIndex::of([$root->url().'/Invoice.php'], $root->url())->sources()[0];
+
+        self::assertSame('App\Invoice', $source->declarationOf('App\Invoice')?->namespacedName?->toString());
     }
 
     public function testDeclarationOfFindsNothingForASymbolTheFileDoesNotDeclare(): void
     {
-        self::assertNull(ParsedSnippet::source('/project/Invoice.php', "<?php\nnamespace App;\nclass Invoice {}\n")->declarationOf('App\Money'));
+        $root = vfsStream::setup('project', null, ['Invoice.php' => "<?php\nnamespace App;\nclass Invoice {}\n"]);
+        $source = SourceIndex::of([$root->url().'/Invoice.php'], $root->url())->sources()[0];
+
+        self::assertNull($source->declarationOf('App\Money'));
     }
 
     public function testDeclarationOfFindsWhatIsDeclaredInsideAnotherStatement(): void
     {
-        self::assertNotNull(ParsedSnippet::source('/project/Invoice.php', "<?php\nnamespace App;\nif (true) { class Conditional {} }\n")->declarationOf('App\Conditional'));
+        $root = vfsStream::setup('project', null, ['Invoice.php' => "<?php\nnamespace App;\nif (true) { class Conditional {} }\n"]);
+        $source = SourceIndex::of([$root->url().'/Invoice.php'], $root->url())->sources()[0];
+
+        self::assertSame('App\Conditional', $source->declarationOf('App\Conditional')?->namespacedName?->toString());
     }
 
     public function testMethodBodyReadsTheBodyAsItIsWritten(): void
     {
-        $body = ParsedSnippet::source('/project/Invoice.php', "<?php\nnamespace App;\nclass Invoice { public function total(): void { \$money = new Money(); } }\n")->methodBody('App\Invoice', 'total');
+        $root = vfsStream::setup('project', null, ['Invoice.php' => "<?php\nnamespace App;\nclass Invoice { public function total(): void { \$money = new Money(); } }\n"]);
+        $source = SourceIndex::of([$root->url().'/Invoice.php'], $root->url())->sources()[0];
 
-        self::assertSame('$money = new \App\Money();', (new Standard())->prettyPrint($body ?? []));
+        self::assertSame('$money = new \App\Money();', (new Standard())->prettyPrint($source->methodBody('App\Invoice', 'total') ?? []));
     }
 
     public function testMethodBodyReadsNothingForAMethodTheFileDoesNotWrite(): void
     {
-        self::assertNull(ParsedSnippet::source('/project/Invoice.php', "<?php\nnamespace App;\nclass Invoice {}\n")->methodBody('App\Invoice', 'total'));
+        $root = vfsStream::setup('project', null, ['Invoice.php' => "<?php\nnamespace App;\nclass Invoice {}\n"]);
+        $source = SourceIndex::of([$root->url().'/Invoice.php'], $root->url())->sources()[0];
+
+        self::assertNull($source->methodBody('App\Invoice', 'total'));
     }
 
     public function testMethodBodyReadsNothingForAMethodWithNoBody(): void
     {
-        self::assertNull(ParsedSnippet::source('/project/Invoice.php', "<?php\nnamespace App;\nabstract class Invoice { abstract public function total(): void; }\n")->methodBody('App\Invoice', 'total'));
+        $root = vfsStream::setup('project', null, ['Invoice.php' => "<?php\nnamespace App;\nabstract class Invoice { abstract public function total(): void; }\n"]);
+        $source = SourceIndex::of([$root->url().'/Invoice.php'], $root->url())->sources()[0];
+
+        self::assertNull($source->methodBody('App\Invoice', 'total'));
     }
 
     public function testMethodBodyReadsNothingForAnInterface(): void
     {
-        self::assertNull(ParsedSnippet::source('/project/Invoice.php', "<?php\nnamespace App;\ninterface Invoice { public function total(): void; }\n")->methodBody('App\Invoice', 'total'));
+        $root = vfsStream::setup('project', null, ['Invoice.php' => "<?php\nnamespace App;\ninterface Invoice { public function total(): void; }\n"]);
+        $source = SourceIndex::of([$root->url().'/Invoice.php'], $root->url())->sources()[0];
+
+        self::assertNull($source->methodBody('App\Invoice', 'total'));
     }
 
     public function testMethodsOfReadsEveryMethodADeclarationWrites(): void
     {
-        $methods = ParsedSnippet::source('/project/Invoice.php', "<?php\nnamespace App;\nclass Invoice { public function total(): void {} public function tax(): void {} }\n")->methodsOf('App\Invoice');
+        $root = vfsStream::setup('project', null, ['Invoice.php' => "<?php\nnamespace App;\nclass Invoice { public function total(): void {} public function tax(): void {} }\n"]);
+        $source = SourceIndex::of([$root->url().'/Invoice.php'], $root->url())->sources()[0];
 
-        self::assertSame(['total', 'tax'], array_keys($methods));
+        self::assertSame(['total', 'tax'], array_keys($source->methodsOf('App\Invoice')));
     }
 
     public function testMethodsOfReadsNothingFromADeclarationTheFileDoesNotWrite(): void
     {
-        self::assertSame([], ParsedSnippet::source('/project/Invoice.php', "<?php\nnamespace App;\nclass Invoice {}\n")->methodsOf('App\Money'));
+        $root = vfsStream::setup('project', null, ['Invoice.php' => "<?php\nnamespace App;\nclass Invoice {}\n"]);
+        $source = SourceIndex::of([$root->url().'/Invoice.php'], $root->url())->sources()[0];
+
+        self::assertSame([], $source->methodsOf('App\Money'));
     }
 
     public function testMethodsOfKeepsTheMethodWrittenFirstWhenTwoAnswerToOneName(): void
     {
-        $methods = ParsedSnippet::source('/project/Invoice.php', "<?php\nnamespace App;\nclass Invoice { public function total(): int { \$inner = new class { public function total(): string { return ''; } }; return 1; } }\n")->methodsOf('App\Invoice');
-        $returnType = $methods['total']->returnType;
-        self::assertInstanceOf(Identifier::class, $returnType);
+        $root = vfsStream::setup('project', null, ['Invoice.php' => "<?php\nnamespace App;\nclass Invoice { public function total(): int { \$inner = new class { public function total(): string { return ''; } }; return 1; } }\n"]);
+        $source = SourceIndex::of([$root->url().'/Invoice.php'], $root->url())->sources()[0];
 
+        $returnType = $source->methodsOf('App\Invoice')['total']->returnType;
+
+        self::assertInstanceOf(Identifier::class, $returnType);
         self::assertSame('int', $returnType->toString());
     }
 }

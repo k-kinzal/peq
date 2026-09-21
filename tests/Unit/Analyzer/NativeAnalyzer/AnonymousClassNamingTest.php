@@ -7,11 +7,11 @@ namespace Tests\Unit\Analyzer\NativeAnalyzer;
 use App\Analyzer\NativeAnalyzer\AnonymousClassNaming;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\NodeFinder;
+use PhpParser\ParserFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\ParsedSnippet;
 
 /**
  * @internal
@@ -23,7 +23,7 @@ final class AnonymousClassNamingTest extends TestCase
     #[DataProvider('providerClassesOnOneLine')]
     public function testNameOfNamesAClassAfterWhereItStands(int $position, string $expected): void
     {
-        $statements = ParsedSnippet::statements("<?php\n\$only = new class {};\n");
+        $statements = array_values((new ParserFactory())->createForHostVersion()->parse("<?php\n\$only = new class {};\n") ?? []);
         $classes = (new NodeFinder())->findInstanceOf($statements, Class_::class);
 
         self::assertSame($expected, AnonymousClassNaming::of($statements)->nameOf($classes[$position], 'src/Only.php'));
@@ -39,7 +39,7 @@ final class AnonymousClassNamingTest extends TestCase
 
     public function testNameOfTellsTwoClassesOnOneLineApart(): void
     {
-        $statements = ParsedSnippet::statements("<?php\n\$first = new class {}; \$second = new class {};\n");
+        $statements = array_values((new ParserFactory())->createForHostVersion()->parse("<?php\n\$first = new class {}; \$second = new class {};\n") ?? []);
         $classes = (new NodeFinder())->findInstanceOf($statements, Class_::class);
         $naming = AnonymousClassNaming::of($statements);
 
@@ -48,18 +48,19 @@ final class AnonymousClassNamingTest extends TestCase
 
     public function testOfNumbersTwoClassesOnOneLineInTheOrderTheyAreWritten(): void
     {
-        $statements = ParsedSnippet::statements("<?php\n\$first = new class {}; \$second = new class {};\n");
+        $statements = array_values((new ParserFactory())->createForHostVersion()->parse("<?php\n\$first = new class {}; \$second = new class {};\n") ?? []);
         $classes = (new NodeFinder())->findInstanceOf($statements, Class_::class);
+        $naming = AnonymousClassNaming::of($statements);
 
         self::assertSame(
             ['AnonymousClass'.md5('src/Two.php:2:1'), 'AnonymousClass'.md5('src/Two.php:2:2')],
-            [AnonymousClassNaming::of($statements)->nameOf($classes[0], 'src/Two.php'), AnonymousClassNaming::of($statements)->nameOf($classes[1], 'src/Two.php')],
+            [$naming->nameOf($classes[0], 'src/Two.php'), $naming->nameOf($classes[1], 'src/Two.php')],
         );
     }
 
     public function testNameOfNamesTheSameClassDifferentlyInDifferentPlaces(): void
     {
-        $statements = ParsedSnippet::statements("<?php\n\$only = new class {};\n");
+        $statements = array_values((new ParserFactory())->createForHostVersion()->parse("<?php\n\$only = new class {};\n") ?? []);
         $classes = (new NodeFinder())->findInstanceOf($statements, Class_::class);
         $naming = AnonymousClassNaming::of($statements);
 
@@ -68,11 +69,19 @@ final class AnonymousClassNamingTest extends TestCase
 
     public function testIsAnonymousRecognisesAClassWithNoName(): void
     {
-        self::assertTrue(AnonymousClassNaming::isAnonymous(ParsedSnippet::classLike("<?php\n\$only = new class {};\n")));
+        $statements = (new ParserFactory())->createForHostVersion()->parse("<?php\n\$only = new class {};\n") ?? [];
+        $class = (new NodeFinder())->findFirstInstanceOf($statements, Class_::class);
+        self::assertNotNull($class);
+
+        self::assertTrue(AnonymousClassNaming::isAnonymous($class));
     }
 
     public function testIsAnonymousDoesNotTakeANamedClassForAnAnonymousOne(): void
     {
-        self::assertFalse(AnonymousClassNaming::isAnonymous(ParsedSnippet::classLike("<?php\nclass Named {}\n")));
+        $statements = (new ParserFactory())->createForHostVersion()->parse("<?php\nclass Named {}\n") ?? [];
+        $class = (new NodeFinder())->findFirstInstanceOf($statements, Class_::class);
+        self::assertNotNull($class);
+
+        self::assertFalse(AnonymousClassNaming::isAnonymous($class));
     }
 }

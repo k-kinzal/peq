@@ -14,7 +14,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Medium;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use Tests\Fixture\Analyzer\FailingCollector;
+use Tests\Double\FailingCollector;
 
 /**
  * @internal
@@ -109,11 +109,20 @@ final class PhpStanAnalyzerTest extends TestCase
 
     public function testAnalyzeLeavesOutWhatTheExcludePatternsFilter(): void
     {
-        $graph = (new PhpStanAnalyzer([], ['Sample']))
+        $graph = (new PhpStanAnalyzer(['Sample', 'Source'], ['Sample']))
             ->analyze(dirname(__DIR__, 3).'/Fixture')
         ;
 
         self::assertNull($graph->nodeNamed('Tests\Fixture\Sample\ComplexClass'));
+    }
+
+    public function testAnalyzeKeepsWhatNoExcludePatternFilters(): void
+    {
+        $graph = (new PhpStanAnalyzer(['Sample', 'Source']))
+            ->analyze(dirname(__DIR__, 3).'/Fixture')
+        ;
+
+        self::assertNotNull($graph->nodeNamed('Tests\Fixture\Sample\ComplexClass'));
     }
 
     public function testAnalyzeReportsASymbolItReadAsResolved(): void
@@ -185,5 +194,45 @@ final class PhpStanAnalyzerTest extends TestCase
         $graph = (new PhpStanAnalyzer(phpVersion: 70100))->analyze(dirname(__DIR__, 3).'/Fixture/Target/Php81.php.inc');
 
         self::assertSame([], $graph->nodes());
+    }
+}
+
+namespace Tests\Double;
+
+use PhpParser\Node;
+use PHPStan\Analyser\Scope;
+use PHPStan\Collectors\Collector;
+use RuntimeException;
+
+/**
+ * A collector that gives up on the first node it is shown.
+ *
+ * PHPStan builds its collectors from class names written into a configuration file,
+ * so the double that makes an analysis fail has to be a class with a name: neither an
+ * anonymous class nor a PHPUnit stub has one PHPStan could be told. It is declared
+ * beside the one test that needs it.
+ *
+ * @implements Collector<Node, null>
+ *
+ * @internal
+ */
+final class FailingCollector implements Collector
+{
+    /**
+     * {@inheritdoc}
+     */
+    public function getNodeType(): string
+    {
+        return Node::class;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @throws RuntimeException Always, naming the node it gave up on
+     */
+    public function processNode(Node $node, Scope $scope): mixed
+    {
+        throw new RuntimeException('the collector gave up on a '.$node->getType());
     }
 }

@@ -4,7 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\NativeAnalyzer;
 
-use App\Analyzer\Graph\NodeKind;
+use App\Analyzer\Graph\Node\ClassNode;
+use App\Analyzer\Graph\Node\FunctionNode;
+use App\Analyzer\Graph\Node\MethodNode;
+use App\Analyzer\Graph\Node\UnknownNode;
+use App\Analyzer\Graph\NodeId\ClassNodeId;
+use App\Analyzer\Graph\NodeId\FunctionNodeId;
+use App\Analyzer\Graph\NodeId\MethodNodeId;
+use App\Analyzer\Graph\NodeId\UnknownNodeId;
+use App\Analyzer\Graph\QualifiedName;
 use App\Analyzer\NativeAnalyzer\AnalysisScope;
 use App\Analyzer\NativeAnalyzer\AnonymousClassNaming;
 use App\Analyzer\NativeAnalyzer\AutoloadIndex;
@@ -12,14 +20,17 @@ use App\Analyzer\NativeAnalyzer\ClassLikeDeclaration;
 use App\Analyzer\NativeAnalyzer\ParsedSource;
 use App\Analyzer\NativeAnalyzer\SourceIndex;
 use App\Analyzer\SourceParser;
+use org\bovigo\vfs\vfsStream;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Name;
 use PhpParser\NodeFinder;
+use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor\NameResolver;
+use PhpParser\ParserFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\ParsedSnippet;
 
 /**
  * @internal
@@ -30,53 +41,53 @@ use Tests\Fixture\Analyzer\ParsedSnippet;
 #[UsesClass(ClassLikeDeclaration::class)]
 #[UsesClass(ParsedSource::class)]
 #[UsesClass(SourceIndex::class)]
-#[UsesClass(\App\Analyzer\Graph\NodeId\ClassNodeId::class)]
-#[UsesClass(\App\Analyzer\Graph\NodeId\FunctionNodeId::class)]
-#[UsesClass(\App\Analyzer\Graph\NodeId\MethodNodeId::class)]
-#[UsesClass(\App\Analyzer\Graph\NodeId\UnknownNodeId::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\ClassNode::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\FunctionNode::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\MethodNode::class)]
-#[UsesClass(\App\Analyzer\Graph\Node\UnknownNode::class)]
-#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(ClassNodeId::class)]
+#[UsesClass(FunctionNodeId::class)]
+#[UsesClass(MethodNodeId::class)]
+#[UsesClass(UnknownNodeId::class)]
+#[UsesClass(ClassNode::class)]
+#[UsesClass(FunctionNode::class)]
+#[UsesClass(MethodNode::class)]
+#[UsesClass(UnknownNode::class)]
+#[UsesClass(QualifiedName::class)]
 #[UsesClass(SourceParser::class)]
 #[Small]
 final class AnalysisScopeTest extends TestCase
 {
     public function testSourceNodeIsNobodyAtTheTopOfAFile(): void
     {
-        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Only.php' => "<?php\nclass One {}\n"]), '/project/Only.php');
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php');
 
-        self::assertSame(NodeKind::Unknown, $scope->sourceNode()->kind());
+        self::assertEquals(new UnknownNode(new UnknownNodeId('/project/Only.php')), $scope->sourceNode());
     }
 
     public function testEnteringClassMakesTheClassOwnWhatIsWritten(): void
     {
-        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Only.php' => "<?php\nclass One {}\n"]), '/project/Only.php')->enteringClass('App\Invoice', null);
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php')->enteringClass('App\Invoice', null);
 
-        self::assertSame('App\Invoice', $scope->sourceNode()->id()->toString());
+        self::assertEquals(new ClassNode(ClassNodeId::of('App\Invoice'), true, null), $scope->sourceNode());
     }
 
     public function testEnteringMethodMakesTheMethodOwnWhatIsWritten(): void
     {
-        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Only.php' => "<?php\nclass One {}\n"]), '/project/Only.php')
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php')
             ->enteringClass('App\Invoice', null)
             ->enteringMethod('total')
         ;
 
-        self::assertSame('App\Invoice::total', $scope->sourceNode()->id()->toString());
+        self::assertEquals(new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null), $scope->sourceNode());
     }
 
     public function testEnteringFunctionMakesTheFunctionOwnWhatIsWritten(): void
     {
-        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Only.php' => "<?php\nclass One {}\n"]), '/project/Only.php')->enteringFunction('App\helper');
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php')->enteringFunction('App\helper');
 
-        self::assertSame('App\helper', $scope->sourceNode()->id()->toString());
+        self::assertEquals(new FunctionNode(FunctionNodeId::of('App\helper'), true, null), $scope->sourceNode());
     }
 
     public function testEnteringFunctionDoesNotLeaveTheClassItIsWrittenIn(): void
     {
-        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Only.php' => "<?php\nclass One {}\n"]), '/project/Only.php')
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php')
             ->enteringClass('App\Invoice', null)
             ->enteringMethod('total')
             ->enteringFunction('App\helper')
@@ -87,69 +98,69 @@ final class AnalysisScopeTest extends TestCase
 
     public function testResolveNameReadsSelfAsTheClassItIsWrittenIn(): void
     {
-        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Only.php' => "<?php\nclass One {}\n"]), '/project/Only.php')->enteringClass('App\Invoice', 'App\Record');
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php')->enteringClass('App\Invoice', 'App\Record');
 
         self::assertSame('App\Invoice', $scope->resolveName(new Name('self')));
     }
 
     public function testResolveNameReadsStaticAsTheClassItIsWrittenIn(): void
     {
-        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Only.php' => "<?php\nclass One {}\n"]), '/project/Only.php')->enteringClass('App\Invoice', 'App\Record');
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php')->enteringClass('App\Invoice', 'App\Record');
 
         self::assertSame('App\Invoice', $scope->resolveName(new Name('STATIC')));
     }
 
     public function testResolveNameReadsParentAsTheClassItIsWrittenUnder(): void
     {
-        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Only.php' => "<?php\nclass One {}\n"]), '/project/Only.php')->enteringClass('App\Invoice', 'App\Record');
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php')->enteringClass('App\Invoice', 'App\Record');
 
         self::assertSame('App\Record', $scope->resolveName(new Name('parent')));
     }
 
     public function testResolveNameLeavesParentAloneWhereThereIsNoneToFind(): void
     {
-        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Only.php' => "<?php\nclass One {}\n"]), '/project/Only.php')->enteringClass('App\Invoice', null);
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php')->enteringClass('App\Invoice', null);
 
         self::assertSame('parent', $scope->resolveName(new Name('parent')));
     }
 
     public function testResolveNameLeavesAKeywordAloneOutsideAnyClass(): void
     {
-        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Only.php' => "<?php\nclass One {}\n"]), '/project/Only.php');
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php');
 
         self::assertSame('self', $scope->resolveName(new Name('self')));
     }
 
     public function testResolveNameLeavesAWrittenNameAlone(): void
     {
-        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Only.php' => "<?php\nclass One {}\n"]), '/project/Only.php')->enteringClass('App\Invoice', null);
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php')->enteringClass('App\Invoice', null);
 
         self::assertSame('App\Money', $scope->resolveName(new Name('App\Money')));
     }
 
     public function testResolveFunctionNameFindsTheFunctionOfItsOwnNamespace(): void
     {
-        $index = ParsedSnippet::index(['Only.php' => "<?php\nnamespace App;\nfunction helper(): void {}\n"]);
-        $call = (new NodeFinder())->findFirstInstanceOf(ParsedSnippet::statements("<?php\nnamespace App;\nhelper();\n"), FuncCall::class);
-        self::assertInstanceOf(FuncCall::class, $call);
-        self::assertInstanceOf(Name::class, $call->name);
+        $root = vfsStream::setup('project', null, ['Only.php' => "<?php\nnamespace App;\nfunction helper(): void {}\n"]);
+        $index = SourceIndex::of([$root->url().'/Only.php'], $root->url());
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nnamespace App;\nhelper();\n") ?? []);
+        $call = (new NodeFinder())->findFirstInstanceOf($parsed, FuncCall::class);
+        self::assertInstanceOf(Name::class, $call?->name);
 
-        self::assertSame('App\helper', AnalysisScope::inFile($index, '/project/Only.php')->resolveFunctionName($call->name));
+        self::assertSame('App\helper', AnalysisScope::inFile($index, 'vfs://project/Only.php')->resolveFunctionName($call->name));
     }
 
     public function testResolveFunctionNameFallsBackToTheGlobalFunction(): void
     {
-        $index = ParsedSnippet::index(['Only.php' => "<?php\nclass One {}\n"]);
-        $call = (new NodeFinder())->findFirstInstanceOf(ParsedSnippet::statements("<?php\nnamespace App;\nhelper();\n"), FuncCall::class);
-        self::assertInstanceOf(FuncCall::class, $call);
-        self::assertInstanceOf(Name::class, $call->name);
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nnamespace App;\nhelper();\n") ?? []);
+        $call = (new NodeFinder())->findFirstInstanceOf($parsed, FuncCall::class);
+        self::assertInstanceOf(Name::class, $call?->name);
 
-        self::assertSame('helper', AnalysisScope::inFile($index, '/project/Only.php')->resolveFunctionName($call->name));
+        self::assertSame('helper', AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php')->resolveFunctionName($call->name));
     }
 
     public function testIsReadingRemembersATraitBeingRead(): void
     {
-        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Only.php' => "<?php\nclass One {}\n"]), '/project/Only.php')
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php')
             ->enteringClass('App\Invoice', null)
             ->enteringTrait('App\Shared')
         ;
@@ -159,7 +170,7 @@ final class AnalysisScopeTest extends TestCase
 
     public function testIsReadingDoesNotRememberATraitThatIsNotBeingRead(): void
     {
-        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Only.php' => "<?php\nclass One {}\n"]), '/project/Only.php')
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php')
             ->enteringClass('App\Invoice', null)
             ->enteringTrait('App\Shared')
         ;
@@ -169,7 +180,7 @@ final class AnalysisScopeTest extends TestCase
 
     public function testReadingTraitNamesTheInnermostTraitBeingRead(): void
     {
-        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Only.php' => "<?php\nclass One {}\n"]), '/project/Only.php')
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php')
             ->enteringClass('App\Invoice', null)
             ->enteringTrait('App\Outer')
             ->enteringTrait('App\Inner')
@@ -180,14 +191,14 @@ final class AnalysisScopeTest extends TestCase
 
     public function testReadingTraitNamesNoneOutsideATrait(): void
     {
-        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Only.php' => "<?php\nclass One {}\n"]), '/project/Only.php')->enteringClass('App\Invoice', null);
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php')->enteringClass('App\Invoice', null);
 
         self::assertNull($scope->readingTrait());
     }
 
     public function testEnteringTraitKeepsTheTraitWhileItsOwnMethodIsRead(): void
     {
-        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Only.php' => "<?php\nclass One {}\n"]), '/project/Only.php')
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php')
             ->enteringClass('App\Invoice', null)
             ->enteringTrait('App\Shared')
             ->enteringMethod('shared')
@@ -198,6 +209,6 @@ final class AnalysisScopeTest extends TestCase
 
     public function testInFileStandsInTheFileItNames(): void
     {
-        self::assertSame('/project/Only.php', AnalysisScope::inFile(ParsedSnippet::index(['Only.php' => "<?php\nclass One {}\n"]), '/project/Only.php')->file);
+        self::assertSame('/project/Only.php', AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php')->file);
     }
 }

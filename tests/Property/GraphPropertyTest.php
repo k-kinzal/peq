@@ -6,6 +6,7 @@ namespace Tests\Property;
 
 use App\Analyzer\Graph\Direction;
 use App\Analyzer\Graph\Edge;
+use App\Analyzer\Graph\Edge\Inverse\UsedByEdge;
 use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Graph;
@@ -19,8 +20,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Graph\StubEdge;
-use Tests\Fixture\Graph\StubNode;
 
 /**
  * The graph model, checked over arbitrary sequences of relations rather than chosen ones.
@@ -61,7 +60,38 @@ final class GraphPropertyTest extends TestCase
                     self::assertIsString($from);
                     self::assertIsString($to);
                     self::assertInstanceOf(EdgeKind::class, $kind);
-                    $graph->addEdge(new StubEdge(new StubNode(ClassNodeId::of($from)), new StubNode(ClassNodeId::of($to)), new FileMeta('/project/src/A.php', 1, 1), $kind));
+                    $graph->addEdge(new class (ClassNodeId::of($from), ClassNodeId::of($to), $kind) implements Edge {
+                        public function __construct(
+                            private readonly ClassNodeId $source,
+                            private readonly ClassNodeId $target,
+                            private readonly EdgeKind $drawn,
+                        ) {}
+
+                        public function from(): ClassNodeId
+                        {
+                            return $this->source;
+                        }
+
+                        public function to(): ClassNodeId
+                        {
+                            return $this->target;
+                        }
+
+                        public function kind(): EdgeKind
+                        {
+                            return $this->drawn;
+                        }
+
+                        public function meta(): FileMeta
+                        {
+                            return new FileMeta('/project/src/A.php', 1, 1);
+                        }
+
+                        public function invert(): Edge
+                        {
+                            return new UsedByEdge($this);
+                        }
+                    });
                 }
 
                 foreach ($graph->nodes() as $node) {
@@ -92,7 +122,38 @@ final class GraphPropertyTest extends TestCase
                     self::assertIsString($from);
                     self::assertIsString($to);
                     self::assertInstanceOf(EdgeKind::class, $kind);
-                    $graph->addEdge(new StubEdge(new StubNode(ClassNodeId::of($from)), new StubNode(ClassNodeId::of($to)), new FileMeta('/project/src/A.php', 1, 1), $kind));
+                    $graph->addEdge(new class (ClassNodeId::of($from), ClassNodeId::of($to), $kind) implements Edge {
+                        public function __construct(
+                            private readonly ClassNodeId $source,
+                            private readonly ClassNodeId $target,
+                            private readonly EdgeKind $drawn,
+                        ) {}
+
+                        public function from(): ClassNodeId
+                        {
+                            return $this->source;
+                        }
+
+                        public function to(): ClassNodeId
+                        {
+                            return $this->target;
+                        }
+
+                        public function kind(): EdgeKind
+                        {
+                            return $this->drawn;
+                        }
+
+                        public function meta(): FileMeta
+                        {
+                            return new FileMeta('/project/src/A.php', 1, 1);
+                        }
+
+                        public function invert(): Edge
+                        {
+                            return new UsedByEdge($this);
+                        }
+                    });
                 }
 
                 foreach ($graph->nodes() as $node) {
@@ -124,7 +185,38 @@ final class GraphPropertyTest extends TestCase
                     self::assertIsString($from);
                     self::assertIsString($to);
                     self::assertInstanceOf(EdgeKind::class, $kind);
-                    $graph->addEdge(new StubEdge(new StubNode(ClassNodeId::of($from)), new StubNode(ClassNodeId::of($to)), new FileMeta('/project/src/A.php', 1, 1), $kind));
+                    $graph->addEdge(new class (ClassNodeId::of($from), ClassNodeId::of($to), $kind) implements Edge {
+                        public function __construct(
+                            private readonly ClassNodeId $source,
+                            private readonly ClassNodeId $target,
+                            private readonly EdgeKind $drawn,
+                        ) {}
+
+                        public function from(): ClassNodeId
+                        {
+                            return $this->source;
+                        }
+
+                        public function to(): ClassNodeId
+                        {
+                            return $this->target;
+                        }
+
+                        public function kind(): EdgeKind
+                        {
+                            return $this->drawn;
+                        }
+
+                        public function meta(): FileMeta
+                        {
+                            return new FileMeta('/project/src/A.php', 1, 1);
+                        }
+
+                        public function invert(): Edge
+                        {
+                            return new UsedByEdge($this);
+                        }
+                    });
                 }
 
                 $names = array_map(static fn (Node $node): string => $node->id()->toString(), $graph->nodes());
@@ -157,7 +249,38 @@ final class GraphPropertyTest extends TestCase
                     self::assertIsString($from);
                     self::assertIsString($to);
                     self::assertInstanceOf(EdgeKind::class, $kind);
-                    $graph->addEdge(new StubEdge(new StubNode(ClassNodeId::of($from)), new StubNode(ClassNodeId::of($to)), new FileMeta('/project/src/A.php', 1, 1), $kind));
+                    $graph->addEdge(new class (ClassNodeId::of($from), ClassNodeId::of($to), $kind) implements Edge {
+                        public function __construct(
+                            private readonly ClassNodeId $source,
+                            private readonly ClassNodeId $target,
+                            private readonly EdgeKind $drawn,
+                        ) {}
+
+                        public function from(): ClassNodeId
+                        {
+                            return $this->source;
+                        }
+
+                        public function to(): ClassNodeId
+                        {
+                            return $this->target;
+                        }
+
+                        public function kind(): EdgeKind
+                        {
+                            return $this->drawn;
+                        }
+
+                        public function meta(): FileMeta
+                        {
+                            return new FileMeta('/project/src/A.php', 1, 1);
+                        }
+
+                        public function invert(): Edge
+                        {
+                            return new UsedByEdge($this);
+                        }
+                    });
                 }
 
                 foreach ($graph->nodes() as $node) {
@@ -199,7 +322,38 @@ final class GraphPropertyTest extends TestCase
                         self::assertIsString($from);
                         self::assertIsString($to);
                         self::assertInstanceOf(EdgeKind::class, $kind);
-                        $graph->addEdge(new StubEdge(new StubNode(ClassNodeId::of($from)), new StubNode(ClassNodeId::of($to)), new FileMeta('/project/src/A.php', 1, 1), $kind));
+                        $graph->addEdge(new class (ClassNodeId::of($from), ClassNodeId::of($to), $kind) implements Edge {
+                            public function __construct(
+                                private readonly ClassNodeId $source,
+                                private readonly ClassNodeId $target,
+                                private readonly EdgeKind $drawn,
+                            ) {}
+
+                            public function from(): ClassNodeId
+                            {
+                                return $this->source;
+                            }
+
+                            public function to(): ClassNodeId
+                            {
+                                return $this->target;
+                            }
+
+                            public function kind(): EdgeKind
+                            {
+                                return $this->drawn;
+                            }
+
+                            public function meta(): FileMeta
+                            {
+                                return new FileMeta('/project/src/A.php', 1, 1);
+                            }
+
+                            public function invert(): Edge
+                            {
+                                return new UsedByEdge($this);
+                            }
+                        });
                     }
                 }
 

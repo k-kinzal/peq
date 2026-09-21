@@ -22,6 +22,11 @@ deptrac:
         - type: directory
           value: src/Analyzer/[^/]*\.php$
 
+    - name: Declaration
+      collectors:
+        - type: directory
+          value: src/Analyzer/Declaration/.*
+
     - name: PhpStanAnalyzer
       collectors:
         - type: directory
@@ -72,6 +77,86 @@ deptrac:
         - type: directory
           value: src/Reporter/TableReporter/.*
 
+    - name: Gql
+      collectors:
+        - type: directory
+          value: src/Gql/[^/]*\.php$
+
+    - name: GqlLexing
+      collectors:
+        - type: directory
+          value: src/Gql/Lexing/.*
+
+    - name: GqlSyntax
+      collectors:
+        - type: directory
+          value: src/Gql/Syntax/.*
+
+    - name: GqlParsing
+      collectors:
+        - type: directory
+          value: src/Gql/Parsing/.*
+
+    - name: GqlArgument
+      collectors:
+        - type: directory
+          value: src/Gql/Argument/.*
+
+    - name: GqlDatum
+      collectors:
+        - type: directory
+          value: src/Gql/Datum/.*
+
+    - name: GqlBinding
+      collectors:
+        - type: directory
+          value: src/Gql/Binding/.*
+
+    - name: GqlElement
+      collectors:
+        - type: directory
+          value: src/Gql/Element/.*
+
+    - name: GqlEvaluation
+      collectors:
+        - type: directory
+          value: src/Gql/Evaluation/.*
+
+    - name: GqlInvocation
+      collectors:
+        - type: directory
+          value: src/Gql/Invocation/.*
+
+    - name: GqlMatching
+      collectors:
+        - type: directory
+          value: src/Gql/Matching/.*
+
+    - name: GqlExecution
+      collectors:
+        - type: directory
+          value: src/Gql/Execution/.*
+
+    - name: GqlResult
+      collectors:
+        - type: directory
+          value: src/Gql/Result/.*
+
+    - name: Diagram
+      collectors:
+        - type: directory
+          value: src/Reporter/Diagram/.*
+
+    - name: GraphReporter
+      collectors:
+        - type: directory
+          value: src/Reporter/GraphReporter/.*
+
+    - name: QueryReporter
+      collectors:
+        - type: directory
+          value: src/Reporter/Query/.*
+
     - name: Config
       collectors:
         - type: directory
@@ -82,8 +167,16 @@ deptrac:
       - Action
       - Config
       - Reporter
+      - QueryReporter
+      - Gql
+      - GqlElement
+      - GqlResult
 
     Action:
+      - Gql
+      - GqlElement
+      - GqlExecution
+      - GqlResult
       - Analyzer
       - PhpStanAnalyzer
       - NativeAnalyzer
@@ -94,12 +187,17 @@ deptrac:
     Analyzer:
       - Graph
 
+    Declaration:
+      - Graph
+
     PhpStanAnalyzer:
       - Analyzer
+      - Declaration
       - Graph
 
     NativeAnalyzer:
       - Analyzer
+      - Declaration
       - Graph
 
     DebugAnalyzer:
@@ -112,6 +210,8 @@ deptrac:
       - Graph
       - Config
       - Traversal
+      - Diagram
+      - GraphReporter
       - TreeReporter
       - JsonReporter
       - DotReporter
@@ -137,6 +237,94 @@ deptrac:
     TableReporter:
       - Reporter
       - Graph
+
+    Gql: ~
+
+    GqlLexing:
+      - Gql
+
+    GqlArgument:
+      - Gql
+      - GqlDatum
+
+    GqlDatum:
+      - Gql
+
+    GqlSyntax:
+      - Gql
+      - GqlDatum
+
+    GqlParsing:
+      - Gql
+      - GqlLexing
+      - GqlSyntax
+      - GqlDatum
+
+    GqlBinding:
+      - Gql
+      - GqlDatum
+
+    GqlResult:
+      - Gql
+      - GqlDatum
+      - GqlBinding
+
+    GqlInvocation:
+      - Gql
+      - GqlArgument
+      - GqlDatum
+
+    GqlEvaluation:
+      - Gql
+      - GqlArgument
+      - GqlDatum
+      - GqlSyntax
+      - GqlBinding
+      - GqlInvocation
+
+    GqlElement:
+      - Gql
+      - Graph
+      - GqlDatum
+      - GqlBinding
+      - GqlResult
+      - GqlInvocation
+
+    GqlMatching:
+      - Gql
+      - GqlDatum
+      - GqlSyntax
+      - GqlBinding
+      - GqlElement
+      - GqlEvaluation
+
+    GqlExecution:
+      - Gql
+      - Graph
+      - GqlDatum
+      - GqlSyntax
+      - GqlParsing
+      - GqlBinding
+      - GqlElement
+      - GqlEvaluation
+      - GqlMatching
+      - GqlResult
+
+    Diagram: ~
+
+    GraphReporter:
+      - Reporter
+      - Traversal
+      - Graph
+      - Diagram
+
+    QueryReporter:
+      - Config
+      - Diagram
+      - Gql
+      - GqlDatum
+      - GqlElement
+      - GqlResult
 
     Config:
       - Graph

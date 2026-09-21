@@ -1,0 +1,16 @@
+# The ISO/IEC 39075:2024 digital artifacts this specification reads.
+#
+# They are ISO's, and they are not in this repository: ISO grants their use, unmodified,
+# for the purposes the standard names, and does not grant their redistribution. So each
+# one is downloaded from ISO's own Standards Maintenance Portal the first time
+# `composer spec` needs it, cached in build/iso/, and compared with the SHA-256 recorded
+# here before anything reads it. Downloading one is accepting ISO's licence for it:
+# https://www.iso.org/terms-conditions-licence-agreement.html#Customer-Licence
+#
+# Each line: the SHA-256 of the file as ISO publishes it, the name it is cached under,
+# and the URL ISO publishes it at.
+
+ae0e8b7cbd39700092c90b93854e7a8238375e4716e96a696c247d6c0f613e56  features.xml                https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en)-features.xml
+5ca8c593068eff9f727fa7a977ecae047790ff78c8ad2c3c7f385a070d2b6d8e  conditions.xml              https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en)-conditions.xml
+24f9a9208f98a03cf8cede601e584b4b6725c99352fc5b5dd0aad91442fd258f  gql.bnf.xml                 https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en).bnf.xml
+d559259526edd28b53ecd5b3aa8372fc571ce98c28fd35ebfaae9d2558ff5a85  implementation-defined.xml  https://standards.iso.org/iso-iec/39075/ed-1/en/ISO_IEC_39075(en)-implementation-defined.xml

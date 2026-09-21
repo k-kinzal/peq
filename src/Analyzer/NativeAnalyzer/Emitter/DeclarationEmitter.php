@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Analyzer\NativeAnalyzer\Emitter;
 
+use App\Analyzer\Declaration\DeclarationReader;
+use App\Analyzer\Declaration\WrittenAttribute;
+use App\Analyzer\Graph\Declaration\AttributeUsage;
+use App\Analyzer\Graph\Declaration\SymbolDeclaration;
 use App\Analyzer\Graph\Edge;
 use App\Analyzer\Graph\Edge\Declaration\AttributeEdge;
 use App\Analyzer\Graph\Edge\Declaration\ExtendsEdge;
@@ -57,7 +61,12 @@ final class DeclarationEmitter
     public static function emit(ClassLike $node, NodeKind $kind, string $name, AnalysisScope $scope): array
     {
         $meta = new FileMeta($scope->file, $node->getStartLine(), 1);
-        $declared = self::ownerNode($kind, $name, $meta);
+        $declared = self::ownerNode(
+            $kind,
+            $name,
+            $meta,
+            DeclarationReader::forClassLike($node, self::attributeUsages($node->attrGroups, $scope)),
+        );
 
         return [
             $declared,
@@ -69,18 +78,19 @@ final class DeclarationEmitter
     /**
      * Builds the symbol that stands for a class-like of the given kind.
      *
-     * @param NodeKind      $kind The kind of declaration
-     * @param string        $name Its fully qualified name
-     * @param null|FileMeta $meta Where it is written, or null when the symbol is only being referred to
+     * @param NodeKind               $kind        The kind of declaration
+     * @param string                 $name        Its fully qualified name
+     * @param null|FileMeta          $meta        Where it is written, or null when the symbol is only being referred to
+     * @param null|SymbolDeclaration $declaration What its declaration says, or null when it is only being referred to
      *
      * @return ClassNode|EnumNode|GraphInterfaceNode|TraitNode The symbol for that declaration
      */
-    public static function ownerNode(NodeKind $kind, string $name, ?FileMeta $meta = null): ClassNode|EnumNode|GraphInterfaceNode|TraitNode
+    public static function ownerNode(NodeKind $kind, string $name, ?FileMeta $meta = null, ?SymbolDeclaration $declaration = null): ClassNode|EnumNode|GraphInterfaceNode|TraitNode
     {
         return match ($kind) {
-            NodeKind::Interface => new GraphInterfaceNode(InterfaceNodeId::of($name), true, $meta),
-            NodeKind::Trait => new TraitNode(TraitNodeId::of($name), true, $meta),
-            NodeKind::Enum => new EnumNode(EnumNodeId::of($name), true, $meta),
+            NodeKind::Interface => new GraphInterfaceNode(InterfaceNodeId::of($name), true, $meta, $declaration),
+            NodeKind::Trait => new TraitNode(TraitNodeId::of($name), true, $meta, $declaration),
+            NodeKind::Enum => new EnumNode(EnumNodeId::of($name), true, $meta, $declaration),
             NodeKind::Klass,
             NodeKind::Constant,
             NodeKind::EnumCase,
@@ -88,8 +98,34 @@ final class DeclarationEmitter
             NodeKind::Method,
             NodeKind::Property,
             NodeKind::Builtin,
-            NodeKind::Unknown => new ClassNode(ClassNodeId::of($name), true, $meta),
+            NodeKind::Unknown => new ClassNode(ClassNodeId::of($name), true, $meta, $declaration),
         };
+    }
+
+    /**
+     * Reads the attributes written on a declaration, under the names they resolve to.
+     *
+     * The same attributes are read twice for one declaration: once as relations to
+     * the classes they name, and once as facts about the declaration that carries
+     * them. They are different answers to different questions — what breaks if the
+     * attribute class changes, and which declarations are marked with it — so both
+     * are recorded rather than one being derived from the other at query time.
+     *
+     * @param array<AttributeGroup> $attributeGroups The attribute groups written on the declaration
+     * @param AnalysisScope         $scope           Where in the sources they are written
+     *
+     * @return list<AttributeUsage> The attributes, in source order
+     */
+    public static function attributeUsages(array $attributeGroups, AnalysisScope $scope): array
+    {
+        $usages = [];
+        foreach ($attributeGroups as $group) {
+            foreach ($group->attrs as $attribute) {
+                $usages[] = WrittenAttribute::usage($attribute, $scope->resolveName($attribute->name));
+            }
+        }
+
+        return $usages;
     }
 
     /**

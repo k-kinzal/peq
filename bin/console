@@ -22,9 +22,13 @@ try {
         $app->add($container->get($id));
     }
 
-    // Make the CLI behave like a single-command app: `peq.phar <Target>`
+    // Make the CLI behave like a single-command app — `peq.phar <Target>` — unless the
+    // first word names a command, so that `peq graph '<query>'` still reaches `graph`.
     if ($app->has('inspect')) {
-        $app->setDefaultCommand('inspect', true);
+        $arguments = $_SERVER['argv'] ?? [];
+        $first = is_array($arguments) && isset($arguments[1]) && is_string($arguments[1]) ? $arguments[1] : null;
+
+        $app->setDefaultCommand('inspect', $first === null || !$app->has($first));
     }
 
     $app->run();

@@ -22,6 +22,17 @@ use App\Analyzer\Graph\Direction;
 final readonly class Config
 {
     /**
+     * The largest upper bound a query's quantifier may be written with.
+     *
+     * GQL leaves this to the implementation (IL018). A walk may revisit what it has
+     * crossed, so `-[e]->{1,20}` on a graph with cycles is a great deal of work for a
+     * question a reader rarely means; ten steps is far enough for the questions asked
+     * in practice. A quantifier with no upper bound is not limited by this, because GQL
+     * allows one only under a restrictor that keeps its matches finite.
+     */
+    public const int HOPS = 10;
+
+    /**
      * @param string              $basePath   The base path for the PHP project to analyze
      * @param Direction           $direction  Which way the dependency graph is read
      * @param null|int            $level      Deepest level to report, or null for the whole graph
@@ -31,6 +42,7 @@ final readonly class Config
      * @param null|PhpVersion     $phpVersion The PHP version the analysed sources are read as, or
      *                                        null to read them as the version peq runs on
      * @param AnalyzerKind        $analyzer   Which analyzer builds the graph
+     * @param int                 $hops       The largest upper bound a query's quantifier may be written with
      * @param DebugAnalyzerConfig $debug      Settings for the synthetic graph of the debug analyzer
      */
     public function __construct(
@@ -42,6 +54,7 @@ final readonly class Config
         public array $excludes = [],
         public ?PhpVersion $phpVersion = null,
         public AnalyzerKind $analyzer = AnalyzerKind::PhpStan,
+        public int $hops = self::HOPS,
         public DebugAnalyzerConfig $debug = new DebugAnalyzerConfig(),
     ) {
         assert($this->basePath !== '', 'A base path must name a location');
@@ -110,6 +123,7 @@ final readonly class Config
             excludes: $raw->stringList('excludes'),
             phpVersion: self::phpVersionFor($raw, $analyzer),
             analyzer: $analyzer,
+            hops: $raw->optionalPositiveInt('hops') ?? self::HOPS,
             debug: DebugAnalyzerConfig::fromRaw($raw->nested('debug')),
         );
     }

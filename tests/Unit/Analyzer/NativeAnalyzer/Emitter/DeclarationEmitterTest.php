@@ -4,17 +4,36 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\NativeAnalyzer\Emitter;
 
+use App\Analyzer\Graph\Declaration\AttributeUsage;
+use App\Analyzer\Graph\Declaration\SymbolDeclaration;
+use App\Analyzer\Graph\Edge;
+use App\Analyzer\Graph\Edge\Declaration\AttributeEdge;
+use App\Analyzer\Graph\Edge\Declaration\ExtendsEdge;
+use App\Analyzer\Graph\Edge\Declaration\ImplementsEdge;
+use App\Analyzer\Graph\Edge\Declaration\TraitUseEdge;
 use App\Analyzer\Graph\FileMeta;
+use App\Analyzer\Graph\Node;
+use App\Analyzer\Graph\Node\ClassNode;
+use App\Analyzer\Graph\Node\EnumNode;
+use App\Analyzer\Graph\Node\GraphInterfaceNode;
+use App\Analyzer\Graph\Node\TraitNode;
+use App\Analyzer\Graph\NodeId\ClassNodeId;
+use App\Analyzer\Graph\NodeId\EnumNodeId;
+use App\Analyzer\Graph\NodeId\InterfaceNodeId;
+use App\Analyzer\Graph\NodeId\TraitNodeId;
 use App\Analyzer\Graph\NodeKind;
 use App\Analyzer\NativeAnalyzer\AnalysisScope;
-use App\Analyzer\NativeAnalyzer\ClassLikeDeclaration;
 use App\Analyzer\NativeAnalyzer\Emitter\DeclarationEmitter;
+use App\Analyzer\NativeAnalyzer\SourceIndex;
+use PhpParser\Node\Stmt\ClassLike;
+use PhpParser\NodeFinder;
+use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor\NameResolver;
+use PhpParser\ParserFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Medium;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Analyzer\GraphSpelling;
-use Tests\Fixture\Analyzer\ParsedSnippet;
 
 /**
  * @internal
@@ -23,129 +42,186 @@ use Tests\Fixture\Analyzer\ParsedSnippet;
 #[Medium]
 final class DeclarationEmitterTest extends TestCase
 {
-    /**
-     * @param list<string> $expected What the declaration is expected to record
-     */
-    #[DataProvider('providerDeclarations')]
-    public function testEmitRecordsWhatADeclarationIsBuiltFrom(string $code, array $expected): void
+    public function testAttributeUsagesReadsAnAttributeUnderTheNameItResolvesTo(): void
     {
-        $declaration = ParsedSnippet::classLike($code);
-        $kind = ClassLikeDeclaration::kindOf($declaration);
-        self::assertNotNull($kind);
-        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Written.php' => $code]), '/project/Written.php');
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nnamespace App;\nuse App\\Http\\Route;\n#[Route('/users')]\nclass Written {}\n") ?? []);
+        $declaration = (new NodeFinder())->findFirstInstanceOf($parsed, ClassLike::class);
+        self::assertNotNull($declaration);
 
-        self::assertSame($expected, GraphSpelling::of(DeclarationEmitter::emit($declaration, $kind, 'App\Written', $scope)));
+        self::assertEquals(
+            [new AttributeUsage('App\Http\Route', ["'/users'"])],
+            DeclarationEmitter::attributeUsages($declaration->attrGroups, AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Written.php')),
+        );
+    }
+
+    public function testAttributeUsagesOfADeclarationCarryingNoneReadsNone(): void
+    {
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nnamespace App;\nclass Written {}\n") ?? []);
+        $declaration = (new NodeFinder())->findFirstInstanceOf($parsed, ClassLike::class);
+        self::assertNotNull($declaration);
+
+        self::assertSame([], DeclarationEmitter::attributeUsages($declaration->attrGroups, AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Written.php')));
     }
 
     /**
-     * @return iterable<string, array{string, list<string>}>
+     * @param list<Edge|Node> $expected What the declaration is expected to record
+     */
+    #[DataProvider('providerDeclarations')]
+    public function testEmitRecordsWhatADeclarationIsBuiltFrom(string $code, NodeKind $kind, array $expected): void
+    {
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse($code) ?? []);
+        $declaration = (new NodeFinder())->findFirstInstanceOf($parsed, ClassLike::class);
+        self::assertNotNull($declaration);
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Written.php');
+
+        self::assertEquals($expected, DeclarationEmitter::emit($declaration, $kind, 'App\Written', $scope));
+    }
+
+    /**
+     * @return iterable<string, array{string, NodeKind, list<Edge|Node>}>
      */
     public static function providerDeclarations(): iterable
     {
-        yield 'a class' => ["<?php\nnamespace App;\nclass Written {}\n", ['class App\Written']];
+        $at = new FileMeta('/project/Written.php', 3, 1);
+        $class = new ClassNode(ClassNodeId::of('App\Written'), true, $at, new SymbolDeclaration());
+        $interface = new GraphInterfaceNode(InterfaceNodeId::of('App\Written'), true, $at, new SymbolDeclaration());
+
+        yield 'a class' => ["<?php\nnamespace App;\nclass Written {}\n", NodeKind::Klass, [$class]];
 
         yield 'a class that extends another' => [
             "<?php\nnamespace App;\nclass Written extends \\App\\Record {}\n",
-            ['class App\Written', 'App\Written -[declaration-extends]-> App\Record'],
+            NodeKind::Klass,
+            [$class, new ExtendsEdge($class, new ClassNode(ClassNodeId::of('App\Record'), false, null), $at)],
         ];
 
         yield 'an interface that extends two others' => [
             "<?php\nnamespace App;\ninterface Written extends \\App\\Readable, \\Countable {}\n",
-            ['interface App\Written', 'App\Written -[declaration-extends]-> App\Readable', 'App\Written -[declaration-extends]-> Countable'],
+            NodeKind::Interface,
+            [
+                $interface,
+                new ExtendsEdge($interface, new GraphInterfaceNode(InterfaceNodeId::of('App\Readable'), false, null), $at),
+                new ExtendsEdge($interface, new GraphInterfaceNode(InterfaceNodeId::of('Countable'), false, null), $at),
+            ],
         ];
 
         yield 'a class that implements an interface' => [
             "<?php\nnamespace App;\nclass Written implements \\Countable {}\n",
-            ['class App\Written', 'App\Written -[declaration-implements]-> Countable'],
+            NodeKind::Klass,
+            [$class, new ImplementsEdge($class, new GraphInterfaceNode(InterfaceNodeId::of('Countable'), false, null), $at)],
         ];
+
+        $enum = new EnumNode(EnumNodeId::of('App\Written'), true, $at, new SymbolDeclaration());
 
         yield 'an enum that implements an interface' => [
             "<?php\nnamespace App;\nenum Written implements \\Countable {}\n",
-            ['enum App\Written', 'App\Written -[declaration-implements]-> Countable'],
+            NodeKind::Enum,
+            [$enum, new ImplementsEdge($enum, new GraphInterfaceNode(InterfaceNodeId::of('Countable'), false, null), $at)],
         ];
 
         yield 'a class that uses a trait' => [
             "<?php\nnamespace App;\nclass Written { use \\App\\Shared; }\n",
-            ['class App\Written', 'App\Written -[declaration-trait-use]-> App\Shared'],
+            NodeKind::Klass,
+            [$class, new TraitUseEdge($class, new TraitNode(TraitNodeId::of('App\Shared'), false, null), $at)],
         ];
+
+        $trait = new TraitNode(TraitNodeId::of('App\Written'), true, $at, new SymbolDeclaration());
 
         yield 'a trait that uses a trait' => [
             "<?php\nnamespace App;\ntrait Written { use \\App\\Shared; }\n",
-            ['trait App\Written', 'App\Written -[declaration-trait-use]-> App\Shared'],
+            NodeKind::Trait,
+            [$trait, new TraitUseEdge($trait, new TraitNode(TraitNodeId::of('App\Shared'), false, null), $at)],
         ];
 
-        yield 'an interface uses no trait' => ["<?php\nnamespace App;\ninterface Written {}\n", ['interface App\Written']];
+        yield 'an interface uses no trait' => ["<?php\nnamespace App;\ninterface Written {}\n", NodeKind::Interface, [$interface]];
+
+        $marked = new ClassNode(ClassNodeId::of('App\Written'), true, $at, new SymbolDeclaration(attributes: [new AttributeUsage('App\Marker')]));
 
         yield 'a declaration carrying an attribute' => [
             "<?php\nnamespace App;\n#[\\App\\Marker]\nclass Written {}\n",
-            ['class App\Written', 'App\Written -[attribute]-> App\Marker'],
+            NodeKind::Klass,
+            [$marked, new AttributeEdge($marked, new ClassNode(ClassNodeId::of('App\Marker'), false, null), $at)],
         ];
     }
 
     #[DataProvider('providerKinds')]
-    public function testOwnerNodeStandsForADeclarationOfThatKind(NodeKind $kind, string $expected): void
+    public function testOwnerNodeStandsForADeclarationOfThatKind(NodeKind $kind, Node $expected): void
     {
-        self::assertSame($expected, DeclarationEmitter::ownerNode($kind, 'App\Written')->kind()->value);
+        self::assertEquals($expected, DeclarationEmitter::ownerNode($kind, 'App\Written'));
     }
 
     /**
-     * @return iterable<string, array{NodeKind, string}>
+     * @return iterable<string, array{NodeKind, Node}>
      */
     public static function providerKinds(): iterable
     {
-        yield 'a class' => [NodeKind::Klass, 'class'];
+        yield 'a class' => [NodeKind::Klass, new ClassNode(ClassNodeId::of('App\Written'), true, null)];
 
-        yield 'an interface' => [NodeKind::Interface, 'interface'];
+        yield 'an interface' => [NodeKind::Interface, new GraphInterfaceNode(InterfaceNodeId::of('App\Written'), true, null)];
 
-        yield 'a trait' => [NodeKind::Trait, 'trait'];
+        yield 'a trait' => [NodeKind::Trait, new TraitNode(TraitNodeId::of('App\Written'), true, null)];
 
-        yield 'an enum' => [NodeKind::Enum, 'enum'];
+        yield 'an enum' => [NodeKind::Enum, new EnumNode(EnumNodeId::of('App\Written'), true, null)];
 
-        yield 'a constant stands for a class' => [NodeKind::Constant, 'class'];
+        yield 'a constant stands for a class' => [NodeKind::Constant, new ClassNode(ClassNodeId::of('App\Written'), true, null)];
 
-        yield 'an enum case stands for a class' => [NodeKind::EnumCase, 'class'];
+        yield 'an enum case stands for a class' => [NodeKind::EnumCase, new ClassNode(ClassNodeId::of('App\Written'), true, null)];
 
-        yield 'a function stands for a class' => [NodeKind::Function, 'class'];
+        yield 'a function stands for a class' => [NodeKind::Function, new ClassNode(ClassNodeId::of('App\Written'), true, null)];
 
-        yield 'a method stands for a class' => [NodeKind::Method, 'class'];
+        yield 'a method stands for a class' => [NodeKind::Method, new ClassNode(ClassNodeId::of('App\Written'), true, null)];
 
-        yield 'a property stands for a class' => [NodeKind::Property, 'class'];
+        yield 'a property stands for a class' => [NodeKind::Property, new ClassNode(ClassNodeId::of('App\Written'), true, null)];
 
-        yield 'a builtin stands for a class' => [NodeKind::Builtin, 'class'];
+        yield 'a builtin stands for a class' => [NodeKind::Builtin, new ClassNode(ClassNodeId::of('App\Written'), true, null)];
 
-        yield 'anything else stands for a class' => [NodeKind::Unknown, 'class'];
-    }
-
-    public function testOwnerNodeOfASymbolOnlyBeingReferredToStandsNowhere(): void
-    {
-        self::assertNull(DeclarationEmitter::ownerNode(NodeKind::Klass, 'App\Written')->meta());
-    }
-
-    #[DataProvider('providerKinds')]
-    public function testOwnerNodeStandsForASymbolAnalysisHasRead(NodeKind $kind, string $expected): void
-    {
-        self::assertTrue(DeclarationEmitter::ownerNode($kind, 'App\Written')->resolved(), $expected);
+        yield 'anything else stands for a class' => [NodeKind::Unknown, new ClassNode(ClassNodeId::of('App\Written'), true, null)];
     }
 
     public function testOwnerNodeOfASymbolBeingDeclaredStandsWhereItIsWritten(): void
     {
         $meta = new FileMeta('/project/Written.php', 3, 1);
+        $declaration = new SymbolDeclaration(attributes: [new AttributeUsage('App\Marker')]);
 
-        self::assertSame($meta, DeclarationEmitter::ownerNode(NodeKind::Klass, 'App\Written', $meta)->meta());
+        self::assertEquals(
+            new ClassNode(ClassNodeId::of('App\Written'), true, $meta, $declaration),
+            DeclarationEmitter::ownerNode(NodeKind::Klass, 'App\Written', $meta, $declaration),
+        );
     }
 
     public function testAttributesRecordsNoneWhereNoneAreWritten(): void
     {
-        $scope = AnalysisScope::inFile(ParsedSnippet::index(['Written.php' => "<?php\nnamespace App;\nclass Written {}\n"]), '/project/Written.php');
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Written.php');
 
-        self::assertSame([], DeclarationEmitter::attributes([], DeclarationEmitter::ownerNode(NodeKind::Klass, 'App\Written'), $scope));
+        self::assertSame([], DeclarationEmitter::attributes([], new ClassNode(ClassNodeId::of('App\Written'), true, null), $scope));
+    }
+
+    public function testAttributesRecordsEachAttributeWhereItIsWritten(): void
+    {
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nnamespace App;\n#[\\App\\First]\n#[\\App\\Second]\nclass Written {}\n") ?? []);
+        $declaration = (new NodeFinder())->findFirstInstanceOf($parsed, ClassLike::class);
+        self::assertNotNull($declaration);
+        $written = new ClassNode(ClassNodeId::of('App\Written'), true, null);
+
+        self::assertEquals(
+            [
+                new AttributeEdge($written, new ClassNode(ClassNodeId::of('App\First'), false, null), new FileMeta('/project/Written.php', 3, 1)),
+                new AttributeEdge($written, new ClassNode(ClassNodeId::of('App\Second'), false, null), new FileMeta('/project/Written.php', 4, 1)),
+            ],
+            DeclarationEmitter::attributes($declaration->attrGroups, $written, AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Written.php')),
+        );
     }
 
     public function testInheritanceRecordsWhatADeclarationTakesOn(): void
     {
-        $declaration = ParsedSnippet::classLike("<?php\nnamespace App;\nclass Written extends \\App\\Record {}\n");
-        $recorded = DeclarationEmitter::inheritance($declaration, DeclarationEmitter::ownerNode(NodeKind::Klass, 'App\Written'), new FileMeta('/project/Written.php', 3, 1));
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nnamespace App;\nclass Written extends \\App\\Record {}\n") ?? []);
+        $declaration = (new NodeFinder())->findFirstInstanceOf($parsed, ClassLike::class);
+        self::assertNotNull($declaration);
+        $written = new ClassNode(ClassNodeId::of('App\Written'), true, null);
+        $meta = new FileMeta('/project/Written.php', 3, 1);
 
-        self::assertSame('App\Record', $recorded[0]->to()->toString());
+        self::assertEquals(
+            [new ExtendsEdge($written, new ClassNode(ClassNodeId::of('App\Record'), false, null), $meta)],
+            DeclarationEmitter::inheritance($declaration, $written, $meta),
+        );
     }
 }

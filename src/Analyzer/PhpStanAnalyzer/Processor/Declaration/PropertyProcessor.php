@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer\PhpStanAnalyzer\Processor\Declaration;
 
+use App\Analyzer\Declaration\DeclarationReader;
 use App\Analyzer\Graph\Edge\Declaration\AttributeEdge;
 use App\Analyzer\Graph\Edge\Declaration\PropertyEdge;
 use App\Analyzer\Graph\Edge\Declaration\TypePropertyEdge;
@@ -50,10 +51,12 @@ final class PropertyProcessor
             ? new TraitNode(TraitNodeId::of($className), true, null)
             : new ClassNode(ClassNodeId::of($className), true, null);
 
+        $declaration = DeclarationReader::forProperty($node, AttributeProcessor::usages($node->attrGroups, $scope));
+
         $items = [];
         foreach ($node->props as $property) {
             $meta = new FileMeta($scope->getFile(), $property->getStartLine(), 1);
-            $declared = new PropertyNode(PropertyNodeId::of($className, $property->name->toString()), true, $meta);
+            $declared = new PropertyNode(PropertyNodeId::of($className, $property->name->toString()), true, $meta, $declaration);
 
             $items[] = $declared;
             $items[] = new PropertyEdge($owner, $declared, $meta);

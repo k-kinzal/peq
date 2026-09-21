@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer\Graph\Node;
 
+use App\Analyzer\Graph\Declaration\SymbolDeclaration;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId\ConstantNodeId;
@@ -19,14 +20,16 @@ use Override;
 final readonly class ConstantNode implements Node
 {
     /**
-     * @param ConstantNodeId $id       Unique identifier for this constant
-     * @param bool           $resolved Whether this node has been fully resolved during analysis
-     * @param null|FileMeta  $meta     File location metadata (null if not available)
+     * @param ConstantNodeId         $id          Unique identifier for this constant
+     * @param bool                   $resolved    Whether this node has been fully resolved during analysis
+     * @param null|FileMeta          $meta        File location metadata (null if not available)
+     * @param null|SymbolDeclaration $declaration What the source declares about it, or null when analysis did not read its declaration
      */
     public function __construct(
         public ConstantNodeId $id,
         public bool $resolved = false,
         public ?FileMeta $meta = null,
+        public ?SymbolDeclaration $declaration = null,
     ) {}
 
     /**
@@ -63,5 +66,14 @@ final readonly class ConstantNode implements Node
     public function meta(): ?FileMeta
     {
         return $this->meta;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    #[Override]
+    public function declaration(): ?SymbolDeclaration
+    {
+        return $this->declaration;
     }
 }

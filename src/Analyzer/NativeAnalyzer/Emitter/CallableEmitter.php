@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer\NativeAnalyzer\Emitter;
 
+use App\Analyzer\Declaration\DeclarationReader;
 use App\Analyzer\Graph\Edge;
 use App\Analyzer\Graph\Edge\Declaration\AttributeEdge;
 use App\Analyzer\Graph\Edge\Declaration\MethodEdge;
@@ -62,7 +63,12 @@ final class CallableEmitter
             return [];
         }
         $meta = new FileMeta($scope->file, $node->getStartLine(), 1);
-        $declared = new MethodNode(MethodNodeId::of($className, $node->name->toString()), true, $meta);
+        $declared = new MethodNode(
+            MethodNodeId::of($className, $node->name->toString()),
+            true,
+            $meta,
+            DeclarationReader::forCallable($node, DeclarationEmitter::attributeUsages($node->getAttrGroups(), $scope)),
+        );
 
         return [
             new MethodEdge(DeclarationEmitter::ownerNode($ownerKind, $className), $declared, $meta),
@@ -85,7 +91,12 @@ final class CallableEmitter
             return [];
         }
         $meta = new FileMeta($scope->file, $node->getStartLine(), 1);
-        $declared = new FunctionNode(FunctionNodeId::of($node->namespacedName->toString()), true, $meta);
+        $declared = new FunctionNode(
+            FunctionNodeId::of($node->namespacedName->toString()),
+            true,
+            $meta,
+            DeclarationReader::forCallable($node, DeclarationEmitter::attributeUsages($node->getAttrGroups(), $scope)),
+        );
 
         return [$declared, ...self::signature($node, $declared, $scope, $meta)];
     }
@@ -148,7 +159,12 @@ final class CallableEmitter
         }
 
         $meta = new FileMeta($scope->file, $node->getStartLine(), 1);
-        $declared = new PropertyNode(PropertyNodeId::of($className, $node->var->name), true, $meta);
+        $declared = new PropertyNode(
+            PropertyNodeId::of($className, $node->var->name),
+            true,
+            $meta,
+            DeclarationReader::forPromotedProperty($node, DeclarationEmitter::attributeUsages($node->attrGroups, $scope)),
+        );
 
         $items = [
             $declared,

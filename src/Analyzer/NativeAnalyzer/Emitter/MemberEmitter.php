@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer\NativeAnalyzer\Emitter;
 
+use App\Analyzer\Declaration\DeclarationReader;
 use App\Analyzer\Graph\Edge;
 use App\Analyzer\Graph\Edge\Declaration\ConstantEdge;
 use App\Analyzer\Graph\Edge\Declaration\EnumCaseEdge;
@@ -53,11 +54,12 @@ final class MemberEmitter
             return [];
         }
         $owner = new ClassNode(ClassNodeId::of($className), true, null);
+        $declaration = DeclarationReader::forProperty($node, DeclarationEmitter::attributeUsages($node->attrGroups, $scope));
 
         $items = [];
         foreach ($node->props as $property) {
             $meta = new FileMeta($scope->file, $property->getStartLine(), 1);
-            $declared = new PropertyNode(PropertyNodeId::of($className, $property->name->toString()), true, $meta);
+            $declared = new PropertyNode(PropertyNodeId::of($className, $property->name->toString()), true, $meta, $declaration);
 
             $items[] = $declared;
             $items[] = new PropertyEdge($owner, $declared, $meta);
@@ -87,10 +89,16 @@ final class MemberEmitter
         }
         $owner = new ClassNode(ClassNodeId::of($className), true, null);
         $meta = new FileMeta($scope->file, $node->getStartLine(), 1);
+        $attributes = DeclarationEmitter::attributeUsages($node->attrGroups, $scope);
 
         $items = [];
         foreach ($node->consts as $constant) {
-            $declared = new ConstantNode(ConstantNodeId::of($className, $constant->name->toString()), true, $meta);
+            $declared = new ConstantNode(
+                ConstantNodeId::of($className, $constant->name->toString()),
+                true,
+                $meta,
+                DeclarationReader::forConstant($node, $constant, $attributes),
+            );
 
             $items[] = $declared;
             $items[] = new ConstantEdge($owner, $declared, $meta);
@@ -115,7 +123,12 @@ final class MemberEmitter
             return [];
         }
         $meta = new FileMeta($scope->file, $node->getStartLine(), 1);
-        $declared = new EnumCaseNode(EnumCaseNodeId::of($className, $node->name->toString()), true, $meta);
+        $declared = new EnumCaseNode(
+            EnumCaseNodeId::of($className, $node->name->toString()),
+            true,
+            $meta,
+            DeclarationReader::forEnumCase($node, DeclarationEmitter::attributeUsages($node->attrGroups, $scope)),
+        );
 
         return [
             $declared,

@@ -13,7 +13,10 @@ use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\Node\MethodNode;
 use App\Analyzer\Graph\NodeId\ClassNodeId;
 use App\Analyzer\Graph\NodeId\MethodNodeId;
+use App\Reporter\Diagram\MermaidRenderer;
+use App\Reporter\Diagram\TerminalRenderer;
 use App\Reporter\DotReporter\DotReporter;
+use App\Reporter\GraphReporter\GraphReporter;
 use App\Reporter\JsonReporter\JsonReporter;
 use App\Reporter\Reporter;
 use App\Reporter\TableReporter\TableReporter;
@@ -34,6 +37,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 #[CoversClass(JsonReporter::class)]
 #[CoversClass(DotReporter::class)]
 #[CoversClass(TableReporter::class)]
+#[CoversClass(GraphReporter::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
 #[UsesClass(\App\Analyzer\Graph\EdgeKind::class)]
 #[UsesClass(MethodEdge::class)]
@@ -53,6 +57,21 @@ use Symfony\Component\Console\Output\BufferedOutput;
 #[UsesClass(\App\Reporter\DotReporter\StatementRenderer::class)]
 #[UsesClass(\App\Reporter\JsonReporter\JsonCursor::class)]
 #[UsesClass(\App\Reporter\TableReporter\TableCursor::class)]
+#[UsesClass(\App\Reporter\GraphReporter\GraphCursor::class)]
+#[UsesClass(\App\Reporter\Diagram\Diagram::class)]
+#[UsesClass(\App\Reporter\Diagram\DiagramCanvas::class)]
+#[UsesClass(\App\Reporter\Diagram\DiagramEdge::class)]
+#[UsesClass(\App\Reporter\Diagram\DiagramNode::class)]
+#[UsesClass(\App\Reporter\Diagram\Layout\DiagramLayout::class)]
+#[UsesClass(\App\Reporter\Diagram\Layout\Lane::class)]
+#[UsesClass(\App\Reporter\Diagram\Layout\LaneRouting::class)]
+#[UsesClass(\App\Reporter\Diagram\Layout\LayeredLayout::class)]
+#[UsesClass(\App\Reporter\Diagram\Layout\LayerOrdering::class)]
+#[UsesClass(\App\Reporter\Diagram\Layout\LayoutItem::class)]
+#[UsesClass(\App\Reporter\Diagram\Layout\LayoutItemKind::class)]
+#[UsesClass(\App\Reporter\Diagram\Layout\RowPlacement::class)]
+#[UsesClass(MermaidRenderer::class)]
+#[UsesClass(TerminalRenderer::class)]
 #[UsesClass(DepthFirstTraversal::class)]
 #[UsesClass(\App\Reporter\Traversal\DepthFirstWalk::class)]
 #[UsesClass(\App\Reporter\TreeReporter\LineRenderer::class)]
@@ -156,6 +175,30 @@ final class ReporterTest extends TestCase
 
         yield 'the table reporter reading towards the subject' => [
             new TableReporter(new DepthFirstTraversal(Direction::UsedBy)),
+            $plain,
+            $graph,
+        ];
+
+        yield 'the graph reporter drawing in the terminal, reading away from the subject' => [
+            new GraphReporter(new DepthFirstTraversal(Direction::Uses), null, new TerminalRenderer(80)),
+            $plain,
+            $graph,
+        ];
+
+        yield 'the graph reporter drawing in the terminal, reading towards the subject' => [
+            new GraphReporter(new DepthFirstTraversal(Direction::UsedBy), null, new TerminalRenderer(80)),
+            $plain,
+            $graph,
+        ];
+
+        yield 'the graph reporter writing Mermaid, reading away from the subject' => [
+            new GraphReporter(new DepthFirstTraversal(Direction::Uses), null, new MermaidRenderer()),
+            $plain,
+            $graph,
+        ];
+
+        yield 'the graph reporter writing Mermaid, reading towards the subject' => [
+            new GraphReporter(new DepthFirstTraversal(Direction::UsedBy), null, new MermaidRenderer()),
             $plain,
             $graph,
         ];

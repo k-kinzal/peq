@@ -15,6 +15,7 @@ use App\Analyzer\Graph\Node\MethodNode;
 use App\Analyzer\Graph\NodeId\ClassNodeId;
 use App\Analyzer\Graph\NodeId\MethodNodeId;
 use App\Analyzer\Graph\NodeKind;
+use App\Analyzer\Graph\NodePrecedence;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -38,6 +39,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(MethodNode::class)]
 #[UsesClass(\App\Analyzer\Graph\Node\UnknownNode::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(NodePrecedence::class)]
 #[Small]
 final class GraphTest extends TestCase
 {

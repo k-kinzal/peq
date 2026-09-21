@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Analyzer\PhpStanAnalyzer\Processor\Declaration;
 
+use App\Analyzer\Declaration\DeclarationReader;
+use App\Analyzer\Graph\Declaration\SymbolDeclaration;
 use App\Analyzer\Graph\Edge\Declaration\AttributeEdge;
 use App\Analyzer\Graph\Edge\Declaration\ExtendsEdge;
 use App\Analyzer\Graph\Edge\Declaration\ImplementsEdge;
@@ -52,7 +54,12 @@ final class ClassLikeProcessor
         }
 
         $meta = new FileMeta($scope->getFile(), $node->getStartLine(), 1);
-        $declared = self::declaredNode($node, $node->namespacedName->toString(), $meta);
+        $declared = self::declaredNode(
+            $node,
+            $node->namespacedName->toString(),
+            $meta,
+            DeclarationReader::forClassLike($node, AttributeProcessor::usages($node->attrGroups, $scope)),
+        );
         if ($declared === null) {
             return [];
         }
@@ -67,19 +74,20 @@ final class ClassLikeProcessor
     /**
      * Builds the node for the declaration itself.
      *
-     * @param ClassLike $node      The syntax node met during analysis
-     * @param string    $className The fully qualified name it declares
-     * @param FileMeta  $meta      Where the declaration is written
+     * @param ClassLike         $node        The syntax node met during analysis
+     * @param string            $className   The fully qualified name it declares
+     * @param FileMeta          $meta        Where the declaration is written
+     * @param SymbolDeclaration $declaration What the declaration says about itself
      *
      * @return null|ClassNode|EnumNode|GraphInterfaceNode|TraitNode The declared node, or null for a kind with no node
      */
-    public static function declaredNode(ClassLike $node, string $className, FileMeta $meta): ClassNode|EnumNode|GraphInterfaceNode|TraitNode|null
+    public static function declaredNode(ClassLike $node, string $className, FileMeta $meta, SymbolDeclaration $declaration): ClassNode|EnumNode|GraphInterfaceNode|TraitNode|null
     {
         return match (true) {
-            $node instanceof Class_ => new ClassNode(ClassNodeId::of($className), true, $meta),
-            $node instanceof Interface_ => new GraphInterfaceNode(InterfaceNodeId::of($className), true, $meta),
-            $node instanceof Trait_ => new TraitNode(TraitNodeId::of($className), true, $meta),
-            $node instanceof Enum_ => new EnumNode(EnumNodeId::of($className), true, $meta),
+            $node instanceof Class_ => new ClassNode(ClassNodeId::of($className), true, $meta, $declaration),
+            $node instanceof Interface_ => new GraphInterfaceNode(InterfaceNodeId::of($className), true, $meta, $declaration),
+            $node instanceof Trait_ => new TraitNode(TraitNodeId::of($className), true, $meta, $declaration),
+            $node instanceof Enum_ => new EnumNode(EnumNodeId::of($className), true, $meta, $declaration),
             default => null,
         };
     }

@@ -14,7 +14,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Tests\Fixture\Config\StubConfigReader;
 
 /**
  * @internal
@@ -57,15 +56,24 @@ final class ConfigReaderTest extends TestCase
         yield 'the environment' => [new EnvConfigReader('PEQ_TEST_ABSENT_')];
 
         yield 'a configuration file that does not exist' => [new YamlConfigLoader('/nonexistent/.peq.yaml')];
-
-        yield 'a source given its settings directly' => [new StubConfigReader(['level' => 1])];
     }
 
     /**
      * @throws \App\Config\ConfigException
      */
-    public function testASourceThatKnowsNothingReportsNothing(): void
+    #[DataProvider('providerSourcesThatKnowNothing')]
+    public function testReadReportsNothingFromASourceThatKnowsNothing(ConfigReader $reader): void
     {
-        self::assertSame([], (new StubConfigReader([]))->read());
+        self::assertSame([], $reader->read());
+    }
+
+    /**
+     * @return iterable<string, array{ConfigReader}>
+     */
+    public static function providerSourcesThatKnowNothing(): iterable
+    {
+        yield 'an environment with nothing set under the prefix' => [new EnvConfigReader('PEQ_TEST_ABSENT_')];
+
+        yield 'a configuration file that does not exist' => [new YamlConfigLoader('/nonexistent/.peq.yaml')];
     }
 }

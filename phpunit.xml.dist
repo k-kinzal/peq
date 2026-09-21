@@ -59,7 +59,7 @@
               disableCodeCoverageIgnore="true"/>
     <php>
         <ini name="error_reporting" value="-1"/>
-        <ini name="memory_limit" value="2G"/>
+        <ini name="memory_limit" value="4G"/>
         <ini name="zend.assertions" value="1"/>
         <server name="APP_ENV" value="test" force="true"/>
     </php>
