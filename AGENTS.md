@@ -173,26 +173,6 @@ published rather than what was remembered:
 - every artifact the six steps above read still has the SHA-256 sum it arrived under,
   which is what stops an artifact being edited until it agrees with `src/`
 
-Four PHPUnit contract suites under `tests/Contract/Gql/` check the same engine against
-the Microsoft Fabric documentation, which is a second reading of the same standard.
-Where that documentation prints an extension of Fabric's own, the contract is that peq
-refuses it — `GqlSpecification::fabricExtensions()` and `::fabricFunctions()` are where
-those live:
-
-- `GqlSpecificationContractTest` — every query, expression and pattern the GQL
-  documentation prints is one peq reads. The corpus is transcribed into
-  `tests/Fixture/Gql/GqlSpecification.php`
-- `GqlVocabularyContractTest` — every upper-case literal in `src/Gql`, every function
-  and aggregate peq offers, and every column type it reports is a word GQL defines.
-  The reserved words are transcribed into `tests/Fixture/Gql/GqlReservedWords.php`
-- `GqlStatusContractTest` — every GQLSTATUS peq reports is one ISO/IEC 39075 defines,
-  worded as the standard words it. The conditions are transcribed into
-  `tests/Fixture/Gql/GqlConditions.php`
-- `GqlSemanticsContractTest` — the rules the documentation states in words, written
-  out as the behaviour they describe
-
-A new keyword, operator, function or status therefore fails a test before it reaches a
-reader. Widening GQL's side of the line means transcribing the addition from a published
-page into the matching fixture, with the page cited — not editing the fixture until it
-agrees with the code. Where the two readings disagree, ISO/IEC 39075 decides, and the
-disagreement is written down as a scenario rather than as a sentence.
+A new keyword, operator, function or status therefore fails the specification before it
+reaches a reader. The specification is the one place the language's behaviour is stated;
+PHPUnit tests under `tests/Unit` state what each class does, not what GQL is.

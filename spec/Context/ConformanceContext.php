@@ -16,7 +16,6 @@ use Behat\Gherkin\Node\TableNode;
 use Behat\Step\Given;
 use Behat\Step\Then;
 use PHPUnit\Framework\Assert;
-use Tests\Fixture\Gql\QueryVocabulary;
 
 /**
  * Steps that state the conformance claim itself, against ISO's own enumerations.
@@ -222,7 +221,7 @@ final class ConformanceContext implements Context
     {
         $written = IsoGrammar::keywords();
         $invented = [];
-        foreach (QueryVocabulary::words() as $word => $found) {
+        foreach (EngineVocabulary::words() as $word => $found) {
             if (!in_array($word, $written, true)) {
                 $invented[] = $word.' ('.implode(', ', $found[1]).')';
             }

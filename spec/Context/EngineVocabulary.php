@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Fixture\Gql;
+namespace Spec\Context;
 
 use Generator;
 use RecursiveDirectoryIterator;
@@ -16,17 +16,18 @@ use SplFileInfo;
  * the way it is checked, and checking it against a list somebody wrote by hand is
  * worth nothing: the list and the code drift apart on the first change. So the list is
  * read out of the code. Every upper-case word written as a literal in `src/Gql` is one
- * the engine treats as part of the language, and a contract test asks GQL about each.
+ * the engine treats as part of the language, and the conformance feature asks ISO's
+ * grammar about each.
  *
  * Docblocks are skipped, because an example that shows what a misspelling does — the
  * guide's own `RETRUN` — is prose about the language rather than part of it.
  */
-final class QueryVocabulary
+final class EngineVocabulary
 {
     /**
      * Where the query engine lives.
      */
-    private const ENGINE = __DIR__.'/../../../src/Gql';
+    private const ENGINE = __DIR__.'/../../src/Gql';
 
     /**
      * Words the engine writes that no query can write back.

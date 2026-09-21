@@ -18,9 +18,9 @@ namespace App\Gql;
  * having to parse English.
  *
  * Every code here is one ISO/IEC 39075 defines. The standard publishes its conditions
- * as a digital artifact for implementers to report them by, and
- * `tests/Fixture/Gql/GqlConditions.php` carries that list so a code peq invented
- * would fail a test rather than reach a reader. A condition the standard gives no
+ * as a digital artifact for implementers to report them by, and `composer spec` looks
+ * every code up in it, so a code peq invented would fail the build rather than reach a
+ * reader. A condition the standard gives no
  * subclass for is reported under its class code, which is what the class codes are
  * for: `42000` says the query was at fault without claiming to know a subcondition
  * that does not exist.
