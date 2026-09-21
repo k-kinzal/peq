@@ -18,15 +18,10 @@ use SimpleXMLElement;
  * The artifact's own header says it exists so that implementers can report the
  * standard's natural-language text, so the wording is checked here too.
  *
- * @see spec/iso/README.md Where the artifact comes from and how to verify it
+ * @see spec/iso/artifacts.txt Where ISO publishes the artifact, and its sum
  */
 final class IsoConditions
 {
-    /**
-     * Where the artifact sits.
-     */
-    private const ARTIFACT = __DIR__.'/../iso/conditions.xml';
-
     /**
      * How the standard's categories are read out in front of a condition.
      */
@@ -82,9 +77,9 @@ final class IsoConditions
             return $conditions;
         }
 
-        $read = @simplexml_load_file(self::ARTIFACT);
+        $read = @simplexml_load_file(IsoArtifacts::path('conditions.xml'));
         if (!$read instanceof SimpleXMLElement) {
-            throw new RuntimeException(sprintf('Cannot read the ISO condition artifact at %s', self::ARTIFACT));
+            throw new RuntimeException(sprintf('Cannot read the ISO condition artifact at %s', IsoArtifacts::path('conditions.xml')));
         }
 
         $conditions = [];

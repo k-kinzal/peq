@@ -7,19 +7,19 @@ namespace Spec\Context;
 use RuntimeException;
 
 /**
- * The clause and subclause structure of ISO/IEC 39075, transcribed from its contents.
+ * The clause and subclause numbers of ISO/IEC 39075, read off its table of contents.
  *
  * Every scenario of this suite says which subclause of the standard it states, and a
- * number is the easiest thing in a specification to get wrong: the four digits look
- * right, the title beside them is one a reader recognises, and nothing complains. So
- * the numbers are looked up, and a scenario pointing at a subclause the standard does
- * not number fails the run.
+ * number is the easiest thing in a specification to get wrong: the digits look right,
+ * the topic beside them is one a reader recognises, and nothing complains. So the
+ * numbers are looked up, and a scenario pointing at a subclause the standard does not
+ * number fails the run.
  *
- * This is the one file under `spec/iso/` that is not an ISO artifact — ISO publishes no
- * machine-readable form of its own table of contents — so it carries its provenance in
- * its header and reproduces numbers and titles only.
+ * ISO publishes no machine-readable form of its own table of contents, so this is the
+ * one list under `spec/iso/` that is transcribed rather than downloaded. It keeps the
+ * numbers only: they are facts about the document, where the titles are ISO's text.
  *
- * @see spec/iso/subclauses.txt Where it comes from
+ * @see spec/iso/subclauses.txt Where the numbers are read from
  */
 final class IsoSubclauses
 {
@@ -39,51 +39,36 @@ final class IsoSubclauses
      */
     public static function numbers(string $number): bool
     {
-        return isset(self::all()[$number]);
+        return in_array($number, self::all(), true);
     }
 
     /**
-     * Returns the title the standard gives a clause or subclause.
+     * Returns every clause and subclause number the standard has.
      *
-     * @param string $number The number
-     *
-     * @return null|string The title, or null when the standard numbers no such thing
-     *
-     * @throws RuntimeException If the transcription cannot be read
-     */
-    public static function titleOf(string $number): ?string
-    {
-        return self::all()[$number] ?? null;
-    }
-
-    /**
-     * Returns every clause and subclause the standard numbers, by number.
-     *
-     * @return array<string, string> The title, by number
+     * @return list<string> The numbers, in document order
      *
      * @throws RuntimeException If the transcription cannot be read
      */
     public static function all(): array
     {
-        static $subclauses = null;
-        if ($subclauses !== null) {
-            return $subclauses;
+        static $numbers = null;
+        if ($numbers !== null) {
+            return $numbers;
         }
 
         $read = @file_get_contents(self::TRANSCRIPTION);
         if ($read === false) {
-            throw new RuntimeException(sprintf('Cannot read the subclause transcription at %s', self::TRANSCRIPTION));
+            throw new RuntimeException(sprintf('Cannot read the subclause numbers at %s', self::TRANSCRIPTION));
         }
 
-        $subclauses = [];
+        $numbers = [];
         foreach (explode("\n", $read) as $line) {
-            if ($line === '' || str_starts_with($line, '#') || !str_contains($line, "\t")) {
-                continue;
+            $line = trim($line);
+            if ($line !== '' && !str_starts_with($line, '#')) {
+                $numbers[] = $line;
             }
-            [$number, $title] = explode("\t", $line, 2);
-            $subclauses[trim($number)] = trim($title);
         }
 
-        return $subclauses;
+        return $numbers;
     }
 }

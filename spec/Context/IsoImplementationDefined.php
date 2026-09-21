@@ -17,15 +17,10 @@ use SimpleXMLElement;
  * one asked until you find IL018, where the standard says the cap is the
  * implementation's to choose.
  *
- * @see spec/iso/README.md Where the artifact comes from and how to verify it
+ * @see spec/iso/artifacts.txt Where ISO publishes the artifact, and its sum
  */
 final class IsoImplementationDefined
 {
-    /**
-     * Where the artifact sits.
-     */
-    private const ARTIFACT = __DIR__.'/../iso/implementation-defined.xml';
-
     /**
      * Returns the item the standard gives a code, as it words it.
      *
@@ -54,9 +49,9 @@ final class IsoImplementationDefined
             return $items;
         }
 
-        $read = @simplexml_load_file(self::ARTIFACT);
+        $read = @simplexml_load_file(IsoArtifacts::path('implementation-defined.xml'));
         if (!$read instanceof SimpleXMLElement) {
-            throw new RuntimeException(sprintf('Cannot read the ISO implementation-defined artifact at %s', self::ARTIFACT));
+            throw new RuntimeException(sprintf('Cannot read the ISO implementation-defined artifact at %s', IsoArtifacts::path('implementation-defined.xml')));
         }
 
         $items = [];

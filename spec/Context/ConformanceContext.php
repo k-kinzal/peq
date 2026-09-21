@@ -245,14 +245,15 @@ final class ConformanceContext implements Context
     #[Then('every artifact this specification reads is the one it arrived as')]
     public function everyArtifactIsTheOneItArrivedAs(): void
     {
-        $recorded = IsoArtifacts::recorded();
+        $listed = IsoArtifacts::manifest();
 
-        Assert::assertNotSame([], $recorded, 'No artifact has a recorded sum to be checked against.');
-        foreach ($recorded as $path => $sum) {
+        Assert::assertNotSame([], $listed, 'spec/iso/artifacts.txt lists no artifact to be checked.');
+        foreach ($listed as $name => $artifact) {
+            IsoArtifacts::path($name);
             Assert::assertSame(
-                $sum,
-                IsoArtifacts::sumOf($path),
-                sprintf('"%s" is not the file its recorded SHA-256 sum was taken from.', $path),
+                $artifact['sum'],
+                IsoArtifacts::sumOf($name),
+                sprintf('%s is not the file ISO publishes at %s.', $name, $artifact['url']),
             );
         }
     }

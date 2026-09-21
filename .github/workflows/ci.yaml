@@ -101,6 +101,12 @@ jobs:
       - name: Check the architecture layers
         run: composer deptrac
 
+      - name: Keep ISO's artifacts between runs
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: build/iso
+          key: iso-artifacts-${{ hashFiles('spec/iso/artifacts.txt') }}
+
       - name: Check the GQL specification
         run: composer spec
 

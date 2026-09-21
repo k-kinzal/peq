@@ -16,15 +16,10 @@ use SimpleXMLElement;
  * code that does not exist, a description that has drifted, or a feature the claim
  * forgot to answer for is a failing scenario rather than a thing somebody has to notice.
  *
- * @see spec/iso/README.md Where the artifact comes from and how to verify it
+ * @see spec/iso/artifacts.txt Where ISO publishes the artifact, and its sum
  */
 final class IsoFeatures
 {
-    /**
-     * Where the artifact sits.
-     */
-    private const ARTIFACT = __DIR__.'/../iso/features.xml';
-
     /**
      * Returns every optional feature the standard defines.
      *
@@ -39,9 +34,9 @@ final class IsoFeatures
             return $features;
         }
 
-        $read = @simplexml_load_file(self::ARTIFACT);
+        $read = @simplexml_load_file(IsoArtifacts::path('features.xml'));
         if (!$read instanceof SimpleXMLElement) {
-            throw new RuntimeException(sprintf('Cannot read the ISO feature artifact at %s', self::ARTIFACT));
+            throw new RuntimeException(sprintf('Cannot read the ISO feature artifact at %s', IsoArtifacts::path('features.xml')));
         }
 
         $features = [];

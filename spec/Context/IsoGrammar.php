@@ -19,15 +19,10 @@ use SimpleXMLElement;
  * writes at all, and which of those it applies arguments to. Each costs nothing to get
  * wrong until a query that means one thing in GQL means another here.
  *
- * @see spec/iso/README.md Where the artifact comes from and how to verify it
+ * @see spec/iso/artifacts.txt Where ISO publishes the artifact, and its sum
  */
 final class IsoGrammar
 {
-    /**
-     * Where the artifact sits.
-     */
-    private const ARTIFACT = __DIR__.'/../iso/gql.bnf.xml';
-
     /**
      * Returns every word the standard reserves, in the order the artifact writes them.
      *
@@ -222,9 +217,9 @@ final class IsoGrammar
             return $grammar;
         }
 
-        $read = @simplexml_load_file(self::ARTIFACT);
+        $read = @simplexml_load_file(IsoArtifacts::path('gql.bnf.xml'));
         if (!$read instanceof SimpleXMLElement) {
-            throw new RuntimeException(sprintf('Cannot read the ISO grammar artifact at %s', self::ARTIFACT));
+            throw new RuntimeException(sprintf('Cannot read the ISO grammar artifact at %s', IsoArtifacts::path('gql.bnf.xml')));
         }
         $grammar = $read;
 
