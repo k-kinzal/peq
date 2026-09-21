@@ -13,6 +13,7 @@
          beStrictAboutTestsThatDoNotTestAnything="true"
          failOnAllIssues="true"
          displayDetailsOnAllIssues="true"
+         shortenArraysForExportThreshold="0"
          enforceTimeLimit="true"
          timeoutForSmallTests="1"
          timeoutForMediumTests="10"
@@ -40,7 +41,7 @@
             <parameter name="directories" value="src"/>
         </bootstrap>
     </extensions>
-    <source restrictDeprecations="true"
+    <source ignoreIndirectDeprecations="true"
             restrictNotices="true"
             restrictWarnings="true"
             ignoreSuppressionOfDeprecations="true"
