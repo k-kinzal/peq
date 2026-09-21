@@ -55,9 +55,33 @@ final class InputConfigReaderTest extends TestCase
     /**
      * @throws \App\Config\ConfigException
      */
+    public function testReadReportsThePhpVersionTheUserTypedAsTyped(): void
+    {
+        $config = (new InputConfigReader(new ArrayInput([
+            'target' => 'App\Domain\Invoice',
+            '--php-version' => '7.4',
+        ], (new InspectCommand(new InspectAction()))->getDefinition())))->read();
+
+        self::assertSame('7.4', $config['phpVersion'] ?? null);
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
     public function testReadLeavesOutTheFormatWhenTheUserAskedForNone(): void
     {
         self::assertArrayNotHasKey('output', (new InputConfigReader(new ArrayInput(['target' => 'App\Domain\Invoice'], (new InspectCommand(new InspectAction()))->getDefinition())))->read());
+    }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadLeavesOutThePhpVersionTheUserDidNotType(): void
+    {
+        self::assertArrayNotHasKey(
+            'phpVersion',
+            (new InputConfigReader(new ArrayInput(['target' => 'App\Domain\Invoice'], (new InspectCommand(new InspectAction()))->getDefinition())))->read(),
+        );
     }
 
     /**

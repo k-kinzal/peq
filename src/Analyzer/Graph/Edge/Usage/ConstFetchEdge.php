@@ -13,11 +13,12 @@ use App\Analyzer\Graph\Node\ConstantNode;
 use App\Analyzer\Graph\Node\EnumCaseNode;
 use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\Node\MethodNode;
+use Override;
 
 /**
  * Represents a constant fetch relationship.
  */
-final class ConstFetchEdge extends AuthoredEdge
+final readonly class ConstFetchEdge extends AuthoredEdge
 {
     /**
      * @param FunctionNode|MethodNode   $from The node the relation starts at
@@ -37,6 +38,7 @@ final class ConstFetchEdge extends AuthoredEdge
      *
      * @return EdgeKind Always EdgeKind::ConstFetch
      */
+    #[Override]
     public function kind(): EdgeKind
     {
         return EdgeKind::ConstFetch;
@@ -47,6 +49,7 @@ final class ConstFetchEdge extends AuthoredEdge
      *
      * @return Edge A UsedByEdge carrying this edge, which inverts back into it
      */
+    #[Override]
     public function invert(): Edge
     {
         return new UsedByEdge($this);

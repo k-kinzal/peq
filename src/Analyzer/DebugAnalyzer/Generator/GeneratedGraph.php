@@ -23,15 +23,15 @@ use Closure;
  *
  * @visibility parent
  */
-final class GeneratedGraph
+final readonly class GeneratedGraph
 {
     /**
      * @param Graph $graph The generated graph
      * @param TNode $root  The node the generated graph was grown from
      */
     public function __construct(
-        public readonly Graph $graph,
-        public readonly Node $root,
+        public Graph $graph,
+        public Node $root,
     ) {}
 
     /**

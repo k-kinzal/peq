@@ -18,14 +18,14 @@ use App\Analyzer\Graph\Node\ClassNode;
  *
  * @visibility parent
  */
-final class TypeReference
+final readonly class TypeReference
 {
     /**
      * @param ClassNode $node The class-like the type names
      * @param FileMeta  $meta Where in the source the name was written
      */
     public function __construct(
-        public readonly ClassNode $node,
-        public readonly FileMeta $meta,
+        public ClassNode $node,
+        public FileMeta $meta,
     ) {}
 }

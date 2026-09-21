@@ -7,6 +7,7 @@ namespace App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\QualifiedName;
+use Override;
 
 /**
  * Unique identifier for a class node in the dependency graph.
@@ -16,20 +17,20 @@ use App\Analyzer\Graph\QualifiedName;
  *
  * @implements NodeId<ClassNode>
  */
-final class ClassNodeId implements NodeId
+final readonly class ClassNodeId implements NodeId
 {
     /**
      * The precomputed string form of this identifier.
      */
-    private readonly string $stringValue;
+    private string $stringValue;
 
     /**
      * @param string $namespace The namespace of the class (must be a valid PHP namespace)
      * @param string $className The class name (must be a valid PHP identifier)
      */
     public function __construct(
-        public readonly string $namespace,
-        public readonly string $className,
+        public string $namespace,
+        public string $className,
     ) {
         if ($namespace !== '') {
             assert(QualifiedName::isNamespace($namespace), 'The namespace must be one PHP would accept');
@@ -62,6 +63,7 @@ final class ClassNodeId implements NodeId
      *
      * @return string The fully qualified class name
      */
+    #[Override]
     public function toString(): string
     {
         return $this->stringValue;

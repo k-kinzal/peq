@@ -10,6 +10,7 @@ use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\InverseEdge;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId;
+use Override;
 
 /**
  * The opposite reading of a declaration relation: "is declared in".
@@ -20,13 +21,13 @@ use App\Analyzer\Graph\NodeId;
  * extends, implements, trait use, method, property, constant, enum case or a type
  * position — survives the reverse direction.
  */
-final class DeclaredInEdge implements InverseEdge
+final readonly class DeclaredInEdge implements InverseEdge
 {
     /**
      * @param Edge $declaration The declaration relation this edge is the opposite reading of
      */
     public function __construct(
-        private readonly Edge $declaration,
+        private Edge $declaration,
     ) {}
 
     /**
@@ -34,6 +35,7 @@ final class DeclaredInEdge implements InverseEdge
      *
      * @return NodeId<Node> The declared node identifier
      */
+    #[Override]
     public function from(): NodeId
     {
         return $this->declaration->to();
@@ -44,6 +46,7 @@ final class DeclaredInEdge implements InverseEdge
      *
      * @return NodeId<Node> The declaring node identifier
      */
+    #[Override]
     public function to(): NodeId
     {
         return $this->declaration->from();
@@ -54,6 +57,7 @@ final class DeclaredInEdge implements InverseEdge
      *
      * @return EdgeKind Always EdgeKind::DeclaredIn
      */
+    #[Override]
     public function kind(): EdgeKind
     {
         return EdgeKind::DeclaredIn;
@@ -64,6 +68,7 @@ final class DeclaredInEdge implements InverseEdge
      *
      * @return FileMeta The location of the declaration this edge reverses
      */
+    #[Override]
     public function meta(): FileMeta
     {
         return $this->declaration->meta();
@@ -74,6 +79,7 @@ final class DeclaredInEdge implements InverseEdge
      *
      * @return Edge The original declaration edge, with its original kind intact
      */
+    #[Override]
     public function invert(): Edge
     {
         return $this->declaration;

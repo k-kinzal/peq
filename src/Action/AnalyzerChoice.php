@@ -20,9 +20,11 @@ use App\Config\Config;
  * would be found by a reader wondering why one command supports something the other
  * does not.
  *
- * Each arm is handed only what its analyzer needs. An analyzer is told its parameters
- * rather than given the application's configuration to read, which is what keeps the
- * analyzers independent of how peq happens to be configured.
+ * Each arm is handed only what its analyzer needs — the files to read, and the PHP
+ * version to read them as — so both commands read the same sources the same way. An
+ * analyzer is told its parameters rather than given the application's configuration to
+ * read, which is what keeps the analyzers independent of how peq happens to be
+ * configured.
  */
 final class AnalyzerChoice
 {
@@ -46,10 +48,12 @@ final class AnalyzerChoice
             AnalyzerKind::PhpStan => new PhpStanAnalyzer(
                 includes: $config->includes,
                 excludes: $config->excludes,
+                phpVersion: $config->phpVersion?->id,
             ),
             AnalyzerKind::Native => new NativeAnalyzer(
                 includes: $config->includes,
                 excludes: $config->excludes,
+                phpVersion: $config->phpVersion?->id,
             ),
             AnalyzerKind::Debug => new DebugAnalyzer(
                 seed: $config->debug->seed,

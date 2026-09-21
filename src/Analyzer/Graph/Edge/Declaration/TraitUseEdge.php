@@ -12,11 +12,12 @@ use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\Node\EnumNode;
 use App\Analyzer\Graph\Node\TraitNode;
+use Override;
 
 /**
  * Represents a trait use declaration relationship.
  */
-final class TraitUseEdge extends AuthoredEdge
+final readonly class TraitUseEdge extends AuthoredEdge
 {
     /**
      * @param ClassNode|EnumNode|TraitNode $from The node the relation starts at
@@ -36,6 +37,7 @@ final class TraitUseEdge extends AuthoredEdge
      *
      * @return EdgeKind Always EdgeKind::DeclarationTraitUse
      */
+    #[Override]
     public function kind(): EdgeKind
     {
         return EdgeKind::DeclarationTraitUse;
@@ -46,6 +48,7 @@ final class TraitUseEdge extends AuthoredEdge
      *
      * @return Edge A DeclaredInEdge carrying this edge, which inverts back into it
      */
+    #[Override]
     public function invert(): Edge
     {
         return new DeclaredInEdge($this);

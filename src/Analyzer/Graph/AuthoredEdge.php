@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Analyzer\Graph;
 
+use Override;
+
 /**
  * A relation that source code writes, holding its endpoints and where it is written.
  *
@@ -21,7 +23,7 @@ namespace App\Analyzer\Graph;
  * The counterpart is InverseEdge, which is not authored but derived: it carries the
  * authored edge it was read backwards from instead of endpoints of its own.
  */
-abstract class AuthoredEdge implements Edge
+abstract readonly class AuthoredEdge implements Edge
 {
     /**
      * @param Node     $fromNode The node this relation starts at
@@ -29,9 +31,9 @@ abstract class AuthoredEdge implements Edge
      * @param FileMeta $meta     Where in the source code the relation is written
      */
     protected function __construct(
-        private readonly Node $fromNode,
-        private readonly Node $toNode,
-        private readonly FileMeta $meta,
+        private Node $fromNode,
+        private Node $toNode,
+        private FileMeta $meta,
     ) {}
 
     /**
@@ -39,6 +41,7 @@ abstract class AuthoredEdge implements Edge
      *
      * @return NodeId<Node> The source node identifier
      */
+    #[Override]
     public function from(): NodeId
     {
         return $this->fromNode->id();
@@ -49,6 +52,7 @@ abstract class AuthoredEdge implements Edge
      *
      * @return NodeId<Node> The target node identifier
      */
+    #[Override]
     public function to(): NodeId
     {
         return $this->toNode->id();
@@ -59,6 +63,7 @@ abstract class AuthoredEdge implements Edge
      *
      * @return FileMeta The file, line and column of the relation
      */
+    #[Override]
     public function meta(): FileMeta
     {
         return $this->meta;

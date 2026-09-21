@@ -9,6 +9,7 @@ use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId\InterfaceNodeId;
 use App\Analyzer\Graph\NodeKind;
+use Override;
 
 /**
  * Represents an interface node in the dependency graph.
@@ -16,7 +17,7 @@ use App\Analyzer\Graph\NodeKind;
  * Encapsulates information about a PHP interface including its identifier,
  * file location metadata, and well as whether it has been fully resolved during analysis.
  */
-final class GraphInterfaceNode implements Node
+final readonly class GraphInterfaceNode implements Node
 {
     /**
      * @param InterfaceNodeId        $id          Unique identifier for this interface
@@ -25,15 +26,16 @@ final class GraphInterfaceNode implements Node
      * @param null|SymbolDeclaration $declaration What the source declares about it, or null when analysis did not read its declaration
      */
     public function __construct(
-        public readonly InterfaceNodeId $id,
-        public readonly bool $resolved = false,
-        public readonly ?FileMeta $meta = null,
-        public readonly ?SymbolDeclaration $declaration = null,
+        public InterfaceNodeId $id,
+        public bool $resolved = false,
+        public ?FileMeta $meta = null,
+        public ?SymbolDeclaration $declaration = null,
     ) {}
 
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function id(): InterfaceNodeId
     {
         return $this->id;
@@ -42,6 +44,7 @@ final class GraphInterfaceNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function kind(): NodeKind
     {
         return NodeKind::Interface;
@@ -50,6 +53,7 @@ final class GraphInterfaceNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function resolved(): bool
     {
         return $this->resolved;
@@ -58,6 +62,7 @@ final class GraphInterfaceNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function meta(): ?FileMeta
     {
         return $this->meta;
@@ -66,6 +71,7 @@ final class GraphInterfaceNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function declaration(): ?SymbolDeclaration
     {
         return $this->declaration;

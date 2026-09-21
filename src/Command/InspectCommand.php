@@ -68,6 +68,7 @@ final class InspectCommand extends Command
             new InputOption('output', 'O', InputOption::VALUE_REQUIRED, sprintf('Output format (%s)', OutputFormat::spell())),
             new InputOption('include', 'I', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Include patterns', []),
             new InputOption('exclude', 'E', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Exclude patterns', []),
+            new InputOption('php-version', null, InputOption::VALUE_REQUIRED, 'PHP version the analyzed sources are read as (default: the version peq runs on)'),
             new InputOption('type', null, InputOption::VALUE_REQUIRED, sprintf('Analyzer type (%s)', AnalyzerKind::spellAvailable())),
             new InputOption('debug-depth', null, InputOption::VALUE_REQUIRED, 'Debug analyzer depth'),
             new InputOption('debug-seed', null, InputOption::VALUE_REQUIRED, 'Debug analyzer seed'),

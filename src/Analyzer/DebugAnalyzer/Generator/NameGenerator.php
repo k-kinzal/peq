@@ -18,13 +18,13 @@ use Closure;
  *
  * @visibility parent
  */
-final class NameGenerator
+final readonly class NameGenerator
 {
     /**
      * @param RandomSource $random The random source the names are drawn from
      */
     public function __construct(
-        private readonly RandomSource $random,
+        private RandomSource $random,
     ) {}
 
     /**

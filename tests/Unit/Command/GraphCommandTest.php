@@ -65,7 +65,7 @@ final class GraphCommandTest extends TestCase
     public function testConfigureDeclaresEveryOptionTheConfigurationSourcesRead(): void
     {
         self::assertSame(
-            ['schema', 'config', 'output', 'hops', 'include', 'exclude', 'type', 'debug-depth', 'debug-seed', 'memory-limit'],
+            ['schema', 'config', 'output', 'hops', 'include', 'exclude', 'php-version', 'type', 'debug-depth', 'debug-seed', 'memory-limit'],
             array_keys((new GraphCommand(new QueryAction()))->getDefinition()->getOptions()),
         );
     }
@@ -312,5 +312,19 @@ final class GraphCommandTest extends TestCase
         (new GraphCommand(new QueryAction()))->write($config, ResultTable::nothing(), null, $output);
 
         self::assertSame('{"status":"02000","condition":"note: no data","columns":[],"rows":[]}'."\n", $output->fetch());
+    }
+
+    public function testExecuteReportsAFailureWhenThePhpVersionToAnalyseIsOneNoAnalyzerReads(): void
+    {
+        $tester = new CommandTester(new GraphCommand(new QueryAction()));
+        $status = $tester->execute([
+            'query' => 'MATCH (p:Method) RETURN count(*) AS n',
+            '--type' => 'debug',
+            '--php-version' => '5.5',
+            '--config' => __DIR__.'/absent.yaml',
+        ]);
+
+        self::assertSame(Command::FAILURE, $status);
+        self::assertStringContainsString('phpVersion', $tester->getDisplay());
     }
 }

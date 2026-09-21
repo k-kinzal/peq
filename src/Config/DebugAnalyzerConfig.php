@@ -11,15 +11,15 @@ namespace App\Config;
  * debug analyzer is never left without them and no caller has to handle their
  * absence.
  */
-final class DebugAnalyzerConfig
+final readonly class DebugAnalyzerConfig
 {
     /**
      * @param int      $depth How many levels deep the generated graph goes
      * @param null|int $seed  Seed making the generated graph reproducible, or null for a fresh one
      */
     public function __construct(
-        public readonly int $depth = 5,
-        public readonly ?int $seed = null,
+        public int $depth = 5,
+        public ?int $seed = null,
     ) {
         assert($this->depth > 0, 'A generated graph depth must be a positive number of levels');
     }

@@ -9,6 +9,7 @@ use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId;
 use App\Reporter\Reporter;
 use App\Reporter\Traversal;
+use Override;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -21,7 +22,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  * node is the last of its siblings, which nodes were already expanded — to a
  * cursor created for the duration of one report.
  */
-final class TreeReporter implements Reporter
+final readonly class TreeReporter implements Reporter
 {
     /**
      * @param TreeReporterOptions $options      How much of the tree to print
@@ -29,9 +30,9 @@ final class TreeReporter implements Reporter
      * @param LineRenderer        $lineRenderer The format of a single line
      */
     public function __construct(
-        private readonly TreeReporterOptions $options,
-        private readonly Traversal $traversal,
-        private readonly LineRenderer $lineRenderer = new LineRenderer(),
+        private TreeReporterOptions $options,
+        private Traversal $traversal,
+        private LineRenderer $lineRenderer = new LineRenderer(),
     ) {}
 
     /**
@@ -41,6 +42,7 @@ final class TreeReporter implements Reporter
      * @param NodeId<Node>    $symbol The symbol the tree is rooted at
      * @param OutputInterface $output Where the tree is written
      */
+    #[Override]
     public function report(Graph $graph, NodeId $symbol, OutputInterface $output): void
     {
         $cursor = new TreeCursor(

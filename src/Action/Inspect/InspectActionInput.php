@@ -12,14 +12,14 @@ use App\Config\Config;
  * The target is the symbol name as the user wrote it. Resolving it against the
  * graph is the inspection's work, so it arrives here as text and leaves as a node.
  */
-final class InspectActionInput
+final readonly class InspectActionInput
 {
     /**
      * @param Config $config The merged application configuration
      * @param string $target The fully qualified name of the symbol to inspect
      */
     public function __construct(
-        public readonly Config $config,
-        public readonly string $target,
+        public Config $config,
+        public string $target,
     ) {}
 }

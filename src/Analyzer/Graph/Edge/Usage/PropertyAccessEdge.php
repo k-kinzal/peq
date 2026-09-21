@@ -12,11 +12,12 @@ use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\Node\MethodNode;
 use App\Analyzer\Graph\Node\PropertyNode;
+use Override;
 
 /**
  * Represents an instance property access relationship.
  */
-final class PropertyAccessEdge extends AuthoredEdge
+final readonly class PropertyAccessEdge extends AuthoredEdge
 {
     /**
      * @param FunctionNode|MethodNode $from The node the relation starts at
@@ -36,6 +37,7 @@ final class PropertyAccessEdge extends AuthoredEdge
      *
      * @return EdgeKind Always EdgeKind::PropertyAccess
      */
+    #[Override]
     public function kind(): EdgeKind
     {
         return EdgeKind::PropertyAccess;
@@ -46,6 +48,7 @@ final class PropertyAccessEdge extends AuthoredEdge
      *
      * @return Edge A UsedByEdge carrying this edge, which inverts back into it
      */
+    #[Override]
     public function invert(): Edge
     {
         return new UsedByEdge($this);

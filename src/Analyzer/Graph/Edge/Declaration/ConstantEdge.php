@@ -13,11 +13,12 @@ use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\Node\ConstantNode;
 use App\Analyzer\Graph\Node\EnumNode;
 use App\Analyzer\Graph\Node\GraphInterfaceNode;
+use Override;
 
 /**
  * Represents a constant declaration relationship within a class/interface.
  */
-final class ConstantEdge extends AuthoredEdge
+final readonly class ConstantEdge extends AuthoredEdge
 {
     /**
      * @param ClassNode|EnumNode|GraphInterfaceNode $from The node the relation starts at
@@ -37,6 +38,7 @@ final class ConstantEdge extends AuthoredEdge
      *
      * @return EdgeKind Always EdgeKind::DeclarationConstant
      */
+    #[Override]
     public function kind(): EdgeKind
     {
         return EdgeKind::DeclarationConstant;
@@ -47,6 +49,7 @@ final class ConstantEdge extends AuthoredEdge
      *
      * @return Edge A DeclaredInEdge carrying this edge, which inverts back into it
      */
+    #[Override]
     public function invert(): Edge
     {
         return new DeclaredInEdge($this);

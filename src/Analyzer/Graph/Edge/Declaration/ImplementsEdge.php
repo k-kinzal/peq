@@ -12,11 +12,12 @@ use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\Node\EnumNode;
 use App\Analyzer\Graph\Node\GraphInterfaceNode;
+use Override;
 
 /**
  * Represents an interface implementation declaration relationship.
  */
-final class ImplementsEdge extends AuthoredEdge
+final readonly class ImplementsEdge extends AuthoredEdge
 {
     /**
      * @param ClassNode|EnumNode $from The node the relation starts at
@@ -36,6 +37,7 @@ final class ImplementsEdge extends AuthoredEdge
      *
      * @return EdgeKind Always EdgeKind::DeclarationImplements
      */
+    #[Override]
     public function kind(): EdgeKind
     {
         return EdgeKind::DeclarationImplements;
@@ -46,6 +48,7 @@ final class ImplementsEdge extends AuthoredEdge
      *
      * @return Edge A DeclaredInEdge carrying this edge, which inverts back into it
      */
+    #[Override]
     public function invert(): Edge
     {
         return new DeclaredInEdge($this);

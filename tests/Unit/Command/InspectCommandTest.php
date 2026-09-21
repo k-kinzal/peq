@@ -42,6 +42,7 @@ final class InspectCommandTest extends TestCase
         self::assertTrue($definition->hasOption('include'));
         self::assertTrue($definition->hasOption('exclude'));
         self::assertTrue($definition->hasOption('output'));
+        self::assertTrue($definition->hasOption('php-version'));
         self::assertTrue($definition->hasOption('type'));
         self::assertTrue($definition->hasOption('debug-depth'));
         self::assertTrue($definition->hasOption('debug-seed'));
@@ -135,6 +136,20 @@ final class InspectCommandTest extends TestCase
 
         self::assertSame(Command::FAILURE, $status);
         self::assertStringContainsString('level', $tester->getDisplay());
+    }
+
+    public function testExecuteReportsAFailureWhenThePhpVersionToAnalyseIsOneNoAnalyzerReads(): void
+    {
+        $tester = new CommandTester(new InspectCommand(new InspectAction()));
+        $status = $tester->execute([
+            'target' => 'App\Domain\Invoice',
+            '--type' => 'debug',
+            '--php-version' => '5.5',
+            '--config' => __DIR__.'/absent.yaml',
+        ]);
+
+        self::assertSame(Command::FAILURE, $status);
+        self::assertStringContainsString('phpVersion', $tester->getDisplay());
     }
 
     public function testExecuteReportsAFailureWhenTheAnalyzerDoesNotExist(): void

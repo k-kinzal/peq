@@ -7,6 +7,7 @@ namespace App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\Node\EnumCaseNode;
 use App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\QualifiedName;
+use Override;
 
 /**
  * Unique identifier for an enum case node in the dependency graph.
@@ -17,12 +18,12 @@ use App\Analyzer\Graph\QualifiedName;
  *
  * @implements NodeId<ENumCaseNode>
  */
-final class EnumCaseNodeId implements NodeId
+final readonly class EnumCaseNodeId implements NodeId
 {
     /**
      * The precomputed string form of this identifier.
      */
-    private readonly string $stringValue;
+    private string $stringValue;
 
     /**
      * @param string $namespace The namespace of the enum containing the case (must be a valid PHP namespace)
@@ -30,9 +31,9 @@ final class EnumCaseNodeId implements NodeId
      * @param string $caseName  The case name (must be a valid PHP identifier)
      */
     public function __construct(
-        public readonly string $namespace,
-        public readonly string $enumName,
-        public readonly string $caseName,
+        public string $namespace,
+        public string $enumName,
+        public string $caseName,
     ) {
         if ($namespace !== '') {
             assert(QualifiedName::isNamespace($namespace), 'The namespace must be one PHP would accept');
@@ -63,6 +64,7 @@ final class EnumCaseNodeId implements NodeId
      *
      * @return string The fully qualified enum case name
      */
+    #[Override]
     public function toString(): string
     {
         return $this->stringValue;

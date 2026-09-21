@@ -14,6 +14,7 @@ use App\Analyzer\DebugAnalyzer\Generator\NodeGenerator;
 use App\Analyzer\DebugAnalyzer\Generator\NodeIdGenerator;
 use App\Analyzer\DebugAnalyzer\Generator\RandomSource;
 use App\Analyzer\Graph\Graph;
+use Override;
 
 /**
  * An analyzer that invents a dependency graph instead of reading one.
@@ -28,15 +29,15 @@ use App\Analyzer\Graph\Graph;
  * what turns a reproduction of a reporting bug into something that can be attached
  * to a report.
  */
-final class DebugAnalyzer implements Analyzer
+final readonly class DebugAnalyzer implements Analyzer
 {
     /**
      * @param null|int $seed  Seed making the generated graph reproducible, or null for a fresh one
      * @param int      $depth How many levels of symbols the generated graph goes down
      */
     public function __construct(
-        private readonly ?int $seed = null,
-        private readonly int $depth = 5,
+        private ?int $seed = null,
+        private int $depth = 5,
     ) {
         assert($this->depth > 0, 'A generated graph depth must be a positive number of levels');
     }
@@ -48,6 +49,7 @@ final class DebugAnalyzer implements Analyzer
      *
      * @return Graph A generated dependency graph
      */
+    #[Override]
     public function analyze(string $path): Graph
     {
         $random = new RandomSource($this->seed ?? random_int(0, PHP_INT_MAX));

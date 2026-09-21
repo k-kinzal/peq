@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer\NativeAnalyzer;
 
+use App\Analyzer\SourceParser;
 use PhpParser\ErrorHandler\Collecting;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\ClassLike;
@@ -12,7 +13,6 @@ use PhpParser\NodeFinder;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\Parser;
-use PhpParser\ParserFactory;
 
 /**
  * Everything the analysed files declare, read before any of them is walked.
@@ -57,14 +57,21 @@ final class SourceIndex
      * the analysed code, not as a failure of the analysis, and the rest of the
      * codebase is still read.
      *
+     * Which files those are depends on the PHP version the sources are read as, which
+     * is why the version is settled by the caller rather than taken from the runtime:
+     * a codebase written for PHP 5.6 read as PHP 8.5 would lose every file of it that
+     * says something PHP 8 no longer allows.
+     *
      * @param list<string> $files            Absolute paths of the files to analyse
      * @param string       $workingDirectory The directory the analysis runs in, which anonymous class names are relative to
+     * @param null|int     $phpVersion       The PHP version the sources are read as, in PHP_VERSION_ID
+     *                                       form, or null to read them as the version peq runs on
      *
      * @return self The index of those files
      */
-    public static function of(array $files, string $workingDirectory): self
+    public static function of(array $files, string $workingDirectory, ?int $phpVersion = null): self
     {
-        $parser = (new ParserFactory())->createForHostVersion();
+        $parser = SourceParser::forVersion($phpVersion);
         $sources = [];
         $classLikes = [];
         $functions = [];

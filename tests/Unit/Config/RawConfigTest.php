@@ -8,10 +8,12 @@ use App\Analyzer\Graph\Direction;
 use App\Config\AnalyzerKind;
 use App\Config\ConfigException;
 use App\Config\ConfigReader;
+use App\Config\PhpVersion;
 use App\Config\RawConfig;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -20,6 +22,7 @@ use PHPUnit\Framework\TestCase;
  * @phpstan-import-type ConfigField from ConfigReader
  */
 #[CoversClass(RawConfig::class)]
+#[UsesClass(PhpVersion::class)]
 #[Small]
 final class RawConfigTest extends TestCase
 {
@@ -304,6 +307,63 @@ final class RawConfigTest extends TestCase
         $this->expectExceptionMessage('every setting must be named');
 
         (new RawConfig(['debug' => ['depth']]))->nested('debug');
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testOptionalPhpVersionReadsTheVersionASourceNames(): void
+    {
+        self::assertSame(70100, (new RawConfig(['phpVersion' => '7.1']))->optionalPhpVersion('phpVersion')?->id);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testOptionalPhpVersionReadsNothingForASettingTheSourceLeftOut(): void
+    {
+        self::assertNull((new RawConfig([]))->optionalPhpVersion('phpVersion'));
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testOptionalPhpVersionReadsNothingForASettingLeftWithNoValue(): void
+    {
+        self::assertNull((new RawConfig(['phpVersion' => null]))->optionalPhpVersion('phpVersion'));
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testOptionalPhpVersionRejectsAVersionTheAnalysisCannotRead(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Invalid configuration "phpVersion": expected a PHP version between 5.6 and 8.5, got "5.5".');
+
+        (new RawConfig(['phpVersion' => '5.5']))->optionalPhpVersion('phpVersion');
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testOptionalPhpVersionRejectsTextThatNamesNoVersion(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('expected a PHP version between 5.6 and 8.5, got "latest"');
+
+        (new RawConfig(['phpVersion' => 'latest']))->optionalPhpVersion('phpVersion');
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testOptionalPhpVersionRejectsAVersionWrittenAsANumber(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('expected a PHP version written as text, such as "5.6", got 8.3 (float)');
+
+        (new RawConfig(['phpVersion' => 8.3]))->optionalPhpVersion('phpVersion');
     }
 
     /**

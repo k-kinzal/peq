@@ -10,6 +10,7 @@ use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\NodeId\TraitNodeId;
 use App\Analyzer\Graph\NodeKind;
+use Override;
 
 /**
  * Represents a trait node in the dependency graph.
@@ -17,7 +18,7 @@ use App\Analyzer\Graph\NodeKind;
  * Encapsulates information about a PHP trait including its identifier,
  * file location metadata, and whether it has been fully resolved during analysis.
  */
-final class TraitNode implements Node
+final readonly class TraitNode implements Node
 {
     /**
      * @param TraitNodeId            $id          Unique identifier for this trait
@@ -26,15 +27,16 @@ final class TraitNode implements Node
      * @param null|SymbolDeclaration $declaration What the source declares about it, or null when analysis did not read its declaration
      */
     public function __construct(
-        public readonly TraitNodeId $id,
-        public readonly bool $resolved = false,
-        public readonly ?FileMeta $meta = null,
-        public readonly ?SymbolDeclaration $declaration = null,
+        public TraitNodeId $id,
+        public bool $resolved = false,
+        public ?FileMeta $meta = null,
+        public ?SymbolDeclaration $declaration = null,
     ) {}
 
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function id(): NodeId
     {
         return $this->id;
@@ -43,6 +45,7 @@ final class TraitNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function kind(): NodeKind
     {
         return NodeKind::Trait;
@@ -51,6 +54,7 @@ final class TraitNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function resolved(): bool
     {
         return $this->resolved;
@@ -59,6 +63,7 @@ final class TraitNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function meta(): ?FileMeta
     {
         return $this->meta;
@@ -67,6 +72,7 @@ final class TraitNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function declaration(): ?SymbolDeclaration
     {
         return $this->declaration;

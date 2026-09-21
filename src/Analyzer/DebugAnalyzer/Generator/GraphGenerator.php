@@ -25,6 +25,7 @@ use App\Analyzer\Graph\NodeId\InterfaceNodeId;
 use App\Analyzer\Graph\NodeId\MethodNodeId;
 use App\Analyzer\Graph\NodeId\PropertyNodeId;
 use App\Analyzer\Graph\NodeId\TraitNodeId;
+use Override;
 
 /**
  * Generates a whole dependency graph, and routes the recursion between generators.
@@ -36,7 +37,7 @@ use App\Analyzer\Graph\NodeId\TraitNodeId;
  *
  * @visibility parent
  */
-final class GraphGenerator implements SymbolGraphGenerator
+final readonly class GraphGenerator implements SymbolGraphGenerator
 {
     /**
      * @param ClassLikeGraphGenerator $classLikes The generator of classes, interfaces, traits and enums
@@ -46,11 +47,11 @@ final class GraphGenerator implements SymbolGraphGenerator
      * @param RandomSource            $random     The random source the root symbol is drawn from
      */
     public function __construct(
-        private readonly ClassLikeGraphGenerator $classLikes,
-        private readonly MemberGraphGenerator $members,
-        private readonly LeafGraphGenerator $leaves,
-        private readonly NodeIdGenerator $ids,
-        private readonly RandomSource $random,
+        private ClassLikeGraphGenerator $classLikes,
+        private MemberGraphGenerator $members,
+        private LeafGraphGenerator $leaves,
+        private NodeIdGenerator $ids,
+        private RandomSource $random,
     ) {}
 
     /**
@@ -84,6 +85,7 @@ final class GraphGenerator implements SymbolGraphGenerator
      *
      * @return GeneratedGraph<ClassNode> The class graph
      */
+    #[Override]
     public function classGraph(?ClassNodeId $symbol = null, int $depth = 5): GeneratedGraph
     {
         return $this->classLikes->classGraph($this, $symbol, $depth);
@@ -97,6 +99,7 @@ final class GraphGenerator implements SymbolGraphGenerator
      *
      * @return GeneratedGraph<GraphInterfaceNode> The interface graph
      */
+    #[Override]
     public function interfaceGraph(?InterfaceNodeId $symbol = null, int $depth = 5): GeneratedGraph
     {
         return $this->classLikes->interfaceGraph($this, $symbol, $depth);
@@ -110,6 +113,7 @@ final class GraphGenerator implements SymbolGraphGenerator
      *
      * @return GeneratedGraph<TraitNode> The trait graph
      */
+    #[Override]
     public function traitGraph(?TraitNodeId $symbol = null, int $depth = 5): GeneratedGraph
     {
         return $this->classLikes->traitGraph($this, $symbol, $depth);
@@ -123,6 +127,7 @@ final class GraphGenerator implements SymbolGraphGenerator
      *
      * @return GeneratedGraph<EnumNode> The enum graph
      */
+    #[Override]
     public function enumGraph(?EnumNodeId $symbol = null, int $depth = 5): GeneratedGraph
     {
         return $this->classLikes->enumGraph($this, $symbol, $depth);
@@ -136,6 +141,7 @@ final class GraphGenerator implements SymbolGraphGenerator
      *
      * @return GeneratedGraph<MethodNode> The method graph
      */
+    #[Override]
     public function methodGraph(?MethodNodeId $symbol = null, int $depth = 5): GeneratedGraph
     {
         return $this->members->methodGraph($this, $symbol, $depth);
@@ -149,6 +155,7 @@ final class GraphGenerator implements SymbolGraphGenerator
      *
      * @return GeneratedGraph<FunctionNode> The function graph
      */
+    #[Override]
     public function functionGraph(?FunctionNodeId $symbol = null, int $depth = 5): GeneratedGraph
     {
         return $this->members->functionGraph($this, $symbol, $depth);
@@ -162,6 +169,7 @@ final class GraphGenerator implements SymbolGraphGenerator
      *
      * @return GeneratedGraph<PropertyNode> The property graph
      */
+    #[Override]
     public function propertyGraph(?PropertyNodeId $symbol = null, int $depth = 5): GeneratedGraph
     {
         return $this->members->propertyGraph($this, $symbol, $depth);
@@ -174,6 +182,7 @@ final class GraphGenerator implements SymbolGraphGenerator
      *
      * @return GeneratedGraph<ConstantNode> The constant graph
      */
+    #[Override]
     public function constantGraph(?ConstantNodeId $symbol = null): GeneratedGraph
     {
         return $this->leaves->constantGraph($symbol);
@@ -186,6 +195,7 @@ final class GraphGenerator implements SymbolGraphGenerator
      *
      * @return GeneratedGraph<EnumCaseNode> The enum case graph
      */
+    #[Override]
     public function enumCaseGraph(?EnumCaseNodeId $symbol = null): GeneratedGraph
     {
         return $this->leaves->enumCaseGraph($symbol);
@@ -198,6 +208,7 @@ final class GraphGenerator implements SymbolGraphGenerator
      *
      * @return GeneratedGraph<BuiltinNode> The builtin type graph
      */
+    #[Override]
     public function builtinGraph(?BuiltinNodeId $symbol = null): GeneratedGraph
     {
         return $this->leaves->builtinGraph($symbol);
@@ -211,6 +222,7 @@ final class GraphGenerator implements SymbolGraphGenerator
      *
      * @return GeneratedGraph<BuiltinNode|ClassNode|EnumNode|GraphInterfaceNode> The type graph
      */
+    #[Override]
     public function typeGraph(
         BuiltinNodeId|ClassNodeId|EnumNodeId|InterfaceNodeId|null $symbol = null,
         int $depth = 5,

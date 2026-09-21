@@ -19,6 +19,7 @@ use App\Analyzer\NativeAnalyzer\AutoloadIndex;
 use App\Analyzer\NativeAnalyzer\ClassLikeDeclaration;
 use App\Analyzer\NativeAnalyzer\ParsedSource;
 use App\Analyzer\NativeAnalyzer\SourceIndex;
+use App\Analyzer\SourceParser;
 use org\bovigo\vfs\vfsStream;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Name;
@@ -49,6 +50,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(MethodNode::class)]
 #[UsesClass(UnknownNode::class)]
 #[UsesClass(QualifiedName::class)]
+#[UsesClass(SourceParser::class)]
 #[Small]
 final class AnalysisScopeTest extends TestCase
 {

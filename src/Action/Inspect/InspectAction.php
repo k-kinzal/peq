@@ -29,7 +29,7 @@ final class InspectAction
         $graph = AnalyzerChoice::forConfig($config)->analyze($config->basePath);
         $symbol = $graph->nodeNamed($input->target);
         if ($symbol === null) {
-            throw SymbolNotFoundException::forTarget($input->target);
+            throw SymbolNotFoundException::forTarget($input->target, $config->phpVersion?->toString());
         }
 
         return new InspectActionOutput(graph: $graph, symbol: $symbol);

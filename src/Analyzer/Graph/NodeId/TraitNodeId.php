@@ -7,6 +7,7 @@ namespace App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\Node\TraitNode;
 use App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\QualifiedName;
+use Override;
 
 /**
  * Unique identifier for a trait node in the dependency graph.
@@ -17,20 +18,20 @@ use App\Analyzer\Graph\QualifiedName;
  *
  * @implements NodeId<TraitNode>
  */
-final class TraitNodeId implements NodeId
+final readonly class TraitNodeId implements NodeId
 {
     /**
      * The precomputed string form of this identifier.
      */
-    private readonly string $stringValue;
+    private string $stringValue;
 
     /**
      * @param string $namespace The namespace of the trait (must be a valid PHP namespace)
      * @param string $traitName The trait name (must be a valid PHP identifier)
      */
     public function __construct(
-        public readonly string $namespace,
-        public readonly string $traitName,
+        public string $namespace,
+        public string $traitName,
     ) {
         if ($namespace !== '') {
             assert(QualifiedName::isNamespace($namespace), 'The namespace must be one PHP would accept');
@@ -58,6 +59,7 @@ final class TraitNodeId implements NodeId
      *
      * @return string The fully qualified trait name
      */
+    #[Override]
     public function toString(): string
     {
         return $this->stringValue;

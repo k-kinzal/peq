@@ -10,6 +10,7 @@ use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\NodeId\UnknownNodeId;
 use App\Analyzer\Graph\NodeKind;
+use Override;
 
 /**
  * Represents an unknown node in the dependency graph.
@@ -18,7 +19,7 @@ use App\Analyzer\Graph\NodeKind;
  * during analysis. These are typically used as placeholders for unresolved
  * dependencies or external references not present in the analyzed codebase.
  */
-final class UnknownNode implements Node
+final readonly class UnknownNode implements Node
 {
     /**
      * @param UnknownNodeId          $id          Unique identifier for this unknown node
@@ -27,10 +28,10 @@ final class UnknownNode implements Node
      * @param null|SymbolDeclaration $declaration What the source declares about it, or null when analysis did not read its declaration
      */
     public function __construct(
-        public readonly UnknownNodeId $id,
-        public readonly bool $resolved = false,
-        public readonly ?FileMeta $meta = null,
-        public readonly ?SymbolDeclaration $declaration = null,
+        public UnknownNodeId $id,
+        public bool $resolved = false,
+        public ?FileMeta $meta = null,
+        public ?SymbolDeclaration $declaration = null,
     ) {}
 
     /**
@@ -59,6 +60,7 @@ final class UnknownNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function id(): UnknownNodeId
     {
         return $this->id;
@@ -67,6 +69,7 @@ final class UnknownNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function kind(): NodeKind
     {
         return NodeKind::Unknown;
@@ -75,6 +78,7 @@ final class UnknownNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function resolved(): bool
     {
         return $this->resolved;
@@ -83,6 +87,7 @@ final class UnknownNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function meta(): ?FileMeta
     {
         return $this->meta;
@@ -91,6 +96,7 @@ final class UnknownNode implements Node
     /**
      * {@inheritdoc}
      */
+    #[Override]
     public function declaration(): ?SymbolDeclaration
     {
         return $this->declaration;

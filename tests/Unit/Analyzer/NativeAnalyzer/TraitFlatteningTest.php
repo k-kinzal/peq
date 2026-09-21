@@ -11,6 +11,7 @@ use App\Analyzer\NativeAnalyzer\ParsedSource;
 use App\Analyzer\NativeAnalyzer\SourceIndex;
 use App\Analyzer\NativeAnalyzer\TraitFlattening;
 use App\Analyzer\NativeAnalyzer\TraitMethod;
+use App\Analyzer\SourceParser;
 use org\bovigo\vfs\vfsStream;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\TraitUse;
@@ -33,6 +34,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(ParsedSource::class)]
 #[UsesClass(SourceIndex::class)]
 #[UsesClass(TraitMethod::class)]
+#[UsesClass(SourceParser::class)]
 #[Small]
 final class TraitFlatteningTest extends TestCase
 {

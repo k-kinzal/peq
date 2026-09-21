@@ -19,6 +19,7 @@ use App\Analyzer\PhpStanAnalyzer\Processor\Usage\InstanceofProcessor;
 use App\Analyzer\PhpStanAnalyzer\Processor\Usage\InstantiationProcessor;
 use App\Analyzer\PhpStanAnalyzer\Processor\Usage\StaticCallProcessor;
 use App\Analyzer\PhpStanAnalyzer\Processor\Usage\StaticPropertyAccessProcessor;
+use Override;
 use PhpParser\Node as PhpParserNode;
 use PhpParser\Node\Stmt\ClassConst;
 use PhpParser\Node\Stmt\ClassLike;
@@ -48,6 +49,7 @@ final class DependencyCollector implements Collector
      *
      * @return class-string<PhpParserNode> The class of the node kind this collector reads
      */
+    #[Override]
     public function getNodeType(): string
     {
         return PhpParserNode::class;
@@ -65,6 +67,7 @@ final class DependencyCollector implements Collector
      *
      * @return null|list<Edge|Node> The relations found, or null when there are none
      */
+    #[Override]
     public function processNode(PhpParserNode $node, Scope $scope): ?array
     {
         $items = self::declaration($node, $scope);
