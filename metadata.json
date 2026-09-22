@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M35DWA1BJY1M0T7ECEY4G171",
+  "strategy": "manual-commit",
+  "branch": "feat/experimental-variable-dependencies",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/experimental-variable-analysis.md",
+    "docs/wordpress-variable-validation.md",
+    "src/Analyzer/ExperimentAnalyzer/Resolution/Conditions.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Resolution/ConditionsTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 13191,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1069056,
+    "output_tokens": 5679,
+    "api_call_count": 9
+  }
+}

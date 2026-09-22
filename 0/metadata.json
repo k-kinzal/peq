@@ -1,0 +1,49 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M35DWA1BJY1M0T7ECEY4G171",
+  "session_id": "01a0c3bf-0658-7a62-a151-5cc263588008",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-22T20:46:01.95517Z",
+  "branch": "feat/experimental-variable-dependencies",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/experimental-variable-analysis.md",
+    "docs/wordpress-variable-validation.md",
+    "src/Analyzer/ExperimentAnalyzer/Resolution/Conditions.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Resolution/ConditionsTest.php"
+  ],
+  "agent": "Codex",
+  "model": "gpt-6-astra",
+  "turn_id": "fe82dc4ad989",
+  "checkpoint_transcript_start": 3035,
+  "transcript_lines_at_start": 3035,
+  "compact_transcript_start": 348,
+  "token_usage": {
+    "input_tokens": 13191,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1069056,
+    "output_tokens": 5679,
+    "api_call_count": 9
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-22T20:45:59.793083Z",
+    "agent_lines": 350,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 350,
+    "total_lines_changed": 350,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
