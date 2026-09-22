@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M35EH2WRCE1RZ9FRGYPQM31Q",
+  "strategy": "manual-commit",
+  "branch": "feat/experimental-variable-dependencies",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/experimental-variable-analysis.md",
+    "docs/wordpress-variable-validation.md",
+    "src/Analyzer/ExperimentAnalyzer/DataFlow/DependencyGraph.php",
+    "src/Analyzer/ExperimentAnalyzer/Resolution/Boundary.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/BranchesTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Resolution/BoundaryTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 29558,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 3133952,
+    "output_tokens": 16952,
+    "api_call_count": 23
+  }
+}
