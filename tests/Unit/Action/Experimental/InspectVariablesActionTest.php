@@ -51,6 +51,17 @@ final class InspectVariablesActionTest extends TestCase
         self::assertSame(15, $slice->nodes[0]->line);
         self::assertSame('$value', $slice->nodes[0]->variable);
         self::assertNotEmpty($slice->edges);
+        self::assertSame(15, $slice->provenance['line']);
+        self::assertSame('value', $slice->provenance['variable']);
+        self::assertNull($slice->provenance['column']);
+        self::assertSame('uses', $slice->provenance['direction']);
+        self::assertNull($slice->provenance['level']);
+        self::assertSame('ExperimentAnalyzer', $slice->provenance['engine']);
+        self::assertSame('structure-first/1', $slice->provenance['engineVersion']);
+        self::assertSame(\Composer\InstalledVersions::getPrettyVersion('nikic/php-parser'), $slice->provenance['parserVersion']);
+        self::assertSame('checked-rules/v1', $slice->provenance['rules']);
+        self::assertSame(2, $slice->provenance['schemaVersion']);
+        self::assertSame(PHP_VERSION, $slice->provenance['runtimePhp']);
     }
 
     public function testExecuteRetainsUnsolvedSharedStorage(): void

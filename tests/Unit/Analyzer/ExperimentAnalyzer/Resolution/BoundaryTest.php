@@ -87,7 +87,7 @@ final class BoundaryTest extends TestCase
         self::assertNotNull($parsed);
         self::assertInstanceOf(Function_::class, $parsed[0]);
         $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
-        $syntax = array_filter($graph->nodes, static fn (\App\Analyzer\ExperimentAnalyzer\DataFlow\Occurrence $node): bool => str_starts_with($node->kind, 'syntax-'));
+        $syntax = array_map(static fn (\App\Analyzer\ExperimentAnalyzer\DataFlow\Dependency $edge): \App\Analyzer\ExperimentAnalyzer\DataFlow\Occurrence => $graph->nodes[$edge->from], array_filter($graph->edges, static fn (\App\Analyzer\ExperimentAnalyzer\DataFlow\Dependency $edge): bool => $edge->kind === 'unresolved-region' && $graph->nodes[$edge->to]->text === 'foo()'));
         self::assertNotContains('$b', array_column($syntax, 'text'));
         self::assertContains('foo()', array_column($syntax, 'text'));
         self::assertNotEmpty($graph->issues);

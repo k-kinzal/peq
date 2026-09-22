@@ -48,7 +48,7 @@ final class StatementsTest extends TestCase
     public function testSimpleRecordsOutputInputs(): void
     {
         $source = <<<'SOURCE'
-            <?php function f($a) { echo $a; }
+            <?php function f(int $a) { echo $a; }
             SOURCE;
         $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
         self::assertNotNull($parsed);

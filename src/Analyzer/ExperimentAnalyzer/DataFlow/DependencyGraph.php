@@ -42,6 +42,11 @@ final class DependencyGraph
     public array $testedOrigins = [];
 
     /**
+     * @var array<string, bool>
+     */
+    public array $scalars = [];
+
+    /**
      * @var array<string, null|bool|int|list<string>|string>
      */
     public array $provenance = [];

@@ -25,7 +25,7 @@ final class ExpressionsTest extends TestCase
     public function testReadKeepsNestedExpressionsWithTheSameStartSeparate(): void
     {
         $source = <<<'SOURCE'
-            <?php function f($a, $b, $c) { return $a + $b + $c; }
+            <?php function f(int $a, int $b, int $c) { return $a + $b + $c; }
             SOURCE;
         $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
         self::assertNotNull($parsed);

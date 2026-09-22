@@ -95,7 +95,8 @@ final class Inspection
         }
         foreach ($callable->params as $parameter) {
             if ($parameter->var instanceof Variable) {
-                $recording->write($parameter->var, [], $state, 'parameter');
+                $id = $recording->write($parameter->var, [], $state, 'parameter');
+                $graph->scalars[$id] = !$parameter->variadic && \App\Analyzer\ExperimentAnalyzer\Resolution\ScalarOrigins::parameter($parameter->type);
             }
         }
         $unstructured = (new NodeFinder())->findFirst($body, static fn (Node $node): bool => $node instanceof Node\Stmt\Goto_ || $node instanceof Node\Stmt\Label);

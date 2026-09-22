@@ -27,6 +27,38 @@ final class InspectionTest extends TestCase
         (new Inspection())->inspect(\App\Analyzer\ExperimentAnalyzer\SourceIndex::of([], ''), 'missing');
     }
 
+    public function testAnalyzeRetainsTheRuleAndSourceIdentityForReproduction(): void
+    {
+        $source = '<?php function f() { return 1; }';
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
+        self::assertNotNull($parsed);
+        self::assertInstanceOf(Function_::class, $parsed[0]);
+        $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
+        self::assertSame(['engine' => 'ExperimentAnalyzer', 'engineVersion' => 'structure-first/1', 'parserVersion' => \Composer\InstalledVersions::getPrettyVersion('nikic/php-parser'), 'rules' => 'checked-rules/v1', 'schemaVersion' => 2, 'runtimePhp' => PHP_VERSION, 'sourceSha256' => 'd50eef9034008008bf124c7c03772278cf949eff2d09be74aa4367b4c13ed900'], $graph->provenance);
+    }
+
+    #[DataProvider('providerNonlocalFlow')]
+    public function testAnalyzeDoesNotSolveIndividualStatementsAcrossNonlocalFlow(string $source): void
+    {
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
+        self::assertNotNull($parsed);
+        self::assertInstanceOf(Function_::class, $parsed[0]);
+        $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
+        self::assertSame(['NONLOCAL_FLOW'], array_column($graph->issues, 'code'));
+        self::assertSame([7], array_map(static fn (\App\Analyzer\ExperimentAnalyzer\Resolution\Issue $issue): int => $issue->source->column, array_values($graph->issues)));
+        self::assertSame([], array_values(array_filter(array_column($graph->nodes, 'kind'), static fn (string $kind): bool => $kind === 'write')));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function providerNonlocalFlow(): iterable
+    {
+        yield 'aliased parameter' => ['<?php function f(int &$input) { $result = 1; return $result; }'];
+
+        yield 'nonlocal jump' => ['<?php function f() { goto done; $result = 1; done: return $result; }'];
+    }
+
     public function testCallablesDoesNotAssignAnAnonymousClassMethodToItsEnclosingClass(): void
     {
         $source = '<?php namespace Test; class Outer { function outer() { return new class { function inner() {} }; } }';
@@ -94,7 +126,7 @@ return $a;
 
 
         yield 'overwrite kills the old value' => [
-            '<?php function f($input) {
+            '<?php function f(int $input) {
 $a = $input;
 $a = 2;
 return $a;
@@ -176,7 +208,7 @@ return $a;
         ];
 
         yield 'compound assignment reads before writing' => [
-            '<?php function f($a) {
+            '<?php function f(int $a) {
 $a += 1;
 return $a;
 }', [[2, '$a', 1, 'parameter'], [3, '$a', 2, 'write']],
@@ -251,7 +283,7 @@ return $a;
     public static function providerValueSlices(): iterable
     {
         yield 'arithmetic keeps both inputs' => [
-            '<?php function f($left, $right) {
+            '<?php function f(int $left, int $right) {
 $value = $left + $right;
 return $value;
 }', 3, 'value', [[1, 'parameter', '$left'], [1, 'parameter', '$right'], [2, 'read', '$left'], [2, 'read', '$right'], [2, 'expression', null], [2, 'write', '$value'], [3, 'read', '$value']],
@@ -265,14 +297,14 @@ return $value;
         ];
 
         yield 'coalescing assignment carries the original or fallback value' => [
-            '<?php function f($a, $fallback) {
+            '<?php function f(?int $a, int $fallback) {
 $a ??= $fallback;
 return $a;
 }', 3, 'a', [[1, 'parameter', '$a'], [1, 'parameter', '$fallback'], [2, 'read', '$a'], [2, 'read', '$fallback'], [2, 'write', '$a'], [3, 'read', '$a']],
         ];
 
         yield 'a copied value excludes a later overwrite' => [
-            '<?php function f($input) {
+            '<?php function f(int $input) {
 $a = $input;
 $copy = $a;
 $a = 9;
@@ -281,21 +313,21 @@ return $copy;
         ];
 
         yield 'prefix increment supplies the new value' => [
-            '<?php function f($a) {
+            '<?php function f(int $a) {
 $b = ++$a;
 return $b;
 }', 3, 'b', [[1, 'parameter', '$a'], [2, 'read', '$a'], [2, 'write', '$a'], [2, 'write', '$b'], [3, 'read', '$b']],
         ];
 
         yield 'postfix decrement supplies the old value' => [
-            '<?php function f($a) {
+            '<?php function f(int $a) {
 $b = $a--;
 return $b;
 }', 3, 'b', [[1, 'parameter', '$a'], [2, 'read', '$a'], [2, 'write', '$b'], [3, 'read', '$b']],
         ];
 
         yield 'compound assignment includes both inputs' => [
-            '<?php function f($a, $b) {
+            '<?php function f(int $a, int $b) {
 $a += $b;
 return $a;
 }', 3, 'a', [[1, 'parameter', '$a'], [1, 'parameter', '$b'], [2, 'read', '$a'], [2, 'read', '$b'], [2, 'write', '$a'], [3, 'read', '$a']],

@@ -57,8 +57,70 @@ final class IssueActionTest extends TestCase
 
     public function testMetadataRetainsReasonAndLocationWithoutSnippets(): void
     {
-        $metadata = (new IssueAction())->metadata(['target' => 'f', 'analysis' => ['status' => 'partial', 'issues' => [['code' => 'OPAQUE_CALL', 'reason' => 'Unknown effects', 'source' => ['line' => 4, 'text' => 'secret']]]]]);
-        self::assertSame(['target' => 'f', 'analysis' => ['status' => 'partial'], 'issues' => [['code' => 'OPAQUE_CALL', 'reason' => 'Unknown effects', 'location' => ['line' => 4]]]], $metadata);
+        $metadata = (new IssueAction())->metadata(['schemaVersion' => 2, 'target' => 'f', 'file' => '/f.php', 'direction' => 'uses', 'roots' => ['call'], 'provenance' => ['engine' => 'ExperimentAnalyzer'], 'analysis' => ['status' => 'partial', 'complete' => false, 'frontier' => [], 'nodes' => ['call' => 'unknown'], 'issues' => [['code' => 'OPAQUE_CALL', 'nodeId' => 'call', 'rule' => 'checked-rules/v1', 'reason' => 'Unknown effects', 'affects' => ['effects'], 'source' => ['line' => 4, 'column' => 2, 'endLine' => 6, 'text' => 'secret']]]], 'nodes' => ['secret'], 'structure' => ['secret'], 'diagnostics' => ['secret']]);
+        self::assertSame(['schemaVersion' => 2, 'target' => 'f', 'file' => '/f.php', 'direction' => 'uses', 'roots' => ['call'], 'provenance' => ['engine' => 'ExperimentAnalyzer'], 'analysis' => ['status' => 'partial', 'complete' => false, 'frontier' => []], 'issues' => [['code' => 'OPAQUE_CALL', 'nodeId' => 'call', 'rule' => 'checked-rules/v1', 'reason' => 'Unknown effects', 'affects' => ['effects'], 'location' => ['line' => 4, 'column' => 2, 'endLine' => 6]]]], $metadata);
+    }
+
+    /**
+     * @throws JsonException
+     */
+    public function testPrepareLabelsTheExactMetadataOnlyPreview(): void
+    {
+        vfsStream::setup('report', null, ['result.json' => '{"experimental":true,"schemaVersion":2,"target":"f","analysis":{"status":"input","complete":true}}']);
+        $draft = (new IssueAction())->prepare('vfs://report/result.json', description: 'Incorrect origin.');
+        self::assertSame("Experimental analysis report\n\nIncorrect origin.\n\nSource included: no\n\n```json\n{\n    \"schemaVersion\": 2,\n    \"target\": \"f\",\n    \"analysis\": {\n        \"status\": \"input\",\n        \"complete\": true\n    },\n    \"issues\": []\n}\n```\n", $draft->body);
+    }
+
+    /**
+     * @throws JsonException
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('providerInvalidArtifacts')]
+    public function testPrepareRejectsUnrelatedOrIncompleteJson(string $text): void
+    {
+        vfsStream::setup('report', null, ['result.json' => $text]);
+        $this->expectException(InspectionRejected::class);
+        $this->expectExceptionMessage('Expected an experimental inspect schemaVersion 2 result.');
+        (new IssueAction())->prepare('vfs://report/result.json');
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function providerInvalidArtifacts(): iterable
+    {
+        yield 'production result' => ['{"experimental":false,"schemaVersion":2,"target":"f","analysis":{}}'];
+
+        yield 'old schema' => ['{"experimental":true,"schemaVersion":1,"target":"f","analysis":{}}'];
+
+        yield 'missing target' => ['{"experimental":true,"schemaVersion":2,"analysis":{}}'];
+
+        yield 'missing analysis' => ['{"experimental":true,"schemaVersion":2,"target":"f"}'];
+
+        yield 'scalar json' => ['true'];
+    }
+
+    /**
+     * @throws JsonException
+     */
+    public function testPrepareRejectsOversizedSourceWithoutSendingOrTruncating(): void
+    {
+        vfsStream::setup('report', null, ['result.json' => json_encode(['experimental' => true, 'schemaVersion' => 2, 'target' => 'f', 'analysis' => [], 'nodes' => [str_repeat('x', 60000)]], JSON_THROW_ON_ERROR)]);
+        $sender = $this->createMock(IssueSender::class);
+        $sender->expects(self::never())->method('send');
+        $this->expectException(InspectionRejected::class);
+        $this->expectExceptionMessage('The issue exceeds 60 KB. Select a smaller result or omit --include-source; nothing was sent.');
+        (new IssueAction($sender))->prepare('vfs://report/result.json', true);
+    }
+
+    /**
+     * @throws JsonException
+     */
+    public function testPrepareRejectsOversizedArtifactsBeforeDecoding(): void
+    {
+        vfsStream::setup('report', null, ['result.json' => str_repeat('x', 2000001)]);
+        $this->expectException(InspectionRejected::class);
+        $this->expectExceptionMessage('Provide a readable experimental JSON result smaller than 2 MB.');
+        (new IssueAction())->prepare('vfs://report/result.json');
     }
 
     public function testSendPublishesOnlyThePreparedDraft(): void

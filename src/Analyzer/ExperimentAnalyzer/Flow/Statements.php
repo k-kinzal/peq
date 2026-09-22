@@ -72,6 +72,12 @@ final readonly class Statements
     public function simple(Stmt $node, State $state): Exits
     {
         if ($node instanceof Stmt\Echo_) {
+            $unsafe = array_filter($node->exprs, fn (\PhpParser\Node\Expr $expression): bool => !\App\Analyzer\ExperimentAnalyzer\Resolution\ScalarOrigins::expression($expression, $state, $this->expressions->recording->graph));
+            if ($unsafe !== []) {
+                (new \App\Analyzer\ExperimentAnalyzer\Resolution\Boundary($this->expressions->recording->graph))->read($node, $state, 'OUTPUT_CONVERSION', 'Output conversion may invoke __toString(); scalar operands have not been proved.');
+
+                return new Exits($state);
+            }
             $inputs = [];
             foreach ($node->exprs as $expression) {
                 $inputs[] = $this->expressions->read($expression, $state);

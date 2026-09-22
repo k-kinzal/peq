@@ -52,14 +52,24 @@ continuation merely because it appeared earlier.
 
 ## What is solved
 
-Checked rules cover named local reads/writes, scalar literals, side-effect-free
-operators, if/elseif/else, return, echo, local increments/compound assignments,
+Checked rules cover named local reads/writes, scalar literals, operators with proved
+scalar operands, if/elseif/else, return, scalar output, local increments/compound assignments,
 short-circuit boolean operations, coalescing and ternaries. Whole-variable assignment
 replaces previous definitions; a saved copy retains its original definition.
 Unrecognized syntax does **not** fall through to eager child evaluation.
 
+Scalar proofs use runtime parameter declarations and known reaching definitions, not
+PHPDoc. Variadic parameters remain arrays even when each argument is declared scalar.
+Without that proof, coercive operators report `OPERAND_TYPES`, output conversion reports
+`OUTPUT_CONVERSION`, and overwriting potentially destructible values reports
+`VALUE_LIFETIME`. PHP can invoke [`__toString()`](https://www.php.net/manual/en/language.oop5.magic.php#object.tostring)
+or a [`__destruct()`](https://www.php.net/manual/en/language.oop5.decon.php#language.oop5.decon.destructor)
+without an explicit call expression; those effects must not disappear from an answer.
+
 These rules describe **local source origins under normal PHP expression completion**.
-They do not evaluate runtime values, prove absence of runtime errors, model implicit
+Parameters are inputs at callable entry; argument/default initialization, return-type
+coercion and cleanup after leaving the callable are outside this body model.
+These rules do not evaluate runtime values, prove absence of runtime errors, model implicit
 exceptions from operators, or guarantee that a syntactically possible path executes.
 Conditions sharing variable origins report `PATH_CORRELATION`: combined path feasibility
 requires additional reasoning. A resolved dependency result is not a proof that removing

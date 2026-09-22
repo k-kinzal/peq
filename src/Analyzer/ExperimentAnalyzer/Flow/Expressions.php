@@ -28,6 +28,9 @@ final readonly class Expressions
             return (new \App\Analyzer\ExperimentAnalyzer\Resolution\Boundary($this->recording->graph))->read($node, $state, $rule, $reason);
         }
 
+        if (\App\Analyzer\ExperimentAnalyzer\Resolution\ScalarOrigins::effects($node, $state, $this->recording->graph)) {
+            return (new \App\Analyzer\ExperimentAnalyzer\Resolution\Boundary($this->recording->graph))->read($node, $state, 'OPERAND_TYPES', 'Operand types are not proven scalar; implicit object conversions, operator behavior or heap comparisons are not modeled.');
+        }
         if ($node instanceof Expr\Variable) {
             return $this->recording->read($node, $state);
         }

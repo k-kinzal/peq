@@ -35,4 +35,14 @@ final class VariableTreeTest extends TestCase
         (new \App\Reporter\Experimental\VariableTree())->draw('a', '', '', [], $seen, $lines);
         self::assertSame(['a [already shown]'], $lines);
     }
+
+    public function testRenderKeepsDirectionBranchesAndSharedDependenciesReadable(): void
+    {
+        $slice = new \App\Analyzer\ExperimentAnalyzer\DataFlow\Slice('Example::render', '/src/Example.php', \App\Analyzer\Graph\Direction::UsedBy, ['a', 'b'], [], [
+            new \App\Analyzer\ExperimentAnalyzer\DataFlow\Dependency('a', 'b', 'control', 'falsy'),
+            new \App\Analyzer\ExperimentAnalyzer\DataFlow\Dependency('b', 'c', 'data'),
+            new \App\Analyzer\ExperimentAnalyzer\DataFlow\Dependency('c', 'a', 'possible-input'),
+        ], []);
+        self::assertSame("Experimental dependencies: Example::render (used-by)\n/src/Example.php\na\n  [control: falsy] b\n    [data] c\n      [possible-input] a [already shown]\nb [already shown]", (new \App\Reporter\Experimental\VariableTree())->render($slice));
+    }
 }

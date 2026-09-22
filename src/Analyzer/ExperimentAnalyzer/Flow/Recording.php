@@ -24,6 +24,7 @@ final readonly class Recording
     public function value(Node $node, string $kind, array $inputs, State $state, ?string $variable = null): string
     {
         $id = $this->graph->record($node, $kind, $variable);
+        $this->graph->scalars[$id] = \App\Analyzer\ExperimentAnalyzer\Resolution\ScalarOrigins::literal($node) || \App\Analyzer\ExperimentAnalyzer\Resolution\ScalarOrigins::inputs($inputs, $this->graph);
         foreach ($inputs as $input) {
             $this->graph->connect($id, $input, $kind === 'call' ? 'call-input' : ($kind === 'boundary' ? 'boundary-input' : 'data'));
         }
@@ -51,6 +52,8 @@ final readonly class Recording
             }
         }
 
+        $this->graph->scalars[$id] = \App\Analyzer\ExperimentAnalyzer\Resolution\ScalarOrigins::inputs(array_keys($state->definitions[$name] ?? []), $this->graph);
+
         return $id;
     }
 
@@ -61,6 +64,11 @@ final readonly class Recording
     {
         assert(is_string($node->name));
         $name = '$'.$node->name;
+        $previous = array_keys($state->definitions[$name] ?? []);
+        $objects = array_filter($previous, fn (string $id): bool => !($this->graph->scalars[$id] ?? false) && $this->graph->nodes[$id]->kind !== 'unbound');
+        if ($kind === 'write' && $objects !== []) {
+            (new \App\Analyzer\ExperimentAnalyzer\Resolution\Boundary($this->graph))->read($node, $state, 'VALUE_LIFETIME', 'Replacing a value whose type is not proven scalar may invoke destructors or release aliased storage.');
+        }
         $id = $this->value($node, $kind, $inputs, $state, $name);
         $state->definitions[$name] = [$id => true];
 

@@ -43,6 +43,7 @@ preservation of the audited source sites; they do not certify those transfers.
 | `assert(++$i)` | `OPAQUE_CALL`; assertion configuration does not silently make the increment unconditional. |
 | Repeated tests of `$flag` and `!$flag` | `PATH_CORRELATION`; feasibility is not certified. |
 | `extract(...)` / `compact(...)` first-class callable creation | `CALLABLE_CREATION`, not variable injection or an executed compact call. |
+| String conversion, output conversion and object destruction | `OPERAND_TYPES`, `OUTPUT_CONVERSION` or `VALUE_LIFETIME` unless scalar preconditions are proved. |
 | `false ?? ($i = 1)` | The fallback is skipped; false and null are distinguished. |
 | WordPress `_wp_check_alternate_file_names`, `functions.php:2857` | The final false return has an unknown dependency on the foreach at 2847. Reverse inspection of `$filenames` includes the final return. |
 | peq `SymbolDeclaration::hasAttribute`, `SymbolDeclaration.php:84` | The loop at 78 remains an unresolved guard; reverse inspection of `$name` includes the false return. |
