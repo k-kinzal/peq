@@ -45,7 +45,7 @@ final class ExpressionsTest extends TestCase
         self::assertNotNull($parsed);
         self::assertInstanceOf(Function_::class, $parsed[0]);
         $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
-        self::assertCount(1, array_filter($graph->nodes, static fn (Occurrence $node): bool => $node->kind === 'read'));
+        self::assertSame(['OPAQUE_CALL'], array_column($graph->issues, 'code'));
         self::assertSame([], array_values(array_filter($graph->nodes, static fn (Occurrence $node): bool => $node->kind === 'write')));
     }
 
@@ -58,11 +58,10 @@ final class ExpressionsTest extends TestCase
         self::assertNotNull($parsed);
         self::assertInstanceOf(Function_::class, $parsed[0]);
         $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
-        self::assertCount(1, array_filter($graph->edges, static fn (Dependency $edge): bool => $edge->kind === 'boundary-input'));
-        self::assertStringContainsString('Heap boundary', implode('', $graph->diagnostics));
+        self::assertSame(['UNSUPPORTED_EXPRESSION'], array_column($graph->issues, 'code'));
     }
 
-    public function testValuesExcludesAThrowFromNormalValueInputs(): void
+    public function testValuesMarksThrowAsUnsolvedContinuation(): void
     {
         $source = '<?php throw new Exception();';
         $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
@@ -70,8 +69,9 @@ final class ExpressionsTest extends TestCase
         self::assertInstanceOf(\PhpParser\Node\Stmt\Expression::class, $parsed[0]);
         $state = new State();
         $expressions = new Expressions(new Recording(new DependencyGraph('f', '/f.php', $source)));
-        self::assertSame([], $expressions->values($parsed[0]->expr, $state));
-        self::assertFalse($state->reachable);
+        self::assertCount(1, $expressions->values($parsed[0]->expr, $state));
+        self::assertTrue($state->reachable);
+        self::assertNotEmpty($expressions->recording->graph->issues);
     }
 
     public function testReadDoesNotApplyACallWhoseArgumentThrows(): void
@@ -81,7 +81,7 @@ final class ExpressionsTest extends TestCase
         self::assertNotNull($parsed);
         self::assertInstanceOf(Function_::class, $parsed[0]);
         $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
-        self::assertSame([], array_values(array_filter($graph->nodes, static fn (Occurrence $node): bool => $node->kind === 'call-write' || $node->kind === 'return')));
-        self::assertCount(1, array_filter($graph->nodes, static fn (Occurrence $node): bool => $node->kind === 'aborted-call'));
+        self::assertSame([], array_values(array_filter($graph->nodes, static fn (Occurrence $node): bool => $node->kind === 'call-write')));
+        self::assertSame(['OPAQUE_CALL'], array_column($graph->issues, 'code'));
     }
 }

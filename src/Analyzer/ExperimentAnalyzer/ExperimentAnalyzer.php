@@ -43,7 +43,10 @@ final class ExperimentAnalyzer implements Analyzer
         $directory = getcwd();
         $index = SourceIndex::of($files, $directory === false ? '' : $directory, $this->phpVersion);
 
-        return (new DataFlow\Inspection())->inspect($index, $target);
+        $graph = (new DataFlow\Inspection())->inspect($index, $target);
+        $graph->provenance += ['targetPhp' => $this->phpVersion ?? PHP_VERSION_ID, 'includes' => $this->includes, 'excludes' => $this->excludes];
+
+        return $graph;
     }
 
     /**

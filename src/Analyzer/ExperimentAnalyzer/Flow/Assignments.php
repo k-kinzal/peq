@@ -45,43 +45,8 @@ final readonly class Assignments
         if ($target instanceof Expr\Variable) {
             return $this->expressions->recording->write($target, $inputs, $state);
         }
-        if ($target instanceof Expr\List_ || $target instanceof Expr\Array_) {
-            $id = $this->expressions->recording->value($target, 'destructure', $inputs, $state);
-            foreach ($target->items as $item) {
-                if ($item !== null) {
-                    $keys = $item->key === null ? [] : [$this->expressions->read($item->key, $state)];
-                    if (!$state->reachable) {
-                        break;
-                    }
-                    $this->write($item->value, [$id, ...$keys], $state);
-                }
-            }
 
-            return $id;
-        }
-        $root = $target;
-        while ($root instanceof Expr\ArrayDimFetch) {
-            if (!$evaluated && $root->dim !== null) {
-                $inputs[] = $this->expressions->read($root->dim, $state);
-                if (!$state->reachable) {
-                    return $inputs[array_key_last($inputs)];
-                }
-            }
-            $root = $root->var;
-        }
-        if ($root instanceof Expr\Variable) {
-            if (!$evaluated) {
-                $inputs[] = $this->expressions->read($root, $state);
-            }
-            $this->expressions->recording->graph->diagnose($target, 'Array boundary: elements are tracked together; aggregate dependencies are possible dependencies.');
-
-            return $this->expressions->recording->write($root, $inputs, $state, 'aggregate-write');
-        }
-        if (!$evaluated) {
-            $inputs[] = $this->expressions->read($target, $state);
-        }
-
-        return $this->expressions->recording->value($target, 'heap-write', $inputs, $state);
+        return (new \App\Analyzer\ExperimentAnalyzer\Resolution\Boundary($this->expressions->recording->graph))->read($target, $state, 'INDIRECT_WRITE', 'An indirect write requires a storage model.');
     }
 
     /**

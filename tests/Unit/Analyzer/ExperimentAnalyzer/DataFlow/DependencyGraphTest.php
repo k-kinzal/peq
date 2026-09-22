@@ -86,4 +86,18 @@ final class DependencyGraphTest extends TestCase
         $this->expectExceptionMessage('No $a occurrence at line 4, column 2 in f.');
         $graph->select(4, '$a', 2);
     }
+
+    public function testLocationDoesNotInsertAnAnalysisNode(): void
+    {
+        $graph = new DependencyGraph('f', '/f.php', '<?php $a;');
+        $node = new \PhpParser\Node\Expr\Variable('a', ['startLine' => 1, 'endLine' => 1, 'startFilePos' => 6, 'endFilePos' => 7]);
+        self::assertSame('$a', $graph->location($node, 'syntax', '$a')->text);
+        self::assertSame([], $graph->nodes);
+    }
+
+    public function testFingerprintUsesTheActualParsedSource(): void
+    {
+        $graph = new DependencyGraph('f', '/missing.php', 'abc');
+        self::assertSame('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad', $graph->fingerprint());
+    }
 }

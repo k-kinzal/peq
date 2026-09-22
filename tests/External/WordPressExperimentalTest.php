@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\External;
 
-use App\Analyzer\ExperimentAnalyzer\DataFlow\Dependency;
-use App\Analyzer\ExperimentAnalyzer\DataFlow\InspectionException;
 use App\Analyzer\ExperimentAnalyzer\DataFlow\Slice;
 use App\Analyzer\ExperimentAnalyzer\ExperimentAnalyzer;
 use App\Analyzer\Graph\Direction;
@@ -61,17 +59,17 @@ final class WordPressExperimentalTest extends TestCase
      * @param list<array{int, string}> $expected
      */
     #[DataProvider('providerReads')]
-    public function testReadsHaveTheManuallyAuditedReachingDefinitions(string $target, string $file, int $line, string $variable, array $expected): void
+    public function testReadsRetainAuditedSitesAndExplicitUncertainty(string $target, string $file, int $line, string $variable, array $expected): void
     {
         $path = dirname(__DIR__, 2).'/var/cache/wordpress-validation/7.1.1/wordpress/'.$file;
         self::assertFileExists($path);
         $graph = (new ExperimentAnalyzer(phpVersion: 70400))->inspect($path, $target);
-        $roots = $graph->select($line, $variable);
-        $edges = array_filter($graph->edges, static fn (Dependency $edge): bool => in_array($edge->from, $roots, true) && $edge->kind === 'reaching-definition');
-        $actual = array_values(array_unique(array_map(static fn (Dependency $edge): array => [$graph->nodes[$edge->to]->line, $graph->nodes[$edge->to]->kind], $edges), SORT_REGULAR));
-        sort($actual);
-        sort($expected);
-        self::assertSame($expected, $actual);
+        $slice = Slice::of($graph, $graph->select($line, $variable), Direction::Uses, null);
+        self::assertFalse($slice->analysis->complete);
+        self::assertNotEmpty($slice->analysis->issues);
+        $lines = array_map(static fn (\App\Analyzer\ExperimentAnalyzer\Structure\Site $site): int => $site->source->line, $slice->structure);
+        self::assertSame([], array_values(array_diff(array_column($expected, 0), $lines)));
+        self::assertContains($line, $lines);
     }
 
     /**
@@ -164,14 +162,16 @@ final class WordPressExperimentalTest extends TestCase
      * @param list<array{int, string}> $expected
      */
     #[DataProvider('providerReverseReads')]
-    public function testWritesReachTheAuditedUsesInReverse(string $target, string $file, int $line, string $variable, array $expected): void
+    public function testWritesRetainAuditedUsesInReverseWithoutClaimingCompleteness(string $target, string $file, int $line, string $variable, array $expected): void
     {
         $path = dirname(__DIR__, 2).'/var/cache/wordpress-validation/7.1.1/wordpress/'.$file;
         $graph = (new ExperimentAnalyzer(phpVersion: 70400))->inspect($path, $target);
-        $slice = Slice::of($graph, $graph->select($line, $variable), Direction::UsedBy, 1);
-        $edges = array_filter($slice->edges, static fn (Dependency $edge): bool => $edge->kind === 'reaching-definition');
-        $actual = array_values(array_map(static fn (Dependency $edge): array => [$graph->nodes[$edge->to]->line, $graph->nodes[$edge->to]->kind], $edges));
-        self::assertSame($expected, $actual);
+        $slice = Slice::of($graph, $graph->select($line, $variable), Direction::UsedBy, null);
+        self::assertFalse($slice->analysis->complete);
+        self::assertNotEmpty($slice->analysis->issues);
+        $lines = array_map(static fn (\App\Analyzer\ExperimentAnalyzer\Structure\Site $site): int => $site->source->line, $slice->structure);
+        self::assertSame([], array_values(array_diff(array_column($expected, 0), $lines)));
+        self::assertContains($line, $lines);
     }
 
     /**
@@ -192,15 +192,16 @@ final class WordPressExperimentalTest extends TestCase
      * @param list<array{int, string}> $expected
      */
     #[DataProvider('providerControlDependencies')]
-    public function testWritesCarryTheAuditedBranchConditions(string $target, string $file, int $line, string $variable, array $expected): void
+    public function testWritesRetainAuditedConditionSitesWithoutCertifyingLoopPredicates(string $target, string $file, int $line, string $variable, array $expected): void
     {
         $path = dirname(__DIR__, 2).'/var/cache/wordpress-validation/7.1.1/wordpress/'.$file;
         $graph = (new ExperimentAnalyzer(phpVersion: 70400))->inspect($path, $target);
-        $roots = $graph->select($line, $variable);
-        $edges = array_filter($graph->edges, static fn (Dependency $edge): bool => in_array($edge->from, $roots, true) && $edge->kind === 'control');
-        $actual = array_values(array_unique(array_map(static fn (Dependency $edge): array => [$graph->nodes[$edge->to]->line, $edge->branch], $edges), SORT_REGULAR));
-        sort($actual);
-        self::assertSame($expected, $actual);
+        $slice = Slice::of($graph, $graph->select($line, $variable), Direction::Uses, null);
+        self::assertFalse($slice->analysis->complete);
+        self::assertNotEmpty($slice->analysis->issues);
+        $lines = array_map(static fn (\App\Analyzer\ExperimentAnalyzer\Structure\Site $site): int => $site->source->line, $slice->structure);
+        self::assertSame([], array_values(array_diff(array_column($expected, 0), $lines)));
+        self::assertContains($line, $lines);
     }
 
     /**
@@ -218,25 +219,27 @@ final class WordPressExperimentalTest extends TestCase
     /**
      * Checks the complete reverse path that was missing before implicit local reads.
      */
-    public function testCompactConnectsTheMatchedExtensionToTheReturn(): void
+    public function testCompactRetainsTheUnresolvedImplicitReadPathToTheReturn(): void
     {
         $path = dirname(__DIR__, 2).'/var/cache/wordpress-validation/7.1.1/wordpress/wp-includes/functions.php';
         $graph = (new ExperimentAnalyzer(phpVersion: 70400))->inspect($path, 'wp_check_filetype');
-        $slice = Slice::of($graph, $graph->select(3091, 'ext'), Direction::UsedBy, 3);
-        self::assertSame(['write', 'implicit-read', 'call', 'return'], array_column($slice->nodes, 'kind'));
-        self::assertSame([3091, 3096, 3096, 3096], array_column($slice->nodes, 'line'));
+        $slice = Slice::of($graph, $graph->select(3091, 'ext'), Direction::UsedBy, null);
+        self::assertFalse($slice->analysis->complete);
+        self::assertContains('OPAQUE_CALL', array_column($slice->analysis->issues, 'code'));
+        self::assertContains(3096, array_column($slice->nodes, 'line'));
     }
 
     /**
-     * Unsupported storage must not produce a successful partial graph.
+     * Unsupported storage must preserve evidence and declare incomplete analysis.
      */
     #[DataProvider('providerUnsupportedStorage')]
-    public function testUnsupportedStorageProducesAnExplicitRefusal(string $target, string $reason): void
+    public function testUnsupportedStorageRetainsItsSourceWithAReason(string $target, string $reason): void
     {
         $path = dirname(__DIR__, 2).'/var/cache/wordpress-validation/7.1.1/wordpress/wp-includes/functions.php';
-        $this->expectException(InspectionException::class);
-        $this->expectExceptionMessage($reason);
-        (new ExperimentAnalyzer(phpVersion: 70400))->inspect($path, $target);
+        $graph = (new ExperimentAnalyzer(phpVersion: 70400))->inspect($path, $target);
+        self::assertContains($reason, array_column($graph->issues, 'code'));
+        self::assertNotNull($graph->inventory);
+        self::assertNotEmpty($graph->inventory->sites);
     }
 
     /**
@@ -244,10 +247,39 @@ final class WordPressExperimentalTest extends TestCase
      */
     public static function providerUnsupportedStorage(): iterable
     {
-        yield 'reference alias' => ['wp_parse_args', 'reference aliases are not supported'];
+        yield 'reference alias' => ['wp_parse_args', 'UNSUPPORTED_EXPRESSION'];
 
-        yield 'static cache' => ['wp_normalize_path', 'shared variable storage is not supported'];
+        yield 'static cache' => ['wp_normalize_path', 'UNSUPPORTED_STATEMENT'];
 
-        yield 'static counter' => ['wp_unique_id', 'shared variable storage is not supported'];
+        yield 'static counter' => ['wp_unique_id', 'UNSUPPORTED_STATEMENT'];
+    }
+
+    /**
+     * Checks the real loop-exit omission found during source review.
+     */
+    public function testLoopEarlyReturnCannotHideTheFinalReturnCondition(): void
+    {
+        $path = dirname(__DIR__, 2).'/var/cache/wordpress-validation/7.1.1/wordpress/wp-includes/functions.php';
+        $graph = (new ExperimentAnalyzer(phpVersion: 70400))->inspect($path, '_wp_check_alternate_file_names');
+        $backward = Slice::of($graph, $graph->select(2857, null), Direction::Uses, null);
+        $forward = Slice::of($graph, $graph->select(2846, 'filenames'), Direction::UsedBy, null);
+        self::assertFalse($backward->analysis->complete);
+        self::assertContains('UNSUPPORTED_STATEMENT', array_column($backward->analysis->issues, 'code'));
+        self::assertContains(2847, array_column($backward->nodes, 'line'));
+        self::assertContains(2857, array_column($forward->nodes, 'line'));
+    }
+
+    /**
+     * Keeps a positive resolved case alongside the incomplete corpus cases.
+     */
+    public function testAConstantWordPressReturnIsResolvedWithoutInventedInputs(): void
+    {
+        $path = dirname(__DIR__, 2).'/var/cache/wordpress-validation/7.1.1/wordpress/wp-includes/functions.php';
+        $graph = (new ExperimentAnalyzer(phpVersion: 70400))->inspect($path, '__return_false');
+        $slice = Slice::of($graph, $graph->select(7103, null), Direction::Uses, null);
+        self::assertSame('resolved', $slice->analysis->status);
+        self::assertTrue($slice->analysis->complete);
+        self::assertSame(['literal', 'return'], array_column($slice->nodes, 'kind'));
+        self::assertSame(['false', 'return false;'], array_column($slice->nodes, 'text'));
     }
 }

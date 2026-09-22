@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Integration;
 
-use App\Analyzer\ExperimentAnalyzer\DataFlow\Dependency;
 use App\Analyzer\ExperimentAnalyzer\DataFlow\DependencyGraph;
 use App\Analyzer\ExperimentAnalyzer\DataFlow\Inspection;
-use App\Analyzer\ExperimentAnalyzer\DataFlow\InspectionException;
 use App\Analyzer\ExperimentAnalyzer\ExperimentAnalyzer;
 use App\Analyzer\ExperimentAnalyzer\SourceIndex;
 use App\Analyzer\Graph\GraphSnapshot;
@@ -29,15 +27,14 @@ final class ExperimentalSelfAnalysisTest extends TestCase
      * @param list<array{int, string}> $expected
      */
     #[DataProvider('providerAuditedOccurrences')]
-    public function testProjectReadsHaveTheManuallyAuditedReachingDefinitions(string $target, string $file, int $line, string $variable, array $expected): void
+    public function testProjectReadsRetainAuditedSourceSitesAndDeclareUncertainty(string $target, string $file, int $line, string $variable, array $expected): void
     {
         $graph = (new ExperimentAnalyzer())->inspect(dirname(__DIR__, 2).'/'.$file, $target);
-        $roots = $graph->select($line, $variable);
-        $edges = array_filter($graph->edges, static fn (Dependency $edge): bool => in_array($edge->from, $roots, true) && $edge->kind === 'reaching-definition');
-        $actual = array_values(array_unique(array_map(static fn (Dependency $edge): array => [$graph->nodes[$edge->to]->line, $graph->nodes[$edge->to]->kind], $edges), SORT_REGULAR));
-        sort($actual);
-        sort($expected);
-        self::assertSame($expected, $actual);
+        $slice = \App\Analyzer\ExperimentAnalyzer\DataFlow\Slice::of($graph, $graph->select($line, $variable), \App\Analyzer\Graph\Direction::Uses, null);
+        self::assertFalse($slice->analysis->complete);
+        self::assertNotEmpty($slice->analysis->issues);
+        $lines = array_map(static fn (\App\Analyzer\ExperimentAnalyzer\Structure\Site $site): int => $site->source->line, $slice->structure);
+        self::assertSame([], array_values(array_diff(array_column($expected, 0), $lines)));
     }
 
     /**
@@ -96,24 +93,32 @@ final class ExperimentalSelfAnalysisTest extends TestCase
                 $text = file_get_contents($source->path);
                 assert(is_string($text));
 
-                try {
-                    $graph = $inspection->analyze($callable, new DependencyGraph($name, $source->path, $text));
-                    ++$audit['accepted'];
-                    foreach ($graph->edges as $edge) {
-                        if (!isset($graph->nodes[$edge->from], $graph->nodes[$edge->to])) {
-                            $audit['errors'][] = $name.': dangling dependency';
-                        } elseif ($edge->kind === 'reaching-definition' && $graph->nodes[$edge->from]->variable !== $graph->nodes[$edge->to]->variable) {
-                            $audit['errors'][] = $name.': definition belongs to a different variable';
-                        } elseif ($edge->from === $edge->to) {
-                            $audit['errors'][] = $name.': self dependency';
-                        }
+                $graph = $inspection->analyze($callable, new DependencyGraph($name, $source->path, $text));
+                ++$audit['accepted'];
+                foreach ($graph->edges as $edge) {
+                    if (!isset($graph->nodes[$edge->from], $graph->nodes[$edge->to])) {
+                        $audit['errors'][] = $name.': dangling dependency';
+                    } elseif ($edge->kind === 'reaching-definition' && $graph->nodes[$edge->from]->variable !== $graph->nodes[$edge->to]->variable) {
+                        $audit['errors'][] = $name.': definition belongs to a different variable';
+                    } elseif ($edge->from === $edge->to) {
+                        $audit['errors'][] = $name.': self dependency';
                     }
-                } catch (InspectionException $error) {
-                    $audit['rejected'][] = $name.': '.$error->getMessage();
                 }
             }
         }
 
         yield 'every callable under src' => [$audit];
+    }
+
+    public function testProjectAttributeSearchDoesNotCertifyAnUnconditionalFalseReturn(): void
+    {
+        $path = dirname(__DIR__, 2).'/src/Analyzer/Graph/Declaration/SymbolDeclaration.php';
+        $graph = (new ExperimentAnalyzer())->inspect($path, 'App\Analyzer\Graph\Declaration\SymbolDeclaration::hasAttribute');
+        $backward = \App\Analyzer\ExperimentAnalyzer\DataFlow\Slice::of($graph, $graph->select(84, null), \App\Analyzer\Graph\Direction::Uses, null);
+        $forward = \App\Analyzer\ExperimentAnalyzer\DataFlow\Slice::of($graph, $graph->select(75, 'name'), \App\Analyzer\Graph\Direction::UsedBy, null);
+        self::assertFalse($backward->analysis->complete);
+        self::assertContains('UNSUPPORTED_STATEMENT', array_column($backward->analysis->issues, 'code'));
+        self::assertContains(78, array_column($backward->nodes, 'line'));
+        self::assertContains(84, array_column($forward->nodes, 'line'));
     }
 }

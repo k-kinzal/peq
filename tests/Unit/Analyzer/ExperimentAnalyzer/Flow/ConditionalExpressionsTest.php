@@ -43,7 +43,7 @@ final class ConditionalExpressionsTest extends TestCase
         self::assertSame([], array_values(array_filter($graph->edges, static fn (Dependency $edge): bool => $edge->from === $edge->to)));
     }
 
-    public function testMatchRetainsTheSubjectForMultiConditionArms(): void
+    public function testReadPreservesUnsolvedMatchArms(): void
     {
         $source = <<<'SOURCE'
             <?php function f($flag) { return match ($flag) { 1, 2 => 10, default => 20 }; }
@@ -52,13 +52,11 @@ final class ConditionalExpressionsTest extends TestCase
         self::assertNotNull($parsed);
         self::assertInstanceOf(Function_::class, $parsed[0]);
         $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
-        $value = array_values(array_filter($graph->nodes, static fn (Occurrence $node): bool => $node->text === '10'))[0];
-        $controls = array_values(array_filter($graph->edges, static fn (Dependency $edge): bool => $edge->from === $value->id && $edge->kind === 'control'));
-        self::assertNotEmpty($controls);
-        self::assertSame('$flag', $graph->nodes[$controls[0]->to]->variable);
+        self::assertSame(['UNSUPPORTED_EXPRESSION'], array_column($graph->issues, 'code'));
+        self::assertNotEmpty(array_filter($graph->nodes, static fn (Occurrence $node): bool => $node->text === '10'));
     }
 
-    public function testTernaryKeepsOnlyTheNormalArmAfterThrow(): void
+    public function testTernaryKeepsKnownAndUnknownArms(): void
     {
         $source = <<<'SOURCE'
             <?php function f($flag) { $a = 0; $b = $flag ? throw new Exception() : ($a = 2); return $a; }
@@ -69,8 +67,8 @@ final class ConditionalExpressionsTest extends TestCase
         $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
         $reads = array_values(array_filter($graph->nodes, static fn (Occurrence $node): bool => $node->kind === 'read' && $node->variable === '$a'));
         $edges = array_values(array_filter($graph->edges, static fn (Dependency $edge): bool => $edge->from === $reads[0]->id && $edge->kind === 'reaching-definition'));
-        self::assertCount(1, $edges);
-        self::assertSame(73, $graph->nodes[$edges[0]->to]->column);
+        self::assertCount(3, $edges);
+        self::assertSame(['UNSUPPORTED_EXPRESSION'], array_column($graph->issues, 'code'));
     }
 
     public function testBinarySkipsTheRightOperandOfTrueOr(): void
@@ -83,5 +81,17 @@ final class ConditionalExpressionsTest extends TestCase
         self::assertInstanceOf(Function_::class, $parsed[0]);
         $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
         self::assertSame([], array_values(array_filter($graph->nodes, static fn (Occurrence $node): bool => $node->kind === 'write')));
+    }
+
+    public function testBinaryDoesNotEvaluateAFallbackForFalse(): void
+    {
+        $source = "<?php function f() {\n\$i = 0;\nfalse ?? (\$i = 1);\nreturn \$i;\n}";
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
+        self::assertNotNull($parsed);
+        self::assertInstanceOf(Function_::class, $parsed[0]);
+        $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
+        $slice = \App\Analyzer\ExperimentAnalyzer\DataFlow\Slice::of($graph, $graph->select(4, 'i'), \App\Analyzer\Graph\Direction::Uses, null);
+        self::assertTrue($slice->analysis->complete);
+        self::assertSame([2], array_values(array_unique(array_map(static fn (Occurrence $node): int => $node->line, array_filter($slice->nodes, static fn (Occurrence $node): bool => $node->kind === 'write')))));
     }
 }

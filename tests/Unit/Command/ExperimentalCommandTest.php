@@ -6,6 +6,7 @@ namespace Tests\Unit\Command;
 
 use App\Action\Experimental\InspectVariablesAction;
 use App\Command\ExperimentalCommand;
+use JsonException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -24,7 +25,6 @@ use Symfony\Component\Console\Tester\CommandTester;
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\Inspection::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\Occurrence::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\Slice::class)]
-#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\SupportedSyntax::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\ExperimentAnalyzer::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\Assignments::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\Branches::class)]
@@ -34,7 +34,6 @@ use Symfony\Component\Console\Tester\CommandTester;
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\State::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\Statements::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\Truth::class)]
-#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Invocation\CallEffects::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\ParsedSource::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\SourceIndex::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\PhpFileCollector::class)]
@@ -52,6 +51,8 @@ use Symfony\Component\Console\Tester\CommandTester;
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Config\RawConfig::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Config\YamlConfigLoader::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Reporter\Experimental\VariableReporter::class)]
+#[\PHPUnit\Framework\Attributes\UsesNamespace('App\Analyzer\ExperimentAnalyzer')]
+#[\PHPUnit\Framework\Attributes\UsesNamespace('App\Action\Experimental')]
 final class ExperimentalCommandTest extends TestCase
 {
     public function testExecuteWritesAParseableExperimentalGraph(): void
@@ -98,5 +99,57 @@ final class ExperimentalCommandTest extends TestCase
         self::assertSame(0, $status);
         self::assertStringContainsString('"direction": "used-by"', $tester->getDisplay());
         self::assertStringContainsString('"line": 18', $tester->getDisplay());
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('providerDeclinedIssue')]
+    public function testIssueNeverSendsWithoutExplicitYes(string $answer, bool $interactive): void
+    {
+        \org\bovigo\vfs\vfsStream::setup('report', null, ['result.json' => '{"experimental":true,"schemaVersion":2,"target":"f","analysis":{"status":"resolved","complete":true}}']);
+        $sender = $this->createMock(\App\Action\Experimental\IssueSender::class);
+        $sender->expects(self::never())->method('send');
+        $tester = new CommandTester(new ExperimentalCommand(new InspectVariablesAction(), issues: new \App\Action\Experimental\IssueAction($sender)));
+        $tester->setInputs([$answer]);
+        self::assertSame(0, $tester->execute(['operation' => 'issue', 'target' => 'vfs://report/result.json'], ['interactive' => $interactive]));
+        self::assertStringContainsString('Nothing was sent.', $tester->getDisplay());
+        self::assertStringContainsString('Experimental analysis: f', $tester->getDisplay());
+    }
+
+    /**
+     * @return iterable<string, array{string, bool}>
+     */
+    public static function providerDeclinedIssue(): iterable
+    {
+        yield 'default No' => ['', true];
+
+        yield 'explicit No' => ['no', true];
+
+        yield 'not a Yes word' => ['yeti', true];
+
+        yield 'noninteractive cannot consent' => ['yes', false];
+    }
+
+    /**
+     * @throws JsonException
+     */
+    public function testIssueSendsExactlyThePreviewAfterYes(): void
+    {
+        \org\bovigo\vfs\vfsStream::setup('report', null, ['result.json' => '{"experimental":true,"schemaVersion":2,"target":"f","analysis":{"status":"resolved","complete":true}}']);
+        $sender = $this->createMock(\App\Action\Experimental\IssueSender::class);
+        $action = new \App\Action\Experimental\IssueAction($sender);
+        $draft = $action->prepare('vfs://report/result.json');
+        $sender->expects(self::once())->method('send')->with(self::equalTo($draft))->willReturn('https://example.test/issue');
+        $tester = new CommandTester(new ExperimentalCommand(new InspectVariablesAction(), issues: $action));
+        $tester->setInputs(['yes']);
+        self::assertSame(0, $tester->execute(['operation' => 'issue', 'target' => 'vfs://report/result.json'], ['interactive' => true]));
+        self::assertStringContainsString($draft->body, $tester->getDisplay());
+        self::assertStringContainsString('https://example.test/issue', $tester->getDisplay());
+    }
+
+    public function testExecuteStrictReportsUnknownAsExitTwoAndStillWritesJson(): void
+    {
+        $tester = new CommandTester(new ExperimentalCommand(new InspectVariablesAction()));
+        self::assertSame(2, $tester->execute(['operation' => 'inspect', 'target' => 'Tests\Fixture\Experimental\Flow::invalid', 'path' => dirname(__DIR__, 2).'/Fixture/Experimental', '--line' => '23', '--output' => 'json', '--strict' => true, '--config' => __DIR__.'/absent.yaml']));
+        self::assertJson($tester->getDisplay());
+        self::assertStringContainsString('"complete": false', $tester->getDisplay());
     }
 }

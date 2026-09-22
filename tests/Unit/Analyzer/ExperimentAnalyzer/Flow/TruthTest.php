@@ -19,4 +19,12 @@ final class TruthTest extends TestCase
         self::assertTrue(\App\Analyzer\ExperimentAnalyzer\Flow\Truth::of(new \PhpParser\Node\Scalar\String_('false')));
         self::assertNull(\App\Analyzer\ExperimentAnalyzer\Flow\Truth::of(new \PhpParser\Node\Expr\Variable('flag')));
     }
+
+    public function testIsNullDoesNotConfuseFalsyLiteralsWithNull(): void
+    {
+        self::assertFalse(\App\Analyzer\ExperimentAnalyzer\Flow\Truth::isNull(new \PhpParser\Node\Expr\ConstFetch(new \PhpParser\Node\Name('false'))));
+        self::assertFalse(\App\Analyzer\ExperimentAnalyzer\Flow\Truth::isNull(new \PhpParser\Node\Scalar\Int_(0)));
+        self::assertTrue(\App\Analyzer\ExperimentAnalyzer\Flow\Truth::isNull(new \PhpParser\Node\Expr\ConstFetch(new \PhpParser\Node\Name('null'))));
+        self::assertNull(\App\Analyzer\ExperimentAnalyzer\Flow\Truth::isNull(new \PhpParser\Node\Expr\Variable('x')));
+    }
 }

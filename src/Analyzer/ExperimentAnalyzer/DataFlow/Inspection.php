@@ -8,7 +8,6 @@ use App\Analyzer\ExperimentAnalyzer\Flow\Expressions;
 use App\Analyzer\ExperimentAnalyzer\Flow\Recording;
 use App\Analyzer\ExperimentAnalyzer\Flow\State;
 use App\Analyzer\ExperimentAnalyzer\Flow\Statements;
-use App\Analyzer\ExperimentAnalyzer\Invocation\CallEffects;
 use App\Analyzer\ExperimentAnalyzer\SourceIndex;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Variable;
@@ -29,21 +28,6 @@ final class Inspection
      */
     public function inspect(SourceIndex $index, string $target): DependencyGraph
     {
-        $signatures = [];
-        foreach ($index->sources() as $source) {
-            foreach ($this->callables($source->statements) as $name => $callable) {
-                foreach ($callable->params as $position => $parameter) {
-                    $signatures[strtolower($name)][$position] = $parameter->byRef;
-                    if ($parameter->variadic) {
-                        $signatures[strtolower($name)]['...'] = $parameter->byRef;
-                    }
-                    if ($parameter->var instanceof Variable && is_string($parameter->var->name)) {
-                        $signatures[strtolower($name)][$parameter->var->name] = $parameter->byRef;
-                    }
-                }
-                $signatures[strtolower($name)] ??= [];
-            }
-        }
         $found = null;
         foreach ($index->sources() as $source) {
             foreach ($this->callables($source->statements) as $name => $callable) {
@@ -53,7 +37,7 @@ final class Inspection
                     }
                     $text = file_get_contents($source->path);
                     if ($text !== false) {
-                        $found = $this->analyze($callable, new DependencyGraph($name, $source->path, $text), new CallEffects($signatures, explode('::', $name)[0]));
+                        $found = $this->analyze($callable, new DependencyGraph($name, $source->path, $text));
                     }
                 }
             }
@@ -89,21 +73,22 @@ final class Inspection
     }
 
     /**
-     * Builds the local dependency graph of one callable.
-     *
-     * @throws InspectionException If the requested analysis or encoding is rejected
+     * Builds the local dependency graph of one callable, retaining unsolved regions.
      */
-    public function analyze(ClassMethod|Function_ $callable, DependencyGraph $graph, CallEffects $calls = new CallEffects()): DependencyGraph
+    public function analyze(ClassMethod|Function_ $callable, DependencyGraph $graph): DependencyGraph
     {
         $body = $callable->stmts ?? [];
-        (new SupportedSyntax())->check($body);
+        $graph->inventory = new \App\Analyzer\ExperimentAnalyzer\Structure\Inventory();
+        $graph->inventory->read($callable, $graph);
+        $graph->provenance = ['engine' => 'ExperimentAnalyzer', 'engineVersion' => 'structure-first/1', 'parserVersion' => \Composer\InstalledVersions::getPrettyVersion('nikic/php-parser'), 'rules' => 'checked-rules/v1', 'schemaVersion' => 2, 'runtimePhp' => PHP_VERSION, 'sourceSha256' => $graph->fingerprint()];
         $recording = new Recording($graph);
         $state = new State();
         foreach ((new NodeFinder())->findInstanceOf($body, Variable::class) as $variable) {
             if (is_string($variable->name)) {
                 $name = '$'.$variable->name;
                 if (!isset($state->definitions[$name])) {
-                    $id = $graph->record($variable, $name === '$this' ? 'receiver' : 'unbound', $name);
+                    $receiver = $name === '$this' && $callable instanceof ClassMethod && !$callable->isStatic();
+                    $id = $graph->record($variable, $receiver ? 'receiver' : 'unbound', $name);
                     $state->definitions[$name] = [$id => true];
                 }
             }
@@ -113,7 +98,13 @@ final class Inspection
                 $recording->write($parameter->var, [], $state, 'parameter');
             }
         }
-        (new Statements(new Expressions($recording, $calls)))->read($body, $state);
+        $unstructured = (new NodeFinder())->findFirst($body, static fn (Node $node): bool => $node instanceof Node\Stmt\Goto_ || $node instanceof Node\Stmt\Label);
+        $aliases = array_filter($callable->params, static fn (Node\Param $parameter): bool => $parameter->byRef);
+        if ($unstructured !== null || $aliases !== []) {
+            (new \App\Analyzer\ExperimentAnalyzer\Resolution\Boundary($graph))->read($callable, $state, 'NONLOCAL_FLOW', 'Jump targets or aliased parameters require a whole-callable model.');
+        } else {
+            (new Statements(new Expressions($recording)))->read($body, $state);
+        }
 
         return $graph;
     }

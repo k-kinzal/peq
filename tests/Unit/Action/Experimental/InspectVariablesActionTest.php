@@ -24,7 +24,6 @@ use PHPUnit\Framework\TestCase;
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\Inspection::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\Occurrence::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\Slice::class)]
-#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\DataFlow\SupportedSyntax::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\ExperimentAnalyzer::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\Assignments::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\Branches::class)]
@@ -34,13 +33,14 @@ use PHPUnit\Framework\TestCase;
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\State::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\Statements::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Flow\Truth::class)]
-#[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\Invocation\CallEffects::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\ParsedSource::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\ExperimentAnalyzer\SourceIndex::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\PhpFileCollector::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Analyzer\SourceParser::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(Config::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Config\DebugAnalyzerConfig::class)]
+#[\PHPUnit\Framework\Attributes\UsesNamespace('App\Analyzer\ExperimentAnalyzer')]
+#[\PHPUnit\Framework\Attributes\UsesNamespace('App\Action\Experimental')]
 final class InspectVariablesActionTest extends TestCase
 {
     public function testExecuteSelectsARealVariableOccurrence(): void
@@ -53,12 +53,12 @@ final class InspectVariablesActionTest extends TestCase
         self::assertNotEmpty($slice->edges);
     }
 
-    public function testExecuteTranslatesAnUnsupportedTargetIntoAUserError(): void
+    public function testExecuteRetainsUnsolvedSharedStorage(): void
     {
         $config = new Config(dirname(__DIR__, 3).'/Fixture/Experimental', Direction::Uses);
-        $this->expectException(\App\Action\Experimental\InspectionRejected::class);
-        $this->expectExceptionMessage('shared variable storage');
-        (new InspectVariablesAction())->execute(new InspectVariablesInput($config, 'Tests\Fixture\Experimental\Flow::invalid', 23));
+        $slice = (new InspectVariablesAction())->execute(new InspectVariablesInput($config, 'Tests\Fixture\Experimental\Flow::invalid', 23));
+        self::assertFalse($slice->analysis->complete);
+        self::assertSame(['UNSUPPORTED_STATEMENT'], array_column($slice->analysis->issues, 'code'));
     }
 
     public function testExecuteDoesNotMakeALaterOverwriteInfluenceAnEarlierCopy(): void

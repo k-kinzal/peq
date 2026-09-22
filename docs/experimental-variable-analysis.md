@@ -1,113 +1,143 @@
-# Experimental variable dependencies
+# Experimental source and dependency inspection
 
-`peq experimental inspect` answers two questions inside one written method or function:
-which source occurrences can determine a variable here, and which later occurrences can
-be affected by this occurrence. It is an explicit opt-in experiment. Its output schema
-and analysis behavior may change independently of the production symbol graph.
+`peq experimental inspect` preserves a callable's syntax first, then solves explicitly
+admitted local dependency rules. It is isolated in `ExperimentAnalyzer`, a copy of the
+native symbol pipeline. Production analyzers and their graph are unchanged.
 
 ```bash
-# Where does $matched on the return line come from?
-peq experimental inspect 'App\Gql\Lexing\SourceCursor::capture' src \
-  --line 111 --variable matched --output=json
-
-# Which occurrences can a change on this line affect?
-peq experimental inspect 'App\Config\ConfigLoader::load' src \
-  --line 41 --direction=used-by --output=mermaid
+peq experimental inspect 'Example::render' src --line 42 --variable view --output=json
+peq experimental inspect 'Example::render' src --line 20 --reverse --output=tree
+peq experimental inspect 'Example::render' src --line 42 --strict --output=json > result.json
+peq experimental issue result.json --description 'Expected …; observed …'
 ```
 
-`--line` is a required absolute source-file line, starting at one. `--variable` accepts
-`name` or `'$name'`; omitting it selects all recorded occurrences starting on that line.
-If a variable occurs more than once, all its occurrences are selected. `--column` narrows
-that selection to a 1-based byte column. A compound assignment reads and writes at the
-same position, so it selects both roles. A line with no occurrence, an unknown callable,
-or unsupported execution semantics produces an error and a nonzero exit status.
+`--line` is a 1-based absolute source line; `--column` is a 1-based byte column.
+`--variable` accepts a name with or without `$`. Without it, all occurrences starting
+on that line are selected. Reads and writes have separate identities. Select a declared
+function or method, including the declaring trait for a trait method. Anonymous
+callables, inherited method lookup and interprocedural expansion are not supported.
 
-The target is a fully qualified declared method or function. Select the trait's own
-method when inspecting a trait body. Inherited methods, anonymous callables as targets,
-and callers/callees outside this scope are not resolved by this command.
+All six output formats receive the same slice. `--level` limits dependency edges;
+`--reverse` means `--direction=used-by`. Configuration, include/exclude filters, memory
+limits and `--php-version` follow standard inspection. There is no `--type` option.
 
-All six formats are available: `tree`, `json`, `table`, `dot`, `graph`, and `mermaid`.
-They receive the same graph slice, including the same cycles and dependency kinds.
-`--level` bounds the number of edges from the selected occurrences. `--reverse` is an
-alias for `--direction=used-by`. Configuration, file filters, memory limits and
-`--php-version` work as in standard inspection. The experimental command always uses
-`ExperimentAnalyzer`, a copy of the native source pipeline; it does not accept `--type`.
-The copied symbol pipeline is checked against native on this project's complete `src`.
+Exit statuses: **0** means an answer was written, **1** means invalid input or failure,
+**2** means `--strict` detected incomplete or truncated analysis. Always inspect
+`analysis.complete` when consuming JSON without `--strict`.
 
-## Reading an answer
+## Separate syntax facts from inferred dependencies
 
-A node identifies a **source span and role**, not just a variable name. Parameters,
-reads, writes, unset values, expression values and returns are separate occurrences.
-The source file, start line, byte column, end line and source text accompany every JSON
-node. IDs are opaque; consumers should read these fields instead of parsing an ID.
+Schema version 2 has two independent parts:
 
-For example, in `$a = $input; $copy = $a; $a = 9; return $copy;`, the return depends on
-the first assignment to `$a`. The later overwrite has no edge to `$copy`.
+* `structure` contains the **entire callable AST**, including unused branches, nested
+  callable bodies and unsupported constructs. A site has syntax kind, written target
+  where statically named, source span/text, parent ID and named child role. An if node
+  retains `cond`, `stmts`, `elseifs` and `else`; switch, match and loops retain their own
+  named children. A structure edge is lexical containment, **not a proven predicate**.
+* `nodes` and `edges` contain the selected inference slice. Unknown regions remain
+  explicit nodes connected to available evidence. Source text inside those regions can
+  still be selected. Selecting a retained but unvisited occurrence yields `NOT_ANALYZED`.
 
-| Edge | Meaning in `uses` direction |
-|------|-----------------------------|
-| `reaching-definition` | A variable read can receive the value of this definition. |
-| `data` | This local value is computed using this expression or source occurrence. |
-| `control` | Execution or selection depends on this predicate; `branch` states its outcome. |
-| `call-input` | An argument or receiver is supplied to an opaque call. This does not prove its return value depends on that input. |
-| `boundary-input` | An address or receiver is used by an opaque property access. This does not describe the stored property value. |
+For `if ($foo) { $foo = new Foo; } else { $foo = new Bar; }`, both written class uses
+remain in `structure`. The invocation boundaries have truthy/falsy control edges to
+**the earlier read of `$foo`**, whose definition is the input, not either assignment.
+Constructor return/effects remain unknown. Looking up a written class name does not
+prove that constructing it will succeed.
 
-`used-by` reverses the arrows while preserving their kind and branch. Multiple reaching
-definitions are alternatives, not a claim that every definition executes. The analysis
-joins possible paths and does not solve constraints or correlate separate predicates.
-Only syntactically constant truth conditions are pruned.
+A nested early return preserves the surviving alternatives. For example,
+`if ($a) { if ($b) { return 0; } } return 1;` retains the condition
+`($a && !$b) || !$a` using `any-path` and `all-conditions-*` nodes. A complete pair of
+complementary branches simplifies away; a condition is not attached to an unconditional
+continuation merely because it appeared earlier.
 
-Assignments kill earlier whole-variable definitions. Branches, early return/throw,
-short-circuit operators, ternaries, match, switch fallthrough, break/continue depths,
-and `for`/`foreach`/`while`/`do` loops preserve their local control flow. Loops converge to
-a reaching-definition fixed point, rather than being unrolled a chosen number of times.
-Array elements are tracked as one aggregate; element dependencies are possible and are
-reported with a diagnostic. Unset and potentially unbound reads remain visible.
+## What is solved
 
-## Boundaries
+Checked rules cover named local reads/writes, scalar literals, side-effect-free
+operators, if/elseif/else, return, echo, local increments/compound assignments,
+short-circuit boolean operations, coalescing and ternaries. Whole-variable assignment
+replaces previous definitions; a saved copy retains its original definition.
+Unrecognized syntax does **not** fall through to eager child evaluation.
 
-Calls, heap accesses and nested callable bodies are explicit boundaries, reported in
-`diagnostics` in JSON and as text/comments in the other formats. Boundary inputs explain
-what was supplied, not the callee's implementation or a proven returned value. Receiver
-type inference, heap alias analysis, interprocedural return flow, exceptions raised by
-calls, and feasibility of paths are outside this experiment.
+These rules describe **local source origins under normal PHP expression completion**.
+They do not evaluate runtime values, prove absence of runtime errors, model implicit
+exceptions from operators, or guarantee that a syntactically possible path executes.
+Conditions sharing variable origins report `PATH_CORRELATION`: combined path feasibility
+requires additional reasoning. A resolved dependency result is not a proof that removing
+a class, branch or variable is safe.
 
-Known reference parameters create `call-write` definitions. Signatures come from the
-analyzed declarations for named functions, explicit static calls, constructors and
-`$this` calls, or from installed PHP builtins. Signatures of unresolved calls and effects
-of argument unpacking are not inferred. Builtin output-only parameters of `preg_match`,
-`preg_match_all`, `parse_str`, and `mb_parse_str` do not read a plain output variable's
-previous value. Other known reference parameters are treated as opaque input/output
-boundaries. Builtin signatures reflect the runtime used to run peq.
+Loops, switch, match, calls, heap/array access, indirect writes, references, shared
+storage, closures, generators, exception handling and dynamic execution are retained as
+**Unknown**. The previous optimistic transfers for these constructs were removed.
+In particular, `isset($a, $b[$i = 1])`, `assert(++$i)`, `get_defined_vars()` and
+`func_get_args()` cannot silently produce a complete result. A first-class callable is
+identified as creation, not executed as its named function. Literal `compact()` names
+remain selectable as `possible-implicit-read` evidence; builtin binding and effects are
+still unknown, including when a user function shadows that name.
 
-`compact('name')` also reads the named local variable. Literal names and nested unkeyed
-literal lists are supported; runtime names, keyed lists and unpacking are rejected.
-These reads have kind `implicit-read`, with the string literal's source span, and can
-be selected with `--variable name`. Their reaching definitions include possibly unbound
-or unset values, which PHP can omit from the resulting array. The call remains an
-explicit boundary; the analyzer does not evaluate the returned array.
+An unknown transfer retains prior definitions and source sites as possible inputs, adds
+possible unknown writes, and marks its continuation unknown. This intentionally
+overshoots effects rather than certifying an incomplete dependency list. Goto/labels
+and by-reference parameters require a whole-callable unknown region because their
+influence cannot safely be isolated at their textual position.
 
-Closure captures are read at closure creation; their bodies do not execute in the outer
-scope. Lexical parameters in nested arrows do not become outer variable dependencies.
-Explicit reference aliases/captures, reference iteration, shared global/static storage,
-dynamic variable names, eval/include, generators, goto, nullsafe access, try/catch/finally,
-and calls that inject local variables are rejected instead of producing a misleading
-partial graph. These restrictions apply to the selected callable, not unrelated methods.
+| Edge in `uses` direction | Meaning |
+|---|---|
+| `reaching-definition` | A read receives a known or explicitly unknown definition. |
+| `data` | A checked expression uses this local input. |
+| `control` | A modeled predicate outcome guards this occurrence. `unknown-continuation` is unresolved. |
+| `alternative` | One of the represented continuing paths. |
+| `possible-input` | Evidence retained across an unknown transfer; not a proved dependency. |
+| `unresolved-region` | A source occurrence belongs to an unsolved region. |
+| `unknown-effect` | A possible write by that region. |
+
+`used-by` reverses these edges and keeps their meanings. It is not a different solver.
+
+## Completeness and diagnostics
+
+`analysis` contains `status`, `complete`, per-selected-node states, structured `issues`
+and a depth-limit `frontier`. States distinguish:
+
+* `resolved`: the admitted local-origin rules closed the selected dependencies;
+* `input`: origins are known runtime inputs; their values are deliberately unknown;
+* `partial`: known evidence coexists with unresolved dependencies;
+* `unknown`: a directly unresolved boundary;
+* `not-analyzed`: no analysis is available;
+* `truncated`: the requested traversal depth leaves edges unexplored.
+
+The top-level completeness check is deliberately **callable-wide**, plus the selected
+walk's depth limit. An issue elsewhere in the callable prevents a complete claim even
+if an individual selected node is resolved. This conservative contract also protects
+reverse queries whose omitted dependency could otherwise make an empty answer look
+conclusive. `structure` is never truncated by `--level`.
+
+Each issue includes a stable code, node ID, rule version, reason, source location/text
+and affected analysis dimensions. Text warnings are generated from these same records.
+`provenance` includes engine/rule/schema versions, runtime and target PHP, source SHA-256
+and effective selection/filter options. Source IDs are opaque and are not stable across
+edits; use the explicit location fields.
+
+## Reporting an unsupported or incorrect result
+
+`peq experimental issue result.json` prepares an issue for `k-kinzal/peq` **locally**.
+It accepts both incomplete results and apparently resolved but incorrect results.
+`--description` supplies expected/observed behavior. By default the report includes
+metadata and diagnostic positions, but excludes source snippets and the graph. Paths,
+symbol names and diagnostic identifiers may still reveal project information.
+
+`--include-source` includes the saved result, including source snippets. The command
+never reads additional files named by the artifact. It previews the exact repository,
+title and body, then asks **`Send this issue? [y/N]`**. Only an interactive `y` or `yes`
+sends, using the user's authenticated `gh` CLI. Empty input, No and noninteractive
+execution send nothing. There is no auto-confirm option. Tests use mocks and an offline
+subprocess, never a real GitHub issue.
+
+Artifacts above 2 MB or issue bodies above 60 KB are rejected locally with an explanation;
+no data is silently dropped to meet a publishing limit.
 
 ## Validation
 
-`tests/Unit/Analyzer/ExperimentAnalyzer` includes the copied native tests and a corpus of
-literal expected reaching definitions. Regression cases cover overwrites, missing branch
-assignments, abrupt exits, loop-carried definitions, switch fallthrough, closures,
-reference outputs, nested expression spans and read/write occurrence selection.
-
-`tests/Integration/ExperimentalSelfAnalysisTest.php` checks the complete project for
-dangling edges, definitions belonging to another variable, and direct self dependencies.
-It also keeps manually audited expectations for `ConfigLoader::load`,
-`SourceCursor::capture`, `PhpVersion::parse`, and `RowPlacement::fit`. These checks are
-regressions for the stated local semantics, not a claim of complete PHP data-flow analysis.
-
-The [WordPress 7.1.1 validation](wordpress-variable-validation.md) records a separate
-external corpus audit, manually checked source-to-graph expectations in both directions,
-and a `compact()` dependency omission found and fixed by that exercise. Its pinned
-download and external tests can be rerun without adding WordPress to this repository.
+Unit regressions cover checked origins, nested surviving guards, unknown propagation in
+both directions, source preservation, depth limits and reporting consent. The project
+and pinned [WordPress corpus](wordpress-variable-validation.md) are checked separately.
+Structural consistency is not a semantic correctness proof: previously accepted examples
+with unmodeled constructs now explicitly remain incomplete.

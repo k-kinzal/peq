@@ -23,6 +23,7 @@ final readonly class ConditionalExpressions
     {
         $test = $node instanceof Expr\Ternary ? $node->cond : $node->left;
         $condition = $this->expressions->read($test, $state);
+        (new \App\Analyzer\ExperimentAnalyzer\Resolution\Conditions())->observe($condition, $this->expressions->recording->graph);
         $truth = Truth::of($test);
         $yes = clone $state;
         $no = clone $state;
@@ -32,7 +33,7 @@ final readonly class ConditionalExpressions
         $inputs = $node instanceof Expr\Ternary
             ? $this->ternary($node, $state, $yes, $no, $truth, $inputs)
             : $this->binary($node, $state, $yes, $no, $truth, $condition, $inputs);
-        $state->continueWith([$yes, $no]);
+        (new \App\Analyzer\ExperimentAnalyzer\Resolution\Guards())->continueWith($node, $state, [$yes, $no], $this->expressions->recording->graph);
 
         return $this->expressions->recording->value($node, 'expression', $inputs, $state);
     }
@@ -72,7 +73,7 @@ final readonly class ConditionalExpressions
         if ($node instanceof Expr\BinaryOp\Coalesce) {
             $yes->controls[$condition] = 'null-or-unset';
             $no->controls[$condition] = 'non-null';
-            $truth = $test instanceof Expr\ConstFetch && strtolower($test->name->toString()) === 'null' ? true : null;
+            $truth = Truth::isNull($test);
         }
         $evaluated = $isOr ? $no : $yes;
         $skipped = $isOr ? $yes : $no;
@@ -105,57 +106,7 @@ final readonly class ConditionalExpressions
         }
         $skipped = clone $state;
         $skipped->controls[$condition] = 'non-null';
-        $state->continueWith([$skipped, $assigned]);
-
-        return $this->expressions->recording->value($node, 'expression', $inputs, $state);
-    }
-
-    /**
-     * Keeps arm bodies independent and joins only paths that return a value.
-     */
-    public function match(Expr\Match_ $node, State $state): string
-    {
-        $subject = $this->expressions->read($node->cond, $state);
-        $remaining = clone $state;
-        $states = [];
-        $inputs = [$subject];
-        $default = null;
-        foreach ($node->arms as $arm) {
-            if ($arm->conds === null) {
-                $default = $arm;
-
-                continue;
-            }
-            $matched = [];
-            foreach ($arm->conds as $condition) {
-                if (!$remaining->reachable) {
-                    break;
-                }
-                $values = $this->expressions->values($condition, $remaining);
-                if ($values === []) {
-                    break;
-                }
-                $test = $this->expressions->recording->value($condition, 'condition', [$subject, ...$values], $remaining);
-                $branch = clone $remaining;
-                $branch->controls[$test] = 'match';
-                $matched[] = $branch;
-                $remaining->controls[$test] = 'no-match';
-            }
-            if ($matched !== []) {
-                $branch = State::join($matched);
-                $branch->controls[$subject] = 'matched-arm';
-                $value = $this->expressions->read($arm->body, $branch);
-                if ($branch->reachable) {
-                    $inputs[] = $value;
-                }
-                $states[] = $branch;
-            }
-        }
-        if ($default !== null && $remaining->reachable) {
-            array_push($inputs, ...$this->expressions->values($default->body, $remaining));
-            $states[] = $remaining;
-        }
-        $state->continueWith($states);
+        (new \App\Analyzer\ExperimentAnalyzer\Resolution\Guards())->continueWith($node, $state, [$skipped, $assigned], $this->expressions->recording->graph);
 
         return $this->expressions->recording->value($node, 'expression', $inputs, $state);
     }

@@ -33,7 +33,7 @@ final class AssignmentsTest extends TestCase
         self::assertSame('write', $graph->nodes[$edges[0]->to]->kind);
     }
 
-    public function testWriteArrayElementsRetainsAggregateHistory(): void
+    public function testWriteArrayElementsRequiresAStorageModel(): void
     {
         $source = <<<'SOURCE'
             <?php function f($a, $key) { $a[$key] = 1; return $a; }
@@ -42,8 +42,8 @@ final class AssignmentsTest extends TestCase
         self::assertNotNull($parsed);
         self::assertInstanceOf(Function_::class, $parsed[0]);
         $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
-        self::assertCount(1, array_filter($graph->nodes, static fn (Occurrence $node): bool => $node->kind === 'aggregate-write'));
-        self::assertStringContainsString('elements are tracked together', implode('', $graph->diagnostics));
+        self::assertSame(['INDIRECT_WRITE'], array_column($graph->issues, 'code'));
+        self::assertNotEmpty(array_filter($graph->nodes, static fn (Occurrence $node): bool => $node->kind === 'unknown-write'));
     }
 
     public function testIncrementReturnsTheOldValueForPostfix(): void
@@ -62,7 +62,7 @@ final class AssignmentsTest extends TestCase
     }
 
     #[\PHPUnit\Framework\Attributes\DataProvider('providerEvaluatedAddresses')]
-    public function testWriteDoesNotEvaluateAnAddressTwice(string $body): void
+    public function testWriteKeepsAddressEvaluationUnknown(string $body): void
     {
         $source = '<?php function f($a, $i) { '.$body.' return $i; }';
         $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
@@ -73,7 +73,7 @@ final class AssignmentsTest extends TestCase
             static fn (Dependency $edge): array => [$graph->nodes[$edge->from]->text, $graph->nodes[$edge->to]->kind],
             array_filter($graph->edges, static fn (Dependency $edge): bool => $edge->kind === 'reaching-definition' && $graph->nodes[$edge->from]->variable === '$i'),
         ));
-        self::assertSame([['$i', 'parameter'], ['$i', 'write']], $inputs);
+        self::assertSame([['$i', 'parameter'], ['$i', 'unknown-write']], $inputs);
     }
 
     /**

@@ -30,8 +30,9 @@ final class VariableReporter
     {
         $text = match ($format) {
             OutputFormat::Json => json_encode([
-                'experimental' => true,
-                'semantics' => 'Possible intraprocedural dependencies; call-input and boundary-input edges describe inputs, not proven return or heap dependencies.',
+                'experimental' => true, 'schemaVersion' => 2,
+                'analysis' => $slice->analysis, 'structure' => $slice->structure, 'provenance' => $slice->provenance,
+                'semantics' => 'Local source-origin analysis under normal PHP expression completion. Runtime values and path feasibility are not proved. Structure is a complete lexical inventory, not execution order. possible-input and unresolved-region edges are evidence across Unknown, not proven dependencies. analysis.complete covers the callable and selected traversal; it does not prove runtime safety.',
                 'target' => $slice->target, 'file' => $slice->file, 'direction' => $slice->direction->value,
                 'roots' => $slice->roots, 'nodes' => $slice->nodes, 'edges' => $slice->edges, 'diagnostics' => $slice->diagnostics,
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR),
@@ -41,8 +42,9 @@ final class VariableReporter
             OutputFormat::Graph, OutputFormat::Mermaid => $this->diagram($slice, $format),
         };
         $output->writeln($text, OutputInterface::OUTPUT_RAW);
-        if ($format !== OutputFormat::Json && $slice->diagnostics !== []) {
+        if ($format !== OutputFormat::Json) {
             $prefix = $format === OutputFormat::Dot ? '// ' : ($format === OutputFormat::Mermaid ? '%% ' : '');
+            $output->writeln($prefix.'Analysis: '.$slice->analysis->status.'; complete: '.($slice->analysis->complete ? 'yes' : 'no'), OutputInterface::OUTPUT_RAW);
             foreach ($slice->diagnostics as $diagnostic) {
                 $output->writeln($prefix.$diagnostic, OutputInterface::OUTPUT_RAW);
             }

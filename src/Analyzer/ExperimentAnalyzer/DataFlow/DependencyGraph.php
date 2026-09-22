@@ -27,6 +27,31 @@ final class DependencyGraph
     public array $diagnostics = [];
 
     /**
+     * Complete syntax inventory, independent of transfer-rule coverage.
+     */
+    public ?\App\Analyzer\ExperimentAnalyzer\Structure\Inventory $inventory = null;
+
+    /**
+     * @var array<string, \App\Analyzer\ExperimentAnalyzer\Resolution\Issue>
+     */
+    public array $issues = [];
+
+    /**
+     * @var array<string, true>
+     */
+    public array $testedOrigins = [];
+
+    /**
+     * @var array<string, null|bool|int|list<string>|string>
+     */
+    public array $provenance = [];
+
+    /**
+     * @var array<string, array{int, string}>
+     */
+    private array $spans = [];
+
+    /**
      * Creates this value with its explicit analysis inputs.
      */
     public function __construct(
@@ -40,22 +65,45 @@ final class DependencyGraph
      */
     public function record(Node $node, string $kind, ?string $variable = null): string
     {
+        $location = $this->location($node, $kind, $variable);
+        $this->nodes[$location->id] ??= $location;
+
+        return $location->id;
+    }
+
+    /**
+     * Describes a source span independently of the solver graph.
+     */
+    public function location(Node $node, string $kind, ?string $variable = null): Occurrence
+    {
         $position = $node->getStartFilePos();
-        $prefix = substr($this->source, 0, $position);
-        $newline = strrpos($prefix, "\n");
-        $column = $position - ($newline === false ? -1 : $newline);
+        $span = $position.':'.$node->getEndFilePos();
+        if (!isset($this->spans[$span])) {
+            $prefix = substr($this->source, 0, $position);
+            $newline = strrpos($prefix, "\n");
+            $column = $position - ($newline === false ? -1 : $newline);
+            $this->spans[$span] = [$column, trim(substr($this->source, $position, $node->getEndFilePos() - $position + 1))];
+        }
+        [$column, $text] = $this->spans[$span];
         $id = ($variable ?? $kind).'@'.$node->getStartLine().':'.$column.':'.$kind.':'.$node->getEndFilePos();
-        $this->nodes[$id] ??= new Occurrence(
+
+        return new Occurrence(
             $id,
             $kind,
             $variable,
             $node->getStartLine(),
             $column,
             $node->getEndLine(),
-            trim(substr($this->source, $position, $node->getEndFilePos() - $position + 1)),
+            $text,
         );
+    }
 
-        return $id;
+    /**
+     * Fingerprints the exact source parsed, including in-memory test sources.
+     */
+    public function fingerprint(): string
+    {
+        return hash('sha256', $this->source);
     }
 
     /**
@@ -85,10 +133,20 @@ final class DependencyGraph
     {
         $roots = [];
         foreach ($this->nodes as $node) {
-            if ($node->kind !== 'unbound' && $node->kind !== 'receiver' && $node->line === $line && ($variable === null || $node->variable === '$'.ltrim($variable, '$'))
+            if (!in_array($node->kind, ['unbound', 'receiver', 'unknown-write'], true) && $node->line === $line && ($variable === null || $node->variable === '$'.ltrim($variable, '$'))
                 && ($column === null || $node->column === $column)
             ) {
                 $roots[] = $node->id;
+            }
+        }
+        if ($roots === [] && $this->inventory !== null) {
+            foreach ($this->inventory->sites as $site) {
+                $node = $site->source;
+                if ($node->line === $line && ($variable === null || $node->variable === '$'.ltrim($variable, '$')) && ($column === null || $node->column === $column)) {
+                    $this->nodes[$node->id] = $node;
+                    $this->issues[$node->id] = new \App\Analyzer\ExperimentAnalyzer\Resolution\Issue('NOT_ANALYZED', $node->id, 'inventory/v1', 'This source occurrence was retained but not evaluated (unreachable, deferred or unsupported region).', $node);
+                    $roots[] = $node->id;
+                }
             }
         }
         if ($roots === []) {

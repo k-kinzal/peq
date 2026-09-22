@@ -19,15 +19,15 @@ use PHPUnit\Framework\TestCase;
 #[Medium]
 final class ExperimentAnalyzerTest extends TestCase
 {
-    public function testInspectPreservesByReferenceWritesOfWrittenMethods(): void
+    public function testInspectKeepsReferenceEffectsExplicitlyUnknown(): void
     {
         $graph = (new ExperimentAnalyzer())->inspect(dirname(__DIR__, 3).'/Fixture/Experimental', 'Tests\Fixture\Experimental\Flow::referenced');
         $reads = array_values(array_filter($graph->nodes, static fn (\App\Analyzer\ExperimentAnalyzer\DataFlow\Occurrence $node): bool => $node->line === 31 && $node->kind === 'read'));
         self::assertCount(1, $reads);
         $definitions = array_values(array_filter($graph->edges, static fn (\App\Analyzer\ExperimentAnalyzer\DataFlow\Dependency $edge): bool => $edge->from === $reads[0]->id && $edge->kind === 'reaching-definition'));
-        self::assertCount(1, $definitions);
-        self::assertSame('call-write', $graph->nodes[$definitions[0]->to]->kind);
-        self::assertSame(29, $graph->nodes[$definitions[0]->to]->line);
+        self::assertCount(2, $definitions);
+        self::assertSame(['write', 'unknown-write'], array_map(static fn (\App\Analyzer\ExperimentAnalyzer\DataFlow\Dependency $edge): string => $graph->nodes[$edge->to]->kind, $definitions));
+        self::assertContains('OPAQUE_CALL', array_column($graph->issues, 'code'));
     }
 
     public function testAnalyzeReadsTheSymbolsDeclaredUnderThePath(): void

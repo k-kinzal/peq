@@ -34,6 +34,7 @@ final readonly class Branches
 
                 break;
             }
+            (new \App\Analyzer\ExperimentAnalyzer\Resolution\Conditions())->observe($condition, $this->statements->expressions->recording->graph);
             $truth = Truth::of($branch->cond);
             if ($truth !== false) {
                 $yes = clone $remaining;
@@ -56,7 +57,7 @@ final readonly class Branches
                 $normals[] = $result->normal;
             }
         }
-        $outcome->normal = $normals === [] ? null : State::join($normals);
+        $outcome->normal = $normals === [] ? null : (new \App\Analyzer\ExperimentAnalyzer\Resolution\Guards())->join($node, $normals, $this->statements->expressions->recording->graph);
 
         return $outcome;
     }

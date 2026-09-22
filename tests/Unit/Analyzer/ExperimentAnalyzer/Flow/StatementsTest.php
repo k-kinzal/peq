@@ -31,7 +31,7 @@ final class StatementsTest extends TestCase
         self::assertSame([], array_values(array_filter($graph->nodes, static fn (Occurrence $node): bool => $node->kind === 'write')));
     }
 
-    public function testStatementSeparatesNestedBreakDepths(): void
+    public function testStatementRetainsUnsolvedNestedLoops(): void
     {
         $source = <<<'SOURCE'
             <?php function f() { while (true) { while (true) { $a = 1; break 2; } $a = 2; } return $a; }
@@ -41,7 +41,8 @@ final class StatementsTest extends TestCase
         self::assertInstanceOf(Function_::class, $parsed[0]);
         $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
         $writes = array_values(array_filter($graph->nodes, static fn (Occurrence $node): bool => $node->kind === 'write'));
-        self::assertCount(1, $writes);
+        self::assertSame([], $writes);
+        self::assertContains('UNSUPPORTED_STATEMENT', array_column($graph->issues, 'code'));
     }
 
     public function testSimpleRecordsOutputInputs(): void

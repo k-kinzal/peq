@@ -64,47 +64,13 @@ final class InspectionTest extends TestCase
      */
     public static function providerPrograms(): iterable
     {
-        yield 'nested break exits both loops without visiting their tails' => [
-            '<?php function f() {
-$a = 0;
-while (true) {
-while (true) { $a = 1; break 2; }
-$a = 2;
-}
-return $a;
-}', [[7, '$a', 4, 'write']],
-        ];
 
-        yield 'switch continue exits the switch as break does' => [
-            '<?php function f($flag) {
-$a = 0;
-switch ($flag) { default: $a = 1; continue; }
-return $a;
-}', [[3, '$flag', 1, 'parameter'], [4, '$a', 3, 'write']],
-        ];
 
-        yield 'switch break two exits its enclosing loop' => [
-            '<?php function f($flag) {
-$a = 0;
-while (true) {
-switch ($flag) { default: $a = 1; break 2; }
-$a = 2;
-}
-return $a;
-}', [[4, '$flag', 1, 'parameter'], [7, '$a', 4, 'write']],
-        ];
 
-        yield 'fallthrough does not evaluate another case condition' => [
-            '<?php function f($flag) {
-$a = 0;
-switch ($flag) {
-case 1: $a = 1;
-case throw new Exception(): $a = 2; break;
-default: $a = 3;
-}
-return $a;
-}', [[3, '$flag', 1, 'parameter'], [8, '$a', 5, 'write']],
-        ];
+
+
+
+
 
         yield 'constant ternary prunes its unused value' => [
             '<?php function f($a) {
@@ -113,12 +79,7 @@ return $a;
 }', [[2, '$a', 1, 'parameter'], [3, '$a', 1, 'parameter']],
         ];
 
-        yield 'builtin reference output reaches its later use' => [
-            '<?php function f($text) {
-preg_match("/x/", $text, $matches);
-return $matches;
-}', [[2, '$text', 1, 'parameter'], [3, '$matches', 2, 'call-write']],
-        ];
+
 
         yield 'constant short circuit never executes the right hand side' => [
             '<?php function f() {
@@ -128,20 +89,9 @@ return $a;
 }', [[4, '$a', 2, 'write']],
         ];
 
-        yield 'a throw expression prevents the assignment and following statements' => [
-            '<?php function f() {
-$a = throw new Exception();
-return $a;
-}', [],
-        ];
 
-        yield 'ternary throw preserves only the normal arm' => [
-            '<?php function f($flag) {
-$a = 0;
-$result = $flag ? throw new Exception() : ($a = 2);
-return $a;
-}', [[3, '$flag', 1, 'parameter'], [4, '$a', 3, 'write']],
-        ];
+
+
 
         yield 'overwrite kills the old value' => [
             '<?php function f($input) {
@@ -190,67 +140,17 @@ return $a;
 }', [[4, '$a', 2, 'write']],
         ];
 
-        yield 'while carries values across iterations and allows zero iterations' => [
-            '<?php function f($flag) {
-$a = 0;
-while ($flag) {
-$b = $a;
-$a = 1;
-}
-return $a;
-}', [[3, '$flag', 1, 'parameter'], [4, '$a', 2, 'write'], [4, '$a', 5, 'write'], [7, '$a', 2, 'write'], [7, '$a', 5, 'write']],
-        ];
 
-        yield 'do executes at least once' => [
-            '<?php function f() {
-$a = 0;
-do { $a = 1; } while (false);
-return $a;
-}', [[4, '$a', 3, 'write']],
-        ];
 
-        yield 'break cannot reach a later assignment' => [
-            '<?php function f() {
-$a = 0;
-while (true) {
-$a = 1;
-break;
-$a = 2;
-}
-return $a;
-}', [[8, '$a', 4, 'write']],
-        ];
 
-        yield 'continue feeds the header and skips the remainder' => [
-            '<?php function f($flag) {
-$a = 0;
-while ($flag) {
-$a = 1;
-continue;
-$a = 2;
-}
-return $a;
-}', [[3, '$flag', 1, 'parameter'], [8, '$a', 2, 'write'], [8, '$a', 4, 'write']],
-        ];
 
-        yield 'foreach binds key and value but may be empty' => [
-            '<?php function f($items) {
-$value = 0;
-foreach ($items as $key => $value) {
-$copy = $value;
-}
-return $value;
-}', [[3, '$items', 1, 'parameter'], [4, '$value', 3, 'write'], [6, '$value', 2, 'write'], [6, '$value', 3, 'write']],
-        ];
 
-        yield 'for increment runs after continue' => [
-            '<?php function f($flag) {
-for ($i = 0; $flag; $i++) {
-continue;
-}
-return $i;
-}', [[2, '$flag', 1, 'parameter'], [2, '$i', 2, 'write'], [2, '$i', 2, 'write'], [5, '$i', 2, 'write'], [5, '$i', 2, 'write']],
-        ];
+
+
+
+
+
+
 
         yield 'short circuit write is not unconditional' => [
             '<?php function f($flag) {
@@ -282,58 +182,28 @@ return $a;
 }', [[2, '$a', 1, 'parameter'], [3, '$a', 2, 'write']],
         ];
 
-        yield 'unset cannot retain the old definition' => [
-            '<?php function f($a) {
-unset($a);
-return $a;
-}', [[3, '$a', 2, 'undefined']],
-        ];
 
-        yield 'switch fallthrough and break' => [
-            '<?php function f($flag) {
-$a = 0;
-switch ($flag) {
-case 1: $a = 1;
-case 2: $b = $a; break;
-default: $a = 3;
-}
-return $a;
-}', [[3, '$flag', 1, 'parameter'], [5, '$a', 2, 'write'], [5, '$a', 4, 'write'], [8, '$a', 2, 'write'], [8, '$a', 4, 'write'], [8, '$a', 6, 'write']],
-        ];
 
-        yield 'closure body does not mutate the outer scope' => [
-            '<?php function f($a) {
-$closure = function () use ($a) { $a = 100; return $a; };
-return $a;
-}', [[3, '$a', 1, 'parameter']],
-        ];
 
-        yield 'throw terminates the current branch' => [
-            '<?php function f($flag) {
-$a = 1;
-if ($flag) { $a = 2; throw new Exception(); }
-return $a;
-}', [[3, '$flag', 1, 'parameter'], [4, '$a', 2, 'write']],
-        ];
 
-        yield 'match arm writes are isolated' => [
-            '<?php function f($flag) {
-$a = 0;
-$result = match ($flag) { 1 => ($a = 1), default => $a };
-return $a;
-}', [[3, '$flag', 1, 'parameter'], [3, '$a', 2, 'write'], [4, '$a', 2, 'write'], [4, '$a', 3, 'write']],
-        ];
+
+
+
+
+
     }
 
     #[DataProvider('providerUnsupported')]
-    public function testAnalyzeRejectsUnsupportedFlowInsteadOfReturningPlausibleEdges(string $body): void
+    public function testAnalyzePreservesUnsupportedFlowAsUnknown(string $body): void
     {
         $source = '<?php function f($a) { '.$body.' }';
         $statements = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
         self::assertNotNull($statements);
         self::assertInstanceOf(Function_::class, $statements[0]);
-        $this->expectException(InspectionException::class);
-        (new Inspection())->analyze($statements[0], new DependencyGraph('f', '/f.php', $source));
+        $graph = (new Inspection())->analyze($statements[0], new DependencyGraph('f', '/f.php', $source));
+        self::assertNotEmpty($graph->issues);
+        self::assertNotNull($graph->inventory);
+        self::assertNotEmpty($graph->inventory->sites);
     }
 
     /**
@@ -401,14 +271,6 @@ return $a;
 }', 3, 'a', [[1, 'parameter', '$a'], [1, 'parameter', '$fallback'], [2, 'read', '$a'], [2, 'read', '$fallback'], [2, 'write', '$a'], [3, 'read', '$a']],
         ];
 
-        yield 'foreach key depends on the iterable' => [
-            '<?php function f($items) {
-foreach ($items as $key => $value) {
-return $key;
-}
-}', 3, 'key', [[1, 'parameter', '$items'], [2, 'read', '$items'], [2, 'write', '$key'], [3, 'read', '$key']],
-        ];
-
         yield 'a copied value excludes a later overwrite' => [
             '<?php function f($input) {
 $a = $input;
@@ -451,14 +313,16 @@ return $a;
     }
 
     #[DataProvider('providerTerminatedOperands')]
-    public function testAnalyzeDoesNotVisitOperandsAfterTermination(string $body): void
+    public function testAnalyzeDoesNotCertifyUnmodeledAbruptEvaluation(string $body): void
     {
         $source = '<?php function f($flag, $a, $later) { '.$body.' }';
         $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
         self::assertNotNull($parsed);
         self::assertInstanceOf(Function_::class, $parsed[0]);
         $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
-        self::assertSame([], array_values(array_filter($graph->nodes, static fn (\App\Analyzer\ExperimentAnalyzer\DataFlow\Occurrence $node): bool => $node->variable === '$later' && $node->kind === 'read')));
+        self::assertNotEmpty($graph->issues);
+        self::assertNotNull($graph->inventory);
+        self::assertNotEmpty(array_filter($graph->inventory->sites, static fn (\App\Analyzer\ExperimentAnalyzer\Structure\Site $site): bool => $site->source->variable === '$later'));
     }
 
     /**
@@ -483,18 +347,14 @@ return $a;
         yield 'destructuring key' => ['[throw new Exception() => $a, $later => $a] = [];'];
     }
 
-    public function testInspectUsesWrittenReferenceSignaturesAndCaseInsensitiveTargets(): void
+    public function testInspectKeepsCaseInsensitiveTargetsAndUnknownCalls(): void
     {
         $file = dirname(__DIR__, 4).'/Fixture/Experimental/Flow.php';
         $index = \App\Analyzer\ExperimentAnalyzer\SourceIndex::of([$file], dirname($file));
         $graph = (new Inspection())->inspect($index, '\tests\fixture\experimental\flow::referenced');
         self::assertSame('Tests\Fixture\Experimental\Flow::referenced', $graph->target);
         self::assertSame($file, $graph->file);
-        $definitions = array_values(array_map(
-            static fn (\App\Analyzer\ExperimentAnalyzer\DataFlow\Dependency $edge): array => [$graph->nodes[$edge->from]->line, $graph->nodes[$edge->to]->line, $graph->nodes[$edge->to]->kind],
-            array_filter($graph->edges, static fn (\App\Analyzer\ExperimentAnalyzer\DataFlow\Dependency $edge): bool => $edge->kind === 'reaching-definition'),
-        ));
-        self::assertSame([[29, 28, 'write'], [31, 29, 'call-write']], $definitions);
+        self::assertContains('OPAQUE_CALL', array_column($graph->issues, 'code'));
     }
 
     public function testCallablesFindsMultipleNamespacedFunctionsAndConcreteMethods(): void
@@ -505,5 +365,41 @@ return $a;
         $traverser = new \PhpParser\NodeTraverser(new \PhpParser\NodeVisitor\NameResolver());
         $callables = (new Inspection())->callables(array_values(array_filter($traverser->traverse($parsed), static fn (\PhpParser\Node $node): bool => $node instanceof \PhpParser\Node\Stmt)));
         self::assertSame(['Test\one', 'Test\two', 'Test\C::present'], array_keys($callables));
+    }
+
+    public function testAnalyzeDoesNotInventAReceiverInAFreeFunction(): void
+    {
+        $source = '<?php function f() { return $this; }';
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
+        self::assertNotNull($parsed);
+        self::assertInstanceOf(Function_::class, $parsed[0]);
+        $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
+        self::assertSame(['UNBOUND_LOCAL'], array_column($graph->issues, 'code'));
+    }
+
+    /**
+     * @param list<string> $expected
+     */
+    #[DataProvider('providerReceivers')]
+    public function testAnalyzeRequiresAnInstanceMethodForAReceiver(string $modifier, array $expected): void
+    {
+        $source = '<?php class C { '.$modifier.' function f() { return $this; } }';
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
+        self::assertNotNull($parsed);
+        self::assertInstanceOf(\PhpParser\Node\Stmt\Class_::class, $parsed[0]);
+        $method = $parsed[0]->getMethod('f');
+        self::assertNotNull($method);
+        $graph = (new Inspection())->analyze($method, new DependencyGraph('C::f', '/f.php', $source));
+        self::assertSame($expected, array_column($graph->issues, 'code'));
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>}>
+     */
+    public static function providerReceivers(): iterable
+    {
+        yield 'instance' => ['', []];
+
+        yield 'static' => ['static', ['UNBOUND_LOCAL']];
     }
 }

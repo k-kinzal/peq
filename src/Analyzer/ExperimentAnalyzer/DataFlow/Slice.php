@@ -12,10 +12,12 @@ use App\Analyzer\Graph\Direction;
 final readonly class Slice
 {
     /**
-     * @param list<string>     $roots
-     * @param list<Occurrence> $nodes
-     * @param list<Dependency> $edges
-     * @param list<string>     $diagnostics
+     * @param list<string>                                          $roots
+     * @param list<Occurrence>                                      $nodes
+     * @param list<Dependency>                                      $edges
+     * @param list<string>                                          $diagnostics
+     * @param list<\App\Analyzer\ExperimentAnalyzer\Structure\Site> $structure
+     * @param array<string, null|bool|int|list<string>|string>      $provenance
      */
     public function __construct(
         public string $target,
@@ -25,6 +27,9 @@ final readonly class Slice
         public array $nodes,
         public array $edges,
         public array $diagnostics,
+        public \App\Analyzer\ExperimentAnalyzer\Resolution\Assessment $analysis = new \App\Analyzer\ExperimentAnalyzer\Resolution\Assessment(),
+        public array $structure = [],
+        public array $provenance = [],
     ) {}
 
     /**
@@ -40,9 +45,14 @@ final readonly class Slice
         $depths = array_fill_keys($roots, 0);
         $queue = $roots;
         $edges = [];
+        $frontier = [];
         for ($index = 0; $index < count($queue); ++$index) {
             $id = $queue[$index];
             if ($level !== null && $depths[$id] >= $level) {
+                if (($adjacency[$id] ?? []) !== []) {
+                    $frontier[] = $id;
+                }
+
                 continue;
             }
             foreach ($adjacency[$id] ?? [] as $edge) {
@@ -55,6 +65,9 @@ final readonly class Slice
         }
         $nodes = array_map(static fn (string $id): Occurrence => $graph->nodes[$id], $queue);
 
-        return new self($graph->target, $graph->file, $direction, $roots, $nodes, $edges, array_values($graph->diagnostics));
+        $assessment = \App\Analyzer\ExperimentAnalyzer\Resolution\Assessment::of($graph, $queue, $frontier);
+        $warnings = array_map(static fn (\App\Analyzer\ExperimentAnalyzer\Resolution\Issue $issue): string => '['.$issue->code.'] Line '.$issue->source->line.': '.$issue->reason, $assessment->issues);
+
+        return new self($graph->target, $graph->file, $direction, $roots, $nodes, $edges, [...array_values($graph->diagnostics), ...$warnings], $assessment, array_values($graph->inventory->sites ?? []), $graph->provenance);
     }
 }

@@ -26,6 +26,7 @@ final class InspectVariablesAction
             $graph = (new ExperimentAnalyzer($config->includes, $config->excludes, $config->phpVersion?->id))
                 ->inspect($config->basePath, $input->target)
             ;
+            $graph->provenance += ['line' => $input->line, 'variable' => $input->variable, 'column' => $input->column, 'direction' => $config->direction->value, 'level' => $config->level];
             $roots = $graph->select($input->line, $input->variable, $input->column);
 
             return Slice::of($graph, $roots, $config->direction, $config->level);

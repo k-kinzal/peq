@@ -46,6 +46,9 @@ final readonly class Recording
         $id = $this->value($node, 'read', [], $state, $name);
         foreach ($state->definitions[$name] ?? [] as $definition => $_) {
             $this->graph->connect($id, $definition, 'reaching-definition');
+            if ($this->graph->nodes[$definition]->kind === 'unbound') {
+                $this->graph->issues[$definition] ??= new \App\Analyzer\ExperimentAnalyzer\Resolution\Issue('UNBOUND_LOCAL', $definition, 'local-read/v1', 'No local definition is known on this path.', $this->graph->nodes[$definition], ['value']);
+            }
         }
 
         return $id;

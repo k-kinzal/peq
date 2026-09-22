@@ -28,6 +28,9 @@ return function (ContainerConfigurator $container): void {
         ->tag('console.command')
     ;
 
+    $services->set(\App\Action\Experimental\GithubIssueSender::class);
+    $services->alias(\App\Action\Experimental\IssueSender::class, \App\Action\Experimental\GithubIssueSender::class);
+    $services->set(\App\Action\Experimental\IssueAction::class);
     $services->set(InspectVariablesAction::class);
     $services->set(VariableReporter::class);
     $services->set(ExperimentalCommand::class)->tag('console.command');

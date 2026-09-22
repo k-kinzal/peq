@@ -19,6 +19,8 @@ use PHPUnit\Framework\TestCase;
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Reporter\Diagram\DiagramEdge::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Reporter\Diagram\DiagramNode::class)]
 #[\PHPUnit\Framework\Attributes\UsesClass(\App\Reporter\Diagram\MermaidRenderer::class)]
+#[\PHPUnit\Framework\Attributes\UsesNamespace('App\Analyzer\ExperimentAnalyzer')]
+#[\PHPUnit\Framework\Attributes\UsesNamespace('App\Action\Experimental')]
 final class VariableReporterTest extends TestCase
 {
     /**

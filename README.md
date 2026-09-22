@@ -135,9 +135,11 @@ peq experimental inspect 'App\Config\ConfigLoader::load' src \
 ```
 
 This uses `ExperimentAnalyzer`, an isolated copy and extension of the native pipeline.
-It tracks local assignments, branches and loops; calls, heap state and closures have
-explicit analysis boundaries. Unsupported flow is rejected. It is not selected by
-`--type`, and does not change standard inspection or GQL. See
+It preserves source structure and solves checked local assignment/branch rules.
+Unsolved regions remain reasoned Unknown nodes; JSON exposes `analysis.complete`, and
+`--strict` exits 2 for incomplete or depth-limited answers. `peq experimental issue
+result.json` previews an issue and requires a final Yes before sending. This command
+is not selected by `--type` and does not change standard inspection or GQL. See
 [experimental variable dependencies](docs/experimental-variable-analysis.md) for
 occurrence selection, edge semantics, supported constructs and limitations.
 

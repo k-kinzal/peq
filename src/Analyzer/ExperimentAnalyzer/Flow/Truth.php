@@ -35,4 +35,19 @@ final class Truth
 
         return null;
     }
+
+    /**
+     * Classifies literal nullness independently of truthiness for coalescing.
+     */
+    public static function isNull(Expr $node): ?bool
+    {
+        if ($node instanceof Expr\ConstFetch && in_array(strtolower($node->name->toString()), ['null', 'true', 'false'], true)) {
+            return strtolower($node->name->toString()) === 'null';
+        }
+        if ($node instanceof Scalar\Int_ || $node instanceof Scalar\Float_ || $node instanceof Scalar\String_) {
+            return false;
+        }
+
+        return null;
+    }
 }
