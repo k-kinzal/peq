@@ -43,6 +43,7 @@ preservation of the audited source sites; they do not certify those transfers.
 | `assert(++$i)` | `OPAQUE_CALL`; assertion configuration does not silently make the increment unconditional. |
 | Repeated tests of `$flag` and `!$flag` | `PATH_CORRELATION`; feasibility is not certified. |
 | Testing a value chosen by an earlier branch, including a copied value | `PATH_CORRELATION`; definition guards also carry origin information. |
+| `if (external()) {} return 1;` and equivalent expression joins | The call's unknown continuation survives the truth-value join and reaches the final return in both traversal directions. |
 | `extract(...)` / `compact(...)` first-class callable creation | `CALLABLE_CREATION`, not variable injection or an executed compact call. |
 | String conversion, output conversion and object destruction | `OPERAND_TYPES`, `OUTPUT_CONVERSION` or `VALUE_LIFETIME` unless scalar preconditions are proved. |
 | `false ?? ($i = 1)` | The fallback is skipped; false and null are distinguished. |

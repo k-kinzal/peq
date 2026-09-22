@@ -91,6 +91,11 @@ overshoots effects rather than certifying an incomplete dependency list. Goto/la
 and by-reference parameters require a whole-callable unknown region because their
 influence cannot safely be isolated at their textual position.
 
+An unknown continuation has its own node, separate from the region's value. For
+`if (external()) {} return 1;`, joining the true and false outcomes must not erase
+the unresolved continuation through the call. The final return remains partial and
+reachable in reverse inspection of the call.
+
 | Edge in `uses` direction | Meaning |
 |---|---|
 | `reaching-definition` | A read receives a known or explicitly unknown definition. |

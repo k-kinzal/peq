@@ -42,7 +42,7 @@ final class BranchesTest extends TestCase
         self::assertNotNull($parsed);
         self::assertInstanceOf(Function_::class, $parsed[0]);
         $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
-        $guards = array_values(array_filter($graph->edges, static fn (Dependency $edge): bool => $edge->kind === 'control' && str_starts_with($graph->nodes[$edge->from]->text, 'new ')));
+        $guards = array_values(array_filter($graph->edges, static fn (Dependency $edge): bool => $edge->kind === 'control' && $graph->nodes[$edge->from]->kind === 'unknown' && str_starts_with($graph->nodes[$edge->from]->text, 'new ')));
         self::assertSame(['truthy', 'falsy'], array_column($guards, 'branch'));
         self::assertSame([2, 2], array_map(static fn (Dependency $edge): int => $graph->nodes[$edge->to]->line, $guards));
         $definitions = array_values(array_filter($graph->edges, static fn (Dependency $edge): bool => $edge->from === $guards[0]->to && $edge->kind === 'reaching-definition'));

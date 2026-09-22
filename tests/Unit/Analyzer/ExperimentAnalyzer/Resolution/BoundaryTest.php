@@ -19,6 +19,40 @@ use PHPUnit\Framework\TestCase;
 #[CoversNamespace('App\Analyzer\ExperimentAnalyzer')]
 final class BoundaryTest extends TestCase
 {
+    #[\PHPUnit\Framework\Attributes\DataProvider('providerUnsolvedConditions')]
+    public function testReadKeepsUnknownContinuationWhenTruthBranchesRejoin(string $body): void
+    {
+        $source = "<?php function f() {\n".$body."\nreturn 1;\n}";
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
+        self::assertNotNull($parsed);
+        self::assertInstanceOf(Function_::class, $parsed[0]);
+        $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
+        $backward = Slice::of($graph, $graph->select(3, null), Direction::Uses, null);
+        $forward = Slice::of($graph, $graph->select(2, null), Direction::UsedBy, null);
+        self::assertFalse($backward->analysis->complete);
+        self::assertSame(['OPAQUE_CALL'], array_column($backward->analysis->issues, 'code'));
+        self::assertContains(2, array_column($backward->nodes, 'line'));
+        self::assertContains(3, array_column($forward->nodes, 'line'));
+        self::assertNotContains('resolved', $backward->analysis->nodes);
+        self::assertNotContains('unknown-continuation', array_map(static fn (string $id): string => $graph->nodes[$id]->kind, $forward->roots));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function providerUnsolvedConditions(): iterable
+    {
+        yield 'if' => ['if (external()) {}'];
+
+        yield 'elseif' => ['if (external()) {} elseif (false) {}'];
+
+        yield 'ternary' => ['external() ? 1 : 2;'];
+
+        yield 'boolean' => ['external() && 1;'];
+
+        yield 'coalesce' => ['external() ?? 1;'];
+    }
+
     #[\PHPUnit\Framework\Attributes\DataProvider('providerCounterexamples')]
     public function testReadNeverReportsAProvenCounterexampleAsComplete(string $body, string $code): void
     {

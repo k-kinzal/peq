@@ -138,7 +138,7 @@ final class DependencyGraph
     {
         $roots = [];
         foreach ($this->nodes as $node) {
-            if (!in_array($node->kind, ['unbound', 'receiver', 'unknown-write'], true) && $node->line === $line && ($variable === null || $node->variable === '$'.ltrim($variable, '$'))
+            if (!in_array($node->kind, ['unbound', 'receiver', 'unknown-write', 'unknown-continuation'], true) && $node->line === $line && ($variable === null || $node->variable === '$'.ltrim($variable, '$'))
                 && ($column === null || $node->column === $column)
             ) {
                 $roots[] = $node->id;

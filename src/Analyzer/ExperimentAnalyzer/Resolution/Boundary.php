@@ -41,7 +41,9 @@ final readonly class Boundary
             $state->definitions[$name] = array_filter($definitions, fn (bool $present, string $definition): bool => $this->graph->nodes[$definition]->kind !== 'unknown-write', ARRAY_FILTER_USE_BOTH) + [$written => true];
         }
         $state->controls = array_filter($state->controls, static fn (string $branch): bool => $branch !== 'unknown-continuation');
-        $state->controls[$id] = 'unknown-continuation';
+        $continuation = $this->graph->record($node, 'unknown-continuation');
+        $this->graph->connect($continuation, $id, 'control', 'unknown-continuation');
+        $state->controls[$continuation] = 'unknown-continuation';
 
         return $id;
     }
