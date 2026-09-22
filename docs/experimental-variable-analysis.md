@@ -71,7 +71,8 @@ Parameters are inputs at callable entry; argument/default initialization, return
 coercion and cleanup after leaving the callable are outside this body model.
 These rules do not evaluate runtime values, prove absence of runtime errors, model implicit
 exceptions from operators, or guarantee that a syntactically possible path executes.
-Conditions sharing variable origins report `PATH_CORRELATION`: combined path feasibility
+Conditions sharing variable origins, including guards that choose a reaching definition,
+report `PATH_CORRELATION`: combined path feasibility
 requires additional reasoning. A resolved dependency result is not a proof that removing
 a class, branch or variable is safe.
 

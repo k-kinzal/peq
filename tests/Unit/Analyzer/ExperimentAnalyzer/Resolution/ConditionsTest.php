@@ -30,4 +30,29 @@ final class ConditionsTest extends TestCase
         self::assertFalse($slice->analysis->complete);
         self::assertSame(['PATH_CORRELATION'], array_column($slice->analysis->issues, 'code'));
     }
+
+    public function testObserveFollowsTheConditionsThatChooseAReachingDefinition(): void
+    {
+        $source = "<?php function f(\$flag) {\nif (\$flag) { \$value = 1; } else { \$value = 2; }\n\$copy = \$value;\nif (\$copy === 1) { return \$flag; }\n}";
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
+        self::assertNotNull($parsed);
+        self::assertInstanceOf(Function_::class, $parsed[0]);
+        $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
+        $slice = Slice::of($graph, $graph->select(4, 'flag'), Direction::Uses, null);
+        self::assertFalse($slice->analysis->complete);
+        self::assertSame(['PATH_CORRELATION'], array_column($slice->analysis->issues, 'code'));
+        self::assertSame([4], array_map(static fn (\App\Analyzer\ExperimentAnalyzer\Resolution\Issue $issue): int => $issue->source->line, $slice->analysis->issues));
+    }
+
+    public function testObserveDoesNotConfuseNestedExecutionWithCorrelatedValues(): void
+    {
+        $source = "<?php function f(\$a, \$b) {\nif (\$a) { if (\$b) { return 0; } }\nreturn 1;\n}";
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
+        self::assertNotNull($parsed);
+        self::assertInstanceOf(Function_::class, $parsed[0]);
+        $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
+        $slice = Slice::of($graph, $graph->select(3, null), Direction::Uses, null);
+        self::assertTrue($slice->analysis->complete);
+        self::assertSame([], $slice->analysis->issues);
+    }
 }

@@ -18,7 +18,8 @@ final class Conditions
     {
         $dependencies = [];
         foreach ($graph->edges as $edge) {
-            if (in_array($edge->kind, ['data', 'reaching-definition'], true)) {
+            $definitionGuard = $edge->kind === 'control' && $graph->nodes[$edge->from]->kind === 'write';
+            if (in_array($edge->kind, ['data', 'reaching-definition'], true) || $definitionGuard) {
                 $dependencies[$edge->from][] = $edge->to;
             }
         }
