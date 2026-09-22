@@ -1,0 +1,45 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M35DNZSRZXVXKD7ZBE8PMWP4",
+  "strategy": "manual-commit",
+  "branch": "feat/experimental-variable-dependencies",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/experimental-variable-analysis.md",
+    "docs/wordpress-variable-validation.md",
+    "src/Analyzer/ExperimentAnalyzer/DataFlow/DependencyGraph.php",
+    "src/Analyzer/ExperimentAnalyzer/DataFlow/Inspection.php",
+    "src/Analyzer/ExperimentAnalyzer/Flow/Expressions.php",
+    "src/Analyzer/ExperimentAnalyzer/Flow/Recording.php",
+    "src/Analyzer/ExperimentAnalyzer/Flow/Statements.php",
+    "src/Analyzer/ExperimentAnalyzer/Resolution/ScalarOrigins.php",
+    "tests/Unit/Action/Experimental/InspectVariablesActionTest.php",
+    "tests/Unit/Action/Experimental/IssueActionTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/DataFlow/InspectionTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/BranchesTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/ConditionalExpressionsTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/ExpressionsTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/StatementsTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Resolution/BoundaryTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Resolution/ScalarOriginsTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Structure/InventoryTest.php",
+    "tests/Unit/Reporter/Experimental/VariableReporterTest.php",
+    "tests/Unit/Reporter/Experimental/VariableTreeTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 354612,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 7486592,
+    "output_tokens": 52863,
+    "api_call_count": 67
+  }
+}

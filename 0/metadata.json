@@ -1,0 +1,65 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M35DNZSRZXVXKD7ZBE8PMWP4",
+  "session_id": "01a0c3bf-0658-7a62-a151-5cc263588008",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-22T20:42:39.446142Z",
+  "branch": "feat/experimental-variable-dependencies",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/experimental-variable-analysis.md",
+    "docs/wordpress-variable-validation.md",
+    "src/Analyzer/ExperimentAnalyzer/DataFlow/DependencyGraph.php",
+    "src/Analyzer/ExperimentAnalyzer/DataFlow/Inspection.php",
+    "src/Analyzer/ExperimentAnalyzer/Flow/Expressions.php",
+    "src/Analyzer/ExperimentAnalyzer/Flow/Recording.php",
+    "src/Analyzer/ExperimentAnalyzer/Flow/Statements.php",
+    "src/Analyzer/ExperimentAnalyzer/Resolution/ScalarOrigins.php",
+    "tests/Unit/Action/Experimental/InspectVariablesActionTest.php",
+    "tests/Unit/Action/Experimental/IssueActionTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/DataFlow/InspectionTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/BranchesTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/ConditionalExpressionsTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/ExpressionsTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/StatementsTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Resolution/BoundaryTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Resolution/ScalarOriginsTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Structure/InventoryTest.php",
+    "tests/Unit/Reporter/Experimental/VariableReporterTest.php",
+    "tests/Unit/Reporter/Experimental/VariableTreeTest.php"
+  ],
+  "agent": "Codex",
+  "model": "gpt-6-astra",
+  "turn_id": "fe82dc4ad989",
+  "checkpoint_transcript_start": 2418,
+  "transcript_lines_at_start": 2418,
+  "compact_transcript_start": 284,
+  "token_usage": {
+    "input_tokens": 354612,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 7486592,
+    "output_tokens": 52863,
+    "api_call_count": 67
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-22T20:42:36.864004Z",
+    "agent_lines": 2316,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 2316,
+    "total_lines_changed": 2316,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
