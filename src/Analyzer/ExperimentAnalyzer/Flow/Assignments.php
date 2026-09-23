@@ -42,7 +42,7 @@ final readonly class Assignments
      */
     public function write(Expr $target, array $inputs, State $state, bool $evaluated = false): string
     {
-        if ($target instanceof Expr\Variable) {
+        if ($target instanceof Expr\Variable && is_string($target->name)) {
             return $this->expressions->recording->write($target, $inputs, $state);
         }
 

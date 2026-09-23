@@ -143,4 +143,17 @@ final class LoopsTest extends TestCase
         self::assertContains('PATH_CORRELATION', array_column($graph->issues, 'code'));
         self::assertNotContains('LOOP_RECURRENCE', array_column($graph->issues, 'code'));
     }
+
+    public function testReadRetainsDynamicForeachTargetsAsUnknownStorage(): void
+    {
+        $source = '<?php function f($items, $name) { foreach ($items as $$name) { break; } return $name; }';
+        $parsed = (new ParserFactory())->createForNewestSupportedVersion()->parse($source);
+        self::assertNotNull($parsed);
+        self::assertInstanceOf(Function_::class, $parsed[0]);
+        $graph = (new Inspection())->analyze($parsed[0], new DependencyGraph('f', '/f.php', $source));
+        self::assertContains('FOREACH_PROTOCOL', array_column($graph->issues, 'code'));
+        self::assertContains('INDIRECT_WRITE', array_column($graph->issues, 'code'));
+        self::assertSame([], array_filter($graph->nodes, static fn ($node) => $node->kind === 'write'));
+        self::assertContains('$$name', array_column($graph->nodes, 'text'));
+    }
 }
