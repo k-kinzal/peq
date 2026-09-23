@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Inspect — k-kinzal/peq</title>
-<link rel="canonical" href="https://k-kinzal.github.io/peq/pr/46/k-kinzal/peq/doc/skills/peq/references/inspect.md.html">
-<meta name="description" content="Inspect, a document of the k-kinzal/peq package.">
+<title>Experimental — k-kinzal/peq</title>
+<link rel="canonical" href="https://k-kinzal.github.io/peq/pr/46/k-kinzal/peq/doc/skills/peq/references/experimental.md.html">
+<meta name="description" content="Experimental, a document of the k-kinzal/peq package.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="k-kinzal/peq">
-<meta property="og:title" content="Inspect — k-kinzal/peq">
-<meta property="og:description" content="Inspect, a document of the k-kinzal/peq package.">
-<meta property="og:url" content="https://k-kinzal.github.io/peq/pr/46/k-kinzal/peq/doc/skills/peq/references/inspect.md.html">
+<meta property="og:title" content="Experimental — k-kinzal/peq">
+<meta property="og:description" content="Experimental, a document of the k-kinzal/peq package.">
+<meta property="og:url" content="https://k-kinzal.github.io/peq/pr/46/k-kinzal/peq/doc/skills/peq/references/experimental.md.html">
 <meta property="og:image" content="https://k-kinzal.github.io/peq/pr/46/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -24,7 +24,7 @@
 <div class="page">
 <header class="topbar">
 <button class="nav-toggle" id="nav-toggle" title="Toggle navigation">☰</button>
-<nav class="crumbs"><a href="../../../../../../k-kinzal/peq/index.html">k-kinzal/peq</a><span class="crumb-sep">::</span><span class="crumb-current">skills/peq/references/inspect.md</span></nav>
+<nav class="crumbs"><a href="../../../../../../k-kinzal/peq/index.html">k-kinzal/peq</a><span class="crumb-sep">::</span><span class="crumb-current">skills/peq/references/experimental.md</span></nav>
 <div class="topbar-tools">
 <input type="search" id="search" placeholder="Search… ( / )" autocomplete="off" spellcheck="false">
 <span class="diff-range" title="Comparing 36bcc318 to working tree">36bcc318 <span class="diff-arrow">→</span> working tree</span><div class="diff-modes" id="diff-modes" role="group" aria-label="Diff display mode"><button type="button" class="diff-mode" data-diff-mode="off" title="Documentation of the head revision, without diff marks">Off</button><button type="button" class="diff-mode" data-diff-mode="inline" title="Every page with additions and removals marked">Diff</button><button type="button" class="diff-mode" data-diff-mode="changes" title="Only what the head revision added, changed, or removed">Changes</button></div><a class="repo-link" href="https://github.com/k-kinzal/peq" title="Repository: https://github.com/k-kinzal/peq" rel="noreferrer">github.com</a>
@@ -34,60 +34,44 @@
 <div class="search-results" id="search-results" hidden></div>
 <main class="content">
 <p class="diff-empty" id="diff-empty" data-changes="Nothing on this page changed between 36bcc318 and working tree." data-off="This page documents what 36bcc318 had and working tree no longer has. Switch to Diff to read it." hidden></p>
-<div class="symbol-head"><h1><span class="chip chip-kind k-document">document</span>Inspect</h1><div class="symbol-meta"><span class="src-link">skills/peq/references/inspect.md</span></div></div>
-<section class="readme" data-diff="same"><div class="doc-block" data-diff="same"><h2>Inspect</h2>
-</div><div class="doc-block" data-diff="same"><p><code>peq &lt;symbol&gt; [path]</code> walks the graph from one symbol and writes what it reaches.</p>
-</div><div class="doc-block" data-diff="same"><p>This is the default command: <code>peq &#039;App\Domain\Invoice&#039; src</code> and <code>peq inspect &#039;App\Domain\Invoice&#039; src</code> are the same. Use this when the question is &quot;starting here, what else is involved?&quot; Use <code>peq graph</code> when it is not rooted at one symbol.</p>
-</div><div class="doc-block" data-diff="same"><h3>Invocation</h3>
-</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>peq &#039;Namespace\Class&#039; src --type=native --output=json --exclude vendor
-peq &#039;Namespace\Class::method&#039; src --type=native --output=json --exclude vendor -R
-peq &#039;Namespace\functionName&#039; src --type=native --output=json --exclude vendor -L 3</code></pre>
-</div><div class="doc-block" data-diff="same"><p><code>path</code> defaults to the current working directory. Quote the target with <code>&#039;</code>.</p>
-</div><div class="doc-block" data-diff="same"><p>An agent is a program: <code>--type=native</code>, <code>--output=json</code>, and <code>--exclude vendor</code> unless the question is about vendor.</p>
-</div><div class="doc-block" data-diff="same"><h3>Target</h3>
-</div><div class="doc-block" data-diff="same"><p>One fully-qualified name:</p>
-</div><div class="doc-block" data-diff="same"><div class="table-wrap"><table><thead><tr><th>Kind</th><th>Form</th><th>Example</th></tr></thead><tbody><tr><td>Class, interface, trait, enum</td><td><code>Namespace\Name</code></td><td><code>App\Domain\Invoice</code></td></tr><tr><td>Method, property, constant, enum case</td><td><code>Namespace\Name::member</code></td><td><code>App\Domain\Invoice::total</code></td></tr><tr><td>Function</td><td><code>Namespace\functionName</code></td><td><code>App\Support\money</code></td></tr></tbody></table></div>
-</div><div class="doc-block" data-diff="same"><h3>Options</h3>
-</div><div class="doc-block" data-diff="same"><div class="table-wrap"><table><thead><tr><th>Option</th><th>What it does</th></tr></thead><tbody><tr><td><code>path</code></td><td>Directory to analyse. Default: current working directory.</td></tr><tr><td><code>--config</code></td><td>YAML file. Default: <code>&lt;cwd&gt;/.peq.yaml</code>.</td></tr><tr><td><code>-D, --direction=uses|used-by</code></td><td>Which way the walk reads. Default: <code>uses</code>.</td></tr><tr><td><code>-R, --reverse</code></td><td>Shortcut for <code>--direction=used-by</code>.</td></tr><tr><td><code>-L, --level</code></td><td>Deepest depth to report. Omit for the whole reachable set.</td></tr><tr><td><code>-O, --output</code></td><td><code>tree</code> (default) | <code>json</code> | <code>dot</code> | <code>table</code> | <code>graph</code> | <code>mermaid</code>.</td></tr><tr><td><code>-I, --include</code> / <code>-E, --exclude</code></td><td>Path patterns. Repeatable. <code>--exclude</code> replaces the whole list, it does not add.</td></tr><tr><td><code>--php-version</code></td><td>PHP version the sources are written for. Default: the version peq runs on. Quote it in YAML (<code>phpVersion: &#039;7.4&#039;</code>).</td></tr><tr><td><code>--type</code></td><td><code>native</code> (faster, PHAR) | <code>phpstan</code> (when installed) | <code>debug</code>. Prefer <code>native</code>.</td></tr><tr><td><code>--memory-limit</code></td><td>Process memory, e.g. <code>1G</code>.</td></tr><tr><td><code>--debug-depth</code> / <code>--debug-seed</code></td><td>Synthetic <code>debug</code> analyser only. Not for real sources.</td></tr></tbody></table></div>
-</div><div class="doc-block" data-diff="same"><p>Later layers override earlier ones: defaults, then <code>.peq.yaml</code>, then <code>PEQ_*</code>, then flags.</p>
-</div><div class="doc-block" data-diff="same"><h4>Direction</h4>
-</div><div class="doc-block" data-diff="same"><div class="table-wrap"><table><thead><tr><th>Flag</th><th>Walks</th><th>Question it answers</th></tr></thead><tbody><tr><td>default (<code>--direction=uses</code>)</td><td>away from the target</td><td>What does this depend on?</td></tr><tr><td><code>--direction=used-by</code> or <code>-R</code></td><td>towards the target</td><td>What depends on this? What does a change break?</td></tr></tbody></table></div>
-</div><div class="doc-block" data-diff="same"><p>Impact analysis of a change is <code>-R</code>. A method&#039;s callees are the default.</p>
-</div><div class="doc-block" data-diff="same"><h4>Depth</h4>
-</div><div class="doc-block" data-diff="same"><p><code>-L 1</code> is the target&#039;s immediate relations only. The walk still records why a branch stops; it does not invent nodes past the bound.</p>
-</div><div class="doc-block" data-diff="same"><h4>Output</h4>
-</div><div class="doc-block" data-diff="same"><p>The walk itself does not change with <code>--output</code>.</p>
-</div><div class="doc-block" data-diff="same"><div class="table-wrap"><table><thead><tr><th><code>--output</code></th><th>Reader</th><th>What it writes</th></tr></thead><tbody><tr><td><code>tree</code> (default)</td><td>person</td><td>Indented tree. <code>(*)</code> means expanded elsewhere; <code>(recursive)</code> means a cycle.</td></tr><tr><td><code>json</code></td><td>program / agent</td><td>One object: <code>direction</code>, <code>symbol</code>, <code>nodes</code>.</td></tr><tr><td><code>table</code></td><td>review</td><td>One row per symbol: depth, symbol, kind, <code>file:line</code>.</td></tr><tr><td><code>graph</code></td><td>person</td><td>Every symbol once, joined by arrows, as wide as the terminal.</td></tr><tr><td><code>mermaid</code></td><td>a page</td><td>The same graph as a Mermaid flowchart.</td></tr><tr><td><code>dot</code></td><td>a renderer</td><td>The same graph as a Graphviz digraph. Pipe to <code>dot -Tsvg</code>.</td></tr></tbody></table></div>
-</div><div class="doc-block" data-diff="same"><h3>JSON document</h3>
-</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>{
-    &quot;direction&quot;: &quot;uses&quot;,
-    &quot;symbol&quot;: &quot;App\\Domain\\Invoice&quot;,
-    &quot;nodes&quot;: [
-        {
-            &quot;id&quot;: &quot;App\\Domain\\Invoice&quot;,
-            &quot;kind&quot;: &quot;class&quot;,
-            &quot;resolved&quot;: true,
-            &quot;depth&quot;: 0,
-            &quot;parent&quot;: null,
-            &quot;relations&quot;: [],
-            &quot;truncated&quot;: null,
-            &quot;file&quot;: {&quot;path&quot;: &quot;/project/src/Domain/Invoice.php&quot;, &quot;line&quot;: 12, &quot;column&quot;: 1}
-        }
-    ]
-}</code></pre>
-</div><div class="doc-block" data-diff="same"><p><code>nodes</code> is the walk in visit order, not a unique set. The same <code>id</code> can appear twice when it is reached by two parents; <code>truncated</code> then tells the reader the second visit was not expanded.</p>
-</div><div class="doc-block" data-diff="same"><div class="table-wrap"><table><thead><tr><th><code>truncated</code></th><th>Meaning</th></tr></thead><tbody><tr><td><code>null</code></td><td>Expanded here, or a genuine leaf (nothing below it in this direction).</td></tr><tr><td><code>&quot;repeated&quot;</code></td><td>Expanded on another branch. Tree writes <code>(*)</code>.</td></tr><tr><td><code>&quot;recursive&quot;</code></td><td>Already open on the path above. Tree writes <code>(recursive)</code>.</td></tr></tbody></table></div>
-</div><div class="doc-block" data-diff="same"><p><code>kind</code> is the graph&#039;s own vocabulary: <code>class</code>, <code>interface</code>, <code>trait</code>, <code>enum</code>, <code>method</code>, <code>function</code>, <code>property</code>, <code>constant</code>, <code>enum_case</code>, <code>builtin</code>, <code>unknown</code>.</p>
-</div><div class="doc-block" data-diff="same"><p><code>relations</code> names the edges that led here from <code>parent</code>, as the analyser spells them (<code>method-call</code>, <code>declaration-method</code>, <code>declaration-extends</code>, …). Inverse walks (<code>used-by</code>) use <code>used-by</code> and <code>declared-in</code>.</p>
-</div><div class="doc-block" data-diff="same"><p><code>file</code> is <code>null</code> when analysis only ever saw the name referred to, not declared.</p>
-</div><div class="doc-block" data-diff="same"><p>Empty stdout and a non-zero exit mean the symbol was not in the graph. See <a href="../../../../../../k-kinzal/peq/doc/skills/peq/references/troubleshooting.md.html">troubleshooting.md</a>.</p>
-</div><div class="doc-block" data-diff="same"><h3>Typical questions</h3>
-</div><div class="doc-block" data-diff="same"><p><strong>Blast radius of a change</strong> — who would notice if this method moved or broke:</p>
-</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>peq &#039;App\Domain\Money::add&#039; src -R --type=native --output=json --exclude vendor</code></pre>
-</div><div class="doc-block" data-diff="same"><p><strong>What this class is built on</strong>, bounded so the document stays small:</p>
-</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>peq &#039;App\Domain\Invoice&#039; src -L 3 --type=native --output=json --exclude vendor</code></pre>
-</div><div class="doc-block" data-diff="same"><p><strong>A picture for a note:</strong></p>
-</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>peq &#039;App\Domain\Invoice&#039; src --type=native --output=mermaid --exclude vendor</code></pre>
+<div class="symbol-head"><h1><span class="chip chip-kind k-document">document</span>Experimental</h1><div class="symbol-meta"><span class="src-link">skills/peq/references/experimental.md</span></div></div>
+<div class="notice diff-banner" data-diff="added">Added in working tree, compared to 36bcc318.</div>
+<section class="readme" data-diff="added"><div class="doc-block" data-diff="added"><h2>Experimental</h2>
+</div><div class="doc-block" data-diff="added"><p>Use <code>peq experimental inspect</code> to trace a variable&#039;s source origins, affected expressions, and control conditions. It reads PHP without executing it. This is a separate occurrence graph: ordinary <code>peq inspect</code> and <code>peq graph</code> still answer symbol-level questions such as callers and callees.</p>
+</div><div class="doc-block" data-diff="added"><p>For &quot;under which condition is this method called?&quot;, first locate the call sites with the symbol graph, then inspect the relevant line in each enclosing callable. Experimental inspection does not expand the called method&#039;s body.</p>
+</div><div class="doc-block" data-diff="added"><h3>Invocation</h3>
+</div><div class="doc-block" data-diff="added"><pre class="code-block"><code>peq experimental inspect &#039;SqlCatalog\Analyzer:analyzePaths$sources&#039; src --direction=uses --output=json --exclude vendor --strict
+peq experimental inspect &#039;SqlCatalog\Analyzer:analyzePaths$sources&#039; src --direction=used-by --output=json --exclude vendor --strict
+peq experimental inspect &#039;SqlCatalog\Analyzer:$sources&#039; src --direction=uses --output=json --exclude vendor --strict
+peq experimental inspect &#039;App\Support\normalize$path&#039; src --direction=uses --output=json --exclude vendor --strict</code></pre>
+</div><div class="doc-block" data-diff="added"><p>Use fully qualified names and single quotes: the shell otherwise expands <code>$</code>. <code>path</code> accepts a file or directory and defaults to the working directory. Prefer JSON for an agent and set the direction explicitly; configuration can override the baseline <code>uses</code>. There is no <code>--type=experimental</code>: this command selects the experimental analyzer itself. If unavailable, check <code>peq experimental --help</code> and report the installed build&#039;s limitation.</p>
+</div><div class="doc-block" data-diff="added"><h3>Selecting an occurrence</h3>
+</div><div class="doc-block" data-diff="added"><div class="table-wrap"><table><thead><tr><th>Target</th><th>Selects</th></tr></thead><tbody><tr><td><code>Namespace\Class:method$variable</code></td><td>A local variable or parameter in that written method.</td></tr><tr><td><code>Namespace\function$variable</code></td><td>A local variable or parameter in that written function.</td></tr><tr><td><code>Namespace\Class:$property</code></td><td>A declared property and its direct receiver sites in that class.</td></tr></tbody></table></div>
+</div><div class="doc-block" data-diff="added"><p>Without <code>--line</code>, <code>used-by</code> starts at the first source occurrence, usually a parameter or declaration; <code>uses</code> starts at the last. A final self-assignment selects its completed write, so <code>$x = $x + 1</code> traces the resulting <code>$x</code>. Source order does not establish runtime execution order, especially across methods in a property report. A last occurrence in unsolved syntax remains visible as not analyzed; it is not silently skipped.</p>
+</div><div class="doc-block" data-diff="added"><p><code>--line N</code> selects matching occurrences starting on that line. Add <code>--column N</code> (1-based byte column) to distinguish occurrences on the same line. A callable target without a variable selects the whole line:</p>
+</div><div class="doc-block" data-diff="added"><pre class="code-block"><code>peq experimental inspect &#039;SqlCatalog\Analyzer:analyzePaths$sources&#039; src --line 42 --column 9 --direction=uses --output=json --strict
+peq experimental inspect &#039;SqlCatalog\Analyzer::analyzePaths&#039; src --line 42 --direction=uses --output=json --strict</code></pre>
+</div><div class="doc-block" data-diff="added"><p>The legacy <code>Class::method --variable sources</code> form also works. Omit <code>--line</code> unless a particular occurrence matters; when inspecting a call site, use its line and the enclosing callable rather than the callee&#039;s name.</p>
+</div><div class="doc-block" data-diff="added"><p><code>-L N</code> bounds the number of dependency edges from the roots, not analysis work. <code>--output</code> accepts <code>tree|json|dot|table|graph|mermaid</code>; all use the same selection. Path filters, <code>--config</code>, <code>--php-version</code> and <code>--memory-limit</code> work as described in <a href="../../../../../../k-kinzal/peq/doc/skills/peq/references/inspect.md.html#options">inspect.md</a>.</p>
+</div><div class="doc-block" data-diff="added"><h3>Reading JSON and conditions</h3>
+</div><div class="doc-block" data-diff="added"><p>Read <code>experimental: true</code>, <code>schemaVersion: 2</code>, <code>semantics</code> and <code>analysis</code> before making a dependency claim. This schema is different from ordinary inspect JSON.</p>
+</div><div class="doc-block" data-diff="added"><div class="table-wrap"><table><thead><tr><th>Field</th><th>How to use it</th></tr></thead><tbody><tr><td><code>roots</code>, <code>nodes</code>, <code>edges</code></td><td>Roots are occurrence IDs. Nodes carry <code>id</code>, <code>kind</code>, <code>variable</code>, <code>line</code>, <code>column</code>, <code>endLine</code>, <code>text</code>; edges carry <code>from</code>, <code>to</code>, <code>kind</code>, <code>branch</code>.</td></tr><tr><td><code>analysis.complete</code></td><td>Completeness covers the whole callable (the class for property inspection) and the selected traversal. An issue outside the displayed slice can make this false.</td></tr><tr><td><code>analysis.nodes</code></td><td>Status by selected node ID: <code>resolved</code>, <code>input</code>, <code>unknown</code>, <code>partial</code> or <code>not-analyzed</code>. <code>input</code> is an external parameter/receiver origin, not an analysis failure.</td></tr><tr><td><code>analysis.issues</code></td><td>Structured reasons: <code>code</code>, <code>nodeId</code>, <code>rule</code>, <code>reason</code>, <code>source</code> and <code>affects</code>. Preserve these when explaining missing information.</td></tr><tr><td><code>analysis.frontier</code></td><td>Occurrences left unexplored by the depth bound. Overall status becomes <code>truncated</code>.</td></tr><tr><td><code>structure</code></td><td>Lexical inventory, including unsolved syntax, with <code>source</code>, <code>syntax</code>, <code>parent</code>, <code>role</code>, source spans and statically written <code>target</code> names. Containment is not proof of execution.</td></tr><tr><td><code>provenance</code></td><td>Requested target, selection mode, coordinates, direction, analysis versions, source hash and configuration needed to reproduce the result.</td></tr></tbody></table></div>
+</div><div class="doc-block" data-diff="added"><p>Edges are oriented in the requested traversal direction. In <code>uses</code>, <code>from</code> depends on <code>to</code>; in <code>used-by</code>, that arrow is reversed to reach affected occurrences. For a <code>control</code> edge, read the condition occurrence and its <code>branch</code> (for example <code>truthy</code>, <code>falsy</code> or <code>iterate</code>), and cite its source line. Follow its dependencies to explain the condition&#039;s origins. Branch labels do not prove runtime values or that a combination of branches is feasible.</p>
+</div><div class="doc-block" data-diff="added"><p>Local assignments, if/elseif/else, ternaries and short-circuit expressions have checked rules. Loops are modeled too: <code>while</code>, <code>do-while</code>, <code>for</code> and <code>foreach</code> retain initialization, tests, bodies, iteration bindings, updates and exits. Nonrepeating loops can resolve; repeated definitions retain back edges and <code>LOOP_RECURRENCE</code> when cross-iteration reasoning is unsolved. Iterator protocols and reference iteration have separate Unknown reasons.</p>
+</div><div class="doc-block" data-diff="added"><p>Calls, array construction/access, aliases, heap effects and unsupported flow such as switch/match retain explicit boundaries. Replacing a value whose type is not proven scalar can also be Unknown because of possible destructors or aliases. Property inspection always retains <code>PROPERTY_LIFECYCLE</code>: object identity, external writes and method invocation order are unresolved. <code>possible-input</code> and <code>unresolved-region</code> edges are evidence across Unknown, not proven dependencies. Missing edges across these boundaries do not establish absence of an effect. Explain both the known origins/conditions and the issue codes with locations; do not present an incomplete graph as an exhaustive blast radius. Even <code>analysis.complete: true</code> does not prove runtime safety.</p>
+</div><div class="doc-block" data-diff="added"><h3>Exit codes and saved results</h3>
+</div><div class="doc-block" data-diff="added"><p>With <code>--strict</code>, exit <code>0</code> means complete, <code>2</code> means incomplete or truncated with the result still written, and <code>1</code> means an invalid request or configuration. Without <code>--strict</code>, incomplete analysis also exits <code>0</code>; always read <code>analysis</code>. Handle exit <code>2</code> as a usable partial report, rather than discarding stdout or retrying the same command. For example, in Bash:</p>
+</div><div class="doc-block" data-diff="added"><pre class="code-block"><code>peq_exit=0
+peq experimental inspect &#039;SqlCatalog\Analyzer:analyzePaths$sources&#039; src --direction=uses --output=json --strict &gt; result.json || peq_exit=$?
+case &quot;$peq_exit&quot; in
+  0|2) jq &#039;{target, direction, roots, analysis, provenance}&#039; result.json ;;
+  *) cat result.json &gt;&amp;2; exit &quot;$peq_exit&quot; ;;
+esac</code></pre>
+</div><div class="doc-block" data-diff="added"><h3>Reporting an analysis issue</h3>
+</div><div class="doc-block" data-diff="added"><p>Prepare a local preview from saved JSON, including resolved-but-wrong results:</p>
+</div><div class="doc-block" data-diff="added"><pre class="code-block"><code>peq experimental issue result.json --description &#039;Expected ...; observed ...&#039; --no-interaction</code></pre>
+</div><div class="doc-block" data-diff="added"><p><code>--no-interaction</code> previews the exact repository, title and body and sends nothing. Source snippets are omitted by default; paths, symbol names and analysis metadata remain. <code>--include-source</code> opts into snippets already in the saved JSON. The input must be schema version 2 and smaller than 2 MB; the issue body is limited to 60 KB.</p>
+</div><div class="doc-block" data-diff="added"><p>Inspection and preview do not authorize publication. Show the draft to the user before sending to <code>k-kinzal/peq</code>. The interactive command asks <code>Send this issue? [y/N]</code>; only explicit <code>y</code> or <code>yes</code> sends, using authenticated <code>gh</code>. Do not pipe an automatic Yes or bypass that confirmation. No, the default, and noninteractive mode send nothing.</p>
 </div></section>
 </main>
 <footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>
