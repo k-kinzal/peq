@@ -1,0 +1,47 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M371G93CS7H6E3V47V9391CR",
+  "session_id": "01a0c3bf-0658-7a62-a151-5cc263588008",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-23T11:48:05.890545Z",
+  "branch": "feat/experimental-variable-dependencies",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/Analyzer/ExperimentAnalyzer/Flow/Assignments.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/LoopsTest.php"
+  ],
+  "agent": "Codex",
+  "model": "gpt-6-astra",
+  "turn_id": "f76a770b8cdd",
+  "checkpoint_transcript_start": 4146,
+  "transcript_lines_at_start": 4146,
+  "compact_transcript_start": 470,
+  "token_usage": {
+    "input_tokens": 11839,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1680640,
+    "output_tokens": 7411,
+    "api_call_count": 10
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-23T11:48:05.429072Z",
+    "agent_lines": 224,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 224,
+    "total_lines_changed": 224,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
