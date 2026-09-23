@@ -264,8 +264,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          ./dist/peq.phar experimental inspect 'App\Gql\Lexing\SourceCursor::capture' src \
-            --line 111 --variable matched --output=json \
+          ./dist/peq.phar experimental inspect 'App\Gql\Lexing\SourceCursor:capture$matched' src \
+            --output=json \
             | php -r '$graph = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR); if (($graph["experimental"] ?? false) !== true || $graph["edges"] === []) { exit(1); }'
 
       - name: Check the PHAR answers a GQL query

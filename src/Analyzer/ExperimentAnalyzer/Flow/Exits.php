@@ -34,6 +34,21 @@ final class Exits
     }
 
     /**
+     * Rejects jumps whose numeric depth exceeds the enclosing loop structure.
+     */
+    public function validate(\App\Analyzer\ExperimentAnalyzer\DataFlow\DependencyGraph $graph): void
+    {
+        foreach ([...array_values($this->breaks), ...array_values($this->continues)] as $paths) {
+            foreach ($paths as $path) {
+                $id = array_key_last($path->controls);
+                if ($id !== null && $path->controls[$id] === 'taken') {
+                    $graph->issues[$id] = new \App\Analyzer\ExperimentAnalyzer\Resolution\Issue('INVALID_LOOP_EXIT', $id, 'structured-loops/v1', 'The jump has no enclosing loop at its requested depth.', $graph->nodes[$id], ['control']);
+                }
+            }
+        }
+    }
+
+    /**
      * Carries abrupt exits outward, consuming one loop or switch level when asked.
      *
      * @param array<int, list<State>> $existing

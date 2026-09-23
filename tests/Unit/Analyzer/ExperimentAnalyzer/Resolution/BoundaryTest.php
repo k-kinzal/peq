@@ -77,9 +77,7 @@ final class BoundaryTest extends TestCase
     {
         yield 'isset short circuit' => ['isset($a, $b[$i = 1]);', 'UNSUPPORTED_EXPRESSION'];
 
-        yield 'loop early return' => ['while ($a) { return 0; }', 'UNSUPPORTED_STATEMENT'];
-
-        yield 'foreach early return' => ['foreach ($a as $x) { if ($x) { return 0; } }', 'UNSUPPORTED_STATEMENT'];
+        yield 'foreach early return' => ['foreach ($a as $x) { if ($x) { return 0; } }', 'FOREACH_PROTOCOL'];
 
         yield 'locals snapshot' => ['$snapshot = get_defined_vars();', 'OPAQUE_CALL'];
 
@@ -101,9 +99,7 @@ final class BoundaryTest extends TestCase
 
         yield 'unmodeled switch' => ['switch ($a) { case 1: $i = 1; break; }', 'UNSUPPORTED_STATEMENT'];
 
-        yield 'unmodeled for' => ['for ($i = 0; $i < $a; $i++) {}', 'UNSUPPORTED_STATEMENT'];
-
-        yield 'unmodeled do' => ['do { $i++; } while ($a);', 'UNSUPPORTED_STATEMENT'];
+        yield 'unmodeled do' => ['do { $i++; } while ($a);', 'LOOP_RECURRENCE'];
 
         yield 'order of side effects' => ['$i = $a++ + $a;', 'UNSUPPORTED_EXPRESSION'];
 

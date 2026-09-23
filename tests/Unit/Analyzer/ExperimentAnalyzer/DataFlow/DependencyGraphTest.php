@@ -100,4 +100,44 @@ final class DependencyGraphTest extends TestCase
         $graph = new DependencyGraph('f', '/missing.php', 'abc');
         self::assertSame('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad', $graph->fingerprint());
     }
+
+    public function testEmptyCopyKeepsSourceIdentityWithoutSharingAnalysisState(): void
+    {
+        $graph = new DependencyGraph('C::f', '/f.php', 'abc');
+        $graph->nodes['x'] = new Occurrence('x', 'read', '$x', 1, 1, 1, '$x');
+        $copy = $graph->emptyCopy();
+        self::assertSame('C::f', $copy->target);
+        self::assertSame('/f.php', $copy->file);
+        self::assertSame($graph->fingerprint(), $copy->fingerprint());
+        self::assertSame([], $copy->nodes);
+    }
+
+    public function testSelectableExcludesSyntheticLoopInputsAndLocalNamesFromProperties(): void
+    {
+        $graph = new DependencyGraph('C::$x', '/f.php', '');
+        self::assertFalse($graph->selectable(new Occurrence('local', 'read', '$x', 1, 1, 1, '$x')));
+        self::assertTrue($graph->selectable(new Occurrence('property', 'property-access', '$x', 1, 1, 1, '$this->x')));
+        $local = new DependencyGraph('C::f', '/f.php', '');
+        self::assertFalse($local->selectable(new Occurrence('loop', 'loop-input', '$x', 1, 1, 1, 'while')));
+    }
+
+    public function testAdoptCommitsOnlyTheSpeculativeAnalysis(): void
+    {
+        $graph = new DependencyGraph('f', '/f.php', 'abc');
+        $trial = clone $graph;
+        $trial->nodes['x'] = new Occurrence('x', 'read', '$x', 1, 1, 1, '$x');
+        $trial->connect('x', 'y');
+        $trial->scalars['x'] = true;
+        $trial->testedOrigins['x'] = true;
+        $trial->diagnostics['test'] = 'test';
+        $trial->issues['x'] = new \App\Analyzer\ExperimentAnalyzer\Resolution\Issue('TEST', 'x', 'test', 'test', $trial->nodes['x']);
+        $graph->adopt($trial);
+        self::assertSame($trial->nodes, $graph->nodes);
+        self::assertSame($trial->edges, $graph->edges);
+        self::assertSame($trial->scalars, $graph->scalars);
+        self::assertSame($trial->testedOrigins, $graph->testedOrigins);
+        self::assertSame($trial->diagnostics, $graph->diagnostics);
+        self::assertSame($trial->issues, $graph->issues);
+        self::assertSame('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad', $graph->fingerprint());
+    }
 }

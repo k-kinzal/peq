@@ -65,12 +65,44 @@ final class ExperimentalCommandTest extends TestCase
         self::assertStringContainsString('reaching-definition', $tester->getDisplay());
     }
 
-    public function testExecuteRequiresALine(): void
+    /**
+     * @throws JsonException
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('providerVariableTargets')]
+    public function testExecuteSelectsEmbeddedVariablesWithoutALine(string $target, bool $reverse, int $line, string $kind): void
+    {
+        $tester = new CommandTester(new ExperimentalCommand(new InspectVariablesAction()));
+        self::assertSame(0, $tester->execute(['operation' => 'inspect', 'target' => $target, 'path' => dirname(__DIR__, 2).'/Fixture/Experimental', '--direction' => 'uses', '--output' => 'json', '--config' => __DIR__.'/absent.yaml'] + ($reverse ? ['--reverse' => true] : [])));
+        $result = json_decode($tester->getDisplay(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertIsArray($result);
+        self::assertIsArray($result['nodes']);
+        self::assertIsArray($result['nodes'][0]);
+        self::assertIsArray($result['provenance']);
+        self::assertSame($line, $result['nodes'][0]['line']);
+        self::assertSame($kind, $result['nodes'][0]['kind']);
+        self::assertSame($reverse ? 'first-occurrence' : 'last-occurrence', $result['provenance']['selection']);
+    }
+
+    /**
+     * @return iterable<array{string, bool, int, string}>
+     */
+    public static function providerVariableTargets(): iterable
+    {
+        yield ['Tests\Fixture\Experimental\Flow:calculate$copy', false, 18, 'read'];
+
+        yield ['Tests\Fixture\Experimental\Flow:calculate$input', true, 9, 'parameter'];
+
+        yield ['Tests\Fixture\Experimental\Properties:$sources', false, 15, 'property-access'];
+
+        yield ['Tests\Fixture\Experimental\Properties:$sources', true, 9, 'property-declaration'];
+    }
+
+    public function testExecuteRequiresAVariableOrAnExplicitLine(): void
     {
         $tester = new CommandTester(new ExperimentalCommand(new InspectVariablesAction()));
         $status = $tester->execute(['operation' => 'inspect', 'target' => 'Example::method']);
         self::assertSame(1, $status);
-        self::assertStringContainsString('--line option is required', $tester->getDisplay());
+        self::assertStringContainsString('Specify a variable in the target', $tester->getDisplay());
     }
 
     /**

@@ -15,7 +15,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Manually audited expectations for the separately downloaded WordPress 7.1.1 release.
  *
- * See docs/wordpress-variable-validation.md for the pinned archive and invocation.
+ * Run with XDEBUG_MODE=off composer test -- tests/External.
  * This external corpus is deliberately outside the default test suites.
  *
  * @internal
@@ -264,7 +264,7 @@ final class WordPressExperimentalTest extends TestCase
         $backward = Slice::of($graph, $graph->select(2857, null), Direction::Uses, null);
         $forward = Slice::of($graph, $graph->select(2846, 'filenames'), Direction::UsedBy, null);
         self::assertFalse($backward->analysis->complete);
-        self::assertContains('UNSUPPORTED_STATEMENT', array_column($backward->analysis->issues, 'code'));
+        self::assertContains('FOREACH_PROTOCOL', array_column($backward->analysis->issues, 'code'));
         self::assertContains(2847, array_column($backward->nodes, 'line'));
         self::assertContains(2857, array_column($forward->nodes, 'line'));
     }
@@ -281,5 +281,47 @@ final class WordPressExperimentalTest extends TestCase
         self::assertTrue($slice->analysis->complete);
         self::assertSame(['literal', 'return'], array_column($slice->nodes, 'kind'));
         self::assertSame(['false', 'return false;'], array_column($slice->nodes, 'text'));
+    }
+
+    /**
+     * Checks the two controlling source predicates on the extension assignment.
+     */
+    public function testFiletypeAssignmentKeepsTheForeachAndRegexConditionLines(): void
+    {
+        $path = dirname(__DIR__, 2).'/var/cache/wordpress-validation/7.1.1/wordpress/wp-includes/functions.php';
+        $graph = (new ExperimentAnalyzer(phpVersion: 70400))->inspect($path, 'wp_check_filetype');
+        $conditions = [];
+        foreach ($graph->edges as $edge) {
+            $from = $graph->nodes[$edge->from];
+            $to = $graph->nodes[$edge->to];
+            if ($from->line === 3091 && $from->kind === 'write' && $from->variable === '$ext' && $edge->kind === 'control' && in_array($edge->branch, ['iterate', 'truthy'], true)) {
+                $conditions[] = [$to->line, $edge->branch];
+            }
+        }
+        self::assertSame([[3087, 'iterate'], [3089, 'truthy']], $conditions);
+        self::assertContains('FOREACH_PROTOCOL', array_column($graph->issues, 'code'));
+        self::assertContains('OPAQUE_CALL', array_column($graph->issues, 'code'));
+        self::assertContains('LOOP_RECURRENCE', array_column($graph->issues, 'code'));
+    }
+
+    /**
+     * Checks key/value assignment before the conditional MIME type copy.
+     */
+    public function testFiletypeIterationBindsTheMimeValueBeforeItsConditionalCopy(): void
+    {
+        $path = dirname(__DIR__, 2).'/var/cache/wordpress-validation/7.1.1/wordpress/wp-includes/functions.php';
+        $graph = (new ExperimentAnalyzer(phpVersion: 70400))->inspect($path, 'wp_check_filetype');
+        $bindings = [];
+        foreach ($graph->edges as $edge) {
+            $from = $graph->nodes[$edge->from];
+            $to = $graph->nodes[$edge->to];
+            if ($from->line === 3087 && $from->kind === 'write' && $edge->kind === 'data') {
+                $bindings[] = [$from->variable, $to->line, $to->kind];
+            }
+        }
+        self::assertSame([['$ext_preg', 3087, 'iteration-value'], ['$mime_match', 3087, 'iteration-value']], $bindings);
+        $slice = Slice::of($graph, $graph->select(3090, 'mime_match'), Direction::Uses, null);
+        self::assertContains(3087, array_column($slice->nodes, 'line'));
+        self::assertFalse($slice->analysis->complete);
     }
 }

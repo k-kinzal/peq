@@ -17,7 +17,8 @@ use RuntimeException;
 /**
  * Structural validation of every declared callable in the WordPress 7.1.1 archive.
  *
- * See docs/wordpress-variable-validation.md for download and execution instructions.
+ * Archive: https://wordpress.org/wordpress-7.1.1.tar.gz (SHA-256 below).
+ * SHA-256: 3996fee13448ef12e07e9f0c77db2f655ffa1b7cde71c80a4965d3bf1fb956b3.
  * These checks complement, rather than replace, the manually audited expectations.
  *
  * @internal
@@ -48,7 +49,7 @@ final class WordPressCorpusTest extends TestCase
     {
         $root = dirname(__DIR__, 2).'/var/cache/wordpress-validation/7.1.1/wordpress';
         if (!is_dir($root)) {
-            throw new RuntimeException('Download the pinned WordPress archive as described in docs/wordpress-variable-validation.md.');
+            throw new RuntimeException('Extract wordpress-7.1.1.tar.gz from wordpress.org into var/cache/wordpress-validation/7.1.1/.');
         }
         $files = (new PhpFileCollector())->collect([$root], [], []);
         $index = SourceIndex::of($files, $root, 70400);

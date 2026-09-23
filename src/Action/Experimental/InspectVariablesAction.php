@@ -21,13 +21,17 @@ final class InspectVariablesAction
     public function execute(InspectVariablesInput $input): Slice
     {
         $config = $input->config;
+        $target = VariableTarget::parse($input->target, $input->variable);
+        if ($input->line === null && $target->variable === null) {
+            throw new InspectionRejected('Specify a variable in the target (Class:method$variable), --variable, or --line.');
+        }
 
         try {
             $graph = (new ExperimentAnalyzer($config->includes, $config->excludes, $config->phpVersion?->id))
-                ->inspect($config->basePath, $input->target)
+                ->inspect($config->basePath, $target->symbol)
             ;
-            $graph->provenance += ['line' => $input->line, 'variable' => $input->variable, 'column' => $input->column, 'direction' => $config->direction->value, 'level' => $config->level];
-            $roots = $graph->select($input->line, $input->variable, $input->column);
+            $roots = (new \App\Analyzer\ExperimentAnalyzer\DataFlow\Selection())->roots($graph, $input->line, $target->variable, $input->column, $config->direction);
+            $graph->provenance += ['line' => $input->line, 'variable' => $target->variable, 'column' => $input->column, 'direction' => $config->direction->value, 'level' => $config->level, 'requestedTarget' => $input->target, 'selection' => $input->line === null ? ($config->direction === \App\Analyzer\Graph\Direction::Uses ? 'last-occurrence' : 'first-occurrence') : 'explicit-line'];
 
             return Slice::of($graph, $roots, $config->direction, $config->level);
         } catch (InspectionException $error) {

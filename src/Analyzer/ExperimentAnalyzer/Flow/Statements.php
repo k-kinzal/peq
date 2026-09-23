@@ -49,6 +49,12 @@ final readonly class Statements
         if ($node instanceof Stmt\If_) {
             return (new Branches($this))->read($node, $state);
         }
+        if ($node instanceof Stmt\While_ || $node instanceof Stmt\Do_ || $node instanceof Stmt\For_ || $node instanceof Stmt\Foreach_) {
+            return (new Loops($this))->read($node, $state);
+        }
+        if ($node instanceof Stmt\Break_ || $node instanceof Stmt\Continue_) {
+            return (new LoopTransfers($this->expressions))->jump($node, $state);
+        }
         if ($node instanceof Stmt\Return_) {
             $inputs = $node->expr === null ? [] : [$this->expressions->read($node->expr, $state)];
             if ($state->reachable) {

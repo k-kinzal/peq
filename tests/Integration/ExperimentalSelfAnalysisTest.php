@@ -117,7 +117,7 @@ final class ExperimentalSelfAnalysisTest extends TestCase
         $backward = \App\Analyzer\ExperimentAnalyzer\DataFlow\Slice::of($graph, $graph->select(84, null), \App\Analyzer\Graph\Direction::Uses, null);
         $forward = \App\Analyzer\ExperimentAnalyzer\DataFlow\Slice::of($graph, $graph->select(75, 'name'), \App\Analyzer\Graph\Direction::UsedBy, null);
         self::assertFalse($backward->analysis->complete);
-        self::assertContains('UNSUPPORTED_STATEMENT', array_column($backward->analysis->issues, 'code'));
+        self::assertContains('FOREACH_PROTOCOL', array_column($backward->analysis->issues, 'code'));
         self::assertContains(78, array_column($backward->nodes, 'line'));
         self::assertContains(84, array_column($forward->nodes, 'line'));
     }

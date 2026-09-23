@@ -29,7 +29,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * The explicit opt-in boundary for experimental source-occurrence inspection.
  */
-#[AsCommand(name: 'experimental', description: 'Experimental local variable dependencies: experimental inspect <callable> --line <n>.')]
+#[AsCommand(name: 'experimental', description: 'Experimental variable dependencies: experimental inspect \'Class:method$variable\'.')]
 final class ExperimentalCommand extends Command
 {
     /**
@@ -47,9 +47,9 @@ final class ExperimentalCommand extends Command
     protected function configure(): void
     {
         $this->addArgument('operation', InputArgument::REQUIRED, 'Experimental operation: inspect|issue');
-        $this->addArgument('target', InputArgument::REQUIRED, 'Callable for inspect; saved JSON file for issue');
+        $this->addArgument('target', InputArgument::REQUIRED, 'Class:method$variable, Class:$property or function$variable for inspect; saved JSON file for issue');
         $this->addArgument('path', InputArgument::OPTIONAL, 'File or directory to analyze');
-        $this->addOption('line', null, InputOption::VALUE_REQUIRED, 'Source line to inspect (required)');
+        $this->addOption('line', null, InputOption::VALUE_REQUIRED, 'Select a particular source line; default: last occurrence for uses, first for used-by');
         $this->addOption('variable', null, InputOption::VALUE_REQUIRED, 'Variable name, with or without $; omit to select the whole line');
         $this->addOption('column', null, InputOption::VALUE_REQUIRED, 'Disambiguate occurrences on the same line (1-based byte column)');
         $this->addOption('config', null, InputOption::VALUE_REQUIRED, 'Configuration file', getcwd().'/.peq.yaml');
@@ -64,7 +64,7 @@ final class ExperimentalCommand extends Command
         $this->addOption('strict', null, InputOption::VALUE_NONE, 'Exit 2 if analysis is incomplete or truncated');
         $this->addOption('include-source', null, InputOption::VALUE_NONE, 'Include source snippets in the issue preview');
         $this->addOption('description', null, InputOption::VALUE_REQUIRED, 'Expected and observed behavior for the issue', '');
-        $this->setHelp('Arrows describe possible local data/control dependencies. Calls, heap state and closures are explicit boundaries. Unsupported regions remain Unknown. experimental issue result.json previews a report and asks before sending; the default is No. Use --column to distinguish reads and writes on the same line.');
+        $this->setHelp('Quote variable targets with single quotes: \'Class:method$variable\', \'Class:$property\' or \'function$variable\'. Without --line, uses selects the last source occurrence (the completed write for a final self-assignment) and used-by the first. --line selects a particular line; --column distinguishes occurrences on that line. Source order does not establish method invocation order for properties. Loop initialization, tests, bodies, updates and exits are modeled; recurrence and iterator/alias effects retain explicit Unknown reasons. Calls, heap state and closures remain analysis boundaries. experimental issue result.json previews a report and asks before sending; the default is No.');
     }
 
     /**
@@ -136,9 +136,6 @@ final class ExperimentalCommand extends Command
         }
         $reader = new InputConfigReader($input);
         $line = ExperimentalConfigReader::coordinate($reader, 'line');
-        if ($line === null) {
-            throw new InspectionRejected('The --line option is required.');
-        }
         $variable = $input->getOption('variable');
         if ($variable !== null && (!is_string($variable) || preg_match('/^\$?[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/D', $variable) !== 1)) {
             throw new InspectionRejected('The --variable option must name a PHP variable.');

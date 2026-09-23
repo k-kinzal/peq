@@ -130,6 +130,19 @@ final class DependencyGraph
     }
 
     /**
+     * Commits a speculative transfer after proving that it cannot repeat.
+     */
+    public function adopt(self $trial): void
+    {
+        $this->nodes = $trial->nodes;
+        $this->edges = $trial->edges;
+        $this->issues = $trial->issues;
+        $this->scalars = $trial->scalars;
+        $this->testedOrigins = $trial->testedOrigins;
+        $this->diagnostics = $trial->diagnostics;
+    }
+
+    /**
      * @return list<string>
      *
      * @throws InspectionException If the requested analysis or encoding is rejected
@@ -138,13 +151,13 @@ final class DependencyGraph
     {
         $roots = [];
         foreach ($this->nodes as $node) {
-            if (!in_array($node->kind, ['unbound', 'receiver', 'unknown-write', 'unknown-continuation'], true) && $node->line === $line && ($variable === null || $node->variable === '$'.ltrim($variable, '$'))
+            if ($this->selectable($node) && $node->line === $line && ($variable === null || $node->variable === '$'.ltrim($variable, '$'))
                 && ($column === null || $node->column === $column)
             ) {
                 $roots[] = $node->id;
             }
         }
-        if ($roots === [] && $this->inventory !== null) {
+        if ($roots === [] && $this->inventory !== null && !str_contains($this->target, '::$')) {
             foreach ($this->inventory->sites as $site) {
                 $node = $site->source;
                 if ($node->line === $line && ($variable === null || $node->variable === '$'.ltrim($variable, '$')) && ($column === null || $node->column === $column)) {
@@ -159,5 +172,25 @@ final class DependencyGraph
         }
 
         return $roots;
+    }
+
+    /**
+     * Excludes synthetic state and keeps property addresses separate from local names.
+     */
+    public function selectable(Occurrence $node): bool
+    {
+        if (str_contains($this->target, '::$')) {
+            return in_array($node->kind, ['property-declaration', 'property-access'], true);
+        }
+
+        return !in_array($node->kind, ['unbound', 'receiver', 'unknown-write', 'unknown-continuation', 'loop-input'], true);
+    }
+
+    /**
+     * Starts an independent callable analysis over the same source text.
+     */
+    public function emptyCopy(): self
+    {
+        return new self($this->target, $this->file, $this->source);
     }
 }

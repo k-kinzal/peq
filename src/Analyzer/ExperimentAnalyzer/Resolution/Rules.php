@@ -23,6 +23,8 @@ final class Rules
         if ($node instanceof Stmt) {
             return match ($node::class) {
                 Stmt\If_::class, Stmt\Expression::class, Stmt\Return_::class,
+                Stmt\While_::class, Stmt\Do_::class, Stmt\For_::class, Stmt\Foreach_::class,
+                Stmt\Break_::class, Stmt\Continue_::class,
                 Stmt\Echo_::class, Stmt\Nop::class => ['structured-statement', ''],
                 default => ['UNSUPPORTED_STATEMENT', 'No checked transfer rule for '.$node->getType().'; its body and continuation remain unknown.'],
             };

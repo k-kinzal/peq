@@ -122,27 +122,6 @@ $ peq graph 'MATCH (c:Class)-[:declaresMethod]->(m:Method WHERE m.visibility = "
 
 `--output` takes the same formats as above: `graph`, `mermaid` and `dot` draw the part of the graph the answer holds, and `tree` draws the paths it bound. `--hops` sets the largest upper bound a repetition such as `{1,6}` may be written with (10 by default).
 
-## Experimental variable inspection
-
-Inspect the possible data and control dependencies of a variable at a source line,
-or reverse the arrows to see what that occurrence can affect:
-
-```bash
-peq experimental inspect 'App\Gql\Lexing\SourceCursor::capture' src \
-  --line 111 --variable matched --output=json
-peq experimental inspect 'App\Config\ConfigLoader::load' src \
-  --line 41 --direction=used-by --output=mermaid
-```
-
-This uses `ExperimentAnalyzer`, an isolated copy and extension of the native pipeline.
-It preserves source structure and solves checked local assignment/branch rules.
-Unsolved regions remain reasoned Unknown nodes; JSON exposes `analysis.complete`, and
-`--strict` exits 2 for incomplete or depth-limited answers. `peq experimental issue
-result.json` previews an issue and requires a final Yes before sending. This command
-is not selected by `--type` and does not change standard inspection or GQL. See
-[experimental variable dependencies](docs/experimental-variable-analysis.md) for
-occurrence selection, edge semantics, supported constructs and limitations.
-
 ## Analyzers
 
 | `--type`  | What it does | Sources it reads | Where it is available |
@@ -150,8 +129,7 @@ occurrence selection, edge semantics, supported constructs and limitations.
 | `phpstan` | Builds the graph from PHPStan's analysis. The reference engine. | PHP 7.1 – 8.5 | Installed from source or via Composer |
 | `native`  | Reads the sources directly with a parser. Between 13x and 59x faster, and checked to build the same graph. | PHP 5.6 – 8.5 | Everywhere, including the released PHAR |
 
-The released PHAR uses `native` for standard inspection and includes the native-based
-experimental command. It carries no PHPStan runtime.
+The released PHAR carries only `native`.
 
 ## Analyzed PHP version
 

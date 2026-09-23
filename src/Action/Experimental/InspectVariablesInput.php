@@ -17,7 +17,7 @@ final readonly class InspectVariablesInput
     public function __construct(
         public Config $config,
         public string $target,
-        public int $line,
+        public ?int $line = null,
         public ?string $variable = null,
         public ?int $column = null,
     ) {}

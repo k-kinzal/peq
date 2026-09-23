@@ -28,6 +28,9 @@ final class Inspection
      */
     public function inspect(SourceIndex $index, string $target): DependencyGraph
     {
+        if (str_contains($target, '::$')) {
+            return (new Properties())->inspect($index, $target);
+        }
         $found = null;
         foreach ($index->sources() as $source) {
             foreach ($this->callables($source->statements) as $name => $callable) {
@@ -104,7 +107,7 @@ final class Inspection
         if ($unstructured !== null || $aliases !== []) {
             (new \App\Analyzer\ExperimentAnalyzer\Resolution\Boundary($graph))->read($callable, $state, 'NONLOCAL_FLOW', 'Jump targets or aliased parameters require a whole-callable model.');
         } else {
-            (new Statements(new Expressions($recording)))->read($body, $state);
+            (new Statements(new Expressions($recording)))->read($body, $state)->validate($graph);
         }
 
         return $graph;
