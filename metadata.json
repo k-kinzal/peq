@@ -1,0 +1,58 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M3717BH6GAWF4169G1Q4RSYC",
+  "strategy": "manual-commit",
+  "branch": "feat/experimental-variable-dependencies",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".github/workflows/ci.yaml",
+    "README.md",
+    "docs/experimental-variable-analysis.md",
+    "docs/wordpress-variable-validation.md",
+    "src/Action/Experimental/InspectVariablesAction.php",
+    "src/Action/Experimental/InspectVariablesInput.php",
+    "src/Action/Experimental/VariableTarget.php",
+    "src/Analyzer/ExperimentAnalyzer/DataFlow/DependencyGraph.php",
+    "src/Analyzer/ExperimentAnalyzer/DataFlow/Inspection.php",
+    "src/Analyzer/ExperimentAnalyzer/DataFlow/Properties.php",
+    "src/Analyzer/ExperimentAnalyzer/DataFlow/Selection.php",
+    "src/Analyzer/ExperimentAnalyzer/Flow/Exits.php",
+    "src/Analyzer/ExperimentAnalyzer/Flow/LoopTransfers.php",
+    "src/Analyzer/ExperimentAnalyzer/Flow/Loops.php",
+    "src/Analyzer/ExperimentAnalyzer/Flow/Statements.php",
+    "src/Analyzer/ExperimentAnalyzer/Resolution/Repetition.php",
+    "src/Analyzer/ExperimentAnalyzer/Resolution/Rules.php",
+    "src/Command/ExperimentalCommand.php",
+    "tests/External/WordPressCorpusTest.php",
+    "tests/External/WordPressExperimentalTest.php",
+    "tests/Fixture/Experimental/Properties.php",
+    "tests/Integration/ExperimentalSelfAnalysisTest.php",
+    "tests/Unit/Action/Experimental/VariableTargetTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/DataFlow/DependencyGraphTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/DataFlow/PropertiesTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/DataFlow/SelectionTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/ExitsTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/LoopTransfersTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/LoopsTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Flow/StatementsTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Resolution/BoundaryTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Resolution/RepetitionTest.php",
+    "tests/Unit/Command/ExperimentalCommandTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 2148801,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 59671424,
+    "output_tokens": 436624,
+    "api_call_count": 483
+  }
+}
