@@ -260,6 +260,14 @@ jobs:
 
           ./dist/peq.phar 'App\Analyzer\Graph\Graph' src -L 1 --output=mermaid | grep -q '^flowchart LR$'
 
+      - name: Check the PHAR inspects experimental variable dependencies
+        run: |
+          set -euo pipefail
+
+          ./dist/peq.phar experimental inspect 'App\Gql\Lexing\SourceCursor:capture$matched' src \
+            --output=json \
+            | php -r '$graph = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR); if (($graph["experimental"] ?? false) !== true || $graph["edges"] === []) { exit(1); }'
+
       - name: Check the PHAR answers a GQL query
         run: |
           set -euo pipefail
