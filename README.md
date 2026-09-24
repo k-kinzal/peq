@@ -163,6 +163,22 @@ $ peq graph 'MATCH (c:Class)-[:declaresMethod]->(m:Method WHERE m.visibility = "
 
 `--output` takes the same formats as above: `graph`, `mermaid` and `dot` draw the part of the graph the answer holds, and `tree` draws the paths it bound. `--hops` sets the largest upper bound a repetition such as `{1,6}` may be written with (10 by default).
 
+For a drawing, return nodes, edges or paths themselves: `RETURN m, t` preserves
+graph elements, while `RETURN m.id, t.id` returns strings. For a tree, bind and return
+a path:
+
+```bash
+peq graph 'MATCH (m:Method)-[:methodCall]->(t) RETURN m, t' src --output=graph
+peq graph 'MATCH p = (m:Method)-[:methodCall]->(t) RETURN p' src --output=tree
+```
+
+A nonempty result without elements the requested format can draw exits with code 1
+and explains on stderr how to return elements or switch to `--output=table` or
+`--output=json`. This also applies to `--schema`, which needs table or JSON output.
+A query with no rows still succeeds (exit code 0) and reports `[02000] note: no data`
+on stderr. JSON carries that status in its output document instead. Diagnostics
+stay out of stdout so they do not become part of a redirected diagram.
+
 ### Calls, implementations and attributes
 
 The full graph distinguishes source calls from possible dispatches:

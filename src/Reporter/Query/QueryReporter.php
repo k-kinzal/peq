@@ -23,6 +23,8 @@ interface QueryReporter
      *
      * @param ResultTable     $result What the query answered
      * @param OutputInterface $output Where it is written
+     *
+     * @throws QueryOutputException When a nonempty result cannot be drawn in this format
      */
     public function report(ResultTable $result, OutputInterface $output): void;
 }

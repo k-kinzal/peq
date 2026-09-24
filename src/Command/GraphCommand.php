@@ -19,6 +19,7 @@ use App\Gql\Element\ElementGraph;
 use App\Gql\Element\GraphSchema;
 use App\Gql\GqlException;
 use App\Gql\Result\ResultTable;
+use App\Reporter\Query\QueryOutputException;
 use App\Reporter\Query\QueryReporterFactory;
 use Override;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -27,6 +28,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -102,7 +104,7 @@ final class GraphCommand extends Command
      * @param OutputInterface $output Where the answer and any failure is written
      *
      * @return int Command::SUCCESS, Command::INVALID for unusable arguments, or
-     *             Command::FAILURE when the configuration or the query is rejected
+     *             Command::FAILURE when the configuration, query or output is rejected
      */
     #[Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -140,7 +142,7 @@ final class GraphCommand extends Command
      * @param string          $configPath Where the configuration file is
      * @param null|string     $query      The query to run, or null to write the vocabulary instead
      *
-     * @return int Command::SUCCESS, or Command::FAILURE when the configuration or the query is rejected
+     * @return int Command::SUCCESS, or Command::FAILURE when the configuration, query or output is rejected
      */
     public function answer(InputInterface $input, OutputInterface $output, string $configPath, ?string $query): int
     {
@@ -155,18 +157,19 @@ final class GraphCommand extends Command
             $answered = $query === null
                 ? null
                 : $this->action->execute(new QueryActionInput(config: $config, query: $query));
-        } catch (ConfigException|GqlException $rejected) {
-            $output->writeln(sprintf('<error>%s</error>', $rejected->getMessage()));
+
+            $this->write(
+                $config,
+                $answered === null ? GraphSchema::table() : $answered->result,
+                $answered?->graph,
+                $output,
+            );
+        } catch (ConfigException|GqlException|QueryOutputException $rejected) {
+            $diagnostic = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
+            $diagnostic->writeln(sprintf('<error>%s</error>', $rejected->getMessage()));
 
             return Command::FAILURE;
         }
-
-        $this->write(
-            $config,
-            $answered === null ? GraphSchema::table() : $answered->result,
-            $answered?->graph,
-            $output,
-        );
 
         return Command::SUCCESS;
     }
@@ -178,9 +181,18 @@ final class GraphCommand extends Command
      * @param ResultTable       $result What the query answered
      * @param null|ElementGraph $graph  The graph it was answered from, or null when there is none
      * @param OutputInterface   $output Where it is written
+     *
+     * @throws QueryOutputException When a nonempty result cannot be drawn in the requested format
      */
     public function write(Config $config, ResultTable $result, ?ElementGraph $graph, OutputInterface $output): void
     {
+        if ($result->rows === [] && $config->output !== OutputFormat::Json) {
+            $diagnostic = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
+            $diagnostic->writeln(sprintf('[%s] %s', $result->status()->value, $result->status()->condition()), OutputInterface::OUTPUT_RAW);
+
+            return;
+        }
+
         $this->reporters->create($config, $graph)->report($result, $output);
     }
 }

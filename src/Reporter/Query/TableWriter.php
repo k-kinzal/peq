@@ -22,9 +22,8 @@ use Symfony\Component\Console\Output\OutputInterface;
  * which a reader who is about to write a second query needs in order to know what
  * they can compare the first one's answer against.
  *
- * A query that found nothing writes nothing at all: a table with headings and no rows
- * would look like an answer. What it found is said by its status, 02000 no data,
- * which the JSON format carries.
+ * A query that found nothing has no table to draw. The command reports its status,
+ * 02000 no data, on stderr; the JSON format carries that status in its document.
  *
  * @visibility App\Reporter
  */

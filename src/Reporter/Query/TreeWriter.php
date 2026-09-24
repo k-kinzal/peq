@@ -24,9 +24,8 @@ use Symfony\Component\Console\Output\OutputInterface;
  * holds; this draws whatever the query chose to bind, so the tree is of the reader's
  * own question rather than of the whole graph.
  *
- * A query that binds no path writes nothing here, and its answer is a table. Binding
- * one is a deliberate act — `MATCH p = (a)-[:call]->{1,4}(b)` — and a reader who did
- * not do it did not ask for a tree.
+ * A nonempty answer without paths cannot be drawn as a tree. Report that mismatch
+ * so a reader can bind and return a path or choose a table for the existing result.
  *
  * @visibility App\Reporter
  */
@@ -37,12 +36,18 @@ final class TreeWriter implements QueryReporter
      *
      * @param ResultTable     $result What the query answered
      * @param OutputInterface $output Where it is written
+     *
+     * @throws QueryOutputException When a nonempty result contains no paths
      */
     #[Override]
     public function report(ResultTable $result, OutputInterface $output): void
     {
         $paths = self::paths($result);
         if ($paths === []) {
+            if ($result->rows !== []) {
+                throw new QueryOutputException('Tree output requires paths, but the result contains none. Bind and return a path (for example, MATCH p = (a)-->(b) RETURN p), or use --output=table or --output=json.');
+            }
+
             return;
         }
 

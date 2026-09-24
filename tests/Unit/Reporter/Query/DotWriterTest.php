@@ -104,6 +104,7 @@ use App\Reporter\Diagram\Diagram;
 use App\Reporter\Diagram\DiagramEdge;
 use App\Reporter\Diagram\DiagramNode;
 use App\Reporter\Query\DotWriter;
+use App\Reporter\Query\QueryOutputException;
 use App\Reporter\Query\ResultElements;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
@@ -321,14 +322,15 @@ final class DotWriterTest extends TestCase
         );
     }
 
-    public function testReportWritesNothingForAnAnswerThatHoldsNoSymbols(): void
+    public function testReportRejectsAnAnswerWithoutTheRequiredElements(): void
     {
         $answered = new ResultTable([new ResultColumn('n', 'INT64')], [new ResultRow([new IntegerDatum(1)])]);
         $output = new BufferedOutput();
 
-        (new DotWriter())->report($answered, $output);
+        $this->expectException(QueryOutputException::class);
+        $this->expectExceptionMessage('Graph output requires nodes, edges or paths, but the result contains none. Return elements (for example, RETURN n instead of RETURN n.id), or use --output=table or --output=json.');
 
-        self::assertSame('', $output->fetch());
+        (new DotWriter())->report($answered, $output);
     }
 
     public function testReportWritesNothingForAnAnswerThatFoundNothing(): void
