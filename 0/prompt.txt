@@ -1,0 +1,9 @@
+native engineにおいてDocBlockの解析ができていないようです。おそらくこれはPHPStan Engine側と挙動が違っています。
+PHPStanと挙動をそろえるためにPHPStanのサポートするdocコメントのアノテーション構文を確認するDifferenceテストを作り、同じ挙動になるようにしてください。
+これはtests/diff/に配置してcomposer test:diffでdiffのtest suiteを実行する想定です。
+
+修正はWorktreeで行い、PRを作成ください。このPJは英語PJであることに注意ください。
+
+---
+
+すみません。tests/diff/は間違えてました。tests/Diffですね。じゃないとAutoloadの設定ができないので。
