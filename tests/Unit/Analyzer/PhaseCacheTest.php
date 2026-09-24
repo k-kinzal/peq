@@ -31,7 +31,21 @@ final class PhaseCacheTest extends TestCase
 {
     public function testInWorkingDirectoryDoesNotCreateFilesUntilAValueIsRequested(): void
     {
-        self::assertInstanceOf(PhaseCache::class, PhaseCache::inWorkingDirectory());
+        $directory = WorkingDirectory::at(sys_get_temp_dir().'/peq-cache-'.uniqid());
+        $previous = getcwd();
+        self::assertNotFalse($previous);
+        chdir($directory->path);
+
+        try {
+            $cache = PhaseCache::inWorkingDirectory();
+            self::assertNotNull($cache);
+            self::assertDirectoryDoesNotExist($directory->path.'/.peq.cache');
+            $cache->remember('graph', 'project', 'contents', Graph::class, static fn (): Graph => new Graph());
+            self::assertFileExists($directory->path.'/.peq.cache/version');
+        } finally {
+            chdir($previous);
+            $directory->delete();
+        }
     }
 
     public function testRememberAFreshInstanceReusesAPhaseWithoutRunningItsComputation(): void

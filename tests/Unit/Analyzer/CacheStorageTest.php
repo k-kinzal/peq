@@ -90,4 +90,53 @@ final class CacheStorageTest extends TestCase
         $directory->delete();
         $outside->delete();
     }
+
+    public function testLockedCreatesPrivateCacheDirectoriesBeforeRunningTheOperation(): void
+    {
+        $directory = WorkingDirectory::at(sys_get_temp_dir().'/peq-cache-'.uniqid());
+        $storage = new CacheStorage($directory->path.'/nested/cache', 'v1');
+
+        self::assertSame('ready', $storage->locked(static fn (): string => 'ready'));
+        self::assertSame(0o700, fileperms($storage->directory) & 0o777);
+        self::assertSame('v1', file_get_contents($storage->directory.'/version'));
+        $directory->delete();
+    }
+
+    public function testLockedRejectsASymlinkedLockFile(): void
+    {
+        $directory = WorkingDirectory::at(sys_get_temp_dir().'/peq-cache-'.uniqid());
+        $outside = WorkingDirectory::at(sys_get_temp_dir().'/peq-outside-'.uniqid());
+        $file = $outside->write('keep', 'user data');
+        symlink($file, $directory->path.'/.lock');
+
+        self::assertNull((new CacheStorage($directory->path, 'v1'))->locked(static fn (): string => 'must not run'));
+        self::assertSame('user data', file_get_contents($file));
+        self::assertFileDoesNotExist($directory->path.'/version');
+        unlink($directory->path.'/.lock');
+        $directory->delete();
+        $outside->delete();
+    }
+
+    public function testPrepareReturnsTrueForAnExistingVersionAndRetainsItsEntries(): void
+    {
+        $directory = WorkingDirectory::at(sys_get_temp_dir().'/peq-cache-'.uniqid());
+        $storage = new CacheStorage($directory->path, 'v1');
+        $storage->locked(static fn (): ?string => null);
+        $storage->write('graph.cache', 'graph');
+
+        self::assertTrue($storage->prepare());
+        self::assertSame('ready', $storage->locked(static fn (): string => 'ready'));
+        self::assertSame('graph', file_get_contents($directory->path.'/graph.cache'));
+        $directory->delete();
+    }
+
+    public function testRemoveDeletesNestedCacheData(): void
+    {
+        $directory = WorkingDirectory::at(sys_get_temp_dir().'/peq-cache-'.uniqid());
+        WorkingDirectory::at($directory->path.'/phase/nested')->write('entry', 'old');
+
+        self::assertTrue(CacheStorage::remove($directory->path.'/phase'));
+        self::assertDirectoryDoesNotExist($directory->path.'/phase');
+        $directory->delete();
+    }
 }

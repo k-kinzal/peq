@@ -83,4 +83,35 @@ final class CachedSyntaxTest extends TestCase
         self::assertNull($modern->statements);
         self::assertNull($invalid->statements);
     }
+
+    public function testReadMissingSourcesAreNotParsed(): void
+    {
+        $parser = $this->createMock(Parser::class);
+        $parser->expects(self::never())->method('parse');
+
+        self::assertNull(CachedSyntax::read(__DIR__.'/missing.php', $parser)->statements);
+    }
+
+    public function testParseResolvesNamesWithoutACache(): void
+    {
+        $syntax = CachedSyntax::parse('<?php function run() {}', SourceParser::forVersion(80300));
+
+        self::assertNotNull($syntax->statements);
+        self::assertInstanceOf(Function_::class, $syntax->statements[0]);
+        self::assertSame('run', $syntax->statements[0]->namespacedName?->toString());
+    }
+
+    public function testReadFilesWithIdenticalContentsKeepIndependentEntries(): void
+    {
+        $directory = WorkingDirectory::at(sys_get_temp_dir().'/peq-cache-'.uniqid());
+        $first = $directory->write('first.php', '<?php function run() {}');
+        $second = $directory->write('second.php', '<?php function run() {}');
+        $cache = new PhaseCache(new CacheStorage($directory->path.'/.peq.cache', 'v1'));
+        CachedSyntax::read($first, SourceParser::forVersion(80300), 80300, $cache);
+        $parser = $this->createMock(Parser::class);
+        $parser->expects(self::once())->method('parse')->willReturn([]);
+
+        self::assertSame([], CachedSyntax::read($second, $parser, 80300, $cache)->statements);
+        $directory->delete();
+    }
 }
