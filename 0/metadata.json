@@ -1,0 +1,69 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M39P8MSHHSMDPX93SS797GZN",
+  "session_id": "01a0d34b-2535-76d0-adc7-4344dca573c2",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-24T12:29:23.384032Z",
+  "branch": "feat/phase-cache",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".gitignore",
+    "README.md",
+    "bin/console",
+    "src/Action/AnalyzerChoice.php",
+    "src/Analyzer/AnalysisInputs.php",
+    "src/Analyzer/CacheCodec.php",
+    "src/Analyzer/CacheStorage.php",
+    "src/Analyzer/CachedSyntax.php",
+    "src/Analyzer/CallEnrichment.php",
+    "src/Analyzer/CallSources.php",
+    "src/Analyzer/ExecutionVersion.php",
+    "src/Analyzer/NativeAnalyzer/NativeAnalyzer.php",
+    "src/Analyzer/NativeAnalyzer/SourceIndex.php",
+    "src/Analyzer/PhaseCache.php",
+    "src/Analyzer/PhpStanAnalyzer/PhpStanAnalyzer.php",
+    "tests/Integration/AnalysisCacheTest.php",
+    "tests/Unit/Action/AnalyzerChoiceTest.php",
+    "tests/Unit/Analyzer/AnalysisInputsTest.php",
+    "tests/Unit/Analyzer/CacheCodecTest.php",
+    "tests/Unit/Analyzer/CacheStorageTest.php",
+    "tests/Unit/Analyzer/CachedSyntaxTest.php",
+    "tests/Unit/Analyzer/CallSourcesTest.php",
+    "tests/Unit/Analyzer/ExecutionVersionTest.php",
+    "tests/Unit/Analyzer/NativeAnalyzer/NativeAnalyzerTest.php",
+    "tests/Unit/Analyzer/NativeAnalyzer/SourceIndexTest.php",
+    "tests/Unit/Analyzer/PhaseCacheTest.php"
+  ],
+  "agent": "Codex",
+  "model": "gpt-6-astra",
+  "turn_id": "b97fb50dc2e9",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 156963,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 5392512,
+    "output_tokens": 47018,
+    "api_call_count": 48
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-24T12:29:23.318849Z",
+    "agent_lines": 1588,
+    "agent_removed": 41,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1588,
+    "total_lines_changed": 1629,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
