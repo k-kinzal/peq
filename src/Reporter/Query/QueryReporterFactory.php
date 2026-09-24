@@ -21,7 +21,8 @@ use Symfony\Component\Console\Terminal;
  *
  * What differs is what each format means for a table rather than for a walk. A table
  * is written as a table; a drawing is of the piece of graph the answer holds; and a
- * tree is of the paths the query chose to bind, which is nothing unless it bound some.
+ * tree is of the paths the query returned. A nonempty result without the required
+ * elements is rejected with guidance on choosing a format or returning elements.
  */
 final class QueryReporterFactory
 {

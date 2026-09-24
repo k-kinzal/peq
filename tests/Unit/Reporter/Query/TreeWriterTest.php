@@ -98,6 +98,7 @@ use App\Gql\Syntax\Pattern\PathPattern;
 use App\Gql\Syntax\Pattern\Quantifier;
 use App\Gql\Syntax\Query;
 use App\Gql\Syntax\QueryBlock;
+use App\Reporter\Query\QueryOutputException;
 use App\Reporter\Query\ResultElements;
 use App\Reporter\Query\TreeStep;
 use App\Reporter\Query\TreeWriter;
@@ -311,14 +312,15 @@ final class TreeWriterTest extends TestCase
         );
     }
 
-    public function testReportWritesNothingForAnAnswerThatBoundNoPath(): void
+    public function testReportRejectsAnAnswerWithoutTheRequiredElements(): void
     {
         $answered = new ResultTable([new ResultColumn('p', 'NODE')], [new ResultRow([new NodeDatum('App\Http\Kernel')])]);
         $output = new BufferedOutput();
 
-        (new TreeWriter())->report($answered, $output);
+        $this->expectException(QueryOutputException::class);
+        $this->expectExceptionMessage('Tree output requires paths, but the result contains none. Bind and return a path (for example, MATCH p = (a)-->(b) RETURN p), or use --output=table or --output=json.');
 
-        self::assertSame('', $output->fetch());
+        (new TreeWriter())->report($answered, $output);
     }
 
     public function testReportWritesNothingForAnAnswerThatFoundNothing(): void

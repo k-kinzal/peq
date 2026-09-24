@@ -167,8 +167,6 @@ final class QueryReporterTest extends TestCase
 
                 DOT,
         ];
-
-        yield 'a tree of the paths it bound, which is none' => [new TreeWriter(), ''];
     }
 
     #[DataProvider('providerEveryWayOfWritingAnAnswerHoldingOnePath')]

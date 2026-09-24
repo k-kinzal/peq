@@ -19,9 +19,8 @@ use Symfony\Component\Console\Output\OutputInterface;
  * that comes next — and because the query has already cut the graph down to what
  * matters, the drawing is small enough to read.
  *
- * An answer that holds no symbols and no relations draws nothing. A query that
- * returned names or counts has an answer, and it is a table; drawing an empty diagram
- * for it would suggest the query found nothing.
+ * A nonempty answer that holds no symbols or relations cannot be drawn. Report that
+ * mismatch so a reader can return elements or choose a table for names and counts.
  *
  * @visibility App\Reporter
  */
@@ -41,12 +40,18 @@ final readonly class DiagramWriter implements QueryReporter
      *
      * @param ResultTable     $result What the query answered
      * @param OutputInterface $output Where it is written
+     *
+     * @throws QueryOutputException When a nonempty result contains no graph elements
      */
     #[Override]
     public function report(ResultTable $result, OutputInterface $output): void
     {
         $diagram = ResultElements::of($result, $this->graph);
         if ($diagram->empty()) {
+            if ($result->rows !== []) {
+                throw new QueryOutputException('Graph output requires nodes, edges or paths, but the result contains none. Return elements (for example, RETURN n instead of RETURN n.id), or use --output=table or --output=json.');
+            }
+
             return;
         }
 

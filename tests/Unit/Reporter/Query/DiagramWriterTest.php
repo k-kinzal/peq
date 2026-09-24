@@ -112,6 +112,7 @@ use App\Reporter\Diagram\Layout\RowPlacement;
 use App\Reporter\Diagram\MermaidRenderer;
 use App\Reporter\Diagram\TerminalRenderer;
 use App\Reporter\Query\DiagramWriter;
+use App\Reporter\Query\QueryOutputException;
 use App\Reporter\Query\ResultElements;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
@@ -348,14 +349,15 @@ final class DiagramWriterTest extends TestCase
         self::assertSame("App\\Domain\\Invoice::total ──▶ App\\Cache\\Store::get\n", $output->fetch());
     }
 
-    public function testReportDrawsNothingForAnAnswerThatHoldsNoSymbols(): void
+    public function testReportRejectsAnAnswerWithoutTheRequiredElements(): void
     {
         $answered = new ResultTable([new ResultColumn('n', 'INT64')], [new ResultRow([new IntegerDatum(1)])]);
         $output = new BufferedOutput();
 
-        (new DiagramWriter(null, new MermaidRenderer()))->report($answered, $output);
+        $this->expectException(QueryOutputException::class);
+        $this->expectExceptionMessage('Graph output requires nodes, edges or paths, but the result contains none. Return elements (for example, RETURN n instead of RETURN n.id), or use --output=table or --output=json.');
 
-        self::assertSame('', $output->fetch());
+        (new DiagramWriter(null, new MermaidRenderer()))->report($answered, $output);
     }
 
     public function testReportDrawsNothingForAnAnswerThatFoundNothing(): void
