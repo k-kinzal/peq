@@ -1,0 +1,57 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M39RFV0RAB1NK4QRAKC5TG2S",
+  "strategy": "manual-commit",
+  "branch": "fix/native-phpdoc-diff",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".github/workflows/ci.yaml",
+    "AGENTS.md",
+    "README.md",
+    "composer.json",
+    "composer.lock",
+    "phpunit.xml.dist",
+    "src/Analyzer/Declaration/PhpDoc/DocDependencies.php",
+    "src/Analyzer/Declaration/PhpDoc/DocNames.php",
+    "src/Analyzer/Declaration/PhpDoc/DocOwners.php",
+    "src/Analyzer/Declaration/PhpDoc/DocParser.php",
+    "src/Analyzer/Declaration/PhpDoc/DocScope.php",
+    "src/Analyzer/Declaration/PhpDoc/DocVisitor.php",
+    "src/Analyzer/ExperimentAnalyzer/ExperimentAnalyzer.php",
+    "src/Analyzer/Graph/Edge/Declaration/PhpDocEdge.php",
+    "src/Analyzer/Graph/EdgeKind.php",
+    "src/Analyzer/NativeAnalyzer/NativeAnalyzer.php",
+    "src/Analyzer/PhpStanAnalyzer/PhpStanAnalyzer.php",
+    "src/Gql/Element/EdgeLabels.php",
+    "tests/Contract/Analyzer/AnalysedOutputContractTest.php",
+    "tests/Fixture/Analyzer/EquivalenceCorpus.php",
+    "tests/Unit/Analyzer/DebugAnalyzer/Generator/NodeIdGeneratorTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocDependenciesTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocNamesTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocOwnersTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocParserTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocScopeTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocVisitorTest.php",
+    "tests/Unit/Analyzer/Graph/Edge/Declaration/PhpDocEdgeTest.php",
+    "tests/Unit/Analyzer/PhpStanAnalyzer/Collector/DependencyCollectorTest.php",
+    "tests/Unit/Analyzer/PhpStanAnalyzer/Collector/InClassMethodCollectorTest.php",
+    "tests/Unit/Gql/Element/EdgeLabelsTest.php",
+    "tests/diff/PhpDocDifferenceTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 220474,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 9642368,
+    "output_tokens": 63750,
+    "api_call_count": 67
+  }
+}
