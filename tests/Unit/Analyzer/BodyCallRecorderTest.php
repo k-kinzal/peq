@@ -102,4 +102,59 @@ final class BodyCallRecorderTest extends TestCase
 
         self::assertSame([$method], $recorder->targets('Named&Countable', 'name'));
     }
+
+    public function testRecordUsesLocalAssignmentsAndKeepsResolvedNodesAndSourcePositions(): void
+    {
+        $graph = new Graph();
+        $source = new FunctionNode(FunctionNodeId::of('run'), true, new FileMeta('/source.php', 1, 1));
+        $body = [new Expression(new \PhpParser\Node\Expr\Assign(new Variable('service'), new \PhpParser\Node\Expr\New_(new \PhpParser\Node\Name('Service')))), new Expression(new \PhpParser\Node\Expr\NullsafeMethodCall(new Variable('service'), 'run', [], ['startLine' => 3, 'startFilePos' => 42]))];
+
+        (new BodyCallRecorder($graph, new ClassHierarchy($graph)))->record($body, $source);
+        $edges = $graph->forwardEdges();
+
+        self::assertCount(1, $edges);
+        self::assertSame('Service::run', $edges[0]->to()->toString());
+        self::assertNotNull($graph->nodeNamed('Service::run'));
+        self::assertSame(['/source.php', 3, 1, 42], [$edges[0]->meta()->path, $edges[0]->meta()->line, $edges[0]->meta()->column, $edges[0]->meta()->offset]);
+    }
+
+    public function testCallLeavesNamedThisCallsToTheSourceEmitter(): void
+    {
+        $graph = new Graph();
+        $source = new \App\Analyzer\Graph\Node\MethodNode(\App\Analyzer\Graph\NodeId\MethodNodeId::of('Service', 'run'), true, new FileMeta('/source.php', 1, 1));
+        $hierarchy = new ClassHierarchy($graph);
+
+        (new BodyCallRecorder($graph, $hierarchy))->call(new MethodCall(new Variable('this'), 'named'), $source, new ReceiverBinding($hierarchy, $source));
+
+        self::assertSame([], $graph->forwardEdges());
+    }
+
+    public function testCallKeepsDynamicMethodNamesAsUnresolvedEvidence(): void
+    {
+        $graph = new Graph();
+        $source = new \App\Analyzer\Graph\Node\MethodNode(\App\Analyzer\Graph\NodeId\MethodNodeId::of('Service', 'run'), true, new FileMeta('/source.php', 1, 1));
+        $hierarchy = new ClassHierarchy($graph);
+        $call = new MethodCall(new Variable('this'), new Variable('name'), [], ['startLine' => 2, 'startFilePos' => 20]);
+
+        (new BodyCallRecorder($graph, $hierarchy))->call($call, $source, new ReceiverBinding($hierarchy, $source));
+        $target = $graph->nodeNamed('unresolved-call@/source.php:20');
+        $edges = $graph->forwardEdges();
+
+        self::assertNotNull($target);
+        self::assertFalse($target->resolved());
+        self::assertCount(1, $edges);
+        self::assertInstanceOf(\App\Analyzer\Graph\Edge\Usage\MethodCallEdge::class, $edges[0]);
+        self::assertSame('$this->{$name}()', $edges[0]->expression);
+    }
+
+    public function testCallDoesNotInventALocationForASymbolWithoutSource(): void
+    {
+        $graph = new Graph();
+        $source = new FunctionNode(FunctionNodeId::of('run'));
+        $hierarchy = new ClassHierarchy($graph);
+
+        (new BodyCallRecorder($graph, $hierarchy))->call(new MethodCall(new Variable('unknown'), 'run'), $source, new ReceiverBinding($hierarchy, $source));
+
+        self::assertSame([], $graph->forwardEdges());
+    }
 }

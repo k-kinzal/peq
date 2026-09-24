@@ -166,4 +166,69 @@ final class InspectionGraphTest extends TestCase
 
         self::assertSame(['Service', 'Service::run', 'Controller::action'], $visited);
     }
+
+    public function testDependenciesIncludeTypesOfReadInstanceAndStaticProperties(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'peq-depend-');
+        self::assertNotFalse($file);
+        file_put_contents($file, '<?php class Controller { public First $first; public static Second $second; function action() { $this->first; self::$second; } } class First {} class Second {}');
+        $graph = (new NativeAnalyzer())->analyze($file);
+        unlink($file);
+        $root = $graph->nodeNamed('Controller::action');
+        self::assertNotNull($root);
+
+        $selected = InspectionGraph::dependencies($graph, $root, Direction::Uses);
+
+        self::assertSame(['Controller::action', 'First', 'Second'], array_map(static fn ($node): string => $node->id()->toString(), $selected->nodes()));
+        self::assertSame(['First', 'Second'], array_map(static fn ($edge): string => $edge->to()->toString(), $selected->forwardEdges()));
+    }
+
+    public function testCallsKeepTheirNodesAndIncludePrivateMethodsDeclaredByTheRoot(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'peq-depend-');
+        self::assertNotFalse($file);
+        file_put_contents($file, '<?php class Base { private function hidden() {} public function inherited() {} public function overridden() {} } class Child extends Base { private function own() {} public function overridden() {} }');
+        $graph = (new NativeAnalyzer())->analyze($file);
+        unlink($file);
+        $root = $graph->nodeNamed('Child');
+        self::assertNotNull($root);
+
+        $calls = InspectionGraph::calls($graph, $root);
+        $targets = array_map(static fn ($edge): string => $edge->to()->toString(), $calls->forwardEdges());
+        sort($targets);
+
+        self::assertSame(['Base::inherited', 'Child::overridden', 'Child::own'], $targets);
+        self::assertSame($graph->nodes(), $calls->nodes());
+    }
+
+    public function testCallableScopeContinuesOtherBranchesAfterACycle(): void
+    {
+        $graph = new Graph();
+        $root = new MethodNode(MethodNodeId::of('Controller', 'action'));
+        $first = new MethodNode(MethodNodeId::of('First', 'run'));
+        $second = new MethodNode(MethodNodeId::of('Second', 'run'));
+        $meta = new FileMeta('/source.php', 1, 1);
+        $graph->addEdges([new MethodCallEdge($root, $first, $meta), new MethodCallEdge($root, $second, $meta), new MethodCallEdge($second, $root, $meta)]);
+
+        self::assertSame(['Controller::action' => true, 'Second::run' => true, 'First::run' => true], InspectionGraph::callableScope($graph, $root, Direction::Uses));
+    }
+
+    public function testDependenciesKeepAnIsolatedRootAndUseTheRequestedReverseScope(): void
+    {
+        $graph = new Graph();
+        $controller = new ClassNode(ClassNodeId::of('Controller'), true);
+        $service = new ClassNode(ClassNodeId::of('Service'), true);
+        $caller = new MethodNode(MethodNodeId::of('Controller', 'action'), true);
+        $callee = new MethodNode(MethodNodeId::of('Service', 'run'), true);
+        $graph->addNodes([$controller, $service, $caller, $callee]);
+        $isolated = InspectionGraph::dependencies($graph, $callee, Direction::UsedBy);
+        $graph->addEdge(new MethodCallEdge($caller, $callee, new FileMeta('/source.php', 1, 1)));
+
+        $selected = InspectionGraph::dependencies($graph, $callee, Direction::UsedBy);
+
+        self::assertSame([$callee], $isolated->nodes());
+        self::assertSame($controller, $selected->nodeNamed('Controller'));
+        self::assertSame(['Controller'], array_map(static fn ($edge): string => $edge->from()->toString(), $selected->forwardEdges()));
+        self::assertSame(['Service::run'], array_map(static fn ($edge): string => $edge->to()->toString(), $selected->forwardEdges()));
+    }
 }

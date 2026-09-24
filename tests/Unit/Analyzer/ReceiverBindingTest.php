@@ -98,4 +98,81 @@ final class ReceiverBindingTest extends TestCase
         self::assertSame('ReadPort', $binding->of(new PropertyFetch(new Variable('this'), 'port')));
         self::assertSame('WritePort', $binding->of(new PropertyFetch(new Variable('this'), 'Port')));
     }
+
+    public function testOfFollowsNullablePropertiesMethodsAndFunctionReturnTypes(): void
+    {
+        $graph = new Graph();
+        $graph->addNodes([
+            new PropertyNode(PropertyNodeId::of('Controller', 'port'), true, null, new SymbolDeclaration(type: 'Port')),
+            new MethodNode(MethodNodeId::of('Controller', 'getPort'), true, null, new SymbolDeclaration(signature: new \App\Analyzer\Graph\Declaration\Signature(returnType: 'ReturnedPort'))),
+            new FunctionNode(FunctionNodeId::of('create'), true, null, new SymbolDeclaration(signature: new \App\Analyzer\Graph\Declaration\Signature(returnType: 'CreatedPort'))),
+        ]);
+        $binding = new ReceiverBinding(new ClassHierarchy($graph), new MethodNode(MethodNodeId::of('Controller', 'run')));
+
+        self::assertSame('Port', $binding->of(new \PhpParser\Node\Expr\NullsafePropertyFetch(new Variable('this'), 'port')));
+        self::assertSame('ReturnedPort', $binding->of(new \PhpParser\Node\Expr\MethodCall(new Variable('this'), 'getPort')));
+        self::assertSame('ReturnedPort', $binding->of(new \PhpParser\Node\Expr\NullsafeMethodCall(new Variable('this'), 'getPort')));
+        self::assertSame('CreatedPort', $binding->of(new \PhpParser\Node\Expr\FuncCall(new Name('create'))));
+        self::assertSame('', $binding->of(new \PhpParser\Node\Expr\FuncCall(new Name('unknown'))));
+    }
+
+    public function testOfKeepsBothConditionalReceiverAlternatives(): void
+    {
+        $binding = new ReceiverBinding(new ClassHierarchy(new Graph()), new FunctionNode(FunctionNodeId::of('run')));
+        $first = new New_(new Name('First'));
+        $second = new New_(new Name('Second'));
+
+        self::assertSame('First|Second', $binding->of(new \PhpParser\Node\Expr\Ternary(new Variable('condition'), $first, $second)));
+        self::assertSame('First|Second', $binding->of(new \PhpParser\Node\Expr\Ternary($first, null, $second)));
+        self::assertSame('First|Second', $binding->of(new \PhpParser\Node\Expr\BinaryOp\Coalesce($first, $second)));
+    }
+
+    public function testOfBoundsRecursiveMemberResolution(): void
+    {
+        $graph = new Graph();
+        $graph->addNode(new PropertyNode(PropertyNodeId::of('Service', 'next'), true, null, new SymbolDeclaration(type: 'self')));
+        $binding = new ReceiverBinding(new ClassHierarchy($graph), new MethodNode(MethodNodeId::of('Service', 'run')));
+        $statements = (new \PhpParser\ParserFactory())->createForHostVersion()->parse('<?php $this'.str_repeat('->next', 16).';');
+        self::assertNotNull($statements);
+        self::assertInstanceOf(\PhpParser\Node\Stmt\Expression::class, $statements[0]);
+        $chain = $statements[0]->expr;
+
+        self::assertSame('Service', $binding->of($chain));
+        self::assertSame('', $binding->of(new PropertyFetch($chain, 'next')));
+    }
+
+    public function testMemberTypeKeepsUnknownMembersUnknownAndDeduplicatesReturnTypes(): void
+    {
+        $graph = new Graph();
+        $graph->addNodes([
+            new MethodNode(MethodNodeId::of('First', 'run'), true, null, new SymbolDeclaration(signature: new \App\Analyzer\Graph\Declaration\Signature(returnType: 'Result'))),
+            new MethodNode(MethodNodeId::of('Second', 'run'), true, null, new SymbolDeclaration(signature: new \App\Analyzer\Graph\Declaration\Signature(returnType: 'Result'))),
+            new MethodNode(MethodNodeId::of('First', 'undocumented')),
+            new MethodNode(MethodNodeId::of('First', 'unsigned'), true, null, new SymbolDeclaration()),
+            new PropertyNode(PropertyNodeId::of('First', 'undocumentedProperty')),
+        ]);
+        $binding = new ReceiverBinding(new ClassHierarchy($graph), new MethodNode(MethodNodeId::of('First', 'source')));
+        $both = new \PhpParser\Node\Expr\BinaryOp\Coalesce(new New_(new Name('First')), new New_(new Name('Second')));
+
+        self::assertSame('Result', $binding->of(new \PhpParser\Node\Expr\MethodCall($both, 'run')));
+        self::assertSame('', $binding->of(new \PhpParser\Node\Expr\MethodCall(new Variable('this'), 'unknown')));
+        self::assertSame('', $binding->of(new \PhpParser\Node\Expr\MethodCall(new Variable('this'), 'undocumented')));
+        self::assertSame('', $binding->of(new \PhpParser\Node\Expr\MethodCall(new Variable('this'), 'unsigned')));
+        self::assertSame('', $binding->of(new PropertyFetch(new Variable('this'), 'unknown')));
+        self::assertSame('', $binding->of(new PropertyFetch(new Variable('this'), 'undocumentedProperty')));
+        self::assertSame('', $binding->of(new PropertyFetch(new Variable('this'), new Variable('name'))));
+    }
+
+    public function testAssignIgnoresUnknownValuesAndRepeatedAlternatives(): void
+    {
+        $binding = new ReceiverBinding(new ClassHierarchy(new Graph()), new FunctionNode(FunctionNodeId::of('run')));
+        $binding->assign(new Assign(new Variable('port'), new New_(new Name('Port'))));
+        $binding->assign(new Assign(new Variable('port'), new New_(new Name('Port'))));
+        $binding->assign(new Assign(new Variable('port'), new Variable('unknown')));
+        $binding->assign(new Assign(new Variable(new Variable('name')), new New_(new Name('Other'))));
+        $binding->assign(new Assign(new PropertyFetch(new Variable('object'), 'port'), new New_(new Name('Other'))));
+
+        self::assertSame('Port', $binding->of(new Variable('port')));
+        self::assertSame('', $binding->of(new Variable(new Variable('name'))));
+    }
 }

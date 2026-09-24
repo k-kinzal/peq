@@ -236,4 +236,20 @@ final class ClassWalkerTest extends TestCase
         self::assertTrue($renamed->isProtected());
         self::assertTrue($method->isPublic());
     }
+
+    public function testRenamedChangesOnlyTheMatchingTraitMethodVisibilityAndKeepsOtherFlags(): void
+    {
+        $statements = (new ParserFactory())->createForHostVersion()->parse('<?php trait Shared { public static function Run(): void {} } trait Other {} class Named { use Shared, Other { Shared::RUN as private; Other::run as protected; other as private; Run as alias; Shared::Run insteadof Other; } }') ?? [];
+        $method = (new NodeFinder())->findFirstInstanceOf($statements, ClassMethod::class);
+        $class = (new NodeFinder())->findFirstInstanceOf($statements, Class_::class);
+        self::assertNotNull($method);
+        self::assertNotNull($class);
+
+        $renamed = ClassWalker::renamed($method, [], $class->getTraitUses()[0], 'sHaReD');
+
+        self::assertInstanceOf(ClassMethod::class, $renamed);
+        self::assertSame('Run', $renamed->name->toString());
+        self::assertSame(\PhpParser\Modifiers::PRIVATE | \PhpParser\Modifiers::STATIC, $renamed->flags);
+        self::assertSame(\PhpParser\Modifiers::PUBLIC | \PhpParser\Modifiers::STATIC, $method->flags);
+    }
 }

@@ -41,6 +41,8 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(GraphInterfaceNode::class)]
 #[UsesClass(MethodNode::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(\App\Analyzer\Graph\Node\PropertyNode::class)]
+#[UsesClass(\App\Analyzer\Graph\NodeId\PropertyNodeId::class)]
 #[CoversClass(ClassHierarchy::class)]
 #[Small]
 final class ClassHierarchyTest extends TestCase
@@ -121,5 +123,57 @@ final class ClassHierarchyTest extends TestCase
         ]);
 
         self::assertSame([$concrete], (new ClassHierarchy($graph))->concreteTypes());
+    }
+
+    public function testMemberPreservesTheCaseOfPropertiesWhileIgnoringClassNameCase(): void
+    {
+        $graph = new Graph();
+        $lower = new \App\Analyzer\Graph\Node\PropertyNode(\App\Analyzer\Graph\NodeId\PropertyNodeId::of('Service', 'port'), true);
+        $upper = new \App\Analyzer\Graph\Node\PropertyNode(\App\Analyzer\Graph\NodeId\PropertyNodeId::of('Service', 'Port'), true);
+        $graph->addNodes([$lower, $upper]);
+        $hierarchy = new ClassHierarchy($graph);
+
+        self::assertSame($lower, $hierarchy->member('SERVICE', 'port', NodeKind::Property));
+        self::assertSame($upper, $hierarchy->member('service', 'Port', NodeKind::Property));
+        self::assertNull($hierarchy->member('Service', 'PORT', NodeKind::Property));
+    }
+
+    public function testMemberPrefersAResolvedAncestorOverAnUnresolvedChildReference(): void
+    {
+        $graph = new Graph();
+        $parent = new ClassNode(ClassNodeId::of('Base'), true);
+        $child = new ClassNode(ClassNodeId::of('Child'), true);
+        $resolved = new MethodNode(MethodNodeId::of('Base', 'run'), true);
+        $graph->addNodes([$parent, $child, $resolved, new MethodNode(MethodNodeId::of('Child', 'run'))]);
+        $graph->addEdge(new ExtendsEdge($child, $parent, new FileMeta('/source.php', 1, 1)));
+
+        self::assertSame($resolved, (new ClassHierarchy($graph))->method('Child', 'run'));
+    }
+
+    public function testAncestorsKeepsOtherBranchesAfterADiamondRevisitsAnInterface(): void
+    {
+        $graph = new Graph();
+        $leaf = new GraphInterfaceNode(InterfaceNodeId::of('Leaf'), true);
+        $left = new GraphInterfaceNode(InterfaceNodeId::of('Left'), true);
+        $right = new GraphInterfaceNode(InterfaceNodeId::of('Right'), true);
+        $shared = new GraphInterfaceNode(InterfaceNodeId::of('Shared'), true);
+        $extra = new GraphInterfaceNode(InterfaceNodeId::of('Extra'), true);
+        $graph->addNodes([$leaf, $left, $right, $shared, $extra]);
+        $meta = new FileMeta('/source.php', 1, 1);
+        $graph->addEdges([new ExtendsEdge($leaf, $left, $meta), new ExtendsEdge($leaf, $right, $meta), new ExtendsEdge($left, $shared, $meta), new ExtendsEdge($right, $shared, $meta), new ExtendsEdge($right, $extra, $meta)]);
+
+        self::assertSame(['leaf', 'left', 'right', 'shared', 'extra'], (new ClassHierarchy($graph))->ancestors('Leaf'));
+    }
+
+    public function testMemberUsesAnInheritedInterfaceContractWhenNoClassBodyExists(): void
+    {
+        $graph = new Graph();
+        $port = new GraphInterfaceNode(InterfaceNodeId::of('Port'), true);
+        $specialized = new GraphInterfaceNode(InterfaceNodeId::of('Specialized'), true);
+        $method = new MethodNode(MethodNodeId::of('Port', 'run'), true);
+        $graph->addNodes([$port, $specialized, $method]);
+        $graph->addEdge(new ExtendsEdge($specialized, $port, new FileMeta('/source.php', 1, 1)));
+
+        self::assertSame($method, (new ClassHierarchy($graph))->method('Specialized', 'run'));
     }
 }

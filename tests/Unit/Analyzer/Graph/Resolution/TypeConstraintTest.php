@@ -43,4 +43,10 @@ final class TypeConstraintTest extends TestCase
         self::assertTrue(TypeConstraint::of('Port|Other')->accepts('Port', $hierarchy));
         self::assertFalse(TypeConstraint::of('Port&Tagged')->accepts('Port', $hierarchy));
     }
+
+    public function testNamesNormalizeWhitespaceAndQualifiedNamesWithoutDuplicateAlternatives(): void
+    {
+        self::assertSame(['Port', 'Tagged', 'Other'], TypeConstraint::of('(\Port & \Tagged)|\Port|Other')->names());
+        self::assertFalse(TypeConstraint::of('Port')->accepts('Other', new ClassHierarchy(new Graph())));
+    }
 }

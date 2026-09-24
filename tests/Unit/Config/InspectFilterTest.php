@@ -24,4 +24,14 @@ final class InspectFilterTest extends TestCase
         self::assertSame(InspectFilter::Depend, InspectFilter::forKind(\App\Analyzer\Graph\NodeKind::Interface));
         self::assertSame(InspectFilter::All, InspectFilter::forKind(\App\Analyzer\Graph\NodeKind::Property));
     }
+
+    public function testForKindAlsoChoosesDefaultsForTraitsEnumsAndLeafSymbols(): void
+    {
+        self::assertSame(InspectFilter::Depend, InspectFilter::forKind(\App\Analyzer\Graph\NodeKind::Trait));
+        self::assertSame(InspectFilter::Depend, InspectFilter::forKind(\App\Analyzer\Graph\NodeKind::Enum));
+        self::assertSame(InspectFilter::All, InspectFilter::forKind(\App\Analyzer\Graph\NodeKind::Constant));
+        self::assertSame(InspectFilter::All, InspectFilter::forKind(\App\Analyzer\Graph\NodeKind::EnumCase));
+        self::assertSame(InspectFilter::All, InspectFilter::forKind(\App\Analyzer\Graph\NodeKind::Builtin));
+        self::assertSame(InspectFilter::All, InspectFilter::forKind(\App\Analyzer\Graph\NodeKind::Unknown));
+    }
 }

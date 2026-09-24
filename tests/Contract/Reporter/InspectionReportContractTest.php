@@ -17,6 +17,9 @@ use Symfony\Component\Console\Tester\CommandTester;
  * @internal
  */
 #[CoversClass(InspectCommand::class)]
+#[CoversClass(InspectAction::class)]
+#[CoversClass(\App\Reporter\TreeReporter\TreeCursor::class)]
+#[CoversClass(\App\Reporter\TreeReporter\LineRenderer::class)]
 #[Medium]
 final class InspectionReportContractTest extends TestCase
 {
@@ -136,5 +139,29 @@ final class InspectionReportContractTest extends TestCase
     public static function providerFormats(): array
     {
         return array_map(static fn (OutputFormat $format): array => [$format->value], OutputFormat::cases());
+    }
+
+    #[DataProvider('providerHumanFormats')]
+    public function testExecuteMarksOnlyInferredBranchesInHumanOutput(string $format): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'peq-filter-');
+        self::assertNotFalse($file);
+        file_put_contents($file, '<?php interface Port { function run(); } class Service implements Port { function run() {} } class Controller { function action(Port $port) { $port->run(); } }');
+        $tester = new CommandTester(new InspectCommand(new InspectAction()));
+
+        $status = $tester->execute(['target' => 'Controller::action', 'path' => $file, '--type' => 'native', '--output' => $format, '--config' => __DIR__.'/absent.yaml']);
+        unlink($file);
+
+        self::assertSame(0, $status);
+        self::assertStringContainsString('Service::run (possible)', $tester->getDisplay());
+        self::assertStringNotContainsString('Port::run (possible)', $tester->getDisplay());
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function providerHumanFormats(): array
+    {
+        return ['tree' => ['tree'], 'table' => ['table']];
     }
 }
