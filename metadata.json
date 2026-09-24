@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M39ZQCRRBXTGFP9102XBWHQB",
+  "strategy": "manual-commit",
+  "branch": "feat/phase-cache",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/Unit/Analyzer/NativeAnalyzer/AnalysisScopeTest.php",
+    "tests/Unit/Analyzer/NativeAnalyzer/ParsedSourceTest.php",
+    "tests/Unit/Analyzer/NativeAnalyzer/TraitFlatteningTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 51232,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1293952,
+    "output_tokens": 4944,
+    "api_call_count": 7
+  }
+}
