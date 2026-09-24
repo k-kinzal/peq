@@ -7,11 +7,21 @@ namespace Tests\Unit\Action\Inspect;
 use App\Action\Inspect\ProjectedRelation;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Inverse\UsedByEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Usage\MethodCallEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\FileMeta::class)]
+#[UsesClass(\App\Analyzer\Graph\NodeId\ClassNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\NodeId\MethodNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\Node\ClassNode::class)]
+#[UsesClass(\App\Analyzer\Graph\Node\MethodNode::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
 #[CoversClass(ProjectedRelation::class)]
 #[Small]
 final class ProjectedRelationTest extends TestCase

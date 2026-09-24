@@ -16,11 +16,33 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Stmt\Expression;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\CallBody::class)]
+#[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Declaration\Modifiers::class)]
+#[UsesClass(\App\Analyzer\Graph\Declaration\Parameter::class)]
+#[UsesClass(\App\Analyzer\Graph\Declaration\Signature::class)]
+#[UsesClass(\App\Analyzer\Graph\Declaration\SymbolDeclaration::class)]
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Inverse\UsedByEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Usage\MethodCallEdge::class)]
+#[UsesClass(FileMeta::class)]
+#[UsesClass(Graph::class)]
+#[UsesClass(FunctionNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\NodeId\MethodNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\NodeId\UnknownNodeId::class)]
+#[UsesClass(FunctionNode::class)]
+#[UsesClass(\App\Analyzer\Graph\Node\MethodNode::class)]
+#[UsesClass(\App\Analyzer\Graph\Node\UnknownNode::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(ClassHierarchy::class)]
+#[UsesClass(\App\Analyzer\Graph\Resolution\TypeConstraint::class)]
+#[UsesClass(ReceiverBinding::class)]
 #[CoversClass(BodyCallRecorder::class)]
 #[Small]
 final class BodyCallRecorderTest extends TestCase

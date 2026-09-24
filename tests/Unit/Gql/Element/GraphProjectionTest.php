@@ -45,6 +45,7 @@ use Tests\Fixture\Gql\SampleGraph;
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
 #[CoversClass(GraphProjection::class)]
 #[UsesClass(AuthoredEdge::class)]
 #[UsesClass(AttributeUsage::class)]

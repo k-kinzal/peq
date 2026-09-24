@@ -21,11 +21,26 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Name;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\Declaration\Modifiers::class)]
+#[UsesClass(\App\Analyzer\Graph\Declaration\Parameter::class)]
+#[UsesClass(\App\Analyzer\Graph\Declaration\Signature::class)]
+#[UsesClass(SymbolDeclaration::class)]
+#[UsesClass(Graph::class)]
+#[UsesClass(FunctionNodeId::class)]
+#[UsesClass(MethodNodeId::class)]
+#[UsesClass(PropertyNodeId::class)]
+#[UsesClass(FunctionNode::class)]
+#[UsesClass(MethodNode::class)]
+#[UsesClass(PropertyNode::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(ClassHierarchy::class)]
+#[UsesClass(\App\Analyzer\Graph\Resolution\TypeConstraint::class)]
 #[CoversClass(ReceiverBinding::class)]
 #[Small]
 final class ReceiverBindingTest extends TestCase

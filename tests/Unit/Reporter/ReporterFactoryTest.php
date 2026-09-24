@@ -34,6 +34,8 @@ use Symfony\Component\Console\Output\BufferedOutput;
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
+#[UsesClass(\App\Reporter\RelationNotice::class)]
 #[CoversClass(ReporterFactory::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
 #[UsesClass(\App\Analyzer\Graph\EdgeKind::class)]

@@ -111,6 +111,7 @@ use Tests\Fixture\Gql\SampleGraph;
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
 #[CoversClass(TreeWriter::class)]
 #[UsesClass(TreeStep::class)]
 #[UsesClass(ResultElements::class)]

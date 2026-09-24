@@ -28,6 +28,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 /**
  * @internal
  */
+#[UsesClass(\App\Reporter\RelationNotice::class)]
 #[CoversClass(TreeCursor::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
 #[UsesClass(\App\Analyzer\Graph\EdgeKind::class)]

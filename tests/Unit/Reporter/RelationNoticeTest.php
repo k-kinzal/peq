@@ -7,11 +7,23 @@ namespace Tests\Unit\Reporter;
 use App\Reporter\RelationNotice;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
+#[UsesClass(\App\Analyzer\Graph\EdgeKind::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Inverse\UsedByEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Usage\MethodCallEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Usage\PossibleCallEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\FileMeta::class)]
+#[UsesClass(\App\Analyzer\Graph\Graph::class)]
+#[UsesClass(\App\Analyzer\Graph\NodeId\MethodNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\Node\MethodNode::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
 #[CoversClass(RelationNotice::class)]
 #[Small]
 final class RelationNoticeTest extends TestCase

@@ -115,6 +115,7 @@ use Tests\Fixture\Gql\SampleGraph;
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
 #[CoversClass(JsonWriter::class)]
 #[UsesClass(DatumJson::class)]
 #[UsesClass(ResultColumn::class)]

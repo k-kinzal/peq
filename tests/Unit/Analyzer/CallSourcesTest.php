@@ -7,11 +7,18 @@ namespace Tests\Unit\Analyzer;
 use App\Analyzer\CallSources;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\FileMeta::class)]
+#[UsesClass(\App\Analyzer\Graph\NodeId\MethodNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\Node\MethodNode::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(\App\Analyzer\Graph\Resolution\ClassHierarchy::class)]
+#[UsesClass(\App\Analyzer\SourceParser::class)]
 #[CoversClass(CallSources::class)]
 #[Small]
 final class CallSourcesTest extends TestCase

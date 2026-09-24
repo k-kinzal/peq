@@ -16,6 +16,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
 #[CoversClass(DebugAnalyzer::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\ClassLikeGraphGenerator::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\GeneratedGraph::class)]

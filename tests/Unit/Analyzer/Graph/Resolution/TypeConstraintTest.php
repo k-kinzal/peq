@@ -9,11 +9,15 @@ use App\Analyzer\Graph\Resolution\ClassHierarchy;
 use App\Analyzer\Graph\Resolution\TypeConstraint;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[UsesClass(Graph::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(ClassHierarchy::class)]
 #[CoversClass(TypeConstraint::class)]
 #[Small]
 final class TypeConstraintTest extends TestCase

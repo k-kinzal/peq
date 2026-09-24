@@ -19,11 +19,28 @@ use App\Analyzer\Graph\NodeKind;
 use App\Analyzer\Graph\Resolution\ClassHierarchy;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
+#[UsesClass(Modifiers::class)]
+#[UsesClass(SymbolDeclaration::class)]
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
+#[UsesClass(ExtendsEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Declaration\ImplementsEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Inverse\DeclaredInEdge::class)]
+#[UsesClass(FileMeta::class)]
+#[UsesClass(Graph::class)]
+#[UsesClass(ClassNodeId::class)]
+#[UsesClass(InterfaceNodeId::class)]
+#[UsesClass(MethodNodeId::class)]
+#[UsesClass(ClassNode::class)]
+#[UsesClass(GraphInterfaceNode::class)]
+#[UsesClass(MethodNode::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
 #[CoversClass(ClassHierarchy::class)]
 #[Small]
 final class ClassHierarchyTest extends TestCase

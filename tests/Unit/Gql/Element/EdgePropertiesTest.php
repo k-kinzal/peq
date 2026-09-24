@@ -29,6 +29,14 @@ use Tests\Fixture\Gql\SampleGraph;
 /**
  * @internal
  */
+#[UsesClass(AttributeEdge::class)]
+#[UsesClass(FileMeta::class)]
+#[UsesClass(ClassNodeId::class)]
+#[UsesClass(MethodNodeId::class)]
+#[UsesClass(ClassNode::class)]
+#[UsesClass(MethodNode::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(\App\Gql\Datum\ListDatum::class)]
 #[CoversClass(EdgeProperties::class)]
 #[UsesClass(AuthoredEdge::class)]
 #[UsesClass(ExtendsEdge::class)]

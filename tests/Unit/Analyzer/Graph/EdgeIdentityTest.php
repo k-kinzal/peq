@@ -11,11 +11,19 @@ use App\Analyzer\Graph\Node\MethodNode;
 use App\Analyzer\Graph\NodeId\MethodNodeId;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Inverse\UsedByEdge::class)]
+#[UsesClass(MethodCallEdge::class)]
+#[UsesClass(FileMeta::class)]
+#[UsesClass(MethodNodeId::class)]
+#[UsesClass(MethodNode::class)]
+#[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
 #[CoversClass(EdgeIdentity::class)]
 #[Small]
 final class EdgeIdentityTest extends TestCase
