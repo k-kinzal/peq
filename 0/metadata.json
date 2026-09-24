@@ -1,0 +1,58 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M39MAM554YGDEC9N9VB3H4PW",
+  "session_id": "01a0d33b-cf7d-7362-aef6-fa0598ab1dbd",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-24T11:55:32.521522Z",
+  "branch": "fix/query-graph-empty-output",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "README.md",
+    "src/Command/GraphCommand.php",
+    "src/Reporter/Query/DiagramWriter.php",
+    "src/Reporter/Query/DotWriter.php",
+    "src/Reporter/Query/QueryOutputException.php",
+    "src/Reporter/Query/QueryReporter.php",
+    "src/Reporter/Query/QueryReporterFactory.php",
+    "src/Reporter/Query/TableWriter.php",
+    "src/Reporter/Query/TreeWriter.php",
+    "tests/Unit/Command/GraphCommandTest.php",
+    "tests/Unit/Reporter/Query/DiagramWriterTest.php",
+    "tests/Unit/Reporter/Query/DotWriterTest.php",
+    "tests/Unit/Reporter/Query/QueryOutputExceptionTest.php",
+    "tests/Unit/Reporter/Query/QueryReporterTest.php",
+    "tests/Unit/Reporter/Query/TreeWriterTest.php"
+  ],
+  "agent": "Codex",
+  "model": "gpt-6-astra",
+  "turn_id": "2498b5529345",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 103271,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 2023424,
+    "output_tokens": 16031,
+    "api_call_count": 27
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-24T11:55:32.346337Z",
+    "agent_lines": 426,
+    "agent_removed": 38,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 426,
+    "total_lines_changed": 464,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}

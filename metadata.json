@@ -1,0 +1,40 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M39MAM554YGDEC9N9VB3H4PW",
+  "strategy": "manual-commit",
+  "branch": "fix/query-graph-empty-output",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "README.md",
+    "src/Command/GraphCommand.php",
+    "src/Reporter/Query/DiagramWriter.php",
+    "src/Reporter/Query/DotWriter.php",
+    "src/Reporter/Query/QueryOutputException.php",
+    "src/Reporter/Query/QueryReporter.php",
+    "src/Reporter/Query/QueryReporterFactory.php",
+    "src/Reporter/Query/TableWriter.php",
+    "src/Reporter/Query/TreeWriter.php",
+    "tests/Unit/Command/GraphCommandTest.php",
+    "tests/Unit/Reporter/Query/DiagramWriterTest.php",
+    "tests/Unit/Reporter/Query/DotWriterTest.php",
+    "tests/Unit/Reporter/Query/QueryOutputExceptionTest.php",
+    "tests/Unit/Reporter/Query/QueryReporterTest.php",
+    "tests/Unit/Reporter/Query/TreeWriterTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 103271,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 2023424,
+    "output_tokens": 16031,
+    "api_call_count": 27
+  }
+}
