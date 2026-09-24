@@ -55,41 +55,46 @@
 <span class="src-line" id="L19"><a class="ln" href="#L19">19</a><span class="tok-com"> * that comes next — and because the query has already cut the graph down to what</span></span>
 <span class="src-line" id="L20"><a class="ln" href="#L20">20</a><span class="tok-com"> * matters, the drawing is small enough to read.</span></span>
 <span class="src-line" id="L21"><a class="ln" href="#L21">21</a><span class="tok-com"> *</span></span>
-<span class="src-line" id="L22"><a class="ln" href="#L22">22</a><span class="tok-com"> * An answer that holds no symbols and no relations draws nothing. A query that</span></span>
-<span class="src-line" id="L23"><a class="ln" href="#L23">23</a><span class="tok-com"> * returned names or counts has an answer, and it is a table; drawing an empty diagram</span></span>
-<span class="src-line" id="L24"><a class="ln" href="#L24">24</a><span class="tok-com"> * for it would suggest the query found nothing.</span></span>
-<span class="src-line" id="L25"><a class="ln" href="#L25">25</a><span class="tok-com"> *</span></span>
-<span class="src-line" id="L26"><a class="ln" href="#L26">26</a><span class="tok-com"> * @visibility App\Reporter</span></span>
-<span class="src-line" id="L27"><a class="ln" href="#L27">27</a><span class="tok-com"> */</span></span>
-<span class="src-line" id="L28"><a class="ln" href="#L28">28</a><span class="tok-kw">final</span> <span class="tok-kw">readonly</span> <span class="tok-kw">class</span> <span class="tok-id">DiagramWriter</span> <span class="tok-kw">implements</span> <span class="tok-id">QueryReporter</span></span>
-<span class="src-line" id="L29"><a class="ln" href="#L29">29</a>{</span>
-<span class="src-line" id="L30"><a class="ln" href="#L30">30</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L31"><a class="ln" href="#L31">31</a><span class="tok-com">     * @param null|ElementGraph $graph    The graph the answer came from, so the arrows between its symbols can be drawn</span></span>
-<span class="src-line" id="L32"><a class="ln" href="#L32">32</a><span class="tok-com">     * @param DiagramRenderer   $renderer How a drawing is written</span></span>
-<span class="src-line" id="L33"><a class="ln" href="#L33">33</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L34"><a class="ln" href="#L34">34</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">__construct</span>(</span>
-<span class="src-line" id="L35"><a class="ln" href="#L35">35</a>        <span class="tok-kw">private</span> ?<span class="tok-id">ElementGraph</span> <span class="tok-var">$graph</span> = <span class="tok-id">null</span>,</span>
-<span class="src-line" id="L36"><a class="ln" href="#L36">36</a>        <span class="tok-kw">private</span> <span class="tok-id">DiagramRenderer</span> <span class="tok-var">$renderer</span> = <span class="tok-kw">new</span> <span class="tok-id">TerminalRenderer</span>(),</span>
-<span class="src-line" id="L37"><a class="ln" href="#L37">37</a>    ) {}</span>
-<span class="src-line" id="L38"><a class="ln" href="#L38">38</a></span>
-<span class="src-line" id="L39"><a class="ln" href="#L39">39</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L40"><a class="ln" href="#L40">40</a><span class="tok-com">     * Writes the answer as a drawing.</span></span>
-<span class="src-line" id="L41"><a class="ln" href="#L41">41</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L42"><a class="ln" href="#L42">42</a><span class="tok-com">     * @param ResultTable     $result What the query answered</span></span>
-<span class="src-line" id="L43"><a class="ln" href="#L43">43</a><span class="tok-com">     * @param OutputInterface $output Where it is written</span></span>
-<span class="src-line" id="L44"><a class="ln" href="#L44">44</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L45"><a class="ln" href="#L45">45</a>    #[<span class="tok-id">Override</span>]</span>
-<span class="src-line" id="L46"><a class="ln" href="#L46">46</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">report</span>(<span class="tok-id">ResultTable</span> <span class="tok-var">$result</span>, <span class="tok-id">OutputInterface</span> <span class="tok-var">$output</span>): <span class="tok-id">void</span></span>
-<span class="src-line" id="L47"><a class="ln" href="#L47">47</a>    {</span>
-<span class="src-line" id="L48"><a class="ln" href="#L48">48</a>        <span class="tok-var">$diagram</span> = <span class="tok-id">ResultElements</span>::<span class="tok-id">of</span>(<span class="tok-var">$result</span>, <span class="tok-var">$this</span>-&gt;<span class="tok-id">graph</span>);</span>
-<span class="src-line" id="L49"><a class="ln" href="#L49">49</a>        <span class="tok-kw">if</span> (<span class="tok-var">$diagram</span>-&gt;<span class="tok-id">empty</span>()) {</span>
-<span class="src-line" id="L50"><a class="ln" href="#L50">50</a>            <span class="tok-kw">return</span>;</span>
-<span class="src-line" id="L51"><a class="ln" href="#L51">51</a>        }</span>
-<span class="src-line" id="L52"><a class="ln" href="#L52">52</a></span>
-<span class="src-line" id="L53"><a class="ln" href="#L53">53</a>        <span class="tok-var">$this</span>-&gt;<span class="tok-id">renderer</span>-&gt;<span class="tok-id">render</span>(<span class="tok-var">$diagram</span>, <span class="tok-var">$output</span>);</span>
-<span class="src-line" id="L54"><a class="ln" href="#L54">54</a>    }</span>
-<span class="src-line" id="L55"><a class="ln" href="#L55">55</a>}</span>
-<span class="src-line" id="L56"><a class="ln" href="#L56">56</a></span>
+<span class="src-line" id="L22"><a class="ln" href="#L22">22</a><span class="tok-com"> * A nonempty answer that holds no symbols or relations cannot be drawn. Report that</span></span>
+<span class="src-line" id="L23"><a class="ln" href="#L23">23</a><span class="tok-com"> * mismatch so a reader can return elements or choose a table for names and counts.</span></span>
+<span class="src-line" id="L24"><a class="ln" href="#L24">24</a><span class="tok-com"> *</span></span>
+<span class="src-line" id="L25"><a class="ln" href="#L25">25</a><span class="tok-com"> * @visibility App\Reporter</span></span>
+<span class="src-line" id="L26"><a class="ln" href="#L26">26</a><span class="tok-com"> */</span></span>
+<span class="src-line" id="L27"><a class="ln" href="#L27">27</a><span class="tok-kw">final</span> <span class="tok-kw">readonly</span> <span class="tok-kw">class</span> <span class="tok-id">DiagramWriter</span> <span class="tok-kw">implements</span> <span class="tok-id">QueryReporter</span></span>
+<span class="src-line" id="L28"><a class="ln" href="#L28">28</a>{</span>
+<span class="src-line" id="L29"><a class="ln" href="#L29">29</a>    <span class="tok-com">/**</span></span>
+<span class="src-line" id="L30"><a class="ln" href="#L30">30</a><span class="tok-com">     * @param null|ElementGraph $graph    The graph the answer came from, so the arrows between its symbols can be drawn</span></span>
+<span class="src-line" id="L31"><a class="ln" href="#L31">31</a><span class="tok-com">     * @param DiagramRenderer   $renderer How a drawing is written</span></span>
+<span class="src-line" id="L32"><a class="ln" href="#L32">32</a><span class="tok-com">     */</span></span>
+<span class="src-line" id="L33"><a class="ln" href="#L33">33</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">__construct</span>(</span>
+<span class="src-line" id="L34"><a class="ln" href="#L34">34</a>        <span class="tok-kw">private</span> ?<span class="tok-id">ElementGraph</span> <span class="tok-var">$graph</span> = <span class="tok-id">null</span>,</span>
+<span class="src-line" id="L35"><a class="ln" href="#L35">35</a>        <span class="tok-kw">private</span> <span class="tok-id">DiagramRenderer</span> <span class="tok-var">$renderer</span> = <span class="tok-kw">new</span> <span class="tok-id">TerminalRenderer</span>(),</span>
+<span class="src-line" id="L36"><a class="ln" href="#L36">36</a>    ) {}</span>
+<span class="src-line" id="L37"><a class="ln" href="#L37">37</a></span>
+<span class="src-line" id="L38"><a class="ln" href="#L38">38</a>    <span class="tok-com">/**</span></span>
+<span class="src-line" id="L39"><a class="ln" href="#L39">39</a><span class="tok-com">     * Writes the answer as a drawing.</span></span>
+<span class="src-line" id="L40"><a class="ln" href="#L40">40</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L41"><a class="ln" href="#L41">41</a><span class="tok-com">     * @param ResultTable     $result What the query answered</span></span>
+<span class="src-line" id="L42"><a class="ln" href="#L42">42</a><span class="tok-com">     * @param OutputInterface $output Where it is written</span></span>
+<span class="src-line" id="L43"><a class="ln" href="#L43">43</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L44"><a class="ln" href="#L44">44</a><span class="tok-com">     * @throws QueryOutputException When a nonempty result contains no graph elements</span></span>
+<span class="src-line" id="L45"><a class="ln" href="#L45">45</a><span class="tok-com">     */</span></span>
+<span class="src-line" id="L46"><a class="ln" href="#L46">46</a>    #[<span class="tok-id">Override</span>]</span>
+<span class="src-line" id="L47"><a class="ln" href="#L47">47</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">report</span>(<span class="tok-id">ResultTable</span> <span class="tok-var">$result</span>, <span class="tok-id">OutputInterface</span> <span class="tok-var">$output</span>): <span class="tok-id">void</span></span>
+<span class="src-line" id="L48"><a class="ln" href="#L48">48</a>    {</span>
+<span class="src-line" id="L49"><a class="ln" href="#L49">49</a>        <span class="tok-var">$diagram</span> = <span class="tok-id">ResultElements</span>::<span class="tok-id">of</span>(<span class="tok-var">$result</span>, <span class="tok-var">$this</span>-&gt;<span class="tok-id">graph</span>);</span>
+<span class="src-line" id="L50"><a class="ln" href="#L50">50</a>        <span class="tok-kw">if</span> (<span class="tok-var">$diagram</span>-&gt;<span class="tok-id">empty</span>()) {</span>
+<span class="src-line" id="L51"><a class="ln" href="#L51">51</a>            <span class="tok-kw">if</span> (<span class="tok-var">$result</span>-&gt;<span class="tok-id">rows</span> !== []) {</span>
+<span class="src-line" id="L52"><a class="ln" href="#L52">52</a>                <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-id">QueryOutputException</span>(<span class="tok-str">&#039;Graph output requires nodes, edges or paths, but the result contains none. Return elements (for example, RETURN n instead of RETURN n.id), or use --output=table or --output=json.&#039;</span>);</span>
+<span class="src-line" id="L53"><a class="ln" href="#L53">53</a>            }</span>
+<span class="src-line" id="L54"><a class="ln" href="#L54">54</a></span>
+<span class="src-line" id="L55"><a class="ln" href="#L55">55</a>            <span class="tok-kw">return</span>;</span>
+<span class="src-line" id="L56"><a class="ln" href="#L56">56</a>        }</span>
+<span class="src-line" id="L57"><a class="ln" href="#L57">57</a></span>
+<span class="src-line" id="L58"><a class="ln" href="#L58">58</a>        <span class="tok-var">$this</span>-&gt;<span class="tok-id">renderer</span>-&gt;<span class="tok-id">render</span>(<span class="tok-var">$diagram</span>, <span class="tok-var">$output</span>);</span>
+<span class="src-line" id="L59"><a class="ln" href="#L59">59</a>    }</span>
+<span class="src-line" id="L60"><a class="ln" href="#L60">60</a>}</span>
+<span class="src-line" id="L61"><a class="ln" href="#L61">61</a></span>
 </code></pre>
 </main>
 <footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>
