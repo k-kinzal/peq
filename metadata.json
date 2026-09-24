@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M3A4B7H78V33E2T9VWSM29FF",
+  "strategy": "manual-commit",
+  "branch": "fix/native-phpdoc-diff",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "README.md",
+    "composer.json",
+    "phpunit.xml.dist",
+    "tests/Diff/PhpDocDifferenceTest.php",
+    "tests/diff/PhpDocDifferenceTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 249626,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 480384,
+    "output_tokens": 3245,
+    "api_call_count": 20
+  }
+}
