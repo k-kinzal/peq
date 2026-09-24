@@ -223,6 +223,44 @@ callback invocations inferred from other operations.
 
 The released PHAR carries only `native`.
 
+## Analysis cache
+
+`peq <symbol>` and `peq graph` automatically share `.peq.cache/` in the current
+working directory. An unchanged project reuses its completed graph, skipping
+parsing, declaration resolution, PHPStan analysis and call enrichment. Changing the
+symbol, query, direction, depth, filters or output format reuses the same analysis.
+
+The cache keeps separate phases:
+
+- **Syntax, per file:** parsed statements with names resolved. Unchanged files are
+  reused after edits elsewhere, including when rebuilding the graph. Anonymous
+  class identities and project-wide declaration indexes are rebuilt from this syntax.
+- **Dependency graph, per engine and selection:** the native source walk or PHPStan
+  collector results assembled into a graph, before call enrichment.
+- **Completed graph:** receiver calls and possible dispatch targets, ready for either
+  command. Losing this phase still allows the preceding graph phase to be reused.
+
+Every invocation discovers files and hashes their contents. Additions, deletions,
+renames and edits invalidate affected entries even when size and timestamps are
+unchanged. Graphs also depend on the working directory, selected files, target PHP
+version, runtime and Composer/autoload sources. PHPStan fingerprints external source
+contents; native tracks their availability, because it only asks whether external
+classes exist. Changes to these inputs invalidate the whole graph conservatively;
+file-local syntax remains reusable. PHPStan's own
+parser/container cache remains managed by PHPStan.
+
+The `version` file records the peq executable that created the cache. A different
+peq version discards **all phases** before rebuilding; no cache-format migration is
+attempted. Released PHARs use their embedded release version. Source installations
+use a content digest of peq's sources, configuration and dependency lock file, so
+local implementation changes invalidate the cache too.
+
+Add `.peq.cache/` to your project's `.gitignore`. Delete that directory to force a
+fresh analysis. Damaged entries are recomputed, and an unavailable cache location
+falls back to ordinary analysis. Writes are atomic and version changes are locked
+across concurrent commands. Direct analyzer instances remain uncached unless given
+a `PhaseCache`, keeping tests and equivalence checks independent of previous runs.
+
 ## Analyzed PHP version
 
 The PHP version peq runs on and the PHP version the analyzed code is written for are

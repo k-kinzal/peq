@@ -16,7 +16,7 @@ try {
     $loader->load('services.php');
     $container->compile();
 
-    $app = new Application('peq', '@git_version@');
+    $app = new Application('peq', \App\Analyzer\ExecutionVersion::current());
 
     foreach ($container->findTaggedServiceIds('console.command') as $id => $tags) {
         $app->add($container->get($id));

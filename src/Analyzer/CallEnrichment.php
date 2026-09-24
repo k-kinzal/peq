@@ -18,9 +18,9 @@ final class CallEnrichment
     /**
      * Completes receiver calls and candidate dispatches before consumers select a view.
      */
-    public static function of(Graph $graph, ?int $phpVersion = null): Graph
+    public static function of(Graph $graph, ?int $phpVersion = null, ?PhaseCache $cache = null): Graph
     {
-        $sources = new CallSources($phpVersion);
+        $sources = new CallSources($phpVersion, $cache);
         $recorder = new BodyCallRecorder($graph, new ClassHierarchy($graph));
         foreach ($graph->nodes() as $node) {
             if (($node instanceof MethodNode || $node instanceof FunctionNode) && $node->resolved()) {

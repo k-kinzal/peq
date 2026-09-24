@@ -39,6 +39,9 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(Direction::class)]
 #[UsesClass(PhpVersion::class)]
 #[UsesClass(ContainerFactory::class)]
+#[UsesClass(\App\Analyzer\PhaseCache::class)]
+#[UsesClass(\App\Analyzer\CacheStorage::class)]
+#[UsesClass(\App\Analyzer\ExecutionVersion::class)]
 #[Small]
 final class AnalyzerChoiceTest extends TestCase
 {

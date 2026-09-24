@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(ClassLikeDeclaration::class)]
 #[UsesClass(ParsedSource::class)]
 #[UsesClass(SourceParser::class)]
+#[UsesClass(\App\Analyzer\CachedSyntax::class)]
 #[Small]
 final class SourceIndexTest extends TestCase
 {
