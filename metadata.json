@@ -1,0 +1,62 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M395JGYZHRP5G7AX425F4N8D",
+  "strategy": "manual-commit",
+  "branch": "feat/inspect-filters-and-call-resolution",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".github/workflows/ci.yaml",
+    "tests/Unit/Action/Inspect/ProjectedRelationTest.php",
+    "tests/Unit/Analyzer/BodyCallRecorderTest.php",
+    "tests/Unit/Analyzer/CallSourcesTest.php",
+    "tests/Unit/Analyzer/DebugAnalyzer/DebugAnalyzerTest.php",
+    "tests/Unit/Analyzer/DebugAnalyzer/Generator/ClassLikeGraphGeneratorTest.php",
+    "tests/Unit/Analyzer/DebugAnalyzer/Generator/GeneratedGraphTest.php",
+    "tests/Unit/Analyzer/DebugAnalyzer/Generator/GraphGeneratorTest.php",
+    "tests/Unit/Analyzer/DebugAnalyzer/Generator/MemberGraphGeneratorTest.php",
+    "tests/Unit/Analyzer/DebugAnalyzer/Generator/SymbolGraphGeneratorTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/GraphRecorderTest.php",
+    "tests/Unit/Analyzer/Graph/Edge/Usage/PossibleCallEdgeTest.php",
+    "tests/Unit/Analyzer/Graph/EdgeIdentityTest.php",
+    "tests/Unit/Analyzer/Graph/GraphSnapshotTest.php",
+    "tests/Unit/Analyzer/Graph/GraphTest.php",
+    "tests/Unit/Analyzer/Graph/Resolution/ClassHierarchyTest.php",
+    "tests/Unit/Analyzer/Graph/Resolution/TypeConstraintTest.php",
+    "tests/Unit/Analyzer/NativeAnalyzer/GraphRecorderTest.php",
+    "tests/Unit/Analyzer/PhpStanAnalyzer/GraphBuilderTest.php",
+    "tests/Unit/Analyzer/ReceiverBindingTest.php",
+    "tests/Unit/Gql/Element/EdgePropertiesTest.php",
+    "tests/Unit/Gql/Element/GraphProjectionTest.php",
+    "tests/Unit/Gql/Execution/QueryExecutionTest.php",
+    "tests/Unit/Reporter/GraphReporter/GraphCursorTest.php",
+    "tests/Unit/Reporter/GraphReporter/GraphReporterTest.php",
+    "tests/Unit/Reporter/Query/DiagramWriterTest.php",
+    "tests/Unit/Reporter/Query/DotWriterTest.php",
+    "tests/Unit/Reporter/Query/JsonWriterTest.php",
+    "tests/Unit/Reporter/Query/ResultElementsTest.php",
+    "tests/Unit/Reporter/Query/TableWriterTest.php",
+    "tests/Unit/Reporter/Query/TreeWriterTest.php",
+    "tests/Unit/Reporter/RelationNoticeTest.php",
+    "tests/Unit/Reporter/ReporterFactoryTest.php",
+    "tests/Unit/Reporter/ReporterTest.php",
+    "tests/Unit/Reporter/TableReporter/TableReporterTest.php",
+    "tests/Unit/Reporter/TreeReporter/TreeCursorTest.php",
+    "tests/Unit/Reporter/TreeReporter/TreeReporterTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 60136,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 969856,
+    "output_tokens": 5463,
+    "api_call_count": 18
+  }
+}
