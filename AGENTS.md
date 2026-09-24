@@ -18,7 +18,7 @@ A CLI tool that analyzes PHP code dependencies and visualizes the blast radius o
 - **GQL is the query language** — `peq graph` runs ISO/IEC 39075 GQL, the standard the SQL committee publishes, so an agent already knows it; an invented syntax would have to be explained in every prompt. It runs that and nothing more: a word the standard does not define is a word peq refuses, which `composer spec` checks against ISO's own grammar artifact. Read-only by design: nothing in the language can change a graph peq has just read out of source code
 - **Two engines, one graph** — `PhpStanAnalyzer` is the reference; `NativeAnalyzer` reads sources directly and is checked against it by comparing canonical graph snapshots. A change to either must keep them identical
 - **The binary carries one engine** — `phpstan/phpstan` is a dev dependency, so the PHAR holds only `NativeAnalyzer`. `AnalyzerKind` offers a kind only when what it is built on is installed
-- **Graph model** — bidirectional adjacency list of nodes (Class, Method, Function, etc. — 11 kinds) and edges (MethodCall, Extends, etc. — 23 kinds). Inverse edges (UsedBy, DeclaredIn) are generated automatically when an edge is added
+- **Graph model** — bidirectional adjacency list of nodes (Class, Method, Function, etc. — 11 kinds) and edges (MethodCall, Extends, PhpDoc, etc. — 24 kinds). Inverse edges (UsedBy, DeclaredIn) are generated automatically when an edge is added
 
 ## Project Tradeoff Sliders
 
@@ -90,6 +90,7 @@ bin/                 # Entry point (console)
 - `composer install` — install dependencies and `vendor-bin/` tools
 - `composer test` — run PHPUnit (random order, `APP_ENV=test`). Append `-- tests/App/...` or `--filter testName` to narrow scope. The run needs room: two suites analyse peq's own sources with PHPStan in process, which costs most of a gigabyte each and grows with `src`, so `phpunit.xml.dist` allows 4G
 - `composer test:equivalence` — read every installed dependency with both engines and fail on any difference
+- `composer test:diff` — compare both engines over PHPStan's PHPDoc annotation and type syntax, with native analysis in an isolated process
 - `composer spec` — run the Behat specification of ISO/IEC 39075 against the query engine. Append `-- --tags='@feature:G011'` to run the scenarios that state one feature of the standard
 - `composer lint` — run PHP CS Fixer + PHPStan (max level)
 - `composer format` — apply PHP CS Fixer
@@ -142,6 +143,10 @@ claim is a test, not a comment:
 Changing either engine means re-running all five. A difference that is intended has to
 be written down in the README, because a user picking `--type` is choosing between two
 answers that are otherwise the same.
+
+PHPDoc changes also run `composer test:diff`. Its fixtures assert actual documented
+dependencies as well as graph equality, so two engines ignoring the same annotation
+cannot make a case pass.
 
 ## Adding to the Query Language
 

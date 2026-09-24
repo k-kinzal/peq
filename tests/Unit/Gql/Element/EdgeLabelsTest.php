@@ -78,6 +78,8 @@ final class EdgeLabelsTest extends TestCase
 
         yield 'a relation read the other way' => [EdgeKind::UsedBy, ['usedBy', 'inverse']];
 
+        yield 'documented class references' => [EdgeKind::PhpDoc, ['phpDoc', 'declaration']];
+
         yield 'a declaration read the other way' => [EdgeKind::DeclaredIn, ['declaredIn', 'inverse']];
     }
 
@@ -109,6 +111,7 @@ final class EdgeLabelsTest extends TestCase
                 'returnType',
                 'propertyType',
                 'attribute',
+                'phpDoc',
                 'instanceOf',
                 'catches',
                 'usedBy',
@@ -156,6 +159,7 @@ final class EdgeLabelsTest extends TestCase
                 'returnType',
                 'propertyType',
                 'attribute',
+                'phpDoc',
                 'instanceOf',
                 'catches',
             ],

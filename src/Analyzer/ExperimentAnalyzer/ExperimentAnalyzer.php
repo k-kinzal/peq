@@ -6,8 +6,10 @@ namespace App\Analyzer\ExperimentAnalyzer;
 
 use App\Analyzer\Analyzer;
 use App\Analyzer\CallEnrichment;
+use App\Analyzer\Declaration\PhpDoc\DocDependencies;
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\PhpFileCollector;
+use App\Analyzer\SourceParser;
 
 /**
  * Experimental fork of the native analyzer, with a separate local data-flow graph.
@@ -82,6 +84,8 @@ final class ExperimentAnalyzer implements Analyzer
             $walker->walkFile($source);
         }
 
-        return CallEnrichment::of($recorder->graph(), $this->phpVersion);
+        $graph = DocDependencies::enrich($recorder->graph(), $files, SourceParser::forVersion($this->phpVersion));
+
+        return CallEnrichment::of($graph, $this->phpVersion);
     }
 }

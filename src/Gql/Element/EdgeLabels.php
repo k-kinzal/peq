@@ -54,6 +54,7 @@ final class EdgeLabels
         'declaration-type-return' => 'returnType',
         'declaration-type-property' => 'propertyType',
         'attribute' => 'attribute',
+        'phpdoc' => 'phpDoc',
         'used-by' => 'usedBy',
         'declared-in' => 'declaredIn',
     ];
@@ -130,6 +131,7 @@ final class EdgeLabels
             EdgeKind::DeclarationExtends,
             EdgeKind::DeclarationImplements,
             EdgeKind::DeclarationTypeProperty,
+            EdgeKind::PhpDoc,
             EdgeKind::Attribute => ['declaration'],
 
             EdgeKind::UsedBy,

@@ -223,6 +223,37 @@ callback invocations inferred from other operations.
 
 The released PHAR carries only `native`.
 
+Both engines read PHPDoc annotations using PHPStan's PHPDoc grammar. Class names
+written in `@param`, `@return`, `@var`, `@throws`, magic member declarations,
+templates, generic inheritance, type aliases, mixins and assertion annotations
+contribute `phpdoc` dependencies (the `phpDoc` label in GQL). This includes nested
+arrays, shapes, callables, unions, intersections and conditional types. Imports and
+local type names are resolved in the comment's lexical scope. An imported type
+alias points to its exporting class, whose documentation records the alias's types.
+
+These relations describe the dependencies written in documentation. They retain
+the annotation's line and byte offset and participate in `--filter=depend`, `--filter=all` and
+reverse traversal. They do not change PHP signatures, create magic method bodies,
+or apply PHPStan's type checking and control-flow narrowing. Both ordinary and
+prefixed tags retain their written dependencies. Metadata tags and prose do not
+create type references; a malformed tag does not discard neighbouring valid tags.
+Documentation on a trait member is attributed to the trait when that member has
+no separate graph symbol.
+
+```bash
+peq graph 'MATCH (s)-[:phpDoc]->(t) RETURN s.id, t.id' src
+composer test:diff
+```
+
+The difference suite in `tests/diff/` checks the
+[PHPDoc annotations](https://phpstan.org/writing-php-code/phpdocs-basics) and
+[type syntax](https://phpstan.org/writing-php-code/phpdoc-types) supported by the
+installed PHPStan version. It compares complete canonical graphs, asserts the
+expected documented types and source locations, and runs native analysis in a
+separate process so PHPStan's bundled parser cannot mask differences in the parser
+shipped with the PHAR. The small `phpstan/phpdoc-parser` library is a runtime
+dependency; the `phpstan/phpstan` analysis engine remains a development dependency.
+
 ## Analyzed PHP version
 
 The PHP version peq runs on and the PHP version the analyzed code is written for are

@@ -233,6 +233,7 @@ final class DependencyCollectorTest extends TestCase
 
         yield 'what a method body reaches' => ['MethodBody', [
             'Tests\Fixture\Source\MethodBodyClass -[declaration-method]-> Tests\Fixture\Source\MethodBodyClass::testMethod',
+            'Tests\Fixture\Source\MethodBodyClass::testMethod -[phpdoc]-> DateTime',
         ]];
 
         yield 'every kind of usage' => ['UsageProcessors', [

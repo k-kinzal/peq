@@ -70,6 +70,9 @@ enum EdgeKind: string
     /** Represents an attribute usage relationship */
     case Attribute = 'attribute';
 
+    /** Represents a class-like referenced by a PHPDoc annotation */
+    case PhpDoc = 'phpdoc';
+
     /** Represents an instanceof check relationship */
     case Instanceof = 'instanceof';
 
@@ -122,6 +125,7 @@ enum EdgeKind: string
             self::DeclarationTypeReturn,
             self::DeclarationTypeProperty,
             self::Attribute,
+            self::PhpDoc,
             self::Instanceof,
             self::Catch => Direction::Uses,
 

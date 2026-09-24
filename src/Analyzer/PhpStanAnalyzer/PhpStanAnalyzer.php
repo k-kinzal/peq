@@ -7,10 +7,12 @@ namespace App\Analyzer\PhpStanAnalyzer;
 use App\Analyzer\AnalysisFailedException;
 use App\Analyzer\Analyzer;
 use App\Analyzer\CallEnrichment;
+use App\Analyzer\Declaration\PhpDoc\DocDependencies;
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\PhpFileCollector;
 use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
 use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
+use App\Analyzer\SourceParser;
 use Override;
 use PHPStan\Analyser\Analyser as PhpStanAnalyser;
 use PHPStan\Analyser\Error;
@@ -87,7 +89,9 @@ final readonly class PhpStanAnalyzer implements Analyzer
 
         $report = $this->collect($this->containerFactory->create($files, $this->collectors, $this->phpVersion), $files);
 
-        return CallEnrichment::of($this->graphBuilder->build($report->symbols()), $this->phpVersion);
+        $graph = DocDependencies::enrich($this->graphBuilder->build($report->symbols()), $files, SourceParser::forVersion($this->phpVersion));
+
+        return CallEnrichment::of($graph, $this->phpVersion);
     }
 
     /**

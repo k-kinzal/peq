@@ -18,6 +18,7 @@
     "require": {
         "php": "^8.3",
         "nikic/php-parser": "^5.0",
+        "phpstan/phpdoc-parser": "^2.3",
         "symfony/config": "^6.4 || ^7.0",
         "symfony/console": "^6.4 || ^7.0",
         "symfony/dependency-injection": "^6.4 || ^7.0",
@@ -38,7 +39,8 @@
         "phpstan/phpstan": "^2.0",
         "phpstan/phpstan-strict-rules": "^2.0",
         "phpunit/phpunit": "^12.0.0",
-        "squizlabs/php_codesniffer": "^4.0"
+        "squizlabs/php_codesniffer": "^4.0",
+        "symfony/process": "^6.4 || ^7.0"
     },
     "autoload": {
         "psr-4": {
@@ -48,6 +50,7 @@
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/",
+            "Tests\\Diff\\": "tests/diff/",
             "Spec\\": "spec/"
         },
         "classmap": [
@@ -109,6 +112,7 @@
         "test": "phpunit --exclude-group=pbt",
         "test:equivalence": "phpunit tests/Equivalence",
         "test:contract": "phpunit --testsuite contract --exclude-group=pbt",
+        "test:diff": "phpunit --testsuite diff",
         "test:integration": "phpunit --testsuite integration --exclude-group=pbt",
         "test:pbt": "phpunit --group=pbt",
         "test:unit": "phpunit --testsuite unit --exclude-group=pbt",
