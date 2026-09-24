@@ -1,0 +1,108 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Unit\Analyzer\Graph\Resolution;
+
+use App\Analyzer\Graph\Declaration\Modifiers;
+use App\Analyzer\Graph\Declaration\SymbolDeclaration;
+use App\Analyzer\Graph\Edge\Declaration\ExtendsEdge;
+use App\Analyzer\Graph\FileMeta;
+use App\Analyzer\Graph\Graph;
+use App\Analyzer\Graph\Node\ClassNode;
+use App\Analyzer\Graph\Node\GraphInterfaceNode;
+use App\Analyzer\Graph\Node\MethodNode;
+use App\Analyzer\Graph\NodeId\ClassNodeId;
+use App\Analyzer\Graph\NodeId\InterfaceNodeId;
+use App\Analyzer\Graph\NodeId\MethodNodeId;
+use App\Analyzer\Graph\NodeKind;
+use App\Analyzer\Graph\Resolution\ClassHierarchy;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\TestCase;
+
+/**
+ * @internal
+ */
+#[CoversClass(ClassHierarchy::class)]
+#[Small]
+final class ClassHierarchyTest extends TestCase
+{
+    public function testMethodInheritedBodyTakesPrecedenceOverAnInterfaceDeclaration(): void
+    {
+        $graph = new Graph();
+        $base = new ClassNode(ClassNodeId::of('Base'), true);
+        $child = new ClassNode(ClassNodeId::of('Child'), true);
+        $port = new GraphInterfaceNode(InterfaceNodeId::of('Port'), true);
+        $body = new MethodNode(MethodNodeId::of('Base', 'run'), true);
+        $contract = new MethodNode(MethodNodeId::of('Port', 'run'), true);
+        $meta = new FileMeta('/source.php', 1, 1);
+        $graph->addNodes([$base, $child, $port, $body, $contract]);
+        $graph->addEdges([
+            new ExtendsEdge($child, $base, $meta),
+            new \App\Analyzer\Graph\Edge\Declaration\ImplementsEdge($child, $port, $meta),
+        ]);
+
+        $hierarchy = new ClassHierarchy($graph);
+
+        self::assertSame($body, $hierarchy->method('Child', 'RUN'));
+        self::assertTrue($hierarchy->isSubtype('Child', 'Port'));
+        self::assertFalse($hierarchy->isSubtype('Base', 'Port'));
+    }
+
+    public function testOwnerDistinguishesMembersFromStandaloneSymbols(): void
+    {
+        self::assertSame('App\Service', ClassHierarchy::owner(new MethodNode(MethodNodeId::of('App\Service', 'run'))));
+        self::assertNull(ClassHierarchy::owner(new ClassNode(ClassNodeId::of('App\Service'))));
+    }
+
+    public function testNodeMatchesClassNamesCaseInsensitively(): void
+    {
+        $graph = new Graph();
+        $node = new ClassNode(ClassNodeId::of('App\Service'), true);
+        $graph->addNode($node);
+
+        self::assertSame($node, (new ClassHierarchy($graph))->node('app\SERVICE'));
+    }
+
+    public function testAncestorsTerminatesAnInvalidInheritanceCycle(): void
+    {
+        $graph = new Graph();
+        $a = new ClassNode(ClassNodeId::of('A'), true);
+        $b = new ClassNode(ClassNodeId::of('B'), true);
+        $meta = new FileMeta('/source.php', 1, 1);
+        $graph->addNodes([$a, $b]);
+        $graph->addEdges([new ExtendsEdge($a, $b, $meta), new ExtendsEdge($b, $a, $meta)]);
+
+        self::assertSame(['a', 'b'], (new ClassHierarchy($graph))->ancestors('A'));
+    }
+
+    public function testIsSubtypeRejectsUnrelatedNames(): void
+    {
+        $hierarchy = new ClassHierarchy(new Graph());
+
+        self::assertTrue($hierarchy->isSubtype('Port', 'port'));
+        self::assertFalse($hierarchy->isSubtype('Other', 'Port'));
+    }
+
+    public function testMemberDoesNotMistakeAPropertyForAMethod(): void
+    {
+        $graph = new Graph();
+        $graph->addNode(new MethodNode(MethodNodeId::of('Service', 'run'), true));
+
+        self::assertNull((new ClassHierarchy($graph))->member('Service', 'run', NodeKind::Property));
+    }
+
+    public function testConcreteTypesExcludeInterfacesAndAbstractClasses(): void
+    {
+        $graph = new Graph();
+        $concrete = new ClassNode(ClassNodeId::of('Service'), true);
+        $graph->addNodes([
+            $concrete,
+            new ClassNode(ClassNodeId::of('Base'), true, null, new SymbolDeclaration(modifiers: new Modifiers(abstract: true))),
+            new GraphInterfaceNode(InterfaceNodeId::of('Port'), true),
+        ]);
+
+        self::assertSame([$concrete], (new ClassHierarchy($graph))->concreteTypes());
+    }
+}

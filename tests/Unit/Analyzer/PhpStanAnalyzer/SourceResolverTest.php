@@ -25,7 +25,7 @@ final class SourceResolverTest extends TestCase
     public function testResolveAttributesARelationInsideAMethodToThatMethod(): void
     {
         $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(dirname(__DIR__, 3).'/Fixture/Source/MethodBody.php');
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains(
             'Tests\Fixture\Source\MethodBodyClass::testMethod -[instantiation]-> stdClass',
@@ -43,7 +43,7 @@ final class SourceResolverTest extends TestCase
     public function testResolveNamesTheDeclaringSymbolRatherThanTheFile(): void
     {
         $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(dirname(__DIR__, 3).'/Fixture/Source/UsageProcessors.php');
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertNotSame([], $relations);
         self::assertSame($relations, array_values(array_filter($relations, static fn (string $relation): bool => str_starts_with($relation, 'Tests\Fixture\Source\UsageProcessorFixture::'))));

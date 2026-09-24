@@ -301,7 +301,7 @@ final class SymbolGraphGeneratorTest extends TestCase
         $again = $operation(new GraphGenerator(new ClassLikeGraphGenerator($againNodes, $againIds, $againRandom), new MemberGraphGenerator($againNodes, $againIds, $againRandom), new LeafGraphGenerator($againNodes), $againIds, $againRandom), 2);
 
         self::assertSame($first->root->id()->toString(), $again->root->id()->toString());
-        self::assertSame(array_map($spell, $first->graph->authoredEdges()), array_map($spell, $again->graph->authoredEdges()));
+        self::assertSame(array_map($spell, $first->graph->forwardEdges()), array_map($spell, $again->graph->forwardEdges()));
         self::assertSame($kind, $again->root->kind());
     }
 
@@ -343,7 +343,7 @@ final class SymbolGraphGeneratorTest extends TestCase
         $nodes = new NodeGenerator($ids, $random);
         $generator = new GraphGenerator(new ClassLikeGraphGenerator($nodes, $ids, $random), new MemberGraphGenerator($nodes, $ids, $random), new LeafGraphGenerator($nodes), $ids, $random);
         $result = $operation($generator);
-        $written = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $result->graph->authoredEdges());
+        $written = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $result->graph->forwardEdges());
         sort($written);
 
         self::assertSame($root, $result->root->id()->toString());
@@ -530,7 +530,7 @@ final class SymbolGraphGeneratorTest extends TestCase
         $again = $atFiveLevels(new GraphGenerator($againClassLikes, $againMembers, new LeafGraphGenerator($againNodes), $againIds, $againRandom), $againClassLikes, $againMembers);
 
         self::assertSame($again->root->id()->toString(), $first->root->id()->toString());
-        self::assertSame(array_map($spell, $again->graph->authoredEdges()), array_map($spell, $first->graph->authoredEdges()));
+        self::assertSame(array_map($spell, $again->graph->forwardEdges()), array_map($spell, $first->graph->forwardEdges()));
     }
 
     /**
@@ -581,7 +581,7 @@ final class SymbolGraphGeneratorTest extends TestCase
         $againNodes = new NodeGenerator($againIds, $againRandom);
         $atFiveLevels = (new GraphGenerator(new ClassLikeGraphGenerator($againNodes, $againIds, $againRandom), new MemberGraphGenerator($againNodes, $againIds, $againRandom), new LeafGraphGenerator($againNodes), $againIds, $againRandom))->graph(5);
 
-        self::assertNotSame([], $byDefault->authoredEdges());
-        self::assertSame(array_map($spell, $atFiveLevels->authoredEdges()), array_map($spell, $byDefault->authoredEdges()));
+        self::assertNotSame([], $byDefault->forwardEdges());
+        self::assertSame(array_map($spell, $atFiveLevels->forwardEdges()), array_map($spell, $byDefault->forwardEdges()));
     }
 }

@@ -116,7 +116,7 @@ final class JsonCursor
             }
         }
 
-        return $relations;
+        return array_values(array_unique($relations));
     }
 
     /**

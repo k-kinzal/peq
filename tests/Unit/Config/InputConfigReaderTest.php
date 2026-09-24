@@ -215,4 +215,17 @@ final class InputConfigReaderTest extends TestCase
 
         (new InputConfigReader(new ArrayInput(['target' => 'App\Domain\Invoice'], (new InspectCommand(new InspectAction()))->getDefinition())))->reported('direction', new stdClass());
     }
+
+    /**
+     * @throws \App\Config\ConfigException
+     */
+    public function testReadOnlyOverridesTheFilterWhenExplicitlyRequested(): void
+    {
+        $definition = (new InspectCommand(new InspectAction()))->getDefinition();
+        $explicit = (new InputConfigReader(new ArrayInput(['target' => 'Controller::action', '--filter' => 'all'], $definition)))->read();
+        $implicit = (new InputConfigReader(new ArrayInput(['target' => 'Controller::action'], $definition)))->read();
+
+        self::assertSame('all', $explicit['filter']);
+        self::assertArrayNotHasKey('filter', $implicit);
+    }
 }

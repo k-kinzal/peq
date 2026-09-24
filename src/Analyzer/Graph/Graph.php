@@ -28,7 +28,7 @@ final class Graph
     private array $adjacency = [];
 
     /**
-     * @var array<string, true> Hash set for O(1) edge duplicate detection, keyed by "from\0kind\0to"
+     * @var array<string, true> Hash set for O(1) edge duplicate detection, keyed by occurrence identity
      */
     private array $edgeSet = [];
 
@@ -74,9 +74,8 @@ final class Graph
      * Records an edge in the graph together with its opposite reading.
      *
      * Endpoints that have not been seen yet are recorded as unresolved placeholders,
-     * so an edge is never left dangling. Recording is idempotent per direction and
-     * kind, and the inverse edge is derived from the edge itself, so no relation
-     * kind is lost by making the reverse direction available.
+     * so an edge is never left dangling. Recording is idempotent per occurrence. The
+     * inverse edge is derived from the edge itself, so no relation kind is lost by making the reverse direction available.
      *
      * @example Recording a relation makes it readable from both of its ends
      *     $meta = new \App\Analyzer\Graph\FileMeta('/project/src/Invoice.php', 12, 1);
@@ -102,7 +101,7 @@ final class Graph
             $this->addNode(UnknownNode::standingInFor($edge->to()));
         }
 
-        $edgeKey = $fromKey."\0".$edge->kind()->value."\0".$toKey;
+        $edgeKey = EdgeIdentity::of($edge);
         if (isset($this->edgeSet[$edgeKey])) {
             return;
         }
@@ -111,7 +110,7 @@ final class Graph
         $this->adjacency[$fromKey][] = $edge;
 
         $inverse = $edge->invert();
-        $inverseKey = $toKey."\0".$inverse->kind()->value."\0".$inverse->to()->toString();
+        $inverseKey = EdgeIdentity::of($inverse);
         if (!isset($this->edgeSet[$inverseKey])) {
             $this->edgeSet[$inverseKey] = true;
             $this->adjacency[$toKey][] = $inverse;
@@ -215,7 +214,7 @@ final class Graph
     /**
      * Combines this graph with another one into a new graph.
      *
-     * Only authored edges are carried over: the opposite readings are derived
+     * Only forward relations are carried over: the opposite readings are derived
      * again by the new graph, so a merge cannot accumulate stale inverses.
      *
      * @param Graph $other The graph to combine with this one
@@ -227,28 +226,28 @@ final class Graph
         $merged = new Graph();
         $merged->addNodes($this->nodes());
         $merged->addNodes($other->nodes());
-        $merged->addEdges($this->authoredEdges());
-        $merged->addEdges($other->authoredEdges());
+        $merged->addEdges($this->forwardEdges());
+        $merged->addEdges($other->forwardEdges());
 
         return $merged;
     }
 
     /**
-     * Returns every edge that source code actually writes, without derived inverses.
+     * Returns written and inferred forward relations, without their inverse readings.
      *
-     * @return list<Edge> The authored edges of this graph
+     * @return list<Edge> The forward relations of this graph
      */
-    public function authoredEdges(): array
+    public function forwardEdges(): array
     {
-        $authored = [];
+        $forward = [];
         foreach ($this->adjacency as $edges) {
             foreach ($edges as $edge) {
                 if (!$edge instanceof InverseEdge) {
-                    $authored[] = $edge;
+                    $forward[] = $edge;
                 }
             }
         }
 
-        return $authored;
+        return $forward;
     }
 }

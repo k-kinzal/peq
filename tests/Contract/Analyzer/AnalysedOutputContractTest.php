@@ -115,7 +115,7 @@ final class AnalysedOutputContractTest extends TestCase
     public function testTheAnalysisWritesExactlyTheRelationsTheSourceWrites(string $fixture, array $expected): void
     {
         $graph = (new PhpStanAnalyzer())->analyze(dirname(__DIR__, 2).'/Fixture/Source/'.$fixture.'.php');
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
         sort($relations);
 
         self::assertSame($expected, $relations);
@@ -160,6 +160,7 @@ final class AnalysedOutputContractTest extends TestCase
             'Tests\Fixture\Source\UsageProcessorFixture -[declaration-property]-> Tests\Fixture\Source\UsageProcessorFixture::myProp',
             'Tests\Fixture\Source\UsageProcessorFixture::testMethod -[function-call]-> Tests\Fixture\Source\usage_target_func',
             'Tests\Fixture\Source\UsageProcessorFixture::testMethod -[instantiation]-> Tests\Fixture\Source\UsageDep',
+            'Tests\Fixture\Source\UsageProcessorFixture::testMethod -[method-call]-> Tests\Fixture\Source\UsageDep::depMethod',
             'Tests\Fixture\Source\UsageProcessorFixture::testMethod -[method-call]-> Tests\Fixture\Source\UsageProcessorFixture::helperMethod',
             'Tests\Fixture\Source\UsageProcessorFixture::testMethod -[property-access]-> Tests\Fixture\Source\UsageProcessorFixture::myProp',
             'Tests\Fixture\Source\UsageProcessorFixture::testMethod -[static-property-access]-> Tests\Fixture\Source\UsageDep::staticCount',

@@ -223,7 +223,7 @@ final class GraphPropertyTest extends TestCase
                 self::assertSame($names, array_values(array_unique($names)));
 
                 foreach ($graph->nodes() as $node) {
-                    $spelled = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->edges($node->id()));
+                    $spelled = array_map(static fn (Edge $edge): string => \App\Analyzer\Graph\EdgeIdentity::of($edge), $graph->edges($node->id()));
                     self::assertSame($spelled, array_values(array_unique($spelled)));
                 }
             })
@@ -359,12 +359,12 @@ final class GraphPropertyTest extends TestCase
 
                 $merged = $first->merge($second);
                 $spell = static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString();
-                $mergedRelations = array_map($spell, $merged->authoredEdges());
+                $mergedRelations = array_map($spell, $merged->forwardEdges());
 
                 foreach (array_merge($first->nodes(), $second->nodes()) as $node) {
                     self::assertNotNull($merged->node($node->id()), sprintf('%s was lost in the merge', $node->id()->toString()));
                 }
-                foreach (array_merge($first->authoredEdges(), $second->authoredEdges()) as $edge) {
+                foreach (array_merge($first->forwardEdges(), $second->forwardEdges()) as $edge) {
                     self::assertContains($spell($edge), $mergedRelations);
                 }
                 self::assertSame($mergedRelations, array_values(array_unique($mergedRelations)));

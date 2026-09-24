@@ -58,7 +58,7 @@ final class GeneratedGraphTest extends TestCase
             static fn (ClassNode $owner, MethodNode $method): Edge => new MethodEdge($owner, $method, new FileMeta('/project/src/Domain/Invoice.php', 12, 1)),
         );
 
-        self::assertCount(1, $result->graph->authoredEdges());
+        self::assertCount(1, $result->graph->forwardEdges());
     }
 
     public function testRelatedToKeepsTheRootItStartedFrom(): void
@@ -103,7 +103,7 @@ final class GeneratedGraphTest extends TestCase
 
         self::assertSame(
             'App\Domain\Invoice -> App\Domain\Invoice::total',
-            $result->graph->authoredEdges()[0]->from()->toString().' -> '.$result->graph->authoredEdges()[0]->to()->toString(),
+            $result->graph->forwardEdges()[0]->from()->toString().' -> '.$result->graph->forwardEdges()[0]->to()->toString(),
         );
     }
 }

@@ -41,7 +41,7 @@ final class ClosureEdgeContractTest extends TestCase
         file_put_contents($file, $code);
         $graph = (new PhpStanAnalyzer())->analyze($file);
         unlink($file);
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertSame(['Tests\Contract\Analyzer\Closure\Subject::run -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep'], array_values(array_filter($relations, static fn (string $relation): bool => $relation === 'Tests\Contract\Analyzer\Closure\Subject::run -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep')));
     }
@@ -71,7 +71,7 @@ final class ClosureEdgeContractTest extends TestCase
         file_put_contents($file, $code);
         $graph = (new PhpStanAnalyzer())->analyze($file);
         unlink($file);
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertSame(['Tests\Contract\Analyzer\Closure\Subject::run -[static-call]-> Tests\Contract\Analyzer\Closure\Dep::make'], array_values(array_filter($relations, static fn (string $relation): bool => $relation === 'Tests\Contract\Analyzer\Closure\Subject::run -[static-call]-> Tests\Contract\Analyzer\Closure\Dep::make')));
     }
@@ -101,7 +101,7 @@ final class ClosureEdgeContractTest extends TestCase
         file_put_contents($file, $code);
         $graph = (new PhpStanAnalyzer())->analyze($file);
         unlink($file);
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertSame(['Tests\Contract\Analyzer\Closure\Subject::run -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep'], array_values(array_filter($relations, static fn (string $relation): bool => $relation === 'Tests\Contract\Analyzer\Closure\Subject::run -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep')));
     }

@@ -1,0 +1,83 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Unit\Analyzer;
+
+use App\Analyzer\BodyCallRecorder;
+use App\Analyzer\Graph\FileMeta;
+use App\Analyzer\Graph\Graph;
+use App\Analyzer\Graph\Node\FunctionNode;
+use App\Analyzer\Graph\NodeId\FunctionNodeId;
+use App\Analyzer\Graph\Resolution\ClassHierarchy;
+use App\Analyzer\ReceiverBinding;
+use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\Variable;
+use PhpParser\Node\Stmt\Expression;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Small;
+use PHPUnit\Framework\TestCase;
+
+/**
+ * @internal
+ */
+#[CoversClass(BodyCallRecorder::class)]
+#[Small]
+final class BodyCallRecorderTest extends TestCase
+{
+    public function testRecordAreRecordedWithoutAClassScope(): void
+    {
+        $graph = new Graph();
+        $source = new FunctionNode(
+            FunctionNodeId::of('invoke'),
+            true,
+            new FileMeta('/source.php', 1, 1),
+            new \App\Analyzer\Graph\Declaration\SymbolDeclaration(signature: new \App\Analyzer\Graph\Declaration\Signature([
+                new \App\Analyzer\Graph\Declaration\Parameter('port', 'Port'),
+            ])),
+        );
+        $graph->addNode($source);
+        $call = new MethodCall(new Variable('port'), 'run', [], ['startLine' => 2, 'startFilePos' => 20]);
+
+        (new BodyCallRecorder($graph, new ClassHierarchy($graph)))->record([new Expression($call)], $source);
+        $edges = $graph->forwardEdges();
+
+        self::assertCount(1, $edges);
+        self::assertSame('invoke', $edges[0]->from()->toString());
+        self::assertSame('Port::run', $edges[0]->to()->toString());
+        self::assertSame(20, $edges[0]->meta()->offset);
+    }
+
+    public function testExpressionsKeepsTheWrittenCall(): void
+    {
+        $call = new MethodCall(new Variable('port'), 'run');
+        $graph = new Graph();
+        $recorder = new BodyCallRecorder($graph, new ClassHierarchy($graph));
+
+        self::assertContains($call, $recorder->expressions([new Expression($call)]));
+    }
+
+    public function testCallKeepsAnUnknownReceiverAsAnUnresolvedOccurrence(): void
+    {
+        $graph = new Graph();
+        $source = new FunctionNode(FunctionNodeId::of('run'), true, new FileMeta('/source.php', 1, 1));
+        $graph->addNode($source);
+        $call = new MethodCall(new Variable('unknown'), 'run', [], ['startLine' => 2, 'startFilePos' => 20]);
+        $hierarchy = new ClassHierarchy($graph);
+
+        (new BodyCallRecorder($graph, $hierarchy))->call($call, $source, new ReceiverBinding($hierarchy, $source));
+
+        self::assertCount(1, $graph->forwardEdges());
+        self::assertSame('unresolved-call@/source.php:20', $graph->forwardEdges()[0]->to()->toString());
+    }
+
+    public function testTargetsOnlyUseTheIntersectionMemberThatDeclaresTheMethod(): void
+    {
+        $graph = new Graph();
+        $method = new \App\Analyzer\Graph\Node\MethodNode(\App\Analyzer\Graph\NodeId\MethodNodeId::of('Named', 'name'), true);
+        $graph->addNode($method);
+        $recorder = new BodyCallRecorder($graph, new ClassHierarchy($graph));
+
+        self::assertSame([$method], $recorder->targets('Named&Countable', 'name'));
+    }
+}

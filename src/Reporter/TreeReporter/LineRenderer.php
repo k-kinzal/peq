@@ -55,6 +55,7 @@ final class LineRenderer
         bool $isLastChild,
         bool $isRecursive,
         bool $isDuplicate = false,
+        bool $isPossible = false,
     ): string {
         if ($depth === 0) {
             return $node->id()->toString();
@@ -68,7 +69,7 @@ final class LineRenderer
 
         $line .= $isLastChild ? '└── ' : '├── ';
 
-        $line .= $node->id()->toString();
+        $line .= $node->id()->toString().($isPossible ? ' (possible)' : '');
 
         if ($isRecursive) {
             $line .= ' (recursive)';

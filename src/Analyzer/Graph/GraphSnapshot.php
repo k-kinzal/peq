@@ -14,8 +14,8 @@ namespace App\Analyzer\Graph;
  * therefore has to go through a form that keeps what a graph says and drops the order
  * it was said in — one sorted line per symbol and per relation.
  *
- * Only authored relations are written down. The opposite readings are derived from
- * them by the graph itself, so two graphs with the same authored relations have the
+ * Only forward relations are written down. The opposite readings are derived from
+ * them by the graph itself, so two graphs with the same forward relations have the
  * same derived ones, and writing both down would only report every difference twice.
  *
  * This is what makes a second analyzer checkable against the first: they are the same
@@ -25,7 +25,7 @@ final class GraphSnapshot
 {
     /**
      * @param list<string> $nodes One line per symbol, sorted
-     * @param list<string> $edges One line per authored relation, sorted
+     * @param list<string> $edges One line per forward relation, sorted
      */
     public function __construct(
         public readonly array $nodes,
@@ -54,23 +54,25 @@ final class GraphSnapshot
         $nodes = [];
         foreach ($graph->nodes() as $node) {
             $nodes[] = sprintf(
-                '%s %s resolved=%s at %s',
+                '%s %s resolved=%s at %s%s',
                 $node->kind()->value,
                 $node->id()->toString(),
                 $node->resolved() ? 'yes' : 'no',
                 self::placeOf($node->meta()),
+                $node->declaration() === null ? '' : ' declaration='.serialize($node->declaration()),
             );
         }
         sort($nodes);
 
         $edges = [];
-        foreach ($graph->authoredEdges() as $edge) {
+        foreach ($graph->forwardEdges() as $edge) {
             $edges[] = sprintf(
-                '%s %s -> %s at %s',
+                '%s %s -> %s at %s%s',
                 $edge->kind()->value,
                 $edge->from()->toString(),
                 $edge->to()->toString(),
                 self::placeOf($edge->meta()),
+                EdgeIdentity::evidence($edge) === [] ? '' : ' evidence='.serialize(EdgeIdentity::evidence($edge)),
             );
         }
         sort($edges);
@@ -90,7 +92,7 @@ final class GraphSnapshot
      */
     public static function placeOf(?FileMeta $meta): string
     {
-        return $meta === null ? 'nowhere' : sprintf('%s:%d:%d', $meta->path, $meta->line, $meta->column);
+        return $meta === null ? 'nowhere' : sprintf('%s:%d:%d', $meta->path, $meta->line, $meta->column).($meta->offset === null ? '' : '@'.$meta->offset);
     }
 
     /**

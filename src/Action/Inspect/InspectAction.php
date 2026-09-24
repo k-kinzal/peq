@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Action\Inspect;
 
 use App\Action\AnalyzerChoice;
+use App\Config\InspectFilter;
 
 /**
  * Runs an inspection: builds the dependency graph and locates the symbol in it.
@@ -32,6 +33,9 @@ final class InspectAction
             throw SymbolNotFoundException::forTarget($input->target, $config->phpVersion?->toString());
         }
 
-        return new InspectActionOutput(graph: $graph, symbol: $symbol);
+        return new InspectActionOutput(
+            graph: InspectionGraph::of($graph, $symbol, $config->filter ?? InspectFilter::forKind($symbol->kind()), $config->direction),
+            symbol: $symbol,
+        );
     }
 }

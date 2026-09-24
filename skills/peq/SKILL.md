@@ -17,6 +17,9 @@ answer.
 | What does this symbol reach? What depends on it? | `peq <symbol>` | [references/inspect.md](references/inspect.md) |
 | Any other question about the graph | `peq graph '<query>'` | [references/graph.md](references/graph.md) |
 
-Inspect is one walk from one symbol. Graph is a query over everything. Quote
+Inspect is the easy human interface: a focused walk from one symbol. Methods and
+functions default to calls; class-like targets default to class dependencies.
+`--filter=all|calls|depend` overrides that choice. Graph is the advanced interface:
+a query over every relation and its evidence. Quote
 targets and queries with `'`. On failure, see
 [references/troubleshooting.md](references/troubleshooting.md).

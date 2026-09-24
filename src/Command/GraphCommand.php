@@ -147,8 +147,8 @@ final class GraphCommand extends Command
         try {
             $config = (new ConfigLoader([
                 new DefaultConfigReader(OutputFormat::Table),
-                new YamlConfigLoader($configPath),
                 new EnvConfigReader(),
+                new YamlConfigLoader($configPath),
                 new InputConfigReader($input),
             ]))->load();
 

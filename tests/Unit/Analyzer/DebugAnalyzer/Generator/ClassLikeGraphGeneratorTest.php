@@ -162,7 +162,7 @@ final class ClassLikeGraphGeneratorTest extends TestCase
     public function testEnumGraphRelatesEveryCaseItGeneratesToTheEnum(ClassLikeGraphGenerator $classLikes, GraphGenerator $graphs, NodeGenerator $nodes): void
     {
         $result = $classLikes->enumGraph($graphs, null, 2);
-        $kinds = array_map(static fn ($edge): EdgeKind => $edge->kind(), $result->graph->authoredEdges());
+        $kinds = array_map(static fn ($edge): EdgeKind => $edge->kind(), $result->graph->forwardEdges());
 
         self::assertSame($kinds, array_values(array_filter($kinds, static fn (EdgeKind $kind): bool => $kind === EdgeKind::DeclarationEnumCase)));
     }

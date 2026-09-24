@@ -38,6 +38,8 @@ final class EdgeLabelsTest extends TestCase
 
         yield 'a call to a method' => [EdgeKind::MethodCall, ['methodCall', 'call', 'usage']];
 
+        yield 'a possible implementation' => [EdgeKind::PossibleCall, ['possibleCall', 'usage']];
+
         yield 'a call to a static method' => [EdgeKind::StaticCall, ['staticCall', 'call', 'usage']];
 
         yield 'making one of something' => [EdgeKind::Instantiation, ['instantiation', 'usage']];
@@ -90,6 +92,7 @@ final class EdgeLabelsTest extends TestCase
             [
                 'functionCall',
                 'methodCall',
+                'possibleCall',
                 'staticCall',
                 'instantiation',
                 'propertyAccess',
@@ -133,6 +136,7 @@ final class EdgeLabelsTest extends TestCase
                 'call',
                 'usage',
                 'methodCall',
+                'possibleCall',
                 'staticCall',
                 'instantiation',
                 'propertyAccess',

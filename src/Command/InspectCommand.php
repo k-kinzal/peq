@@ -63,6 +63,7 @@ final class InspectCommand extends Command
             new InputArgument('path', InputArgument::OPTIONAL, 'Base directory to analyze (default: current working dir)'),
             new InputOption('config', null, InputOption::VALUE_REQUIRED, 'Path to config file (default: <cwd>/.peq.yaml)', getcwd().'/.peq.yaml'),
             new InputOption('direction', 'D', InputOption::VALUE_REQUIRED, 'Dependency direction: uses|used-by (default: uses)'),
+            new InputOption('filter', null, InputOption::VALUE_REQUIRED, 'Relations to inspect: all|calls|depend (default: calls for methods/functions, depend for class-likes)'),
             new InputOption('level', 'L', InputOption::VALUE_REQUIRED, 'Limit depth of the dependency graph'),
             new InputOption('reverse', 'R', InputOption::VALUE_NONE, 'Shortcut for --direction used-by'),
             new InputOption('output', 'O', InputOption::VALUE_REQUIRED, sprintf('Output format (%s)', OutputFormat::spell())),
@@ -110,8 +111,8 @@ final class InspectCommand extends Command
         try {
             $config = (new ConfigLoader([
                 new DefaultConfigReader(),
-                new YamlConfigLoader($configPath),
                 new EnvConfigReader(),
+                new YamlConfigLoader($configPath),
                 new InputConfigReader($input),
             ]))->load();
 

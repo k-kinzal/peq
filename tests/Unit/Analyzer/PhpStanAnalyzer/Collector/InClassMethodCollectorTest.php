@@ -44,7 +44,7 @@ final class InClassMethodCollectorTest extends TestCase
     public function testProcessNodeReportsWhatAMethodBodyReaches(string $expected): void
     {
         $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(__DIR__.'/../../../../Fixture/Source/MethodBody.php');
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains($expected, $relations);
     }
@@ -65,7 +65,7 @@ final class InClassMethodCollectorTest extends TestCase
     public function testProcessNodeReportsAUsageWhoseOwnerIsWrittenOut(string $expected): void
     {
         $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(__DIR__.'/../../../../Fixture/Source/UsageProcessors.php');
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains($expected, $relations);
     }
@@ -88,7 +88,7 @@ final class InClassMethodCollectorTest extends TestCase
     public function testProcessNodeLeavesOutAUsageWhoseOwnerIsOnlyInferable(string $unexpected): void
     {
         $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(__DIR__.'/../../../../Fixture/Source/UsageProcessors.php');
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertNotContains($unexpected, $relations);
     }
@@ -110,7 +110,7 @@ final class InClassMethodCollectorTest extends TestCase
         file_put_contents($file, "<?php\nnamespace Tests\\Contract\\Analyzer\\Nullsafe;\n\nclass Subject\n{\n    public int \$prop = 1;\n\n    public function helper(): void {}\n\n    public function testMethod(): void\n    {\n        \$this?->helper();\n        \$read = \$this?->prop;\n    }\n}\n");
         $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze($file);
         unlink($file);
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains($expected, $relations);
     }
@@ -139,7 +139,7 @@ final class InClassMethodCollectorTest extends TestCase
     public function testProcessNodeReportsExactlyTheseRelations(string $fixture, array $expected): void
     {
         $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(dirname(__DIR__, 4).'/Fixture/Source/'.$fixture.'.php');
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
         sort($relations);
 
         self::assertSame($expected, $relations);

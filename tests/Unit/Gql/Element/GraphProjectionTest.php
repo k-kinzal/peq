@@ -88,7 +88,7 @@ final class GraphProjectionTest extends TestCase
         $graph->addNodes([$controller, $kernel]);
         $graph->addEdge(new ExtendsEdge($controller, $kernel, new FileMeta('/project/src/Http/Controller.php', 10, 5)));
         $extends = new EdgeDatum(
-            'App\Http\Controller|declaration-extends|App\Http\Kernel',
+            'App\Http\Controller|declaration-extends|App\Http\Kernel|c3d0ca4dab0c75794232d2b40df477e71073ccbda9933d7f9f76b2c3a8f5d208',
             ['extends', 'declaration'],
             [
                 'kind' => new StringDatum('declaration-extends'),
@@ -201,7 +201,7 @@ final class GraphProjectionTest extends TestCase
 
         self::assertEquals(
             new EdgeDatum(
-                'App\Http\Controller::show|method-call|App\Domain\Invoice::total',
+                'App\Http\Controller::show|method-call|App\Domain\Invoice::total|5a768fbe59cf77e7b968c4fb63ff6c801ff32b46a769d61f0c591218402f7ae3',
                 ['methodCall', 'call', 'usage'],
                 [
                     'kind' => new StringDatum('method-call'),
@@ -209,6 +209,8 @@ final class GraphProjectionTest extends TestCase
                     'fileName' => new StringDatum('Controller.php'),
                     'line' => new IntegerDatum(22),
                     'column' => new IntegerDatum(5),
+                    'resolution' => new StringDatum('declared'),
+                    'declaredTarget' => new StringDatum('App\Domain\Invoice::total'),
                 ],
                 'App\Http\Controller::show',
                 'App\Domain\Invoice::total',

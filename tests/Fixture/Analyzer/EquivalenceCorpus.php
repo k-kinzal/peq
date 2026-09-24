@@ -28,6 +28,35 @@ final class EquivalenceCorpus
      * Every scenario, by name: the files it is made of, by file name.
      */
     public const SCENARIOS = [
+        'typed receivers and possible implementations' => ['Calls.php' => <<<'PHP'
+            <?php
+            namespace Corpus\Dispatch;
+            interface Port { public function execute(): void; }
+            interface Narrow extends Port {}
+            class Base { public function execute(): void {} }
+            final class Service extends Base implements Narrow {}
+            final class Other implements Port { public function execute(): void {} }
+            final class Controller {
+                public function __construct(private Narrow $port) {}
+                public function action(): void { $this->port->execute(); $this->port->execute(); }
+            }
+            function invoke(Port $port): void { $port->execute(); }
+            PHP],
+        'nullable compound receivers and repeated attributes' => ['Receivers.php' => <<<'PHP'
+            <?php
+            namespace Corpus\Receivers;
+            #[\Attribute(\Attribute::TARGET_METHOD | \Attribute::IS_REPEATABLE)]
+            class Trace { public function __construct(public string $name) {} }
+            interface Port { public function run(): void; }
+            interface Tagged {}
+            class Both implements Port, Tagged { #[Trace('same'), Trace('same')] public function run(): void {} }
+            class Other implements Port { public function run(): void {} }
+            class Factory { public function make(): Port { return new Both(); } }
+            function compound((Port&Tagged)|null $port): void { $port?->run(); }
+            function chained(Factory $factory): void { $factory->make()->run(); }
+            function assigned(): void { $port = new Both(); $port->run(); }
+            function dynamic($unknown, string $method): void { $unknown->run(); $unknown->$method(); }
+            PHP],
         'class-like declarations and what they are built from' => ['Declarations.php' => <<<'PHP'
             <?php
             declare(strict_types=1);

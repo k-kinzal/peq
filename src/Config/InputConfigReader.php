@@ -26,6 +26,21 @@ use Symfony\Component\Console\Input\InputInterface;
 final readonly class InputConfigReader implements ConfigReader
 {
     /**
+     * Settings and the option spellings that explicitly override other sources.
+     */
+    private const array OPTIONS = [
+        'direction' => ['--direction', '-D'],
+        'level' => ['--level', '-L'],
+        'output' => ['--output', '-O'],
+        'includes' => ['--include', '-I'],
+        'excludes' => ['--exclude', '-E'],
+        'phpVersion' => ['--php-version'],
+        'type' => ['--type'],
+        'filter' => ['--filter'],
+        'hops' => ['--hops'],
+    ];
+
+    /**
      * @param InputInterface $input The console input to read from
      */
     public function __construct(
@@ -47,32 +62,13 @@ final readonly class InputConfigReader implements ConfigReader
             $config['basePath'] = $path;
         }
 
-        if ($this->input->hasParameterOption(['--direction', '-D'])) {
-            $config['direction'] = $this->option('direction');
+        foreach (self::OPTIONS as $setting => $spellings) {
+            if ($this->input->hasParameterOption($spellings)) {
+                $config[$setting] = $this->option(substr($spellings[0], 2));
+            }
         }
         if ($this->input->hasParameterOption(['--reverse', '-R'])) {
             $config['direction'] = Direction::UsedBy->value;
-        }
-        if ($this->input->hasParameterOption(['--level', '-L'])) {
-            $config['level'] = $this->option('level');
-        }
-        if ($this->input->hasParameterOption(['--output', '-O'])) {
-            $config['output'] = $this->option('output');
-        }
-        if ($this->input->hasParameterOption(['--include', '-I'])) {
-            $config['includes'] = $this->option('include');
-        }
-        if ($this->input->hasParameterOption(['--exclude', '-E'])) {
-            $config['excludes'] = $this->option('exclude');
-        }
-        if ($this->input->hasParameterOption(['--php-version'])) {
-            $config['phpVersion'] = $this->option('php-version');
-        }
-        if ($this->input->hasParameterOption(['--type'])) {
-            $config['type'] = $this->option('type');
-        }
-        if ($this->input->hasParameterOption(['--hops'])) {
-            $config['hops'] = $this->option('hops');
         }
 
         $debug = [];

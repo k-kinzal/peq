@@ -11,6 +11,7 @@ use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\Node\MethodNode;
+use App\Analyzer\Graph\Node\UnknownNode;
 use Override;
 
 /**
@@ -20,13 +21,15 @@ final readonly class MethodCallEdge extends AuthoredEdge
 {
     /**
      * @param FunctionNode|MethodNode $from The node the relation starts at
-     * @param MethodNode              $to   The node the relation points at
+     * @param MethodNode|UnknownNode  $to   The node the relation points at
      * @param FileMeta                $meta Where in the source code the relation is written
      */
     public function __construct(
         FunctionNode|MethodNode $from,
-        MethodNode $to,
+        MethodNode|UnknownNode $to,
         FileMeta $meta,
+        public ?string $receiverType = null,
+        public ?string $expression = null,
     ) {
         parent::__construct($from, $to, $meta);
     }

@@ -23,7 +23,7 @@ final class AttributeProcessorTest extends TestCase
     public function testProcessRecordsAnAttributeWrittenOnADeclaration(): void
     {
         $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(dirname(__DIR__, 5).'/Fixture/Source/Comprehensive.php');
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains('Tests\Fixture\Source\ComprehensiveClass -[attribute]-> Tests\Fixture\Source\MyAttribute', $relations);
     }
@@ -31,7 +31,7 @@ final class AttributeProcessorTest extends TestCase
     public function testProcessRecordsNothingForSourcesWithNoSuchRelation(): void
     {
         $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(dirname(__DIR__, 5).'/Fixture/Source/ClassDependency.php');
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertNotContains('Tests\Fixture\Source\ComprehensiveClass -[attribute]-> Tests\Fixture\Source\MyAttribute', $relations);
     }
@@ -70,7 +70,7 @@ final class AttributeProcessorTest extends TestCase
         file_put_contents($file, implode(PHP_EOL, ['<?php', 'namespace Tests\Contract\Analyzer\Attributes;', '', '#[\Attribute]', 'class First {}', '', '#[\Attribute]', 'class Second {}', '', '#[First]', '#[Second]', 'class Subject {}', '']));
         $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze($file);
         unlink($file);
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains('Tests\Contract\Analyzer\Attributes\Subject -[attribute]-> Tests\Contract\Analyzer\Attributes\First', $relations);
         self::assertContains('Tests\Contract\Analyzer\Attributes\Subject -[attribute]-> Tests\Contract\Analyzer\Attributes\Second', $relations);

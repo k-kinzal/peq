@@ -163,7 +163,7 @@ final class GraphTest extends TestCase
         $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), $called, new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
         $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Receipt', 'total'), true), $called, new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
 
-        self::assertCount(2, $graph->authoredEdges());
+        self::assertCount(2, $graph->forwardEdges());
     }
 
     public function testAddEdgeKeepsTwoRelationsThatDifferOnlyInWhereTheyPointAt(): void
@@ -173,7 +173,7 @@ final class GraphTest extends TestCase
         $graph->addEdge(new MethodCallEdge($caller, new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
         $graph->addEdge(new MethodCallEdge($caller, new MethodNode(MethodNodeId::of('App\Domain\Money', 'subtract'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
 
-        self::assertCount(2, $graph->authoredEdges());
+        self::assertCount(2, $graph->forwardEdges());
     }
 
     public function testAddEdgeKeepsTwoRelationsThatDifferOnlyInTheirKind(): void
@@ -184,7 +184,7 @@ final class GraphTest extends TestCase
         $graph->addEdge(new MethodCallEdge($caller, $called, new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
         $graph->addEdge(new StaticCallEdge($caller, $called, new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
 
-        self::assertCount(2, $graph->authoredEdges());
+        self::assertCount(2, $graph->forwardEdges());
     }
 
     public function testAddEdgeRecordsTheSameRelationOnlyOnce(): void
@@ -204,7 +204,7 @@ final class GraphTest extends TestCase
             new MethodEdge(new ClassNode(ClassNodeId::of('App\Domain\Invoice'), true), new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)),
         ]);
 
-        self::assertCount(2, $graph->authoredEdges());
+        self::assertCount(2, $graph->forwardEdges());
         self::assertSame(EdgeKind::UsedBy, $graph->edge(MethodNodeId::of('App\Domain\Money', 'add'), MethodNodeId::of('App\Domain\Invoice', 'total'))?->kind());
         self::assertSame(EdgeKind::DeclaredIn, $graph->edge(MethodNodeId::of('App\Domain\Invoice', 'total'), ClassNodeId::of('App\Domain\Invoice'))?->kind());
     }
@@ -240,18 +240,18 @@ final class GraphTest extends TestCase
         self::assertNull($graph->edge($edge->from(), $edge->to(), EdgeKind::StaticCall));
     }
 
-    public function testAuthoredEdgesLeavesOutTheDerivedReadings(): void
+    public function testForwardEdgesLeavesOutTheDerivedReadings(): void
     {
         $graph = new Graph();
         $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1)));
 
-        self::assertCount(1, $graph->authoredEdges());
-        self::assertInstanceOf(MethodCallEdge::class, $graph->authoredEdges()[0]);
+        self::assertCount(1, $graph->forwardEdges());
+        self::assertInstanceOf(MethodCallEdge::class, $graph->forwardEdges()[0]);
     }
 
-    public function testAuthoredEdgesIsEmptyForAGraphWithNoRelations(): void
+    public function testForwardEdgesIsEmptyForAGraphWithNoRelations(): void
     {
-        self::assertSame([], (new Graph())->authoredEdges());
+        self::assertSame([], (new Graph())->forwardEdges());
     }
 
     public function testMergeHoldsEverySymbolOfBothGraphs(): void
@@ -276,7 +276,7 @@ final class GraphTest extends TestCase
 
         $merged = $first->merge(new Graph());
 
-        self::assertCount(1, $merged->authoredEdges());
+        self::assertCount(1, $merged->forwardEdges());
         self::assertCount(1, $merged->edges(MethodNodeId::of('App\Domain\Money', 'add')));
     }
 
@@ -301,7 +301,7 @@ final class GraphTest extends TestCase
         $merged = $graph->merge($graph);
 
         self::assertCount(count($graph->nodes()), $merged->nodes());
-        self::assertCount(count($graph->authoredEdges()), $merged->authoredEdges());
+        self::assertCount(count($graph->forwardEdges()), $merged->forwardEdges());
     }
 
     public function testMergeKeepsSymbolsThatHaveNoRelationsOnEitherSide(): void
