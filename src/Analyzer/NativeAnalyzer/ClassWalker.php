@@ -204,7 +204,7 @@ final class ClassWalker
             $renames = TraitFlattening::renames($node, $traitName);
             $inside = $scope->enteringTrait($declaration->name);
             foreach ($declaration->node->stmts as $statement) {
-                $this->member(self::renamed($statement, $renames), $class, $kind, $inside, $declaration->source);
+                $this->member(self::renamed($statement, $renames, $node, $traitName), $class, $kind, $inside, $declaration->source);
             }
         }
     }
@@ -220,18 +220,28 @@ final class ClassWalker
      *
      * @return Stmt The statement under the name the class takes it on as
      */
-    public static function renamed(Stmt $statement, array $renames): Stmt
+    public static function renamed(Stmt $statement, array $renames, ?TraitUse $use = null, ?string $trait = null): Stmt
     {
         if (!$statement instanceof ClassMethod) {
             return $statement;
         }
         $newName = $renames[strtolower($statement->name->toString())] ?? null;
-        if ($newName === null) {
+        if ($newName === null && ($use === null || $use->adaptations === [])) {
             return $statement;
         }
-
         $renamedMethod = clone $statement;
-        $renamedMethod->name = new PhpParserNode\Identifier($newName, $statement->name->getAttributes());
+        if ($newName !== null) {
+            $renamedMethod->name = new PhpParserNode\Identifier($newName, $statement->name->getAttributes());
+        }
+        foreach ($use->adaptations ?? [] as $adaptation) {
+            if ($adaptation instanceof Stmt\TraitUseAdaptation\Alias
+                && $adaptation->newModifier !== null
+                && strtolower($adaptation->method->toString()) === strtolower($statement->name->toString())
+                && ($adaptation->trait === null || strtolower($adaptation->trait->toString()) === strtolower($trait ?? ''))
+            ) {
+                $renamedMethod->flags = ($renamedMethod->flags & ~Modifiers::VISIBILITY_MASK) | $adaptation->newModifier;
+            }
+        }
 
         return $renamedMethod;
     }

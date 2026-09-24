@@ -139,7 +139,7 @@ final class DeclarationEmitterTest extends TestCase
         yield 'a declaration carrying an attribute' => [
             "<?php\nnamespace App;\n#[\\App\\Marker]\nclass Written {}\n",
             NodeKind::Klass,
-            [$marked, new AttributeEdge($marked, new ClassNode(ClassNodeId::of('App\Marker'), false, null), $at)],
+            [$marked, new AttributeEdge($marked, new ClassNode(ClassNodeId::of('App\Marker'), false, null), new FileMeta('/project/Written.php', 3, 1, 23))],
         ];
     }
 
@@ -204,8 +204,8 @@ final class DeclarationEmitterTest extends TestCase
 
         self::assertEquals(
             [
-                new AttributeEdge($written, new ClassNode(ClassNodeId::of('App\First'), false, null), new FileMeta('/project/Written.php', 3, 1)),
-                new AttributeEdge($written, new ClassNode(ClassNodeId::of('App\Second'), false, null), new FileMeta('/project/Written.php', 4, 1)),
+                new AttributeEdge($written, new ClassNode(ClassNodeId::of('App\First'), false, null), new FileMeta('/project/Written.php', 3, 1, 23)),
+                new AttributeEdge($written, new ClassNode(ClassNodeId::of('App\Second'), false, null), new FileMeta('/project/Written.php', 4, 1, 37)),
             ],
             DeclarationEmitter::attributes($declaration->attrGroups, $written, AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Written.php')),
         );

@@ -107,7 +107,7 @@ final class ClassWalkerTest extends TestCase
         $walker->method($method, $class, NodeKind::Klass, AnalysisScope::inFile($index, $source->path)->enteringClass('App\Invoice', null), $source);
 
         self::assertEquals(
-            new InstantiationEdge(new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 4, 1)),
+            new InstantiationEdge(new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 4, 1, 93)),
             $recorder->graph()->edge(MethodNodeId::of('App\Invoice', 'total'), ClassNodeId::of('App\Money')),
         );
     }
@@ -220,5 +220,36 @@ final class ClassWalkerTest extends TestCase
 
         self::assertInstanceOf(ClassMethod::class, $renamed);
         self::assertSame(['taken', 3], [$renamed->name->toString(), $renamed->getStartLine()]);
+    }
+
+    public function testRenamedAppliesTheVisibilityWrittenByAnAlias(): void
+    {
+        $statements = (new ParserFactory())->createForHostVersion()->parse('<?php trait Shared { public function written(): void {} } class Named { use Shared { written as protected taken; } }') ?? [];
+        $method = (new NodeFinder())->findFirstInstanceOf($statements, ClassMethod::class);
+        $class = (new NodeFinder())->findFirstInstanceOf($statements, Class_::class);
+        self::assertNotNull($method);
+        self::assertNotNull($class);
+
+        $renamed = ClassWalker::renamed($method, ['written' => 'taken'], $class->getTraitUses()[0], 'Shared');
+
+        self::assertInstanceOf(ClassMethod::class, $renamed);
+        self::assertTrue($renamed->isProtected());
+        self::assertTrue($method->isPublic());
+    }
+
+    public function testRenamedChangesOnlyTheMatchingTraitMethodVisibilityAndKeepsOtherFlags(): void
+    {
+        $statements = (new ParserFactory())->createForHostVersion()->parse('<?php trait Shared { public static function Run(): void {} } trait Other {} class Named { use Shared, Other { Shared::RUN as private; Other::run as protected; other as private; Run as alias; Shared::Run insteadof Other; } }') ?? [];
+        $method = (new NodeFinder())->findFirstInstanceOf($statements, ClassMethod::class);
+        $class = (new NodeFinder())->findFirstInstanceOf($statements, Class_::class);
+        self::assertNotNull($method);
+        self::assertNotNull($class);
+
+        $renamed = ClassWalker::renamed($method, [], $class->getTraitUses()[0], 'sHaReD');
+
+        self::assertInstanceOf(ClassMethod::class, $renamed);
+        self::assertSame('Run', $renamed->name->toString());
+        self::assertSame(\PhpParser\Modifiers::PRIVATE | \PhpParser\Modifiers::STATIC, $renamed->flags);
+        self::assertSame(\PhpParser\Modifiers::PUBLIC | \PhpParser\Modifiers::STATIC, $method->flags);
     }
 }

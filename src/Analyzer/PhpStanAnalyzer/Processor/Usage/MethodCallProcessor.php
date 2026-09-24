@@ -19,10 +19,9 @@ use PHPStan\Analyser\Scope;
 /**
  * Processes instance method calls via $this and $this? receivers.
  *
- * SCOPE LIMITATION: Only $this->method() and $this?->method() are detected.
- * Calls on arbitrary objects ($obj->method()) are not resolved because the
- * re-parsed AST context used by InClassMethodNodeProcessor lacks PHPStan's
- * type inference needed to determine the class of arbitrary receivers.
+ * This source pass records lexical $this calls. Once every declaration is known,
+ * CallEnrichment resolves other receivers and adds possible implementation bodies
+ * for both engines using the same graph vocabulary and type constraints.
  *
  * @visibility App\Analyzer\PhpStanAnalyzer
  */
@@ -56,7 +55,7 @@ final class MethodCallProcessor
                 null,
             );
             if ($sourceNode instanceof FunctionNode || $sourceNode instanceof MethodNode) {
-                $meta = new FileMeta($scope->getFile(), $node->getStartLine(), 1);
+                $meta = new FileMeta($scope->getFile(), $node->getStartLine(), 1, $node->getStartFilePos());
                 $items[] = new MethodCallEdge($sourceNode, $targetNode, $meta);
             }
         }

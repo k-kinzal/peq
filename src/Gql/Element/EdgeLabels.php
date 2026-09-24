@@ -35,6 +35,7 @@ final class EdgeLabels
     private const array NAMES = [
         'function-call' => 'functionCall',
         'method-call' => 'methodCall',
+        'possible-call' => 'possibleCall',
         'static-call' => 'staticCall',
         'instantiation' => 'instantiation',
         'property-access' => 'propertyAccess',
@@ -107,6 +108,8 @@ final class EdgeLabels
             EdgeKind::FunctionCall,
             EdgeKind::MethodCall,
             EdgeKind::StaticCall => ['call', 'usage'],
+
+            EdgeKind::PossibleCall => ['usage'],
 
             EdgeKind::Instantiation,
             EdgeKind::PropertyAccess,

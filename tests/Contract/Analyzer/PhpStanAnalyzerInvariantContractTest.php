@@ -30,7 +30,7 @@ final class PhpStanAnalyzerInvariantContractTest extends TestCase
         $graph = (new PhpStanAnalyzer())->analyze($file);
         unlink($file);
         $edges = array_merge([], ...array_map(static fn (Node $node): array => $graph->edges($node->id()), $graph->nodes()));
-        $spelled = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $edges);
+        $spelled = array_map(static fn (Edge $edge): string => \App\Analyzer\Graph\EdgeIdentity::of($edge), $edges);
         $names = array_map(static fn (Node $node): string => $node->id()->toString(), $graph->nodes());
 
         self::assertNotSame([], $edges, "[{$label}]");

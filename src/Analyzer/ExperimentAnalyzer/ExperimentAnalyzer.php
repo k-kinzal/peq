@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Analyzer\ExperimentAnalyzer;
 
 use App\Analyzer\Analyzer;
+use App\Analyzer\CallEnrichment;
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\PhpFileCollector;
 
@@ -81,6 +82,6 @@ final class ExperimentAnalyzer implements Analyzer
             $walker->walkFile($source);
         }
 
-        return $recorder->graph();
+        return CallEnrichment::of($recorder->graph(), $this->phpVersion);
     }
 }

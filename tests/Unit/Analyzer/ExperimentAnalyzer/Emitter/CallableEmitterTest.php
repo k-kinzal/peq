@@ -98,14 +98,14 @@ final class CallableEmitterTest extends TestCase
 
         yield 'a method carrying an attribute' => [
             "<?php\nnamespace App;\nclass Invoice { #[\\App\\Marker] public function total(): void {} }\n",
-            [new MethodEdge($invoice, $marked, $at), $marked, new AttributeEdge($marked, new ClassNode(ClassNodeId::of('App\Marker'), false, null), $at)],
+            [new MethodEdge($invoice, $marked, $at), $marked, new AttributeEdge($marked, new ClassNode(ClassNodeId::of('App\Marker'), false, null), new FileMeta('/project/Invoice.php', 3, 1, 39))],
         ];
 
         $markedParameter = new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, $at, new SymbolDeclaration(visibility: Visibility::Public, signature: new Signature([new Parameter('amount', 'int')], 'void')));
 
         yield 'a method whose parameter carries an attribute' => [
             "<?php\nnamespace App;\nclass Invoice { public function total(#[\\App\\Marker] int \$amount): void {} }\n",
-            [new MethodEdge($invoice, $markedParameter, $at), $markedParameter, new AttributeEdge($markedParameter, new ClassNode(ClassNodeId::of('App\Marker'), false, null), $at)],
+            [new MethodEdge($invoice, $markedParameter, $at), $markedParameter, new AttributeEdge($markedParameter, new ClassNode(ClassNodeId::of('App\Marker'), false, null), new FileMeta('/project/Invoice.php', 3, 1, 61), [], 'amount')],
         ];
 
         $builtin = new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, $at, new SymbolDeclaration(visibility: Visibility::Public, signature: new Signature([new Parameter('amount', 'int')], 'string')));
@@ -213,7 +213,7 @@ final class CallableEmitterTest extends TestCase
 
         yield 'a parameter carrying an attribute' => [
             "<?php\nnamespace App;\nclass Invoice { public function __construct(#[\\App\\Marker] private int \$held) {} }\n",
-            [$marked, new PropertyEdge($invoice, $marked, $at), new AttributeEdge($marked, new ClassNode(ClassNodeId::of('App\Marker'), false, null), $at)],
+            [$marked, new PropertyEdge($invoice, $marked, $at), new AttributeEdge($marked, new ClassNode(ClassNodeId::of('App\Marker'), false, null), new FileMeta('/project/Invoice.php', 3, 1, 67))],
         ];
 
         yield 'a parameter with no visibility declares nothing' => ["<?php\nnamespace App;\nclass Invoice { public function total(int \$amount): void {} }\n", []];

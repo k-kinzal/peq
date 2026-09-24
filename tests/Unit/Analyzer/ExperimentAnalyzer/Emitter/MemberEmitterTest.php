@@ -95,7 +95,7 @@ final class MemberEmitterTest extends TestCase
 
         yield 'a property carrying an attribute' => [
             "<?php\nnamespace App;\nclass Invoice { #[\\App\\Marker] public int \$held = 0; }\n",
-            [$marked, new PropertyEdge($invoice, $marked, $at), new AttributeEdge($marked, new ClassNode(ClassNodeId::of('App\Marker'), false, null), $at)],
+            [$marked, new PropertyEdge($invoice, $marked, $at), new AttributeEdge($marked, new ClassNode(ClassNodeId::of('App\Marker'), false, null), new FileMeta('/project/Invoice.php', 3, 1, 39))],
         ];
     }
 
@@ -140,7 +140,7 @@ final class MemberEmitterTest extends TestCase
 
         yield 'a constant carrying an attribute' => [
             "<?php\nnamespace App;\nclass Invoice { #[\\App\\Marker] public const KIND = 'invoice'; }\n",
-            [$marked, new ConstantEdge($invoice, $marked, $at), new AttributeEdge($marked, new ClassNode(ClassNodeId::of('App\Marker'), false, null), $at)],
+            [$marked, new ConstantEdge($invoice, $marked, $at), new AttributeEdge($marked, new ClassNode(ClassNodeId::of('App\Marker'), false, null), new FileMeta('/project/Invoice.php', 3, 1, 39))],
         ];
     }
 

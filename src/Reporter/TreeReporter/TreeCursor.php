@@ -8,6 +8,7 @@ use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node;
 use App\Reporter\Continuation;
 use App\Reporter\Expansion;
+use App\Reporter\RelationNotice;
 use App\Reporter\Traversal;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -90,6 +91,7 @@ final class TreeCursor
             isLastChild: $isLastChild,
             isRecursive: $continuation === Continuation::Cycle,
             isDuplicate: $continuation === Continuation::Repeat,
+            isPossible: RelationNotice::possible($this->graph, $depth > 0 ? ($this->parents[$depth - 1] ?? null) : null, $node, $this->traversal->direction()),
         ));
 
         $this->continuations[$depth] = !$isLastChild;

@@ -85,7 +85,7 @@ final class LeafGraphGeneratorTest extends TestCase
     #[DataProvider('providerLeafGraphGenerator')]
     public function testALeafGraphHoldsNoRelationsAtAll(LeafGraphGenerator $leaves): void
     {
-        self::assertSame([], $leaves->constantGraph()->graph->authoredEdges());
+        self::assertSame([], $leaves->constantGraph()->graph->forwardEdges());
     }
 
     /**

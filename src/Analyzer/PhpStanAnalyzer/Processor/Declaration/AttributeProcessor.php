@@ -39,7 +39,7 @@ final class AttributeProcessor
      *
      * @return list<AttributeEdge> One relation per attribute
      */
-    public static function process(array $attributeGroups, Node $owner, Scope $scope): array
+    public static function process(array $attributeGroups, Node $owner, Scope $scope, ?string $parameter = null): array
     {
         $items = [];
         foreach ($attributeGroups as $group) {
@@ -47,7 +47,9 @@ final class AttributeProcessor
                 $items[] = new AttributeEdge(
                     $owner,
                     new ClassNode(ClassNodeId::of($scope->resolveName($attribute->name)), false, null),
-                    new FileMeta($scope->getFile(), $attribute->getStartLine(), 1),
+                    new FileMeta($scope->getFile(), $attribute->getStartLine(), 1, $attribute->getStartFilePos()),
+                    WrittenAttribute::usage($attribute, $scope->resolveName($attribute->name))->arguments,
+                    $parameter,
                 );
             }
         }

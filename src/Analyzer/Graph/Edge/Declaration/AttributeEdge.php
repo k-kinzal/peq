@@ -19,14 +19,18 @@ use Override;
 final readonly class AttributeEdge extends AuthoredEdge
 {
     /**
-     * @param Node      $from The node the relation starts at
-     * @param ClassNode $to   The node the relation points at
-     * @param FileMeta  $meta Where in the source code the relation is written
+     * @param Node         $from      The node the relation starts at
+     * @param ClassNode    $to        The node the relation points at
+     * @param FileMeta     $meta      Where in the source code the relation is written
+     * @param list<string> $arguments Attribute arguments as source expressions
+     * @param null|string  $parameter Parameter carrying the attribute, or null for the source symbol itself
      */
     public function __construct(
         Node $from,
         ClassNode $to,
         FileMeta $meta,
+        public array $arguments = [],
+        public ?string $parameter = null,
     ) {
         parent::__construct($from, $to, $meta);
     }

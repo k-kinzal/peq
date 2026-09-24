@@ -48,7 +48,7 @@ final class ReparseStrategyContractTest extends TestCase
         file_put_contents($file, $code);
         $graph = (new PhpStanAnalyzer())->analyze($file);
         unlink($file);
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains('Tests\Contract\Analyzer\Reparse\Multi::alpha -[instantiation]-> Tests\Contract\Analyzer\Reparse\DepA', $relations);
         self::assertContains('Tests\Contract\Analyzer\Reparse\Multi::beta -[instantiation]-> Tests\Contract\Analyzer\Reparse\DepB', $relations);
@@ -78,7 +78,7 @@ final class ReparseStrategyContractTest extends TestCase
         file_put_contents($file, $code);
         $graph = (new PhpStanAnalyzer())->analyze($file);
         unlink($file);
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains('Tests\Contract\Analyzer\Reparse\WithClosure::run -[instantiation]-> Tests\Contract\Analyzer\Reparse\Target', $relations);
     }
@@ -110,7 +110,7 @@ final class ReparseStrategyContractTest extends TestCase
         file_put_contents($file, $code);
         $graph = (new PhpStanAnalyzer())->analyze($file);
         unlink($file);
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains('Tests\Contract\Analyzer\Reparse\DeepNest::run -[instantiation]-> Tests\Contract\Analyzer\Reparse\Nested', $relations);
     }
@@ -142,7 +142,7 @@ final class ReparseStrategyContractTest extends TestCase
         file_put_contents($file, $code);
         $graph = (new PhpStanAnalyzer())->analyze($file);
         unlink($file);
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains('Tests\Contract\Analyzer\Reparse\Consumer::work -[instantiation]-> Tests\Contract\Analyzer\Reparse\Svc', $relations);
         self::assertContains('Tests\Contract\Analyzer\Reparse\Consumer::work -[static-call]-> Tests\Contract\Analyzer\Reparse\Svc::create', $relations);
@@ -175,8 +175,8 @@ final class ReparseStrategyContractTest extends TestCase
         file_put_contents($file, $code);
         $graph2 = (new PhpStanAnalyzer())->analyze($file);
         unlink($file);
-        $edges1 = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph1->authoredEdges());
-        $edges2 = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph2->authoredEdges());
+        $edges1 = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph1->forwardEdges());
+        $edges2 = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph2->forwardEdges());
         sort($edges1);
         sort($edges2);
 
@@ -207,7 +207,7 @@ final class ReparseStrategyContractTest extends TestCase
         file_put_contents($file, $code);
         $graph = (new PhpStanAnalyzer())->analyze($file);
         unlink($file);
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains('Tests\Contract\Analyzer\Reparse\SelfCaller::entry -[method-call]-> Tests\Contract\Analyzer\Reparse\SelfCaller::helper', $relations);
     }
@@ -232,7 +232,7 @@ final class ReparseStrategyContractTest extends TestCase
         file_put_contents($file, $code);
         $graph = (new PhpStanAnalyzer())->analyze($file);
         unlink($file);
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains('Tests\Contract\Analyzer\Reparse\PropReader::read -[property-access]-> Tests\Contract\Analyzer\Reparse\PropReader::value', $relations);
     }
@@ -260,7 +260,7 @@ final class ReparseStrategyContractTest extends TestCase
         file_put_contents($file, $code);
         $graph = (new PhpStanAnalyzer())->analyze($file);
         unlink($file);
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains('Tests\Contract\Analyzer\Reparse\StaticReader::read -[static-property-access]-> Tests\Contract\Analyzer\Reparse\Registry::count', $relations);
     }
@@ -302,7 +302,7 @@ final class ReparseStrategyContractTest extends TestCase
         file_put_contents($file, $code);
         $graph = (new PhpStanAnalyzer())->analyze($file);
         unlink($file);
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains('Tests\Contract\Analyzer\Reparse\AllUsages::entry -[instantiation]-> Tests\Contract\Analyzer\Reparse\Dep', $relations);
         self::assertContains('Tests\Contract\Analyzer\Reparse\AllUsages::entry -[static-call]-> Tests\Contract\Analyzer\Reparse\Dep::create', $relations);

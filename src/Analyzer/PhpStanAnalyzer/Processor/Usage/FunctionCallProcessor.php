@@ -55,7 +55,7 @@ final class FunctionCallProcessor
                     null,
                 );
                 if ($sourceNode instanceof FunctionNode || $sourceNode instanceof MethodNode) {
-                    $meta = new FileMeta($scope->getFile(), $node->getStartLine(), 1);
+                    $meta = new FileMeta($scope->getFile(), $node->getStartLine(), 1, $node->getStartFilePos());
                     $items[] = new FunctionCallEdge($sourceNode, $targetNode, $meta);
                 }
             }

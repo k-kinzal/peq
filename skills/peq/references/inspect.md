@@ -4,8 +4,8 @@
 
 This is the default command: `peq 'App\Domain\Invoice' src` and
 `peq inspect 'App\Domain\Invoice' src` are the same. Use this when the question is
-"starting here, what else is involved?" Use `peq graph` when it is not rooted at
-one symbol.
+"starting here, what else is involved?" Use `peq graph` for detailed relation predicates, joins or call-site evidence,
+including queries rooted at one symbol.
 
 ## Invocation
 
@@ -35,6 +35,7 @@ One fully-qualified name:
 | Option | What it does |
 |--------|----------------|
 | `path` | Directory to analyse. Default: current working directory. |
+| `--filter=all\|calls\|depend` | Methods/functions default to calls; class-like targets default to depend. `all` keeps every relation. |
 | `--config` | YAML file. Default: `<cwd>/.peq.yaml`. |
 | `-D, --direction=uses\|used-by` | Which way the walk reads. Default: `uses`. |
 | `-R, --reverse` | Shortcut for `--direction=used-by`. |
@@ -46,8 +47,20 @@ One fully-qualified name:
 | `--memory-limit` | Process memory, e.g. `1G`. |
 | `--debug-depth` / `--debug-seed` | Synthetic `debug` analyser only. Not for real sources. |
 
-Later layers override earlier ones: defaults, then `.peq.yaml`, then `PEQ_*`, then
-flags.
+Later layers override earlier ones: defaults, then `PEQ_*`, then `.peq.yaml`, then flags.
+
+### Filter
+
+`calls` follows explicit calls and possible implementation bodies, without property,
+signature or membership dependencies. A class target starts at its methods.
+`depend` groups endpoints by class; a method target includes only dependencies of
+that callable and the callables reached in the chosen direction. `all` restores the
+unfiltered walk. Filtering does not change the analyzed graph.
+
+Tree and table mark inferred implementation branches `(possible)`. Forward JSON
+and diagram relations use `possible-call`; these are hierarchy candidates, not
+runtime DI bindings. Use GQL for `receiverType`, `declaredTarget`, `implementationType`
+and source positions, or to include only written calls.
 
 ### Direction
 

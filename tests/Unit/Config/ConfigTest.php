@@ -41,6 +41,7 @@ final class ConfigTest extends TestCase
             'excludes' => ['vendor'],
             'phpVersion' => '7.4',
             'output' => 'json',
+            'filter' => 'calls',
             'type' => 'phpstan',
             'debug' => ['depth' => 9, 'seed' => 42],
         ]);
@@ -52,6 +53,7 @@ final class ConfigTest extends TestCase
         self::assertSame(['vendor'], $config->excludes);
         self::assertSame(70400, $config->phpVersion?->id);
         self::assertSame(OutputFormat::Json, $config->output);
+        self::assertSame(\App\Config\InspectFilter::Calls, $config->filter);
         self::assertSame(AnalyzerKind::PhpStan, $config->analyzer);
         self::assertSame(9, $config->debug->depth);
         self::assertSame(42, $config->debug->seed);
@@ -288,5 +290,24 @@ final class ConfigTest extends TestCase
         ]);
 
         self::assertSame(80302, $config->phpVersion?->id);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testFromArrayLeavesTheFilterToTheTargetWhenNotConfigured(): void
+    {
+        self::assertNull(Config::fromArray(['basePath' => '.', 'direction' => 'uses', 'type' => 'native'])->filter);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testFromArrayRejectsAnUnknownFilter(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('filter');
+
+        Config::fromArray(['basePath' => '.', 'direction' => 'uses', 'type' => 'native', 'filter' => 'dispatch']);
     }
 }

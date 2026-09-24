@@ -53,7 +53,7 @@ final class TraversalContractTest extends TestCase
     #[DataProvider('providerGeneratedGraphs')]
     public function testTraverseReachesEveryRelationFromTheSymbolItStartsAt(Graph $graph): void
     {
-        $unreached = array_filter($graph->authoredEdges(), static function (Edge $edge) use ($graph): bool {
+        $unreached = array_filter($graph->forwardEdges(), static function (Edge $edge) use ($graph): bool {
             $visited = [];
             (new DepthFirstTraversal(Direction::Uses))->traverse($graph, $edge->from(), static function (Node $node, int $depth) use (&$visited): bool {
                 $visited[] = $node->id()->toString();
@@ -64,14 +64,14 @@ final class TraversalContractTest extends TestCase
             return !in_array($edge->to()->toString(), $visited, true);
         });
 
-        self::assertNotSame([], $graph->authoredEdges());
+        self::assertNotSame([], $graph->forwardEdges());
         self::assertSame([], array_values($unreached));
     }
 
     #[DataProvider('providerGeneratedGraphs')]
     public function testTraverseReachesEveryRelationFromTheSymbolItPointsAt(Graph $graph): void
     {
-        $unreached = array_filter($graph->authoredEdges(), static function (Edge $edge) use ($graph): bool {
+        $unreached = array_filter($graph->forwardEdges(), static function (Edge $edge) use ($graph): bool {
             $visited = [];
             (new DepthFirstTraversal(Direction::UsedBy))->traverse($graph, $edge->to(), static function (Node $node, int $depth) use (&$visited): bool {
                 $visited[] = $node->id()->toString();
@@ -82,7 +82,7 @@ final class TraversalContractTest extends TestCase
             return !in_array($edge->from()->toString(), $visited, true);
         });
 
-        self::assertNotSame([], $graph->authoredEdges());
+        self::assertNotSame([], $graph->forwardEdges());
         self::assertSame([], array_values($unreached));
     }
 

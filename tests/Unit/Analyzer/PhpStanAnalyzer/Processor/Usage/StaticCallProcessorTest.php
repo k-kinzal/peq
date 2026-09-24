@@ -22,7 +22,7 @@ final class StaticCallProcessorTest extends TestCase
     public function testProcessRecordsAStaticMethodBeingCalled(): void
     {
         $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(dirname(__DIR__, 5).'/Fixture/Source/MethodBody.php');
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains('Tests\Fixture\Source\MethodBodyClass::testMethod -[static-call]-> DateTime::createFromFormat', $relations);
     }
@@ -30,7 +30,7 @@ final class StaticCallProcessorTest extends TestCase
     public function testProcessRecordsNothingForSourcesWithNoSuchRelation(): void
     {
         $graph = (new PhpStanAnalyzer(collectors: [InClassMethodCollector::class]))->analyze(dirname(__DIR__, 5).'/Fixture/Source/ClassDependency.php');
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertNotContains('Tests\Fixture\Source\MethodBodyClass::testMethod -[static-call]-> DateTime::createFromFormat', $relations);
     }

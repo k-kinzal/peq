@@ -20,6 +20,9 @@ use PHPUnit\Framework\TestCase;
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
+#[UsesClass(\App\Analyzer\Graph\Declaration\SymbolDeclaration::class)]
+#[UsesClass(\App\Analyzer\Graph\Declaration\Modifiers::class)]
 #[CoversClass(GraphSnapshot::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
 #[UsesClass(MethodCallEdge::class)]
@@ -145,5 +148,28 @@ final class GraphSnapshotTest extends TestCase
             ['class App\A resolved=yes at nowhere'],
             GraphSnapshot::of($candidate)->differenceFrom(GraphSnapshot::of(new Graph()))->unexpectedNodes,
         );
+    }
+
+    public function testPlaceOfIncludesTheExactByteOffset(): void
+    {
+        self::assertSame('/source.php:4:2@31', GraphSnapshot::placeOf(new FileMeta('/source.php', 4, 2, 31)));
+    }
+
+    public function testOfIncludesReceiverEvidenceInTheReadableSnapshot(): void
+    {
+        $graph = new Graph();
+        $graph->addEdge(new MethodCallEdge(new MethodNode(MethodNodeId::of('Controller', 'action')), new MethodNode(MethodNodeId::of('Port', 'run')), new FileMeta('/source.php', 4, 1, 31), 'Port'));
+
+        self::assertSame(['method-call Controller::action -> Port::run at /source.php:4:1@31 evidence=a:1:{s:12:"receiverType";s:4:"Port";}'], GraphSnapshot::of($graph)->edges);
+    }
+
+    public function testOfDetectsADeclarationChangeWithoutRenamingTheSymbol(): void
+    {
+        $before = new Graph();
+        $after = new Graph();
+        $before->addNode(new MethodNode(MethodNodeId::of('Service', 'run'), true, null, new \App\Analyzer\Graph\Declaration\SymbolDeclaration(visibility: \App\Analyzer\Graph\Declaration\Visibility::Public)));
+        $after->addNode(new MethodNode(MethodNodeId::of('Service', 'run'), true, null, new \App\Analyzer\Graph\Declaration\SymbolDeclaration(visibility: \App\Analyzer\Graph\Declaration\Visibility::Private)));
+
+        self::assertFalse(GraphSnapshot::of($before)->differenceFrom(GraphSnapshot::of($after))->isEmpty());
     }
 }

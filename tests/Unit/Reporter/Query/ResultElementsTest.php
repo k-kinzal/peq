@@ -110,6 +110,7 @@ use Tests\Fixture\Gql\SampleGraph;
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
 #[CoversClass(ResultElements::class)]
 #[UsesClass(Diagram::class)]
 #[UsesClass(DiagramEdge::class)]

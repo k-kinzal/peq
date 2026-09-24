@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
 #[CoversClass(MemberGraphGenerator::class)]
 #[UsesClass(ClassLikeGraphGenerator::class)]
 #[UsesClass(GeneratedGraph::class)]
@@ -106,7 +107,7 @@ final class MemberGraphGeneratorTest extends TestCase
     public function testMethodGraphAlwaysCommitsToAReturnType(MemberGraphGenerator $members, GraphGenerator $graphs, NodeGenerator $nodes): void
     {
         $result = $members->methodGraph($graphs, null, 1);
-        $kinds = array_map(static fn ($edge): EdgeKind => $edge->kind(), $result->graph->authoredEdges());
+        $kinds = array_map(static fn ($edge): EdgeKind => $edge->kind(), $result->graph->forwardEdges());
 
         self::assertContains(EdgeKind::DeclarationTypeReturn, $kinds);
     }
@@ -133,7 +134,7 @@ final class MemberGraphGeneratorTest extends TestCase
     public function testPropertyGraphAlwaysCommitsToADeclaredType(MemberGraphGenerator $members, GraphGenerator $graphs, NodeGenerator $nodes): void
     {
         $result = $members->propertyGraph($graphs, null, 1);
-        $kinds = array_map(static fn ($edge): EdgeKind => $edge->kind(), $result->graph->authoredEdges());
+        $kinds = array_map(static fn ($edge): EdgeKind => $edge->kind(), $result->graph->forwardEdges());
 
         self::assertContains(EdgeKind::DeclarationTypeProperty, $kinds);
     }

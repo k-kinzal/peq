@@ -41,7 +41,7 @@ final class SelfAnalysisTest extends TestCase
     public function testTheGraphKeepsEveryPromiseOfTheGraphModel(Graph $graph): void
     {
         $edges = array_merge([], ...array_map(static fn (Node $node): array => $graph->edges($node->id()), $graph->nodes()));
-        $spell = static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString();
+        $spell = static fn (Edge $edge): string => \App\Analyzer\Graph\EdgeIdentity::of($edge);
         $names = array_map(static fn (Node $node): string => $node->id()->toString(), $graph->nodes());
         $spelled = array_map($spell, $edges);
 

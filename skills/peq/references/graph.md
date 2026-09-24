@@ -3,7 +3,7 @@
 `peq graph '<query>' [path]` runs a GQL query against the dependency graph and
 writes a table.
 
-Use this when the question is not "walk out from this one symbol". Counts, filters,
+Use this for precise questions, including ones rooted at a single method. Counts, filters,
 joins, paths, "every public method that reaches the cache" — those are queries.
 Inspect remains the right tool for a single blast radius drawn as a tree.
 
@@ -42,13 +42,12 @@ to write it, back quotes included. Paste from it; do not strip them.
 | `--memory-limit` | Process memory, e.g. `1G`. |
 | `--debug-depth` / `--debug-seed` | Synthetic `debug` analyser only. Not for real sources. |
 
-Later layers override earlier ones: defaults, then `.peq.yaml`, then `PEQ_*`, then
-flags. Inspect's `--direction` does not apply; the arrow in the pattern is the
+Later layers override earlier ones: defaults, then `PEQ_*`, then `.peq.yaml`, then flags. Inspect's `--direction` does not apply; the arrow in the pattern is the
 direction.
 
 ## Shell and reserved names
 
-Six of peq's names spell words GQL reserves. A `"` shell argument would take the
+Some of peq's names spell words GQL reserves. A `"` shell argument would take the
 back quotes for command substitution.
 
 | Name | Kind | Written in a query as |
@@ -59,6 +58,7 @@ back quotes for command substitution.
 | `value` | node property | `` n.`value` `` |
 | `parameters` | node property | `` n.`parameters` `` |
 | `abstract` | node property | `` n.`abstract` `` |
+| `parameter` | edge property | `` e.`parameter` `` |
 
 `--schema` already emits these with the quotes. `type` is not reserved. Functions
 such as `count(` and `left(` are reserved words too, but a call is written with a
@@ -120,13 +120,15 @@ stores it. `method-call` in inspect JSON is `methodCall` here.
 | Family | Members |
 |--------|---------|
 | `` `call` `` | `functionCall`, `methodCall`, `staticCall` |
-| `usage` | every call, plus `instantiation`, `propertyAccess`, `staticPropertyAccess`, `constFetch`, `instanceOf`, `catches` |
+| `usage` | every call, plus `possibleCall`, `instantiation`, `propertyAccess`, `staticPropertyAccess`, `constFetch`, `instanceOf`, `catches` |
 | `declares` | `declaresMethod`, `declaresProperty`, `declaresConstant`, `declaresEnumCase` |
 | `signatureType` | `parameterType`, `returnType` |
 | `declaration` | `declares*` and `signatureType`, plus `traitUse`, `extends`, `implements`, `propertyType`, `attribute` |
 
 `` -[:`call`]-> `` is "reached by calling". `-[:declaration]->` is everything a
-class-like writes down about itself.
+class-like writes down about itself. `possibleCall` is separate from the written
+call family; use `` -[:`call`|possibleCall]-> `` to follow possible implementation
+bodies as inspect does.
 
 ```
 (a)-[:methodCall]->(b)    a calls b
@@ -161,6 +163,17 @@ as a target (`App\Domain\Invoice::total`).
 
 `kind`, `file`, `fileName`, `line`, `column`. The line of a call is on the edge,
 not on either symbol — a query that ends by saying where to look returns `e.line`.
+`offset` distinguishes occurrences on the same line when available; edge IDs are
+opaque and retain occurrence identity.
+
+Receiver calls expose `resolution` (`declared`, `possible`, `unresolved`). Known
+calls carry `declaredTarget` and, when known, `receiverType`. A `possibleCall` also
+carries `implementationType` and `basis = "class-hierarchy"`; its target is the
+method body, which can be inherited. Unknown calls retain `expression`.
+
+An `attribute` edge is one occurrence, with `arguments` as written expressions and
+`` `parameter` `` set only for parameter attributes. Filter
+`` a.`parameter` IS NULL `` to select attributes attached to the method itself.
 
 ## Functions and aggregates
 
@@ -228,3 +241,19 @@ peq graph 'MATCH (n:Unresolved)
            RETURN n.id, n.kind
            ORDER BY n.kind, n.id' src --type=native --output=json --exclude vendor
 ```
+
+
+**PDO calls reachable from an action, with the caller's method attributes:**
+
+```bash
+peq graph 'MATCH TRAIL (entry:Method WHERE entry.id = "App\Http\Controller::action")
+           -[:`call`|possibleCall]->{0,}(m:Method)
+           -[:methodCall]->(p:Method WHERE p.owner = "PDO")
+           MATCH (m)-[a:attribute]->(t)
+           WHERE a.`parameter` IS NULL
+           RETURN DISTINCT m.id, t.id, a.arguments, a.file, a.line, a.offset' src --type=native
+```
+
+To include calls to PDO's static methods too, use `` -[:`call`]-> `` for the final
+edge. To find methods without requiring attributes, omit the second MATCH and its
+WHERE and return `DISTINCT m.id`.

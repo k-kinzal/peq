@@ -20,6 +20,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
 #[CoversClass(GraphRecorder::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
 #[UsesClass(InstantiationEdge::class)]

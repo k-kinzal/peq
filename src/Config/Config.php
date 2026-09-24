@@ -56,6 +56,7 @@ final readonly class Config
         public AnalyzerKind $analyzer = AnalyzerKind::PhpStan,
         public int $hops = self::HOPS,
         public DebugAnalyzerConfig $debug = new DebugAnalyzerConfig(),
+        public ?InspectFilter $filter = null,
     ) {
         assert($this->basePath !== '', 'A base path must name a location');
         assert($this->level === null || $this->level > 0, 'A reported level bound must be a positive number of levels');
@@ -125,6 +126,7 @@ final readonly class Config
             analyzer: $analyzer,
             hops: $raw->optionalPositiveInt('hops') ?? self::HOPS,
             debug: DebugAnalyzerConfig::fromRaw($raw->nested('debug')),
+            filter: $raw->has('filter') ? $raw->enum('filter', InspectFilter::class) : null,
         );
     }
 

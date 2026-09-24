@@ -42,6 +42,7 @@ final class InspectCommandTest extends TestCase
         self::assertTrue($definition->hasOption('include'));
         self::assertTrue($definition->hasOption('exclude'));
         self::assertTrue($definition->hasOption('output'));
+        self::assertTrue($definition->hasOption('filter'));
         self::assertTrue($definition->hasOption('php-version'));
         self::assertTrue($definition->hasOption('type'));
         self::assertTrue($definition->hasOption('debug-depth'));

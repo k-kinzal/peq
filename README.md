@@ -5,7 +5,7 @@
 
 A CLI tool that analyzes PHP code dependencies and visualizes the blast radius of changes.
 
-`peq <symbol>` draws what one symbol reaches. `peq graph '<query>'` answers a question about the whole dependency graph, written in [GQL](https://www.iso.org/standard/76120.html).
+`peq <symbol>` is the human interface: a focused call graph or class dependency tree, chosen from the target. `peq graph '<query>'` is the advanced interface: query the complete graph and its evidence in [GQL](https://www.iso.org/standard/76120.html). Filtering an inspection never removes information from the analyzed graph.
 
 ## Requirements
 
@@ -34,7 +34,7 @@ composer require --dev k-kinzal/peq
 ## Usage
 
 ```console
-$ peq 'App\Domain\Invoice' src
+$ peq 'App\Domain\Invoice' src --filter=calls
 App\Domain\Invoice
 ├── App\Domain\Invoice::total
 │   └── App\Domain\Money::add
@@ -60,11 +60,52 @@ Options:
   -E, --exclude=EXCLUDE      Exclude patterns (multiple values allowed)
       --php-version=PHP-VERSION    PHP version the analyzed sources are read as
                                    (default: the version peq runs on)
+      --filter=FILTER        Inspection filter (all|calls|depend; default: chosen from target)
       --type=TYPE            Analyzer type (phpstan|native|debug)
       --memory-limit=MEMORY-LIMIT  Memory limit (e.g. 1G, 256M)
 ```
 
 `--direction used-by` (or `-R`) walks the other way: what depends on the symbol, which is what a change to it can break.
+
+## Inspection filters
+
+| Target | Default | `--filter=calls` | `--filter=depend` |
+|--------|---------|------------------|-------------------|
+| Method or function | `calls` | Calls from this callable, including possible implementation bodies | Dependencies of this callable and the callables it reaches, grouped by class |
+| Class, interface, trait or enum | `depend` | Start from its methods, including inherited methods | Dependencies of the class and its members, grouped by class |
+| Property, constant or other symbol | `all` | Only call relations, if any | Dependencies grouped by owning class |
+
+`--filter=all` keeps every relation in the rooted walk, including membership,
+signatures, properties and attributes. It restores the unfiltered behavior of
+previous versions. Every filter respects direction and depth; `used-by` follows
+incoming relations instead. For a method dependency inspection, other methods of
+its class are included only when reached by the call traversal.
+
+```bash
+peq 'App\Http\Controller::action' src                  # call graph
+peq 'App\Http\Controller' src                          # class dependencies
+peq 'App\Http\Controller' src --filter=calls           # calls from its methods
+peq 'App\Http\Controller::action' src --filter=depend  # dependencies of this action
+peq 'App\Http\Controller::action' src --filter=all     # every reachable relation
+```
+
+An interface receiver retains the call to its declared method and adds possible
+implementation bodies of that method. Unrelated interface methods do not enter a
+call inspection. For example, `$this->port->execute()` can produce:
+
+```text
+App\Http\Controller::action
+├── App\Domain\Port::execute
+└── App\Service::execute (possible)
+    └── App\Repository::save
+```
+
+Tree and table mark inferred branches `(possible)`; JSON and diagrams expose the
+`possible-call` relation. These are candidates from the analyzed class hierarchy,
+not a claim about which service a DI container selects at runtime. A narrower
+interface or intersection constrains the candidates. An inherited body belongs to
+the class that declares it; the implementing class is retained as evidence and is
+also included in dependency inspections.
 
 ## Output formats
 
@@ -78,14 +119,14 @@ Options:
 | `dot`      | The same graph as a Graphviz digraph. |
 
 ```console
-$ peq 'App\Domain\Invoice' src --output=graph
+$ peq 'App\Domain\Invoice' src --filter=calls --output=graph
                      ┌──▶ App\Domain\Invoice::total ──┐
 App\Domain\Invoice ──┤                                ├──▶ App\Domain\Money::add
                      └──▶ App\Domain\Invoice::lines ──┘
 ```
 
 ```console
-$ peq 'App\Domain\Invoice' src --output=mermaid
+$ peq 'App\Domain\Invoice' src --filter=calls --output=mermaid
 flowchart LR
     n1["App\Domain\Invoice"]
     n2["App\Domain\Invoice::total"]
@@ -122,12 +163,63 @@ $ peq graph 'MATCH (c:Class)-[:declaresMethod]->(m:Method WHERE m.visibility = "
 
 `--output` takes the same formats as above: `graph`, `mermaid` and `dot` draw the part of the graph the answer holds, and `tree` draws the paths it bound. `--hops` sets the largest upper bound a repetition such as `{1,6}` may be written with (10 by default).
 
+### Calls, implementations and attributes
+
+The full graph distinguishes source calls from possible dispatches:
+
+| Edge label | Meaning | Additional properties |
+|------------|---------|-----------------------|
+| `methodCall` (also `` `call` ``) | A named receiver call or an unresolved occurrence | `resolution`, `declaredTarget`, `receiverType` when known; `expression` when unresolved |
+| `possibleCall` | A possible implementation body for a source call | `resolution = "possible"`, `declaredTarget`, `receiverType`, `implementationType`, `basis = "class-hierarchy"` |
+| `attribute` | One attribute occurrence | `arguments` (written expressions), `` `parameter` `` when attached to a parameter |
+
+`possibleCall` belongs to `usage`, separately from the source-call family. Select
+`` :`call` `` for source calls alone, or `` :`call`|possibleCall `` to follow
+implementation bodies as inspect does. Use reverse arrows to find their callers.
+Calls and attributes carry `file`, `line`, `column` and a byte `offset` when known.
+Repeated occurrences, even on the same line, have distinct edge identities.
+Consumers should treat edge IDs as opaque and use `DISTINCT` when counting symbols
+rather than occurrences. No query-language extension is needed for these facts.
+
+Find methods downstream from an action that call PDO, then retrieve their method
+attributes (excluding parameter attributes):
+
+```bash
+peq graph 'MATCH TRAIL
+             (entry:Method WHERE entry.id = "App\Http\Controller::action")
+             -[:`call`|possibleCall]->{0,}(m:Method)
+             -[:methodCall]->(pdo:Method WHERE pdo.owner = "PDO")
+           MATCH (m)-[a:attribute]->(attributeClass)
+           WHERE a.`parameter` IS NULL
+           RETURN DISTINCT m.id, attributeClass.id, a.arguments, a.file, a.line, a.offset' src
+```
+
+Inspect a candidate's evidence separately:
+
+```bash
+peq graph 'MATCH (caller)-[e:possibleCall]->(body)
+           RETURN caller.id, body.id, e.declaredTarget, e.receiverType,
+                  e.implementationType, e.basis, e.file, e.line' src
+```
+
+Both engines use the same receiver resolution: declared parameter and property
+types (including promoted and inherited properties), declared return types, named
+`new` expressions, and simple local assignments. Nullable, union and intersection
+types are supported. Assignment inference is flow-insensitive and collects known
+alternatives. It does not execute factories, read DI container configuration or
+resolve arbitrary PHPDoc/dynamic values. Unknown receivers and dynamic method names
+remain unresolved call occurrences, queryable with `e.resolution = "unresolved"`.
+External methods such as `PDO::query` remain named unresolved symbols when their
+sources were not analyzed. Instantiation is a separate `instantiation` relation;
+`calls` follows explicit method, static and function calls, not constructor or
+callback invocations inferred from other operations.
+
 ## Analyzers
 
 | `--type`  | What it does | Sources it reads | Where it is available |
 |-----------|--------------|------------------|-----------------------|
 | `phpstan` | Builds the graph from PHPStan's analysis. The reference engine. | PHP 7.1 – 8.5 | Installed from source or via Composer |
-| `native`  | Reads the sources directly with a parser. Between 13x and 59x faster, and checked to build the same graph. | PHP 5.6 – 8.5 | Everywhere, including the released PHAR |
+| `native`  | Reads the sources directly with a parser. Checked against the reference engine to build the same graph. | PHP 5.6 – 8.5 | Everywhere, including the released PHAR |
 
 The released PHAR carries only `native`.
 
@@ -173,6 +265,9 @@ excludes:
   - .git
   - tests
 ```
+
+`filter: all` or `PEQ_FILTER=all` sets a persistent inspection preference; omit it
+to keep the target-dependent default. The filter never constrains `peq graph`.
 
 Quote the version: unquoted, YAML reads `8.10` as the number `8.1`, which is a
 different PHP version.

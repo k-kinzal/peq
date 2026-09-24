@@ -132,7 +132,7 @@ final class FunctionLikeProcessor
         }
 
         foreach ($node->getParams() as $param) {
-            array_push($items, ...AttributeProcessor::process($param->attrGroups, $declared, $scope));
+            array_push($items, ...AttributeProcessor::process($param->attrGroups, $declared, $scope, $param->var instanceof \PhpParser\Node\Expr\Variable && is_string($param->var->name) ? $param->var->name : null));
 
             foreach (TypeResolver::references($param->type, $scope->getFile()) as $type) {
                 $items[] = new TypeParameterEdge($declared, $type->node, $type->meta);

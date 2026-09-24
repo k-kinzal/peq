@@ -20,6 +20,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
 #[CoversClass(GraphBuilder::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
 #[UsesClass(MethodCallEdge::class)]
@@ -47,7 +48,7 @@ final class GraphBuilderTest extends TestCase
     {
         $graph = (new GraphBuilder())->build([new MethodCallEdge(new MethodNode(MethodNodeId::of('App\Domain\Invoice', 'total'), true), new MethodNode(MethodNodeId::of('App\Domain\Money', 'add'), true), new FileMeta('/project/src/Domain/Invoice.php', 12, 1))]);
 
-        self::assertCount(1, $graph->authoredEdges());
+        self::assertCount(1, $graph->forwardEdges());
     }
 
     public function testBuildRecordsASymbolBeforeAnyRelationThatPointsAtIt(): void

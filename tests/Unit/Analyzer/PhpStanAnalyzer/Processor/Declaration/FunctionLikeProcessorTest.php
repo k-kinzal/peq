@@ -25,7 +25,7 @@ final class FunctionLikeProcessorTest extends TestCase
     public function testProcessRecordsAMethodAClassDeclares(): void
     {
         $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(dirname(__DIR__, 5).'/Fixture/Source/Comprehensive.php');
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains('Tests\Fixture\Source\ComprehensiveClass -[declaration-method]-> Tests\Fixture\Source\ComprehensiveClass::myMethod', $relations);
     }
@@ -33,7 +33,7 @@ final class FunctionLikeProcessorTest extends TestCase
     public function testDeclaringNodeNamesTheKindOfClassLikeAMethodIsDeclaredIn(): void
     {
         $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(dirname(__DIR__, 5).'/Fixture/Source/Comprehensive.php');
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains(
             'Tests\Fixture\Source\ComprehensiveClass -[declaration-method]-> Tests\Fixture\Source\ComprehensiveClass::myMethod',
@@ -44,7 +44,7 @@ final class FunctionLikeProcessorTest extends TestCase
     public function testSignatureRecordsTheTypesADeclarationCommitsTo(): void
     {
         $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(dirname(__DIR__, 5).'/Fixture/Source/Guards.php');
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains(
             'Tests\Fixture\Source\GuardedClass::guardedBy -[declaration-type-parameter]-> Tests\Fixture\Source\Guard',
@@ -55,7 +55,7 @@ final class FunctionLikeProcessorTest extends TestCase
     public function testProcessRecordsNothingForSourcesWithNoSuchRelation(): void
     {
         $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(dirname(__DIR__, 5).'/Fixture/Source/ClassDependency.php');
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertNotContains('Tests\Fixture\Source\ComprehensiveClass -[declaration-method]-> Tests\Fixture\Source\ComprehensiveClass::myMethod', $relations);
     }
@@ -77,7 +77,7 @@ final class FunctionLikeProcessorTest extends TestCase
         file_put_contents($file, implode(PHP_EOL, ['<?php', 'namespace Tests\Contract\Analyzer\Functions;', '', 'function build(\Countable $items): \DateTimeImmutable', '{', '    return new \DateTimeImmutable();', '}', '']));
         $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze($file);
         unlink($file);
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains('Tests\Contract\Analyzer\Functions\build -[declaration-type-parameter]-> Countable', $relations);
         self::assertContains('Tests\Contract\Analyzer\Functions\build -[declaration-type-return]-> DateTimeImmutable', $relations);

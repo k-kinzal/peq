@@ -27,6 +27,7 @@ final readonly class FileMeta
         public string $path,
         public int $line,
         public int $column,
+        public ?int $offset = null,
     ) {
         assert($this->line > 0);
         assert($this->column > 0);

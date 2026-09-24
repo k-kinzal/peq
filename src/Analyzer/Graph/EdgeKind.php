@@ -19,6 +19,9 @@ enum EdgeKind: string
     /** Represents an instance method call relationship */
     case MethodCall = 'method-call';
 
+    /** A method body that may execute at a recorded instance call site */
+    case PossibleCall = 'possible-call';
+
     /** Represents a static method call relationship */
     case StaticCall = 'static-call';
 
@@ -102,6 +105,7 @@ enum EdgeKind: string
         return match ($this) {
             self::FunctionCall,
             self::MethodCall,
+            self::PossibleCall,
             self::StaticCall,
             self::Instantiation,
             self::PropertyAccess,

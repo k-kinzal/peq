@@ -1,6 +1,6 @@
 # Agents
 
-A CLI tool that analyzes PHP code dependencies and visualizes the blast radius of changes. `peq <symbol>` draws what one symbol reaches, as a tree, for a person; `peq graph '<query>'` answers whatever can be written in GQL, as a table, for a program or an agent. Both write the same set of formats.
+A CLI tool that analyzes PHP code dependencies and visualizes the blast radius of changes. `peq <symbol>` draws what one symbol reaches, as a tree, for a person; `peq graph '<query>'` answers whatever can be written in GQL, as a table, for a program or an agent. Inspect defaults to calls for methods/functions and class dependencies for class-like targets; `--filter=all|calls|depend` changes the projection. Graph always exposes the full graph, including source occurrences and possible dispatch evidence. Both write the same set of formats.
 
 ## Supported Versions
 
@@ -18,7 +18,7 @@ A CLI tool that analyzes PHP code dependencies and visualizes the blast radius o
 - **GQL is the query language** — `peq graph` runs ISO/IEC 39075 GQL, the standard the SQL committee publishes, so an agent already knows it; an invented syntax would have to be explained in every prompt. It runs that and nothing more: a word the standard does not define is a word peq refuses, which `composer spec` checks against ISO's own grammar artifact. Read-only by design: nothing in the language can change a graph peq has just read out of source code
 - **Two engines, one graph** — `PhpStanAnalyzer` is the reference; `NativeAnalyzer` reads sources directly and is checked against it by comparing canonical graph snapshots. A change to either must keep them identical
 - **The binary carries one engine** — `phpstan/phpstan` is a dev dependency, so the PHAR holds only `NativeAnalyzer`. `AnalyzerKind` offers a kind only when what it is built on is installed
-- **Graph model** — bidirectional adjacency list of nodes (Class, Method, Function, etc. — 11 kinds) and edges (MethodCall, Extends, etc. — 22 kinds). Inverse edges (UsedBy, DeclaredIn) are generated automatically when an edge is added
+- **Graph model** — bidirectional adjacency list of nodes (Class, Method, Function, etc. — 11 kinds) and edges (MethodCall, Extends, etc. — 23 kinds). Inverse edges (UsedBy, DeclaredIn) are generated automatically when an edge is added
 
 ## Project Tradeoff Sliders
 

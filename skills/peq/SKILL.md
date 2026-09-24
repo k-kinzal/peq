@@ -20,7 +20,11 @@ answer.
 | What determines this variable? What does it affect, and under which conditions? | `peq experimental inspect '<target>'` | [references/experimental.md](references/experimental.md) |
 | Prepare a report about unresolved or incorrect experimental analysis | `peq experimental issue result.json` | [references/experimental.md](references/experimental.md#reporting-an-analysis-issue) |
 
-Inspect walks symbol dependencies. Graph queries those symbols and relations.
+Inspect is the easy human interface: a focused walk from one symbol. Methods and
+functions default to calls; class-like targets default to class dependencies.
+`--filter=all|calls|depend` overrides that choice. Graph is the advanced interface:
+a query over every relation and its evidence.
+
 Experimental inspection traces source occurrences with explicit analysis limits;
 read its reference before interpreting the result. Quote targets and queries with
 `'`, especially variable targets containing `$`. On failure, see

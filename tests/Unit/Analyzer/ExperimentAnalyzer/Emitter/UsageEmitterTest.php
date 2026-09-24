@@ -75,7 +75,7 @@ final class UsageEmitterTest extends TestCase
     public static function providerExpressions(): iterable
     {
         $total = new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null);
-        $at = new FileMeta('/project/Invoice.php', 2, 1);
+        $at = new FileMeta('/project/Invoice.php', 2, 1, 6);
 
         yield 'instantiating a class' => [
             "<?php\nnew \\App\\Money();\n",

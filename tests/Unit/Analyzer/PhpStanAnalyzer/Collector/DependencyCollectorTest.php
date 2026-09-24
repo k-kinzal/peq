@@ -82,7 +82,7 @@ final class DependencyCollectorTest extends TestCase
     public function testProcessNodeReportsEveryRelationADeclarationWrites(string $expected): void
     {
         $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(__DIR__.'/../../../../Fixture/Source/Comprehensive.php');
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains($expected, $relations);
     }
@@ -121,7 +121,7 @@ final class DependencyCollectorTest extends TestCase
     public function testUsageIsLeftToTheOtherCollectorInsideAMethodBody(): void
     {
         $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(__DIR__.'/../../../../Fixture/Source/MethodBody.php');
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertNotContains(
             'Tests\Fixture\Source\MethodBodyClass::testMethod -[instantiation]-> stdClass',
@@ -159,7 +159,7 @@ final class DependencyCollectorTest extends TestCase
         ]));
         $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze($file);
         unlink($file);
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains($expected, $relations);
     }
@@ -190,7 +190,7 @@ final class DependencyCollectorTest extends TestCase
         file_put_contents($file, "<?php\nnamespace Tests\\Contract\\Analyzer\\Functions;\n\nfunction build(): object\n{\n    return new \\stdClass();\n}\n");
         $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze($file);
         unlink($file);
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertContains('Tests\Contract\Analyzer\Functions\build -[instantiation]-> stdClass', $relations);
     }
@@ -202,7 +202,7 @@ final class DependencyCollectorTest extends TestCase
     public function testProcessNodeReportsExactlyTheseRelations(string $fixture, array $expected): void
     {
         $graph = (new PhpStanAnalyzer(collectors: [DependencyCollector::class]))->analyze(dirname(__DIR__, 4).'/Fixture/Source/'.$fixture.'.php');
-        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
         sort($relations);
 
         self::assertSame($expected, $relations);
@@ -242,6 +242,7 @@ final class DependencyCollectorTest extends TestCase
             'Tests\Fixture\Source\UsageProcessorFixture -[declaration-method]-> Tests\Fixture\Source\UsageProcessorFixture::helperMethod',
             'Tests\Fixture\Source\UsageProcessorFixture -[declaration-method]-> Tests\Fixture\Source\UsageProcessorFixture::testMethod',
             'Tests\Fixture\Source\UsageProcessorFixture -[declaration-property]-> Tests\Fixture\Source\UsageProcessorFixture::myProp',
+            'Tests\Fixture\Source\UsageProcessorFixture::testMethod -[method-call]-> Tests\Fixture\Source\UsageDep::depMethod',
         ]];
 
         yield 'guards and declared types' => ['Guards', [

@@ -241,7 +241,19 @@ jobs:
           fi
 
       - name: Check the PHAR reads a source tree
-        run: ./dist/peq.phar 'App\Analyzer\Graph\Graph' src -L 1 | grep -q 'App\\Analyzer\\Graph\\Graph::addEdge'
+        run: |
+          set -euo pipefail
+
+          ./dist/peq.phar 'App\Analyzer\Graph\Graph' src -L 1 --filter=calls | grep -q 'App\\Analyzer\\Graph\\Graph::addEdge'
+
+          ./dist/peq.phar 'App\Analyzer\Graph\Graph' src -L 1 --output=json \
+            | php -r '
+                $graph = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
+                $symbols = array_column($graph["nodes"], "id");
+                if (!in_array("App\\Analyzer\\Graph\\Node", $symbols, true) || in_array("App\\Analyzer\\Graph\\Graph::addEdge", $symbols, true)) {
+                    exit(1);
+                }
+              '
 
       - name: Check the PHAR writes every format it offers
         run: |
@@ -256,7 +268,7 @@ jobs:
 
           ./dist/peq.phar 'App\Analyzer\Graph\Graph' src -L 1 --output=table | grep -q '| Depth | Symbol'
 
-          ./dist/peq.phar 'App\Analyzer\Graph\Graph' src -L 1 --output=graph | grep -q '──▶ App\\Analyzer\\Graph\\Graph::addEdge'
+          ./dist/peq.phar 'App\Analyzer\Graph\Graph' src -L 1 --filter=calls --output=graph | grep -q '──▶ App\\Analyzer\\Graph\\Graph::addEdge'
 
           ./dist/peq.phar 'App\Analyzer\Graph\Graph' src -L 1 --output=mermaid | grep -q '^flowchart LR$'
 

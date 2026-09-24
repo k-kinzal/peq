@@ -46,6 +46,7 @@ use Tests\Fixture\Gql\SampleGraph;
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
 #[CoversClass(GraphCursor::class)]
 #[UsesClass(AuthoredEdge::class)]
 #[UsesClass(AttributeUsage::class)]

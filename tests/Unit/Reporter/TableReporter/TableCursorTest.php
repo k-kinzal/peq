@@ -20,6 +20,14 @@ use PHPUnit\Framework\TestCase;
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\Graph::class)]
+#[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Inverse\UsedByEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Usage\MethodCallEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Usage\PossibleCallEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\EdgeKind::class)]
+#[UsesClass(\App\Reporter\RelationNotice::class)]
 #[CoversClass(TableCursor::class)]
 #[UsesClass(FileMeta::class)]
 #[UsesClass(BuiltinNodeId::class)]
@@ -120,5 +128,24 @@ final class TableCursorTest extends TestCase
             ['App\Domain\Invoice', 'App\Domain\Invoice::total', 'App\Domain\Money::add'],
             array_column($cursor->rows(), 1),
         );
+    }
+
+    public function testVisitMarksOnlyPossibleCallBranchesUsingTheirCurrentParent(): void
+    {
+        $graph = new \App\Analyzer\Graph\Graph();
+        $root = new MethodNode(MethodNodeId::of('Controller', 'action'), true);
+        $contract = new MethodNode(MethodNodeId::of('Port', 'run'), true);
+        $body = new MethodNode(MethodNodeId::of('Service', 'run'), true);
+        $meta = new FileMeta('/source.php', 1, 1);
+        $call = new \App\Analyzer\Graph\Edge\Usage\MethodCallEdge($root, $contract, $meta);
+        $graph->addNodes([$root, $contract, $body]);
+        $graph->addEdges([$call, new \App\Analyzer\Graph\Edge\Usage\PossibleCallEdge($call, $body->id(), 'Port', 'Service')]);
+        $cursor = new TableCursor(graph: $graph);
+
+        $cursor->visit($root, 0);
+        $cursor->visit($contract, 1);
+        $cursor->visit($body, 1);
+
+        self::assertSame(['Controller::action', 'Port::run', 'Service::run (possible)'], array_column($cursor->rows(), 1));
     }
 }

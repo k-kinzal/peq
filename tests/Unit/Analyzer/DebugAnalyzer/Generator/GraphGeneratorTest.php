@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @internal
  */
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
 #[CoversClass(GraphGenerator::class)]
 #[UsesClass(ClassLikeGraphGenerator::class)]
 #[UsesClass(\App\Analyzer\DebugAnalyzer\Generator\GeneratedGraph::class)]
@@ -133,8 +134,8 @@ final class GraphGeneratorTest extends TestCase
         $againNodes = new NodeGenerator($againIds, $again);
 
         self::assertSame(
-            array_map($spell, (new GraphGenerator(new ClassLikeGraphGenerator($firstNodes, $firstIds, $first), new MemberGraphGenerator($firstNodes, $firstIds, $first), new LeafGraphGenerator($firstNodes), $firstIds, $first))->graph(3)->authoredEdges()),
-            array_map($spell, (new GraphGenerator(new ClassLikeGraphGenerator($againNodes, $againIds, $again), new MemberGraphGenerator($againNodes, $againIds, $again), new LeafGraphGenerator($againNodes), $againIds, $again))->graph(3)->authoredEdges()),
+            array_map($spell, (new GraphGenerator(new ClassLikeGraphGenerator($firstNodes, $firstIds, $first), new MemberGraphGenerator($firstNodes, $firstIds, $first), new LeafGraphGenerator($firstNodes), $firstIds, $first))->graph(3)->forwardEdges()),
+            array_map($spell, (new GraphGenerator(new ClassLikeGraphGenerator($againNodes, $againIds, $again), new MemberGraphGenerator($againNodes, $againIds, $again), new LeafGraphGenerator($againNodes), $againIds, $again))->graph(3)->forwardEdges()),
         );
     }
 
@@ -295,7 +296,7 @@ final class GraphGeneratorTest extends TestCase
         $nodes = new NodeGenerator($ids, $random);
         $generator = new GraphGenerator(new ClassLikeGraphGenerator($nodes, $ids, $random), new MemberGraphGenerator($nodes, $ids, $random), new LeafGraphGenerator($nodes), $ids, $random);
 
-        $written = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $generator->graph(2)->authoredEdges());
+        $written = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $generator->graph(2)->forwardEdges());
         sort($written);
 
         self::assertSame([

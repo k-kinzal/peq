@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Gql\Element;
 
 use App\Analyzer\Graph\Edge;
+use App\Analyzer\Graph\EdgeIdentity;
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node;
 use App\Gql\Datum\EdgeDatum;
@@ -54,7 +55,7 @@ final class GraphProjection
 
         $leaving = [];
         $arriving = [];
-        foreach ($graph->authoredEdges() as $edge) {
+        foreach ($graph->forwardEdges() as $edge) {
             $datum = self::edge($edge);
             $leaving[$datum->origin][] = $datum;
             $arriving[$datum->target][] = $datum;
@@ -86,9 +87,9 @@ final class GraphProjection
     /**
      * Returns one relation as a query sees it.
      *
-     * A relation is identified by its two ends and its kind, which is exactly what
-     * makes two relations the same one in the analysed graph. That keeps a path mode
-     * that forbids crossing an edge twice forbidding the right thing.
+     * Relations retain their source occurrence and resolution evidence in their
+     * identity. Two calls written on the same line remain distinct edges, so TRAIL
+     * forbids revisiting an occurrence rather than a pair of symbols.
      *
      * @param Edge $edge The analysed relation
      *
@@ -97,7 +98,7 @@ final class GraphProjection
      *     $caller = new \App\Analyzer\Graph\Node\MethodNode(\App\Analyzer\Graph\NodeId\MethodNodeId::of('App\\Invoice', 'total'), true);
      *     $called = new \App\Analyzer\Graph\Node\MethodNode(\App\Analyzer\Graph\NodeId\MethodNodeId::of('App\\Money', 'add'), true);
      *     $written = new \App\Analyzer\Graph\Edge\Usage\MethodCallEdge($caller, $called, $meta);
-     *     \App\Gql\Element\GraphProjection::edge($written)->id // => 'App\\Invoice::total|method-call|App\\Money::add'
+     *     \App\Gql\Element\GraphProjection::edge($written)->origin // => 'App\\Invoice::total'
      *
      * @return EdgeDatum The relation
      */
@@ -107,7 +108,7 @@ final class GraphProjection
         $target = $edge->to()->toString();
 
         return new EdgeDatum(
-            $origin.'|'.$edge->kind()->value.'|'.$target,
+            EdgeIdentity::of($edge),
             EdgeLabels::of($edge->kind()),
             EdgeProperties::of($edge),
             $origin,

@@ -36,7 +36,7 @@ final class DeclarationEdgeContractTest extends TestCase
 
         self::assertContains(
             'Tests\Contract\Analyzer\Generated\Subject -[declaration-extends]-> Tests\Contract\Analyzer\Generated\Dep',
-            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
         );
     }
 
@@ -57,7 +57,7 @@ final class DeclarationEdgeContractTest extends TestCase
 
         self::assertContains(
             'Tests\Contract\Analyzer\Generated\Subject -[declaration-implements]-> Tests\Contract\Analyzer\Generated\DepInterface',
-            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
         );
     }
 
@@ -80,7 +80,7 @@ final class DeclarationEdgeContractTest extends TestCase
 
         self::assertContains(
             'Tests\Contract\Analyzer\Generated\Subject -[declaration-trait-use]-> Tests\Contract\Analyzer\Generated\DepTrait',
-            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
         );
     }
 
@@ -94,7 +94,7 @@ final class DeclarationEdgeContractTest extends TestCase
 
         self::assertContains(
             $relation,
-            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
         );
     }
 
@@ -208,7 +208,7 @@ final class DeclarationEdgeContractTest extends TestCase
 
         self::assertContains(
             'Tests\Contract\Analyzer\Generated\Subject::testMethod -[declaration-type-parameter]-> Tests\Contract\Analyzer\Generated\Dep',
-            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
             "Parameter typed {$type}",
         );
     }
@@ -235,7 +235,7 @@ final class DeclarationEdgeContractTest extends TestCase
 
         self::assertContains(
             'Tests\Contract\Analyzer\Generated\Subject::testMethod -[declaration-type-return]-> Tests\Contract\Analyzer\Generated\Dep',
-            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
             "Return typed {$type}",
         );
     }
@@ -262,7 +262,7 @@ final class DeclarationEdgeContractTest extends TestCase
 
         self::assertContains(
             'Tests\Contract\Analyzer\Generated\Subject::prop -[declaration-type-property]-> Tests\Contract\Analyzer\Generated\Dep',
-            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
             "Property typed {$type}",
         );
     }

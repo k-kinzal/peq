@@ -51,7 +51,7 @@ final class TableReporter implements Reporter
      */
     public function report(Graph $graph, NodeId $symbol, OutputInterface $output): void
     {
-        $cursor = new TableCursor($this->level);
+        $cursor = new TableCursor($this->level, $graph, $this->traversal->direction());
         $this->traversal->traverse($graph, $symbol, $cursor->visit(...));
 
         $rows = $cursor->rows();

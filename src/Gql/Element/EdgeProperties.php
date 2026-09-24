@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace App\Gql\Element;
 
 use App\Analyzer\Graph\Edge;
+use App\Analyzer\Graph\Edge\Declaration\AttributeEdge;
+use App\Analyzer\Graph\Edge\Usage\MethodCallEdge;
+use App\Analyzer\Graph\Edge\Usage\PossibleCallEdge;
 use App\Gql\Datum\Datum;
 use App\Gql\Datum\IntegerDatum;
+use App\Gql\Datum\ListDatum;
 use App\Gql\Datum\StringDatum;
 
 /**
@@ -45,7 +49,45 @@ final class EdgeProperties
             'fileName' => new StringDatum($meta->name),
             'line' => new IntegerDatum($meta->line),
             'column' => new IntegerDatum($meta->column),
+            ...($meta->offset === null ? [] : ['offset' => new IntegerDatum($meta->offset)]),
+            ...self::evidence($edge),
         ];
+    }
+
+    /**
+     * Exposes source occurrences and the evidence behind inferred targets.
+     *
+     * @return array<string, Datum> Queryable facts specific to this relation
+     */
+    public static function evidence(Edge $edge): array
+    {
+        if ($edge instanceof AttributeEdge) {
+            return [
+                'arguments' => new ListDatum(array_map(static fn (string $argument): Datum => new StringDatum($argument), $edge->arguments)),
+                ...($edge->parameter === null ? [] : ['parameter' => new StringDatum($edge->parameter)]),
+            ];
+        }
+        if ($edge instanceof MethodCallEdge && $edge->expression !== null) {
+            return ['resolution' => new StringDatum('unresolved'), 'expression' => new StringDatum($edge->expression)];
+        }
+        if ($edge instanceof PossibleCallEdge) {
+            return [
+                'resolution' => new StringDatum('possible'),
+                'receiverType' => new StringDatum($edge->receiverType),
+                'declaredTarget' => new StringDatum($edge->call->to()->toString()),
+                'basis' => new StringDatum('class-hierarchy'),
+                ...($edge->implementationType === null ? [] : ['implementationType' => new StringDatum($edge->implementationType)]),
+            ];
+        }
+        if ($edge instanceof MethodCallEdge) {
+            return [
+                'resolution' => new StringDatum('declared'),
+                'declaredTarget' => new StringDatum($edge->to()->toString()),
+                ...($edge->receiverType === null ? [] : ['receiverType' => new StringDatum($edge->receiverType)]),
+            ];
+        }
+
+        return [];
     }
 
     /**
@@ -68,6 +110,15 @@ final class EdgeProperties
             'fileName' => 'STRING',
             'line' => 'INT64',
             'column' => 'INT64',
+            'offset' => 'INT64',
+            'resolution' => 'STRING',
+            'receiverType' => 'STRING',
+            'declaredTarget' => 'STRING',
+            'basis' => 'STRING',
+            'implementationType' => 'STRING',
+            'expression' => 'STRING',
+            'arguments' => 'LIST<STRING>',
+            'parameter' => 'STRING',
         ];
     }
 }

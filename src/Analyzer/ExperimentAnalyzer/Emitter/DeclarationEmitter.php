@@ -141,7 +141,7 @@ final class DeclarationEmitter
      *
      * @return list<AttributeEdge> One relation per attribute
      */
-    public static function attributes(array $attributeGroups, Node $owner, AnalysisScope $scope): array
+    public static function attributes(array $attributeGroups, Node $owner, AnalysisScope $scope, ?string $parameter = null): array
     {
         $items = [];
         foreach ($attributeGroups as $group) {
@@ -149,7 +149,9 @@ final class DeclarationEmitter
                 $items[] = new AttributeEdge(
                     $owner,
                     new ClassNode(ClassNodeId::of($scope->resolveName($attribute->name)), false, null),
-                    new FileMeta($scope->file, $attribute->getStartLine(), 1),
+                    new FileMeta($scope->file, $attribute->getStartLine(), 1, $attribute->getStartFilePos()),
+                    WrittenAttribute::usage($attribute, $scope->resolveName($attribute->name))->arguments,
+                    $parameter,
                 );
             }
         }

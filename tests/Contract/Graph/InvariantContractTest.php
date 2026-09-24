@@ -80,7 +80,7 @@ final class InvariantContractTest extends TestCase
     {
         $merged = $first->merge($second);
         $names = static fn (Graph $graph): array => array_map(static fn (Node $node): string => $node->id()->toString(), $graph->nodes());
-        $relations = static fn (Graph $graph): array => array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges());
+        $relations = static fn (Graph $graph): array => array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
         self::assertSame([], array_values(array_diff(array_merge($names($first), $names($second)), $names($merged))));
         self::assertSame([], array_values(array_diff(array_merge($relations($first), $relations($second)), $relations($merged))));

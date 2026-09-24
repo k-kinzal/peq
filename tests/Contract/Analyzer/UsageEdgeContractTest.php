@@ -48,7 +48,7 @@ final class UsageEdgeContractTest extends TestCase
 
         self::assertContains(
             'Tests\Contract\Analyzer\Usage\Subject::testMethod -[instantiation]-> Tests\Contract\Analyzer\Usage\Dep',
-            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
             "Contract violated [{$label}]: Instantiation edge missing",
         );
     }
@@ -105,7 +105,7 @@ final class UsageEdgeContractTest extends TestCase
 
         self::assertContains(
             'Tests\Contract\Analyzer\Usage\Subject::testMethod -[static-call]-> Tests\Contract\Analyzer\Usage\Dep::staticMethod',
-            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
             "Contract violated [{$label}]: StaticCall edge missing",
         );
     }
@@ -162,7 +162,7 @@ final class UsageEdgeContractTest extends TestCase
 
         self::assertContains(
             'Tests\Contract\Analyzer\Usage\Subject::testMethod -[const-fetch]-> Tests\Contract\Analyzer\Usage\Dep::SOME_CONST',
-            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
             "Contract violated [{$label}]: ConstFetch edge missing",
         );
     }
@@ -219,7 +219,7 @@ final class UsageEdgeContractTest extends TestCase
 
         self::assertContains(
             'Tests\Contract\Analyzer\Usage\Subject::testMethod -[instanceof]-> Tests\Contract\Analyzer\Usage\Dep',
-            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
             "Contract violated [{$label}]: Instanceof edge missing",
         );
     }
@@ -276,7 +276,7 @@ final class UsageEdgeContractTest extends TestCase
 
         self::assertContains(
             'Tests\Contract\Analyzer\Usage\Subject::testMethod -[catch]-> Tests\Contract\Analyzer\Usage\Dep',
-            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
             "Contract violated [{$label}]: Catch edge missing",
         );
     }
@@ -328,7 +328,7 @@ final class UsageEdgeContractTest extends TestCase
 
         self::assertContains(
             'Subject::testMethod -[function-call]-> dep_func',
-            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
             "Contract violated [{$label}]: FunctionCall edge missing",
         );
     }
@@ -380,7 +380,7 @@ final class UsageEdgeContractTest extends TestCase
 
         self::assertContains(
             'Tests\Contract\Analyzer\Usage\Subject::testMethod -[method-call]-> Tests\Contract\Analyzer\Usage\Subject::helperMethod',
-            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
             "Contract violated [{$label}]: MethodCall edge missing",
         );
     }
@@ -434,7 +434,7 @@ final class UsageEdgeContractTest extends TestCase
 
         self::assertContains(
             'Tests\Contract\Analyzer\Usage\Subject::testMethod -[property-access]-> Tests\Contract\Analyzer\Usage\Subject::targetProp',
-            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
             "Contract violated [{$label}]: PropertyAccess edge missing",
         );
     }
@@ -493,7 +493,7 @@ final class UsageEdgeContractTest extends TestCase
 
         self::assertContains(
             'Tests\Contract\Analyzer\Usage\Subject::testMethod -[static-property-access]-> Tests\Contract\Analyzer\Usage\Dep::staticProp',
-            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
             "Contract violated [{$label}]: StaticPropertyAccess edge missing",
         );
     }
@@ -523,7 +523,7 @@ final class UsageEdgeContractTest extends TestCase
     }
 
     #[Test]
-    public function testMethodCallOnArbitraryObjectIsIntentionallyNotDetected(): void
+    public function testMethodCallOnATypedParameterIsRecorded(): void
     {
         $code = <<<'PHP'
             <?php
@@ -546,10 +546,9 @@ final class UsageEdgeContractTest extends TestCase
         $graph = (new PhpStanAnalyzer())->analyze($file);
         unlink($file);
 
-        self::assertNotContains(
+        self::assertContains(
             'Tests\Contract\Analyzer\Generated\Subject::testMethod -[method-call]-> Tests\Contract\Analyzer\Generated\Other::otherMethod',
-            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
-            'Intentional: $obj->method() is not detected (requires type inference)',
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
         );
     }
 
@@ -579,7 +578,7 @@ final class UsageEdgeContractTest extends TestCase
 
         self::assertNotContains(
             'Tests\Contract\Analyzer\Generated\Subject::testMethod -[property-access]-> Tests\Contract\Analyzer\Generated\Other::value',
-            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->authoredEdges()),
+            array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
             'Intentional: $obj->prop is not detected (requires type inference)',
         );
     }

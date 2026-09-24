@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Reporter\TableReporter;
 
+use App\Analyzer\Graph\Direction;
+use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node;
 use App\Reporter\Expansion;
+use App\Reporter\RelationNotice;
 
 /**
  * The rows one table report is accumulating as the walk goes on.
@@ -33,6 +36,9 @@ final class TableCursor
      */
     private array $rows = [];
 
+    /** @var array<int, Node> */
+    private array $parents = [];
+
     /**
      * How far this report has already expanded the graph.
      */
@@ -41,7 +47,7 @@ final class TableCursor
     /**
      * @param null|int $level Deepest level to report, or null for the whole graph
      */
-    public function __construct(?int $level = null)
+    public function __construct(?int $level = null, private readonly ?Graph $graph = null, private readonly Direction $direction = Direction::Uses)
     {
         $this->expansion = new Expansion($level);
     }
@@ -68,9 +74,12 @@ final class TableCursor
         $marker = $continuation->marker();
         $meta = $node->meta();
 
+        $possible = $this->graph !== null && RelationNotice::possible($this->graph, $depth > 0 ? ($this->parents[$depth - 1] ?? null) : null, $node, $this->direction);
+        $label = $node->id()->toString().($possible ? ' (possible)' : '');
+        $this->parents[$depth] = $node;
         $this->rows[] = [
             (string) $depth,
-            $marker === null ? $node->id()->toString() : sprintf('%s (%s)', $node->id()->toString(), $marker),
+            $marker === null ? $label : sprintf('%s (%s)', $label, $marker),
             $node->kind()->value,
             $meta === null ? self::ABSENT : sprintf('%s:%d', $meta->path, $meta->line),
         ];
