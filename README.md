@@ -245,7 +245,7 @@ peq graph 'MATCH (s)-[:phpDoc]->(t) RETURN s.id, t.id' src
 composer test:diff
 ```
 
-The difference suite in `tests/diff/` checks the
+The difference suite in `tests/Diff/` checks the
 [PHPDoc annotations](https://phpstan.org/writing-php-code/phpdocs-basics) and
 [type syntax](https://phpstan.org/writing-php-code/phpdoc-types) supported by the
 installed PHPStan version. It compares complete canonical graphs, asserts the

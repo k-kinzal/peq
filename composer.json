@@ -50,7 +50,6 @@
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/",
-            "Tests\\Diff\\": "tests/diff/",
             "Spec\\": "spec/"
         },
         "classmap": [
