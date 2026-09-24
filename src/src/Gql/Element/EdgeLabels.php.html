@@ -71,135 +71,138 @@
 <span class="src-line" id="L35"><a class="ln" href="#L35">35</a>    <span class="tok-kw">private</span> <span class="tok-kw">const</span> <span class="tok-kw">array</span> <span class="tok-id">NAMES</span> = [</span>
 <span class="src-line" id="L36"><a class="ln" href="#L36">36</a>        <span class="tok-str">&#039;function-call&#039;</span> =&gt; <span class="tok-str">&#039;functionCall&#039;</span>,</span>
 <span class="src-line" id="L37"><a class="ln" href="#L37">37</a>        <span class="tok-str">&#039;method-call&#039;</span> =&gt; <span class="tok-str">&#039;methodCall&#039;</span>,</span>
-<span class="src-line" id="L38"><a class="ln" href="#L38">38</a>        <span class="tok-str">&#039;static-call&#039;</span> =&gt; <span class="tok-str">&#039;staticCall&#039;</span>,</span>
-<span class="src-line" id="L39"><a class="ln" href="#L39">39</a>        <span class="tok-str">&#039;instantiation&#039;</span> =&gt; <span class="tok-str">&#039;instantiation&#039;</span>,</span>
-<span class="src-line" id="L40"><a class="ln" href="#L40">40</a>        <span class="tok-str">&#039;property-access&#039;</span> =&gt; <span class="tok-str">&#039;propertyAccess&#039;</span>,</span>
-<span class="src-line" id="L41"><a class="ln" href="#L41">41</a>        <span class="tok-str">&#039;static-property-access&#039;</span> =&gt; <span class="tok-str">&#039;staticPropertyAccess&#039;</span>,</span>
-<span class="src-line" id="L42"><a class="ln" href="#L42">42</a>        <span class="tok-str">&#039;const-fetch&#039;</span> =&gt; <span class="tok-str">&#039;constFetch&#039;</span>,</span>
-<span class="src-line" id="L43"><a class="ln" href="#L43">43</a>        <span class="tok-str">&#039;instanceof&#039;</span> =&gt; <span class="tok-str">&#039;instanceOf&#039;</span>,</span>
-<span class="src-line" id="L44"><a class="ln" href="#L44">44</a>        <span class="tok-str">&#039;catch&#039;</span> =&gt; <span class="tok-str">&#039;catches&#039;</span>,</span>
-<span class="src-line" id="L45"><a class="ln" href="#L45">45</a>        <span class="tok-str">&#039;declaration-trait-use&#039;</span> =&gt; <span class="tok-str">&#039;traitUse&#039;</span>,</span>
-<span class="src-line" id="L46"><a class="ln" href="#L46">46</a>        <span class="tok-str">&#039;declaration-extends&#039;</span> =&gt; <span class="tok-str">&#039;extends&#039;</span>,</span>
-<span class="src-line" id="L47"><a class="ln" href="#L47">47</a>        <span class="tok-str">&#039;declaration-implements&#039;</span> =&gt; <span class="tok-str">&#039;implements&#039;</span>,</span>
-<span class="src-line" id="L48"><a class="ln" href="#L48">48</a>        <span class="tok-str">&#039;declaration-method&#039;</span> =&gt; <span class="tok-str">&#039;declaresMethod&#039;</span>,</span>
-<span class="src-line" id="L49"><a class="ln" href="#L49">49</a>        <span class="tok-str">&#039;declaration-property&#039;</span> =&gt; <span class="tok-str">&#039;declaresProperty&#039;</span>,</span>
-<span class="src-line" id="L50"><a class="ln" href="#L50">50</a>        <span class="tok-str">&#039;declaration-constant&#039;</span> =&gt; <span class="tok-str">&#039;declaresConstant&#039;</span>,</span>
-<span class="src-line" id="L51"><a class="ln" href="#L51">51</a>        <span class="tok-str">&#039;declaration-enum-case&#039;</span> =&gt; <span class="tok-str">&#039;declaresEnumCase&#039;</span>,</span>
-<span class="src-line" id="L52"><a class="ln" href="#L52">52</a>        <span class="tok-str">&#039;declaration-type-parameter&#039;</span> =&gt; <span class="tok-str">&#039;parameterType&#039;</span>,</span>
-<span class="src-line" id="L53"><a class="ln" href="#L53">53</a>        <span class="tok-str">&#039;declaration-type-return&#039;</span> =&gt; <span class="tok-str">&#039;returnType&#039;</span>,</span>
-<span class="src-line" id="L54"><a class="ln" href="#L54">54</a>        <span class="tok-str">&#039;declaration-type-property&#039;</span> =&gt; <span class="tok-str">&#039;propertyType&#039;</span>,</span>
-<span class="src-line" id="L55"><a class="ln" href="#L55">55</a>        <span class="tok-str">&#039;attribute&#039;</span> =&gt; <span class="tok-str">&#039;attribute&#039;</span>,</span>
-<span class="src-line" id="L56"><a class="ln" href="#L56">56</a>        <span class="tok-str">&#039;used-by&#039;</span> =&gt; <span class="tok-str">&#039;usedBy&#039;</span>,</span>
-<span class="src-line" id="L57"><a class="ln" href="#L57">57</a>        <span class="tok-str">&#039;declared-in&#039;</span> =&gt; <span class="tok-str">&#039;declaredIn&#039;</span>,</span>
-<span class="src-line" id="L58"><a class="ln" href="#L58">58</a>    ];</span>
-<span class="src-line" id="L59"><a class="ln" href="#L59">59</a></span>
-<span class="src-line" id="L60"><a class="ln" href="#L60">60</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L61"><a class="ln" href="#L61">61</a><span class="tok-com">     * Returns the labels a kind of relation carries.</span></span>
-<span class="src-line" id="L62"><a class="ln" href="#L62">62</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L63"><a class="ln" href="#L63">63</a><span class="tok-com">     * @param EdgeKind $kind The kind of relation</span></span>
-<span class="src-line" id="L64"><a class="ln" href="#L64">64</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L65"><a class="ln" href="#L65">65</a><span class="tok-com">     * @example A call carries the family every call belongs to</span></span>
-<span class="src-line" id="L66"><a class="ln" href="#L66">66</a><span class="tok-com">     *     \App\Gql\Element\EdgeLabels::of(\App\Analyzer\Graph\EdgeKind::MethodCall) // =&gt; [&#039;methodCall&#039;, &#039;call&#039;, &#039;usage&#039;]</span></span>
-<span class="src-line" id="L67"><a class="ln" href="#L67">67</a><span class="tok-com">     * @example A declaration says which one it is and that it is one</span></span>
-<span class="src-line" id="L68"><a class="ln" href="#L68">68</a><span class="tok-com">     *     \App\Gql\Element\EdgeLabels::of(\App\Analyzer\Graph\EdgeKind::DeclarationExtends) // =&gt; [&#039;extends&#039;, &#039;declaration&#039;]</span></span>
-<span class="src-line" id="L69"><a class="ln" href="#L69">69</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L70"><a class="ln" href="#L70">70</a><span class="tok-com">     * @return list&lt;string&gt; The labels, most specific first</span></span>
-<span class="src-line" id="L71"><a class="ln" href="#L71">71</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L72"><a class="ln" href="#L72">72</a>    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">function</span> <span class="tok-id">of</span>(<span class="tok-id">EdgeKind</span> <span class="tok-var">$kind</span>): <span class="tok-kw">array</span></span>
-<span class="src-line" id="L73"><a class="ln" href="#L73">73</a>    {</span>
-<span class="src-line" id="L74"><a class="ln" href="#L74">74</a>        <span class="tok-kw">return</span> [<span class="tok-id">self</span>::<span class="tok-id">name</span>(<span class="tok-var">$kind</span>), ...<span class="tok-id">self</span>::<span class="tok-id">belongsTo</span>(<span class="tok-var">$kind</span>)];</span>
-<span class="src-line" id="L75"><a class="ln" href="#L75">75</a>    }</span>
-<span class="src-line" id="L76"><a class="ln" href="#L76">76</a></span>
-<span class="src-line" id="L77"><a class="ln" href="#L77">77</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L78"><a class="ln" href="#L78">78</a><span class="tok-com">     * Returns what a query calls one kind of relation.</span></span>
-<span class="src-line" id="L79"><a class="ln" href="#L79">79</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L80"><a class="ln" href="#L80">80</a><span class="tok-com">     * @param EdgeKind $kind The kind of relation</span></span>
-<span class="src-line" id="L81"><a class="ln" href="#L81">81</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L82"><a class="ln" href="#L82">82</a><span class="tok-com">     * @example A relation is named the way a sentence about code would name it</span></span>
-<span class="src-line" id="L83"><a class="ln" href="#L83">83</a><span class="tok-com">     *     \App\Gql\Element\EdgeLabels::name(\App\Analyzer\Graph\EdgeKind::DeclarationMethod) // =&gt; &#039;declaresMethod&#039;</span></span>
-<span class="src-line" id="L84"><a class="ln" href="#L84">84</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L85"><a class="ln" href="#L85">85</a><span class="tok-com">     * @return string The name</span></span>
-<span class="src-line" id="L86"><a class="ln" href="#L86">86</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L87"><a class="ln" href="#L87">87</a>    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">function</span> <span class="tok-id">name</span>(<span class="tok-id">EdgeKind</span> <span class="tok-var">$kind</span>): <span class="tok-id">string</span></span>
-<span class="src-line" id="L88"><a class="ln" href="#L88">88</a>    {</span>
-<span class="src-line" id="L89"><a class="ln" href="#L89">89</a>        <span class="tok-kw">return</span> <span class="tok-id">self</span>::<span class="tok-id">NAMES</span>[<span class="tok-var">$kind</span>-&gt;<span class="tok-id">value</span>];</span>
-<span class="src-line" id="L90"><a class="ln" href="#L90">90</a>    }</span>
-<span class="src-line" id="L91"><a class="ln" href="#L91">91</a></span>
-<span class="src-line" id="L92"><a class="ln" href="#L92">92</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L93"><a class="ln" href="#L93">93</a><span class="tok-com">     * Returns the families of relation a kind of relation belongs to.</span></span>
-<span class="src-line" id="L94"><a class="ln" href="#L94">94</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L95"><a class="ln" href="#L95">95</a><span class="tok-com">     * @param EdgeKind $kind The kind of relation</span></span>
-<span class="src-line" id="L96"><a class="ln" href="#L96">96</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L97"><a class="ln" href="#L97">97</a><span class="tok-com">     * @example Every call belongs to the family a pattern selects calls by</span></span>
-<span class="src-line" id="L98"><a class="ln" href="#L98">98</a><span class="tok-com">     *     \App\Gql\Element\EdgeLabels::belongsTo(\App\Analyzer\Graph\EdgeKind::StaticCall) // =&gt; [&#039;call&#039;, &#039;usage&#039;]</span></span>
-<span class="src-line" id="L99"><a class="ln" href="#L99">99</a><span class="tok-com">     * @example Everything a class-like writes down about itself is a declaration</span></span>
-<span class="src-line" id="L100"><a class="ln" href="#L100">100</a><span class="tok-com">     *     \App\Gql\Element\EdgeLabels::belongsTo(\App\Analyzer\Graph\EdgeKind::Attribute) // =&gt; [&#039;declaration&#039;]</span></span>
-<span class="src-line" id="L101"><a class="ln" href="#L101">101</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L102"><a class="ln" href="#L102">102</a><span class="tok-com">     * @return list&lt;string&gt; The families, most specific first</span></span>
-<span class="src-line" id="L103"><a class="ln" href="#L103">103</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L104"><a class="ln" href="#L104">104</a>    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">function</span> <span class="tok-id">belongsTo</span>(<span class="tok-id">EdgeKind</span> <span class="tok-var">$kind</span>): <span class="tok-kw">array</span></span>
-<span class="src-line" id="L105"><a class="ln" href="#L105">105</a>    {</span>
-<span class="src-line" id="L106"><a class="ln" href="#L106">106</a>        <span class="tok-kw">return</span> <span class="tok-kw">match</span> (<span class="tok-var">$kind</span>) {</span>
-<span class="src-line" id="L107"><a class="ln" href="#L107">107</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">FunctionCall</span>,</span>
-<span class="src-line" id="L108"><a class="ln" href="#L108">108</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">MethodCall</span>,</span>
-<span class="src-line" id="L109"><a class="ln" href="#L109">109</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">StaticCall</span> =&gt; [<span class="tok-str">&#039;call&#039;</span>, <span class="tok-str">&#039;usage&#039;</span>],</span>
-<span class="src-line" id="L110"><a class="ln" href="#L110">110</a></span>
-<span class="src-line" id="L111"><a class="ln" href="#L111">111</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">Instantiation</span>,</span>
-<span class="src-line" id="L112"><a class="ln" href="#L112">112</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">PropertyAccess</span>,</span>
-<span class="src-line" id="L113"><a class="ln" href="#L113">113</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">StaticPropertyAccess</span>,</span>
-<span class="src-line" id="L114"><a class="ln" href="#L114">114</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">ConstFetch</span>,</span>
-<span class="src-line" id="L115"><a class="ln" href="#L115">115</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-kw">Instanceof</span>,</span>
-<span class="src-line" id="L116"><a class="ln" href="#L116">116</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-kw">Catch</span> =&gt; [<span class="tok-str">&#039;usage&#039;</span>],</span>
-<span class="src-line" id="L117"><a class="ln" href="#L117">117</a></span>
-<span class="src-line" id="L118"><a class="ln" href="#L118">118</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationMethod</span>,</span>
-<span class="src-line" id="L119"><a class="ln" href="#L119">119</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationProperty</span>,</span>
-<span class="src-line" id="L120"><a class="ln" href="#L120">120</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationConstant</span>,</span>
-<span class="src-line" id="L121"><a class="ln" href="#L121">121</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationEnumCase</span> =&gt; [<span class="tok-str">&#039;declares&#039;</span>, <span class="tok-str">&#039;declaration&#039;</span>],</span>
-<span class="src-line" id="L122"><a class="ln" href="#L122">122</a></span>
-<span class="src-line" id="L123"><a class="ln" href="#L123">123</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationTypeParameter</span>,</span>
-<span class="src-line" id="L124"><a class="ln" href="#L124">124</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationTypeReturn</span> =&gt; [<span class="tok-str">&#039;signatureType&#039;</span>, <span class="tok-str">&#039;declaration&#039;</span>],</span>
+<span class="src-line" id="L38"><a class="ln" href="#L38">38</a>        <span class="tok-str">&#039;possible-call&#039;</span> =&gt; <span class="tok-str">&#039;possibleCall&#039;</span>,</span>
+<span class="src-line" id="L39"><a class="ln" href="#L39">39</a>        <span class="tok-str">&#039;static-call&#039;</span> =&gt; <span class="tok-str">&#039;staticCall&#039;</span>,</span>
+<span class="src-line" id="L40"><a class="ln" href="#L40">40</a>        <span class="tok-str">&#039;instantiation&#039;</span> =&gt; <span class="tok-str">&#039;instantiation&#039;</span>,</span>
+<span class="src-line" id="L41"><a class="ln" href="#L41">41</a>        <span class="tok-str">&#039;property-access&#039;</span> =&gt; <span class="tok-str">&#039;propertyAccess&#039;</span>,</span>
+<span class="src-line" id="L42"><a class="ln" href="#L42">42</a>        <span class="tok-str">&#039;static-property-access&#039;</span> =&gt; <span class="tok-str">&#039;staticPropertyAccess&#039;</span>,</span>
+<span class="src-line" id="L43"><a class="ln" href="#L43">43</a>        <span class="tok-str">&#039;const-fetch&#039;</span> =&gt; <span class="tok-str">&#039;constFetch&#039;</span>,</span>
+<span class="src-line" id="L44"><a class="ln" href="#L44">44</a>        <span class="tok-str">&#039;instanceof&#039;</span> =&gt; <span class="tok-str">&#039;instanceOf&#039;</span>,</span>
+<span class="src-line" id="L45"><a class="ln" href="#L45">45</a>        <span class="tok-str">&#039;catch&#039;</span> =&gt; <span class="tok-str">&#039;catches&#039;</span>,</span>
+<span class="src-line" id="L46"><a class="ln" href="#L46">46</a>        <span class="tok-str">&#039;declaration-trait-use&#039;</span> =&gt; <span class="tok-str">&#039;traitUse&#039;</span>,</span>
+<span class="src-line" id="L47"><a class="ln" href="#L47">47</a>        <span class="tok-str">&#039;declaration-extends&#039;</span> =&gt; <span class="tok-str">&#039;extends&#039;</span>,</span>
+<span class="src-line" id="L48"><a class="ln" href="#L48">48</a>        <span class="tok-str">&#039;declaration-implements&#039;</span> =&gt; <span class="tok-str">&#039;implements&#039;</span>,</span>
+<span class="src-line" id="L49"><a class="ln" href="#L49">49</a>        <span class="tok-str">&#039;declaration-method&#039;</span> =&gt; <span class="tok-str">&#039;declaresMethod&#039;</span>,</span>
+<span class="src-line" id="L50"><a class="ln" href="#L50">50</a>        <span class="tok-str">&#039;declaration-property&#039;</span> =&gt; <span class="tok-str">&#039;declaresProperty&#039;</span>,</span>
+<span class="src-line" id="L51"><a class="ln" href="#L51">51</a>        <span class="tok-str">&#039;declaration-constant&#039;</span> =&gt; <span class="tok-str">&#039;declaresConstant&#039;</span>,</span>
+<span class="src-line" id="L52"><a class="ln" href="#L52">52</a>        <span class="tok-str">&#039;declaration-enum-case&#039;</span> =&gt; <span class="tok-str">&#039;declaresEnumCase&#039;</span>,</span>
+<span class="src-line" id="L53"><a class="ln" href="#L53">53</a>        <span class="tok-str">&#039;declaration-type-parameter&#039;</span> =&gt; <span class="tok-str">&#039;parameterType&#039;</span>,</span>
+<span class="src-line" id="L54"><a class="ln" href="#L54">54</a>        <span class="tok-str">&#039;declaration-type-return&#039;</span> =&gt; <span class="tok-str">&#039;returnType&#039;</span>,</span>
+<span class="src-line" id="L55"><a class="ln" href="#L55">55</a>        <span class="tok-str">&#039;declaration-type-property&#039;</span> =&gt; <span class="tok-str">&#039;propertyType&#039;</span>,</span>
+<span class="src-line" id="L56"><a class="ln" href="#L56">56</a>        <span class="tok-str">&#039;attribute&#039;</span> =&gt; <span class="tok-str">&#039;attribute&#039;</span>,</span>
+<span class="src-line" id="L57"><a class="ln" href="#L57">57</a>        <span class="tok-str">&#039;used-by&#039;</span> =&gt; <span class="tok-str">&#039;usedBy&#039;</span>,</span>
+<span class="src-line" id="L58"><a class="ln" href="#L58">58</a>        <span class="tok-str">&#039;declared-in&#039;</span> =&gt; <span class="tok-str">&#039;declaredIn&#039;</span>,</span>
+<span class="src-line" id="L59"><a class="ln" href="#L59">59</a>    ];</span>
+<span class="src-line" id="L60"><a class="ln" href="#L60">60</a></span>
+<span class="src-line" id="L61"><a class="ln" href="#L61">61</a>    <span class="tok-com">/**</span></span>
+<span class="src-line" id="L62"><a class="ln" href="#L62">62</a><span class="tok-com">     * Returns the labels a kind of relation carries.</span></span>
+<span class="src-line" id="L63"><a class="ln" href="#L63">63</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L64"><a class="ln" href="#L64">64</a><span class="tok-com">     * @param EdgeKind $kind The kind of relation</span></span>
+<span class="src-line" id="L65"><a class="ln" href="#L65">65</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L66"><a class="ln" href="#L66">66</a><span class="tok-com">     * @example A call carries the family every call belongs to</span></span>
+<span class="src-line" id="L67"><a class="ln" href="#L67">67</a><span class="tok-com">     *     \App\Gql\Element\EdgeLabels::of(\App\Analyzer\Graph\EdgeKind::MethodCall) // =&gt; [&#039;methodCall&#039;, &#039;call&#039;, &#039;usage&#039;]</span></span>
+<span class="src-line" id="L68"><a class="ln" href="#L68">68</a><span class="tok-com">     * @example A declaration says which one it is and that it is one</span></span>
+<span class="src-line" id="L69"><a class="ln" href="#L69">69</a><span class="tok-com">     *     \App\Gql\Element\EdgeLabels::of(\App\Analyzer\Graph\EdgeKind::DeclarationExtends) // =&gt; [&#039;extends&#039;, &#039;declaration&#039;]</span></span>
+<span class="src-line" id="L70"><a class="ln" href="#L70">70</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L71"><a class="ln" href="#L71">71</a><span class="tok-com">     * @return list&lt;string&gt; The labels, most specific first</span></span>
+<span class="src-line" id="L72"><a class="ln" href="#L72">72</a><span class="tok-com">     */</span></span>
+<span class="src-line" id="L73"><a class="ln" href="#L73">73</a>    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">function</span> <span class="tok-id">of</span>(<span class="tok-id">EdgeKind</span> <span class="tok-var">$kind</span>): <span class="tok-kw">array</span></span>
+<span class="src-line" id="L74"><a class="ln" href="#L74">74</a>    {</span>
+<span class="src-line" id="L75"><a class="ln" href="#L75">75</a>        <span class="tok-kw">return</span> [<span class="tok-id">self</span>::<span class="tok-id">name</span>(<span class="tok-var">$kind</span>), ...<span class="tok-id">self</span>::<span class="tok-id">belongsTo</span>(<span class="tok-var">$kind</span>)];</span>
+<span class="src-line" id="L76"><a class="ln" href="#L76">76</a>    }</span>
+<span class="src-line" id="L77"><a class="ln" href="#L77">77</a></span>
+<span class="src-line" id="L78"><a class="ln" href="#L78">78</a>    <span class="tok-com">/**</span></span>
+<span class="src-line" id="L79"><a class="ln" href="#L79">79</a><span class="tok-com">     * Returns what a query calls one kind of relation.</span></span>
+<span class="src-line" id="L80"><a class="ln" href="#L80">80</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L81"><a class="ln" href="#L81">81</a><span class="tok-com">     * @param EdgeKind $kind The kind of relation</span></span>
+<span class="src-line" id="L82"><a class="ln" href="#L82">82</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L83"><a class="ln" href="#L83">83</a><span class="tok-com">     * @example A relation is named the way a sentence about code would name it</span></span>
+<span class="src-line" id="L84"><a class="ln" href="#L84">84</a><span class="tok-com">     *     \App\Gql\Element\EdgeLabels::name(\App\Analyzer\Graph\EdgeKind::DeclarationMethod) // =&gt; &#039;declaresMethod&#039;</span></span>
+<span class="src-line" id="L85"><a class="ln" href="#L85">85</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L86"><a class="ln" href="#L86">86</a><span class="tok-com">     * @return string The name</span></span>
+<span class="src-line" id="L87"><a class="ln" href="#L87">87</a><span class="tok-com">     */</span></span>
+<span class="src-line" id="L88"><a class="ln" href="#L88">88</a>    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">function</span> <span class="tok-id">name</span>(<span class="tok-id">EdgeKind</span> <span class="tok-var">$kind</span>): <span class="tok-id">string</span></span>
+<span class="src-line" id="L89"><a class="ln" href="#L89">89</a>    {</span>
+<span class="src-line" id="L90"><a class="ln" href="#L90">90</a>        <span class="tok-kw">return</span> <span class="tok-id">self</span>::<span class="tok-id">NAMES</span>[<span class="tok-var">$kind</span>-&gt;<span class="tok-id">value</span>];</span>
+<span class="src-line" id="L91"><a class="ln" href="#L91">91</a>    }</span>
+<span class="src-line" id="L92"><a class="ln" href="#L92">92</a></span>
+<span class="src-line" id="L93"><a class="ln" href="#L93">93</a>    <span class="tok-com">/**</span></span>
+<span class="src-line" id="L94"><a class="ln" href="#L94">94</a><span class="tok-com">     * Returns the families of relation a kind of relation belongs to.</span></span>
+<span class="src-line" id="L95"><a class="ln" href="#L95">95</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L96"><a class="ln" href="#L96">96</a><span class="tok-com">     * @param EdgeKind $kind The kind of relation</span></span>
+<span class="src-line" id="L97"><a class="ln" href="#L97">97</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L98"><a class="ln" href="#L98">98</a><span class="tok-com">     * @example Every call belongs to the family a pattern selects calls by</span></span>
+<span class="src-line" id="L99"><a class="ln" href="#L99">99</a><span class="tok-com">     *     \App\Gql\Element\EdgeLabels::belongsTo(\App\Analyzer\Graph\EdgeKind::StaticCall) // =&gt; [&#039;call&#039;, &#039;usage&#039;]</span></span>
+<span class="src-line" id="L100"><a class="ln" href="#L100">100</a><span class="tok-com">     * @example Everything a class-like writes down about itself is a declaration</span></span>
+<span class="src-line" id="L101"><a class="ln" href="#L101">101</a><span class="tok-com">     *     \App\Gql\Element\EdgeLabels::belongsTo(\App\Analyzer\Graph\EdgeKind::Attribute) // =&gt; [&#039;declaration&#039;]</span></span>
+<span class="src-line" id="L102"><a class="ln" href="#L102">102</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L103"><a class="ln" href="#L103">103</a><span class="tok-com">     * @return list&lt;string&gt; The families, most specific first</span></span>
+<span class="src-line" id="L104"><a class="ln" href="#L104">104</a><span class="tok-com">     */</span></span>
+<span class="src-line" id="L105"><a class="ln" href="#L105">105</a>    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">function</span> <span class="tok-id">belongsTo</span>(<span class="tok-id">EdgeKind</span> <span class="tok-var">$kind</span>): <span class="tok-kw">array</span></span>
+<span class="src-line" id="L106"><a class="ln" href="#L106">106</a>    {</span>
+<span class="src-line" id="L107"><a class="ln" href="#L107">107</a>        <span class="tok-kw">return</span> <span class="tok-kw">match</span> (<span class="tok-var">$kind</span>) {</span>
+<span class="src-line" id="L108"><a class="ln" href="#L108">108</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">FunctionCall</span>,</span>
+<span class="src-line" id="L109"><a class="ln" href="#L109">109</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">MethodCall</span>,</span>
+<span class="src-line" id="L110"><a class="ln" href="#L110">110</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">StaticCall</span> =&gt; [<span class="tok-str">&#039;call&#039;</span>, <span class="tok-str">&#039;usage&#039;</span>],</span>
+<span class="src-line" id="L111"><a class="ln" href="#L111">111</a></span>
+<span class="src-line" id="L112"><a class="ln" href="#L112">112</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">PossibleCall</span> =&gt; [<span class="tok-str">&#039;usage&#039;</span>],</span>
+<span class="src-line" id="L113"><a class="ln" href="#L113">113</a></span>
+<span class="src-line" id="L114"><a class="ln" href="#L114">114</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">Instantiation</span>,</span>
+<span class="src-line" id="L115"><a class="ln" href="#L115">115</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">PropertyAccess</span>,</span>
+<span class="src-line" id="L116"><a class="ln" href="#L116">116</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">StaticPropertyAccess</span>,</span>
+<span class="src-line" id="L117"><a class="ln" href="#L117">117</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">ConstFetch</span>,</span>
+<span class="src-line" id="L118"><a class="ln" href="#L118">118</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-kw">Instanceof</span>,</span>
+<span class="src-line" id="L119"><a class="ln" href="#L119">119</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-kw">Catch</span> =&gt; [<span class="tok-str">&#039;usage&#039;</span>],</span>
+<span class="src-line" id="L120"><a class="ln" href="#L120">120</a></span>
+<span class="src-line" id="L121"><a class="ln" href="#L121">121</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationMethod</span>,</span>
+<span class="src-line" id="L122"><a class="ln" href="#L122">122</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationProperty</span>,</span>
+<span class="src-line" id="L123"><a class="ln" href="#L123">123</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationConstant</span>,</span>
+<span class="src-line" id="L124"><a class="ln" href="#L124">124</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationEnumCase</span> =&gt; [<span class="tok-str">&#039;declares&#039;</span>, <span class="tok-str">&#039;declaration&#039;</span>],</span>
 <span class="src-line" id="L125"><a class="ln" href="#L125">125</a></span>
-<span class="src-line" id="L126"><a class="ln" href="#L126">126</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationTraitUse</span>,</span>
-<span class="src-line" id="L127"><a class="ln" href="#L127">127</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationExtends</span>,</span>
-<span class="src-line" id="L128"><a class="ln" href="#L128">128</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationImplements</span>,</span>
-<span class="src-line" id="L129"><a class="ln" href="#L129">129</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationTypeProperty</span>,</span>
-<span class="src-line" id="L130"><a class="ln" href="#L130">130</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">Attribute</span> =&gt; [<span class="tok-str">&#039;declaration&#039;</span>],</span>
-<span class="src-line" id="L131"><a class="ln" href="#L131">131</a></span>
-<span class="src-line" id="L132"><a class="ln" href="#L132">132</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">UsedBy</span>,</span>
-<span class="src-line" id="L133"><a class="ln" href="#L133">133</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclaredIn</span> =&gt; [<span class="tok-str">&#039;inverse&#039;</span>],</span>
-<span class="src-line" id="L134"><a class="ln" href="#L134">134</a>        };</span>
-<span class="src-line" id="L135"><a class="ln" href="#L135">135</a>    }</span>
-<span class="src-line" id="L136"><a class="ln" href="#L136">136</a></span>
-<span class="src-line" id="L137"><a class="ln" href="#L137">137</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L138"><a class="ln" href="#L138">138</a><span class="tok-com">     * Returns every label a relation can carry, for a reader asking what there is.</span></span>
-<span class="src-line" id="L139"><a class="ln" href="#L139">139</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L140"><a class="ln" href="#L140">140</a><span class="tok-com">     * The two labels of the relations peq derives rather than reads are left out,</span></span>
-<span class="src-line" id="L141"><a class="ln" href="#L141">141</a><span class="tok-com">     * because a query never meets one: a pattern reads an edge backwards by pointing</span></span>
-<span class="src-line" id="L142"><a class="ln" href="#L142">142</a><span class="tok-com">     * its arrow the other way, which is the language&#039;s own way of asking.</span></span>
-<span class="src-line" id="L143"><a class="ln" href="#L143">143</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L144"><a class="ln" href="#L144">144</a><span class="tok-com">     * @example Families a pattern can ask for are among them</span></span>
-<span class="src-line" id="L145"><a class="ln" href="#L145">145</a><span class="tok-com">     *     in_array(&#039;call&#039;, \App\Gql\Element\EdgeLabels::all(), true) // =&gt; true</span></span>
-<span class="src-line" id="L146"><a class="ln" href="#L146">146</a><span class="tok-com">     * @example The derived readings are not, because no pattern meets one</span></span>
-<span class="src-line" id="L147"><a class="ln" href="#L147">147</a><span class="tok-com">     *     in_array(&#039;usedBy&#039;, \App\Gql\Element\EdgeLabels::all(), true) // =&gt; false</span></span>
-<span class="src-line" id="L148"><a class="ln" href="#L148">148</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L149"><a class="ln" href="#L149">149</a><span class="tok-com">     * @return list&lt;string&gt; Every label, without repetition</span></span>
-<span class="src-line" id="L150"><a class="ln" href="#L150">150</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L151"><a class="ln" href="#L151">151</a>    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">function</span> <span class="tok-id">all</span>(): <span class="tok-kw">array</span></span>
-<span class="src-line" id="L152"><a class="ln" href="#L152">152</a>    {</span>
-<span class="src-line" id="L153"><a class="ln" href="#L153">153</a>        <span class="tok-var">$labels</span> = [];</span>
-<span class="src-line" id="L154"><a class="ln" href="#L154">154</a>        <span class="tok-kw">foreach</span> (<span class="tok-id">EdgeKind</span>::<span class="tok-id">cases</span>() <span class="tok-kw">as</span> <span class="tok-var">$kind</span>) {</span>
-<span class="src-line" id="L155"><a class="ln" href="#L155">155</a>            <span class="tok-kw">if</span> (<span class="tok-var">$kind</span> === <span class="tok-id">EdgeKind</span>::<span class="tok-id">UsedBy</span> || <span class="tok-var">$kind</span> === <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclaredIn</span>) {</span>
-<span class="src-line" id="L156"><a class="ln" href="#L156">156</a>                <span class="tok-kw">continue</span>;</span>
-<span class="src-line" id="L157"><a class="ln" href="#L157">157</a>            }</span>
-<span class="src-line" id="L158"><a class="ln" href="#L158">158</a>            <span class="tok-kw">foreach</span> (<span class="tok-id">self</span>::<span class="tok-id">of</span>(<span class="tok-var">$kind</span>) <span class="tok-kw">as</span> <span class="tok-var">$label</span>) {</span>
-<span class="src-line" id="L159"><a class="ln" href="#L159">159</a>                <span class="tok-var">$labels</span>[<span class="tok-var">$label</span>] = <span class="tok-id">true</span>;</span>
+<span class="src-line" id="L126"><a class="ln" href="#L126">126</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationTypeParameter</span>,</span>
+<span class="src-line" id="L127"><a class="ln" href="#L127">127</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationTypeReturn</span> =&gt; [<span class="tok-str">&#039;signatureType&#039;</span>, <span class="tok-str">&#039;declaration&#039;</span>],</span>
+<span class="src-line" id="L128"><a class="ln" href="#L128">128</a></span>
+<span class="src-line" id="L129"><a class="ln" href="#L129">129</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationTraitUse</span>,</span>
+<span class="src-line" id="L130"><a class="ln" href="#L130">130</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationExtends</span>,</span>
+<span class="src-line" id="L131"><a class="ln" href="#L131">131</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationImplements</span>,</span>
+<span class="src-line" id="L132"><a class="ln" href="#L132">132</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclarationTypeProperty</span>,</span>
+<span class="src-line" id="L133"><a class="ln" href="#L133">133</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">Attribute</span> =&gt; [<span class="tok-str">&#039;declaration&#039;</span>],</span>
+<span class="src-line" id="L134"><a class="ln" href="#L134">134</a></span>
+<span class="src-line" id="L135"><a class="ln" href="#L135">135</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">UsedBy</span>,</span>
+<span class="src-line" id="L136"><a class="ln" href="#L136">136</a>            <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclaredIn</span> =&gt; [<span class="tok-str">&#039;inverse&#039;</span>],</span>
+<span class="src-line" id="L137"><a class="ln" href="#L137">137</a>        };</span>
+<span class="src-line" id="L138"><a class="ln" href="#L138">138</a>    }</span>
+<span class="src-line" id="L139"><a class="ln" href="#L139">139</a></span>
+<span class="src-line" id="L140"><a class="ln" href="#L140">140</a>    <span class="tok-com">/**</span></span>
+<span class="src-line" id="L141"><a class="ln" href="#L141">141</a><span class="tok-com">     * Returns every label a relation can carry, for a reader asking what there is.</span></span>
+<span class="src-line" id="L142"><a class="ln" href="#L142">142</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L143"><a class="ln" href="#L143">143</a><span class="tok-com">     * The two labels of the relations peq derives rather than reads are left out,</span></span>
+<span class="src-line" id="L144"><a class="ln" href="#L144">144</a><span class="tok-com">     * because a query never meets one: a pattern reads an edge backwards by pointing</span></span>
+<span class="src-line" id="L145"><a class="ln" href="#L145">145</a><span class="tok-com">     * its arrow the other way, which is the language&#039;s own way of asking.</span></span>
+<span class="src-line" id="L146"><a class="ln" href="#L146">146</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L147"><a class="ln" href="#L147">147</a><span class="tok-com">     * @example Families a pattern can ask for are among them</span></span>
+<span class="src-line" id="L148"><a class="ln" href="#L148">148</a><span class="tok-com">     *     in_array(&#039;call&#039;, \App\Gql\Element\EdgeLabels::all(), true) // =&gt; true</span></span>
+<span class="src-line" id="L149"><a class="ln" href="#L149">149</a><span class="tok-com">     * @example The derived readings are not, because no pattern meets one</span></span>
+<span class="src-line" id="L150"><a class="ln" href="#L150">150</a><span class="tok-com">     *     in_array(&#039;usedBy&#039;, \App\Gql\Element\EdgeLabels::all(), true) // =&gt; false</span></span>
+<span class="src-line" id="L151"><a class="ln" href="#L151">151</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L152"><a class="ln" href="#L152">152</a><span class="tok-com">     * @return list&lt;string&gt; Every label, without repetition</span></span>
+<span class="src-line" id="L153"><a class="ln" href="#L153">153</a><span class="tok-com">     */</span></span>
+<span class="src-line" id="L154"><a class="ln" href="#L154">154</a>    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">function</span> <span class="tok-id">all</span>(): <span class="tok-kw">array</span></span>
+<span class="src-line" id="L155"><a class="ln" href="#L155">155</a>    {</span>
+<span class="src-line" id="L156"><a class="ln" href="#L156">156</a>        <span class="tok-var">$labels</span> = [];</span>
+<span class="src-line" id="L157"><a class="ln" href="#L157">157</a>        <span class="tok-kw">foreach</span> (<span class="tok-id">EdgeKind</span>::<span class="tok-id">cases</span>() <span class="tok-kw">as</span> <span class="tok-var">$kind</span>) {</span>
+<span class="src-line" id="L158"><a class="ln" href="#L158">158</a>            <span class="tok-kw">if</span> (<span class="tok-var">$kind</span> === <span class="tok-id">EdgeKind</span>::<span class="tok-id">UsedBy</span> || <span class="tok-var">$kind</span> === <span class="tok-id">EdgeKind</span>::<span class="tok-id">DeclaredIn</span>) {</span>
+<span class="src-line" id="L159"><a class="ln" href="#L159">159</a>                <span class="tok-kw">continue</span>;</span>
 <span class="src-line" id="L160"><a class="ln" href="#L160">160</a>            }</span>
-<span class="src-line" id="L161"><a class="ln" href="#L161">161</a>        }</span>
-<span class="src-line" id="L162"><a class="ln" href="#L162">162</a></span>
-<span class="src-line" id="L163"><a class="ln" href="#L163">163</a>        <span class="tok-kw">return</span> <span class="tok-id">array_keys</span>(<span class="tok-var">$labels</span>);</span>
-<span class="src-line" id="L164"><a class="ln" href="#L164">164</a>    }</span>
-<span class="src-line" id="L165"><a class="ln" href="#L165">165</a>}</span>
-<span class="src-line" id="L166"><a class="ln" href="#L166">166</a></span>
+<span class="src-line" id="L161"><a class="ln" href="#L161">161</a>            <span class="tok-kw">foreach</span> (<span class="tok-id">self</span>::<span class="tok-id">of</span>(<span class="tok-var">$kind</span>) <span class="tok-kw">as</span> <span class="tok-var">$label</span>) {</span>
+<span class="src-line" id="L162"><a class="ln" href="#L162">162</a>                <span class="tok-var">$labels</span>[<span class="tok-var">$label</span>] = <span class="tok-id">true</span>;</span>
+<span class="src-line" id="L163"><a class="ln" href="#L163">163</a>            }</span>
+<span class="src-line" id="L164"><a class="ln" href="#L164">164</a>        }</span>
+<span class="src-line" id="L165"><a class="ln" href="#L165">165</a></span>
+<span class="src-line" id="L166"><a class="ln" href="#L166">166</a>        <span class="tok-kw">return</span> <span class="tok-id">array_keys</span>(<span class="tok-var">$labels</span>);</span>
+<span class="src-line" id="L167"><a class="ln" href="#L167">167</a>    }</span>
+<span class="src-line" id="L168"><a class="ln" href="#L168">168</a>}</span>
+<span class="src-line" id="L169"><a class="ln" href="#L169">169</a></span>
 </code></pre>
 </main>
 <footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>

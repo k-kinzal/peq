@@ -75,7 +75,7 @@
 <span class="src-line" id="L39"><a class="ln" href="#L39">39</a><span class="tok-com">     *</span></span>
 <span class="src-line" id="L40"><a class="ln" href="#L40">40</a><span class="tok-com">     * @return list&lt;AttributeEdge&gt; One relation per attribute</span></span>
 <span class="src-line" id="L41"><a class="ln" href="#L41">41</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L42"><a class="ln" href="#L42">42</a>    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">function</span> <span class="tok-id">process</span>(<span class="tok-kw">array</span> <span class="tok-var">$attributeGroups</span>, <span class="tok-id">Node</span> <span class="tok-var">$owner</span>, <span class="tok-id">Scope</span> <span class="tok-var">$scope</span>): <span class="tok-kw">array</span></span>
+<span class="src-line" id="L42"><a class="ln" href="#L42">42</a>    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">function</span> <span class="tok-id">process</span>(<span class="tok-kw">array</span> <span class="tok-var">$attributeGroups</span>, <span class="tok-id">Node</span> <span class="tok-var">$owner</span>, <span class="tok-id">Scope</span> <span class="tok-var">$scope</span>, ?<span class="tok-id">string</span> <span class="tok-var">$parameter</span> = <span class="tok-id">null</span>): <span class="tok-kw">array</span></span>
 <span class="src-line" id="L43"><a class="ln" href="#L43">43</a>    {</span>
 <span class="src-line" id="L44"><a class="ln" href="#L44">44</a>        <span class="tok-var">$items</span> = [];</span>
 <span class="src-line" id="L45"><a class="ln" href="#L45">45</a>        <span class="tok-kw">foreach</span> (<span class="tok-var">$attributeGroups</span> <span class="tok-kw">as</span> <span class="tok-var">$group</span>) {</span>
@@ -83,41 +83,43 @@
 <span class="src-line" id="L47"><a class="ln" href="#L47">47</a>                <span class="tok-var">$items</span>[] = <span class="tok-kw">new</span> <span class="tok-id">AttributeEdge</span>(</span>
 <span class="src-line" id="L48"><a class="ln" href="#L48">48</a>                    <span class="tok-var">$owner</span>,</span>
 <span class="src-line" id="L49"><a class="ln" href="#L49">49</a>                    <span class="tok-kw">new</span> <span class="tok-id">ClassNode</span>(<span class="tok-id">ClassNodeId</span>::<span class="tok-id">of</span>(<span class="tok-var">$scope</span>-&gt;<span class="tok-id">resolveName</span>(<span class="tok-var">$attribute</span>-&gt;<span class="tok-id">name</span>)), <span class="tok-id">false</span>, <span class="tok-id">null</span>),</span>
-<span class="src-line" id="L50"><a class="ln" href="#L50">50</a>                    <span class="tok-kw">new</span> <span class="tok-id">FileMeta</span>(<span class="tok-var">$scope</span>-&gt;<span class="tok-id">getFile</span>(), <span class="tok-var">$attribute</span>-&gt;<span class="tok-id">getStartLine</span>(), <span class="tok-num">1</span>),</span>
-<span class="src-line" id="L51"><a class="ln" href="#L51">51</a>                );</span>
-<span class="src-line" id="L52"><a class="ln" href="#L52">52</a>            }</span>
-<span class="src-line" id="L53"><a class="ln" href="#L53">53</a>        }</span>
-<span class="src-line" id="L54"><a class="ln" href="#L54">54</a></span>
-<span class="src-line" id="L55"><a class="ln" href="#L55">55</a>        <span class="tok-kw">return</span> <span class="tok-var">$items</span>;</span>
-<span class="src-line" id="L56"><a class="ln" href="#L56">56</a>    }</span>
-<span class="src-line" id="L57"><a class="ln" href="#L57">57</a></span>
-<span class="src-line" id="L58"><a class="ln" href="#L58">58</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L59"><a class="ln" href="#L59">59</a><span class="tok-com">     * Reads the attributes written on a declaration, under the names they resolve to.</span></span>
-<span class="src-line" id="L60"><a class="ln" href="#L60">60</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L61"><a class="ln" href="#L61">61</a><span class="tok-com">     * The same attributes are read twice for one declaration: once as relations to</span></span>
-<span class="src-line" id="L62"><a class="ln" href="#L62">62</a><span class="tok-com">     * the classes they name, and once as facts about the declaration that carries</span></span>
-<span class="src-line" id="L63"><a class="ln" href="#L63">63</a><span class="tok-com">     * them. They are different answers to different questions — what breaks if the</span></span>
-<span class="src-line" id="L64"><a class="ln" href="#L64">64</a><span class="tok-com">     * attribute class changes, and which declarations are marked with it — so both</span></span>
-<span class="src-line" id="L65"><a class="ln" href="#L65">65</a><span class="tok-com">     * are recorded rather than one being derived from the other at query time.</span></span>
-<span class="src-line" id="L66"><a class="ln" href="#L66">66</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L67"><a class="ln" href="#L67">67</a><span class="tok-com">     * @param array&lt;AttributeGroup&gt; $attributeGroups The attribute groups written on the declaration</span></span>
-<span class="src-line" id="L68"><a class="ln" href="#L68">68</a><span class="tok-com">     * @param Scope                 $scope           The analyser scope, used to resolve the written names</span></span>
-<span class="src-line" id="L69"><a class="ln" href="#L69">69</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L70"><a class="ln" href="#L70">70</a><span class="tok-com">     * @return list&lt;AttributeUsage&gt; The attributes, in source order</span></span>
-<span class="src-line" id="L71"><a class="ln" href="#L71">71</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L72"><a class="ln" href="#L72">72</a>    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">function</span> <span class="tok-id">usages</span>(<span class="tok-kw">array</span> <span class="tok-var">$attributeGroups</span>, <span class="tok-id">Scope</span> <span class="tok-var">$scope</span>): <span class="tok-kw">array</span></span>
-<span class="src-line" id="L73"><a class="ln" href="#L73">73</a>    {</span>
-<span class="src-line" id="L74"><a class="ln" href="#L74">74</a>        <span class="tok-var">$usages</span> = [];</span>
-<span class="src-line" id="L75"><a class="ln" href="#L75">75</a>        <span class="tok-kw">foreach</span> (<span class="tok-var">$attributeGroups</span> <span class="tok-kw">as</span> <span class="tok-var">$group</span>) {</span>
-<span class="src-line" id="L76"><a class="ln" href="#L76">76</a>            <span class="tok-kw">foreach</span> (<span class="tok-var">$group</span>-&gt;<span class="tok-id">attrs</span> <span class="tok-kw">as</span> <span class="tok-var">$attribute</span>) {</span>
-<span class="src-line" id="L77"><a class="ln" href="#L77">77</a>                <span class="tok-var">$usages</span>[] = <span class="tok-id">WrittenAttribute</span>::<span class="tok-id">usage</span>(<span class="tok-var">$attribute</span>, <span class="tok-var">$scope</span>-&gt;<span class="tok-id">resolveName</span>(<span class="tok-var">$attribute</span>-&gt;<span class="tok-id">name</span>));</span>
-<span class="src-line" id="L78"><a class="ln" href="#L78">78</a>            }</span>
-<span class="src-line" id="L79"><a class="ln" href="#L79">79</a>        }</span>
-<span class="src-line" id="L80"><a class="ln" href="#L80">80</a></span>
-<span class="src-line" id="L81"><a class="ln" href="#L81">81</a>        <span class="tok-kw">return</span> <span class="tok-var">$usages</span>;</span>
-<span class="src-line" id="L82"><a class="ln" href="#L82">82</a>    }</span>
-<span class="src-line" id="L83"><a class="ln" href="#L83">83</a>}</span>
-<span class="src-line" id="L84"><a class="ln" href="#L84">84</a></span>
+<span class="src-line" id="L50"><a class="ln" href="#L50">50</a>                    <span class="tok-kw">new</span> <span class="tok-id">FileMeta</span>(<span class="tok-var">$scope</span>-&gt;<span class="tok-id">getFile</span>(), <span class="tok-var">$attribute</span>-&gt;<span class="tok-id">getStartLine</span>(), <span class="tok-num">1</span>, <span class="tok-var">$attribute</span>-&gt;<span class="tok-id">getStartFilePos</span>()),</span>
+<span class="src-line" id="L51"><a class="ln" href="#L51">51</a>                    <span class="tok-id">WrittenAttribute</span>::<span class="tok-id">usage</span>(<span class="tok-var">$attribute</span>, <span class="tok-var">$scope</span>-&gt;<span class="tok-id">resolveName</span>(<span class="tok-var">$attribute</span>-&gt;<span class="tok-id">name</span>))-&gt;<span class="tok-id">arguments</span>,</span>
+<span class="src-line" id="L52"><a class="ln" href="#L52">52</a>                    <span class="tok-var">$parameter</span>,</span>
+<span class="src-line" id="L53"><a class="ln" href="#L53">53</a>                );</span>
+<span class="src-line" id="L54"><a class="ln" href="#L54">54</a>            }</span>
+<span class="src-line" id="L55"><a class="ln" href="#L55">55</a>        }</span>
+<span class="src-line" id="L56"><a class="ln" href="#L56">56</a></span>
+<span class="src-line" id="L57"><a class="ln" href="#L57">57</a>        <span class="tok-kw">return</span> <span class="tok-var">$items</span>;</span>
+<span class="src-line" id="L58"><a class="ln" href="#L58">58</a>    }</span>
+<span class="src-line" id="L59"><a class="ln" href="#L59">59</a></span>
+<span class="src-line" id="L60"><a class="ln" href="#L60">60</a>    <span class="tok-com">/**</span></span>
+<span class="src-line" id="L61"><a class="ln" href="#L61">61</a><span class="tok-com">     * Reads the attributes written on a declaration, under the names they resolve to.</span></span>
+<span class="src-line" id="L62"><a class="ln" href="#L62">62</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L63"><a class="ln" href="#L63">63</a><span class="tok-com">     * The same attributes are read twice for one declaration: once as relations to</span></span>
+<span class="src-line" id="L64"><a class="ln" href="#L64">64</a><span class="tok-com">     * the classes they name, and once as facts about the declaration that carries</span></span>
+<span class="src-line" id="L65"><a class="ln" href="#L65">65</a><span class="tok-com">     * them. They are different answers to different questions — what breaks if the</span></span>
+<span class="src-line" id="L66"><a class="ln" href="#L66">66</a><span class="tok-com">     * attribute class changes, and which declarations are marked with it — so both</span></span>
+<span class="src-line" id="L67"><a class="ln" href="#L67">67</a><span class="tok-com">     * are recorded rather than one being derived from the other at query time.</span></span>
+<span class="src-line" id="L68"><a class="ln" href="#L68">68</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L69"><a class="ln" href="#L69">69</a><span class="tok-com">     * @param array&lt;AttributeGroup&gt; $attributeGroups The attribute groups written on the declaration</span></span>
+<span class="src-line" id="L70"><a class="ln" href="#L70">70</a><span class="tok-com">     * @param Scope                 $scope           The analyser scope, used to resolve the written names</span></span>
+<span class="src-line" id="L71"><a class="ln" href="#L71">71</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L72"><a class="ln" href="#L72">72</a><span class="tok-com">     * @return list&lt;AttributeUsage&gt; The attributes, in source order</span></span>
+<span class="src-line" id="L73"><a class="ln" href="#L73">73</a><span class="tok-com">     */</span></span>
+<span class="src-line" id="L74"><a class="ln" href="#L74">74</a>    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">function</span> <span class="tok-id">usages</span>(<span class="tok-kw">array</span> <span class="tok-var">$attributeGroups</span>, <span class="tok-id">Scope</span> <span class="tok-var">$scope</span>): <span class="tok-kw">array</span></span>
+<span class="src-line" id="L75"><a class="ln" href="#L75">75</a>    {</span>
+<span class="src-line" id="L76"><a class="ln" href="#L76">76</a>        <span class="tok-var">$usages</span> = [];</span>
+<span class="src-line" id="L77"><a class="ln" href="#L77">77</a>        <span class="tok-kw">foreach</span> (<span class="tok-var">$attributeGroups</span> <span class="tok-kw">as</span> <span class="tok-var">$group</span>) {</span>
+<span class="src-line" id="L78"><a class="ln" href="#L78">78</a>            <span class="tok-kw">foreach</span> (<span class="tok-var">$group</span>-&gt;<span class="tok-id">attrs</span> <span class="tok-kw">as</span> <span class="tok-var">$attribute</span>) {</span>
+<span class="src-line" id="L79"><a class="ln" href="#L79">79</a>                <span class="tok-var">$usages</span>[] = <span class="tok-id">WrittenAttribute</span>::<span class="tok-id">usage</span>(<span class="tok-var">$attribute</span>, <span class="tok-var">$scope</span>-&gt;<span class="tok-id">resolveName</span>(<span class="tok-var">$attribute</span>-&gt;<span class="tok-id">name</span>));</span>
+<span class="src-line" id="L80"><a class="ln" href="#L80">80</a>            }</span>
+<span class="src-line" id="L81"><a class="ln" href="#L81">81</a>        }</span>
+<span class="src-line" id="L82"><a class="ln" href="#L82">82</a></span>
+<span class="src-line" id="L83"><a class="ln" href="#L83">83</a>        <span class="tok-kw">return</span> <span class="tok-var">$usages</span>;</span>
+<span class="src-line" id="L84"><a class="ln" href="#L84">84</a>    }</span>
+<span class="src-line" id="L85"><a class="ln" href="#L85">85</a>}</span>
+<span class="src-line" id="L86"><a class="ln" href="#L86">86</a></span>
 </code></pre>
 </main>
 <footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>
