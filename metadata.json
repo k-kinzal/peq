@@ -1,0 +1,40 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M396JFE5TPM92RRABYHPY0W5",
+  "strategy": "manual-commit",
+  "branch": "feat/inspect-filters-and-call-resolution",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/Contract/Reporter/InspectionReportContractTest.php",
+    "tests/Unit/Action/Inspect/InspectionGraphTest.php",
+    "tests/Unit/Analyzer/BodyCallRecorderTest.php",
+    "tests/Unit/Analyzer/CallEnrichmentTest.php",
+    "tests/Unit/Analyzer/CallSourcesTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/ClassWalkerTest.php",
+    "tests/Unit/Analyzer/Graph/EdgeIdentityTest.php",
+    "tests/Unit/Analyzer/Graph/GraphSnapshotTest.php",
+    "tests/Unit/Analyzer/Graph/Resolution/CallDispatchTest.php",
+    "tests/Unit/Analyzer/Graph/Resolution/ClassHierarchyTest.php",
+    "tests/Unit/Analyzer/Graph/Resolution/TypeConstraintTest.php",
+    "tests/Unit/Analyzer/NativeAnalyzer/ClassWalkerTest.php",
+    "tests/Unit/Analyzer/ReceiverBindingTest.php",
+    "tests/Unit/Config/InspectFilterTest.php",
+    "tests/Unit/Reporter/TableReporter/TableCursorTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 170012,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 4009472,
+    "output_tokens": 22146,
+    "api_call_count": 44
+  }
+}
