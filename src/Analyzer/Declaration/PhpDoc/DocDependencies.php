@@ -21,6 +21,7 @@ final class DocDependencies
     public static function enrich(Graph $graph, array $files, Parser $parser): Graph
     {
         $docs = new DocParser();
+        $classes = DocVisitor::classes($graph);
         foreach ($files as $file) {
             $text = is_readable($file) ? file_get_contents($file) : false;
             if ($text === false || !str_contains($text, '/**')) {
@@ -32,7 +33,7 @@ final class DocDependencies
                 continue;
             }
             $names = new NameResolver($errors);
-            $visitor = new DocVisitor($graph, $file, $docs, $names);
+            $visitor = new DocVisitor($graph, $file, $docs, $names, $classes);
             (new NodeTraverser($names, $visitor))->traverse($nodes);
         }
 

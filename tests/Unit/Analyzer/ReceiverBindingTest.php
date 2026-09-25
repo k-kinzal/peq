@@ -41,10 +41,54 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
 #[UsesClass(ClassHierarchy::class)]
 #[UsesClass(\App\Analyzer\Graph\Resolution\TypeConstraint::class)]
+#[\PHPUnit\Framework\Attributes\UsesNamespace('App\Analyzer\Declaration\PhpDoc')]
 #[CoversClass(ReceiverBinding::class)]
 #[Small]
 final class ReceiverBindingTest extends TestCase
 {
+    #[\PHPUnit\Framework\Attributes\DataProvider('providerMemberExpressions')]
+    public function testIsMemberRecognizesBothNullsafeAndOrdinaryMembers(string $source, bool $expected): void
+    {
+        $nodes = (new \PhpParser\ParserFactory())->createForHostVersion()->parse($source) ?? [];
+        self::assertInstanceOf(\PhpParser\Node\Stmt\Expression::class, $nodes[0]);
+
+        self::assertSame($expected, ReceiverBinding::isMember($nodes[0]->expr));
+    }
+
+    /**
+     * @return iterable<string, array{string, bool}>
+     */
+    public static function providerMemberExpressions(): iterable
+    {
+        yield 'method' => ['<?php $value->run();', true];
+
+        yield 'nullsafe property' => ['<?php $value?->item;', true];
+
+        yield 'variable' => ['<?php $value;', false];
+    }
+
+    public function testAnnotateAndDocumentedTypeApplyInlineTypesToAssignmentsAndIteration(): void
+    {
+        $nodes = (new \PhpParser\ParserFactory())->createForHostVersion()->parse('<?php /** @var list<Item> */ $values = $unknown; foreach ($values as $value) { $value->run(); }') ?? [];
+        $index = new \App\Analyzer\Declaration\PhpDoc\DocIndex();
+        $index->read(array_values($nodes));
+        $binding = new ReceiverBinding(new ClassHierarchy(new Graph()), new FunctionNode(FunctionNodeId::of('run')), $index);
+        $binding->annotate($nodes[0]);
+        $binding->annotate($nodes[1]);
+
+        self::assertSame('Item', $binding->documentedType(new Variable('value'), 0)?->objects());
+        self::assertSame('', $binding->of(new Variable('values')));
+        self::assertNull($binding->documentedType(new Variable('value'), 17));
+    }
+
+    public function testDocumentedTypeDoesNotBorrowAnUnrelatedVariable(): void
+    {
+        $binding = new ReceiverBinding(new ClassHierarchy(new Graph()), new FunctionNode(FunctionNodeId::of('run')));
+
+        self::assertNull($binding->documentedType(new Variable('unknown'), 0));
+        self::assertNull($binding->documentedType(new \PhpParser\Node\Scalar\String_('Item'), 0));
+    }
+
     public function testOfTypedParameterAndNewExpressionResolveTheirReceivers(): void
     {
         $source = new FunctionNode(

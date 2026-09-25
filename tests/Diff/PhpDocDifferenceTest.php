@@ -567,6 +567,30 @@ final class PhpDocDifferenceTest extends TestCase
             class Subject {}
             PHP, []];
 
+        foreach (['psalm-inheritors'] as $tag) {
+            yield $tag => ['<?php namespace Doc; /** @'.$tag.' Target */ class Subject {} class Target extends Subject {}', ['Doc\Target']];
+        }
+        foreach ([
+            'consistent-constructor', 'impure', 'not-deprecated', 'phan', 'phpstan', 'psalm',
+            'phan-immutable', 'phan-pure', 'phan-read-only', 'phan-side-effect-free',
+            'phpstan-all-methods-impure', 'phpstan-all-methods-pure', 'phpstan-allow-private-mutation',
+            'phpstan-immutable', 'phpstan-readonly', 'phpstan-readonly-allow-private-mutation',
+            'psalm-allow-private-mutation', 'psalm-consistent-constructor', 'psalm-immutable',
+            'psalm-pure', 'psalm-readonly', 'psalm-readonly-allow-private-mutation', 'pure',
+        ] as $tag) {
+            yield 'metadata '.$tag => ['<?php namespace Doc; /** @'.$tag.' Target */ class Subject {}', []];
+        }
+        foreach ([
+            'param-immediately-invoked-callable', 'param-later-invoked-callable',
+            'phpstan-param-immediately-invoked-callable', 'phpstan-param-later-invoked-callable',
+            'pure-unless-callable-is-impure', 'phpstan-pure-unless-callable-is-impure',
+            'pure-unless-parameter-passed', 'phpstan-pure-unless-parameter-passed',
+        ] as $tag) {
+            yield 'callable metadata '.$tag => ['<?php namespace Doc; /** @'.$tag.' $callback Target */ function run(callable $callback) {}', []];
+        }
+
+        yield 'invalid alias type' => ['<?php namespace Doc; /** @phpstan-type Broken array{ */ class Subject {}', []];
+
         yield 'sealed classes name allowed inheritors' => [<<<'PHP'
             <?php
             namespace Doc;

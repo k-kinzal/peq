@@ -19,6 +19,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
 #[UsesClass(\App\Analyzer\Graph\Resolution\ClassHierarchy::class)]
 #[UsesClass(\App\Analyzer\SourceParser::class)]
+#[\PHPUnit\Framework\Attributes\UsesNamespace('App\Analyzer\Declaration\PhpDoc')]
 #[CoversClass(CallSources::class)]
 #[UsesClass(\App\Analyzer\CachedSyntax::class)]
 #[UsesClass(\App\Analyzer\Declaration\Calls\WrittenCalls::class)]
@@ -38,9 +39,9 @@ final class CallSourcesTest extends TestCase
         self::assertCount(2, $body->getStmts() ?? []);
     }
 
-    public function testReadTreatsAnUnavailableFileAsHavingNoBodies(): void
+    public function testFileCachesAnUnavailableFileAsHavingNoBodies(): void
     {
-        self::assertSame([], (new CallSources(80300))->read('/peq-file-that-does-not-exist.php'));
+        self::assertSame([], (new CallSources(80300))->file('/peq-file-that-does-not-exist.php'));
     }
 
     public function testCallableDisambiguatesOwnersAndMethodNamesOnTheSameLine(): void
@@ -57,6 +58,21 @@ final class CallSourcesTest extends TestCase
         self::assertInstanceOf(\PhpParser\Node\Stmt\ClassMethod::class, $body);
         self::assertSame('function Run()\n{\n    second();\n}', str_replace("\n", '\n', (new \PhpParser\PrettyPrinter\Standard())->prettyPrint([$body])));
         self::assertSame($body, $reader->callable($source));
+    }
+
+    public function testEnterNodeIndexesOwnersAndExplicitTraitAliasesDuringRead(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'peq-trait-alias-');
+        self::assertNotFalse($file);
+        file_put_contents($file, '<?php trait First { function original() {} function extra() {} } trait Second { function unrelated() {} } class Subject { use First, Second { First::original as alias; } } function unrelated() {}');
+        $reader = new CallSources(80300);
+        $source = new \App\Analyzer\Graph\Node\MethodNode(\App\Analyzer\Graph\NodeId\MethodNodeId::of('Subject', 'alias'), true, new \App\Analyzer\Graph\FileMeta($file, 1, 1));
+        $body = $reader->callable($source);
+        unlink($file);
+
+        self::assertInstanceOf(\PhpParser\Node\Stmt\ClassMethod::class, $body);
+        self::assertSame('original', $body->name->toString());
+        self::assertSame('First', $body->getAttribute('peqOwner'));
     }
 
     public function testCallableFallsBackToAnAliasedTraitBodyAtItsOriginalLine(): void
