@@ -155,6 +155,7 @@ final class InClassMethodCollectorTest extends TestCase
         yield 'what a method body reaches' => ['MethodBody', [
             'Tests\Fixture\Source\MethodBodyClass::testMethod -[const-fetch]-> DateTime::ATOM',
             'Tests\Fixture\Source\MethodBodyClass::testMethod -[instantiation]-> stdClass',
+            'Tests\Fixture\Source\MethodBodyClass::testMethod -[phpdoc]-> DateTime',
             'Tests\Fixture\Source\MethodBodyClass::testMethod -[static-call]-> DateTime::createFromFormat',
         ]];
 

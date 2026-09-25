@@ -28,6 +28,15 @@ final class EquivalenceCorpus
      * Every scenario, by name: the files it is made of, by file name.
      */
     public const SCENARIOS = [
+        'documented dependencies' => ['Docs.php' => <<<'PHP'
+            <?php
+            namespace Corpus\Documentation;
+            class Item {}
+            class Repository {
+                /** @return list<Item> */
+                public function items(): array { return []; }
+            }
+            PHP],
         'typed receivers and possible implementations' => ['Calls.php' => <<<'PHP'
             <?php
             namespace Corpus\Dispatch;

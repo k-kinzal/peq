@@ -7,9 +7,11 @@ namespace App\Analyzer\NativeAnalyzer;
 use App\Analyzer\AnalysisInputs;
 use App\Analyzer\Analyzer;
 use App\Analyzer\CallEnrichment;
+use App\Analyzer\Declaration\PhpDoc\DocDependencies;
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\PhaseCache;
 use App\Analyzer\PhpFileCollector;
+use App\Analyzer\SourceParser;
 
 /**
  * Builds the dependency graph by reading the sources directly.
@@ -104,6 +106,6 @@ final class NativeAnalyzer implements Analyzer
             $walker->walkFile($source);
         }
 
-        return $recorder->graph();
+        return DocDependencies::enrich($recorder->graph(), $files, SourceParser::forVersion($this->phpVersion));
     }
 }

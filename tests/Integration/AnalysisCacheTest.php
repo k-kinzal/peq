@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Integration;
 
 use App\Analyzer\CacheStorage;
+use App\Analyzer\Graph\Edge;
+use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\GraphSnapshot;
 use App\Analyzer\NativeAnalyzer\NativeAnalyzer;
 use App\Analyzer\PhaseCache;
@@ -66,6 +68,46 @@ final class AnalysisCacheTest extends TestCase
         yield 'native' => ['native'];
 
         yield 'phpstan' => ['phpstan'];
+    }
+
+    #[DataProvider('providerEngines')]
+    public function testPhpDocDependenciesSurviveCacheReuseAndCommentOnlyEdits(string $engine): void
+    {
+        $directory = WorkingDirectory::at(sys_get_temp_dir().'/peq-phpdoc-cache-'.uniqid());
+        $text = <<<'PHP'
+            <?php
+            class Alpha {}
+            class Bravo {}
+            /** @return Alpha */
+            function run() {}
+            PHP;
+        $source = $directory->write('source.php', $text);
+        touch($source, 1000000000);
+        $cache = new PhaseCache(new CacheStorage($directory->path.'/.peq.cache', 'v1'));
+        $analyzer = $engine === 'native' ? new NativeAnalyzer(cache: $cache) : new PhpStanAnalyzer(cache: $cache);
+        $cold = $analyzer->analyze($source);
+        $warm = $analyzer->analyze($source);
+        $entries = glob($directory->path.'/.peq.cache/'.hash('sha256', $engine.'-enriched').'-*.cache');
+        self::assertNotFalse($entries);
+        self::assertCount(1, $entries);
+        unlink($entries[0]);
+        $partial = $analyzer->analyze($source);
+        $references = array_values(array_filter($partial->forwardEdges(), static fn (Edge $edge): bool => $edge->kind() === EdgeKind::PhpDoc));
+
+        self::assertEquals(GraphSnapshot::of($cold), GraphSnapshot::of($warm));
+        self::assertEquals(GraphSnapshot::of($cold), GraphSnapshot::of($partial));
+        self::assertSame([['run', 'Alpha', 4]], array_map(static fn (Edge $edge): array => [$edge->from()->toString(), $edge->to()->toString(), $edge->meta()->line], $references));
+
+        file_put_contents($source, str_replace('@return Alpha', '@return Bravo', $text));
+        touch($source, 1000000000);
+        $edited = $analyzer->analyze($source);
+        $references = array_values(array_filter($edited->forwardEdges(), static fn (Edge $edge): bool => $edge->kind() === EdgeKind::PhpDoc));
+        $fresh = ($engine === 'native' ? new NativeAnalyzer() : new PhpStanAnalyzer())->analyze($source);
+
+        self::assertSame([['run', 'Bravo', 4]], array_map(static fn (Edge $edge): array => [$edge->from()->toString(), $edge->to()->toString(), $edge->meta()->line], $references));
+        self::assertEquals(GraphSnapshot::of($fresh), GraphSnapshot::of($edited));
+        self::assertEquals(GraphSnapshot::of($edited), GraphSnapshot::of($analyzer->analyze($source)));
+        $directory->delete();
     }
 
     public function testEditsRebuildCrossFileRelationsWhileReusingUnchangedSyntax(): void

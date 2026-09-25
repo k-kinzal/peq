@@ -284,7 +284,7 @@ final class NodeIdGeneratorTest extends TestCase
         $ids = new NodeIdGenerator(new NameGenerator($random), $random);
 
         self::assertSame(
-            ['declaration-type-return', 'const-fetch', 'declaration-enum-case', 'declaration-method', 'declaration-implements', 'attribute', 'method-call', 'declaration-trait-use', 'static-property-access', 'static-call', 'method-call', 'declaration-extends'],
+            ['declaration-enum-case', 'catch', 'declaration-constant', 'declaration-property', 'declaration-trait-use', 'declaration-method', 'declaration-type-return', 'instantiation', 'instantiation', 'declaration-trait-use', 'static-call', 'possible-call'],
             array_map(static fn (): string => $ids->edgeKind()->value, range(1, 12)),
         );
     }

@@ -219,7 +219,7 @@ jobs:
             $phar = new Phar("dist/peq.phar");
             $carried = 0;
             foreach (new RecursiveIteratorIterator($phar) as $file) {
-                if (str_contains((string) $file, "phpstan")) {
+                if (str_contains((string) $file, "vendor/phpstan/phpstan/")) {
                     $carried++;
                 }
             }
