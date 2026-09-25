@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer;
 
+use App\Analyzer\Declaration\PhpDoc\DocBlock;
 use App\Analyzer\Declaration\PhpDoc\DocIndex;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\Resolution\ClassHierarchy;
@@ -35,6 +36,13 @@ final class CallSources extends NodeVisitorAbstract
     private array $aliases = [];
 
     /**
+     * Declaration locations let PHPDoc lookups reuse indexed comments without syntax.
+     *
+     * @var array<string, array{string, int}>
+     */
+    private array $declared = [];
+
+    /**
      * Selects the PHP version used to read callable bodies.
      */
     public function __construct(private readonly ?int $version, private readonly ?PhaseCache $cache = null, public readonly DocIndex $docs = new DocIndex()) {}
@@ -45,6 +53,21 @@ final class CallSources extends NodeVisitorAbstract
     public function file(string $path): array
     {
         return $this->path === $path ? $this->declarations : $this->read($path);
+    }
+
+    /**
+     * Reads indexed method documentation, locating imported trait bodies when needed.
+     */
+    public function documentation(Node $symbol): ?DocBlock
+    {
+        $meta = $symbol->meta();
+        $key = DocIndex::key($symbol->id()->toString());
+        if ($meta !== null && ($this->declared[$key] ?? null) === [$meta->path, $meta->line]) {
+            return $this->docs->blocks[$key] ?? null;
+        }
+        $syntax = $this->callable($symbol);
+
+        return $syntax === null ? null : DocIndex::block($syntax);
     }
 
     /**
@@ -122,6 +145,12 @@ final class CallSources extends NodeVisitorAbstract
         }
         if ($node instanceof ClassMethod || $node instanceof Function_) {
             $this->declarations[] = $node;
+        }
+        if ($node instanceof ClassMethod && $this->path !== null) {
+            $owner = $node->getAttribute('peqOwner');
+            if (is_string($owner)) {
+                $this->declared[DocIndex::key($owner.'::'.$node->name->toString())] = [$this->path, $node->getStartLine()];
+            }
         }
 
         return null;

@@ -31,8 +31,7 @@ final class CallEnrichment
         }
         foreach ($graph->nodes() as $node) {
             if ($node instanceof MethodNode && $node->resolved()) {
-                $syntax = $sources->callable($node);
-                $block = $syntax === null ? null : DocIndex::block($syntax);
+                $block = $sources->documentation($node);
                 $owner = ClassHierarchy::owner($node);
                 if ($block !== null && $owner !== null) {
                     $sources->docs->blocks[DocIndex::key($node->id()->toString())] = new DocBlock($block->doc, $block->scope->inClass($owner));

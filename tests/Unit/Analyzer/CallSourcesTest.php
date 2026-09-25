@@ -176,6 +176,7 @@ final class CallSourcesTest extends TestCase
         self::assertInstanceOf(\PhpParser\Node\Stmt\ClassMethod::class, $body);
         self::assertSame('original', $body->name->toString());
         self::assertSame('Shared', $body->getAttribute('peqOwner'));
+        self::assertSame('Target', $reader->docs->types($reader->documentation($alias), 'return')['']->objects());
     }
 
     public function testReadReplacesTheCachedFileEvenWhenTheNextFileIsMissing(): void
@@ -190,5 +191,37 @@ final class CallSourcesTest extends TestCase
         self::assertNull($reference->get());
         self::assertSame([], $reader->file($root->url().'/Missing.php'));
         self::assertSame(['first'], array_map(static fn ($node): string => $node->name->toString(), $reader->file($root->url().'/First.php')));
+    }
+
+    public function testDocumentationReusesIndexedBlocksWithoutLoadingSyntaxAgain(): void
+    {
+        $root = vfsStream::setup('project', null, [
+            'First.php' => '<?php class First { /** @return Target */ function run() {} function plain() {} }',
+            'Second.php' => '<?php function second() {}',
+        ]);
+        $reader = new CallSources(80300);
+        $declarations = $reader->file($root->url().'/First.php');
+        $reference = WeakReference::create($declarations[0]);
+        unset($declarations);
+        $second = $reader->file($root->url().'/Second.php');
+        $documented = new \App\Analyzer\Graph\Node\MethodNode(\App\Analyzer\Graph\NodeId\MethodNodeId::of('First', 'run'), true, new \App\Analyzer\Graph\FileMeta($root->url().'/First.php', 1, 1));
+        $undocumented = new \App\Analyzer\Graph\Node\MethodNode(\App\Analyzer\Graph\NodeId\MethodNodeId::of('First', 'plain'), true, new \App\Analyzer\Graph\FileMeta($root->url().'/First.php', 1, 1));
+
+        self::assertNull($reference->get());
+        self::assertSame('Target', $reader->docs->types($reader->documentation($documented), 'return')['']->objects());
+        self::assertNull($reader->documentation($undocumented));
+        self::assertSame($second, $reader->file($root->url().'/Second.php'));
+    }
+
+    public function testDocumentationRequiresTheIndexedDeclarationLocation(): void
+    {
+        $root = vfsStream::setup('project', null, ['First.php' => '<?php class First { /** @return Target */ function run() {} }']);
+        $reader = new CallSources(80300);
+        $reader->file($root->url().'/First.php');
+        $wrongLine = new \App\Analyzer\Graph\Node\MethodNode(\App\Analyzer\Graph\NodeId\MethodNodeId::of('First', 'run'), true, new \App\Analyzer\Graph\FileMeta($root->url().'/First.php', 2, 1));
+        $wrongFile = new \App\Analyzer\Graph\Node\MethodNode(\App\Analyzer\Graph\NodeId\MethodNodeId::of('First', 'run'), true, new \App\Analyzer\Graph\FileMeta($root->url().'/Missing.php', 1, 1));
+
+        self::assertNull($reader->documentation($wrongLine));
+        self::assertNull($reader->documentation($wrongFile));
     }
 }
