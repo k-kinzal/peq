@@ -9,7 +9,6 @@ use PhpParser\Node;
 use PhpParser\Node\Stmt;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\NodeVisitorAbstract;
-use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocNode;
 
 /**
  * Keeps PHPDoc scopes beside source syntax without changing written signatures.
@@ -34,12 +33,19 @@ final class DocContext extends NodeVisitorAbstract
     public function enterNode(Node $node): null
     {
         $this->stack[] = $this->scope;
+        $comment = $node->getDocComment();
+        if ($comment === null && !$node instanceof Stmt\ClassLike) {
+            return null;
+        }
         $scope = new DocScope(clone $this->names->getNameContext(), $this->scope?->class, $this->scope?->parent, $this->scope->localTypes ?? []);
         if ($node instanceof Stmt\ClassLike) {
             $scope = new DocScope($scope->names, $node->namespacedName?->toString(), $node instanceof Stmt\Class_ ? $node->extends?->toString() : null);
         }
-        $comment = $node->getDocComment();
-        $doc = $comment === null ? new PhpDocNode([]) : $this->parser->parse($comment->getText());
+        $this->scope = $scope;
+        if ($comment === null) {
+            return null;
+        }
+        $doc = $this->parser->parse($comment->getText());
         $this->scope = $scope->withTypes($doc);
         $block = new DocBlock($doc, $this->scope);
         $node->setAttribute('peqDocBlock', $block);

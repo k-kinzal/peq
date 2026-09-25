@@ -22,6 +22,32 @@ use PHPUnit\Framework\TestCase;
 #[Small]
 final class DocContextTest extends TestCase
 {
+    public function testEnterNodeKeepsUndocumentedClassScopesWithoutIndexingEmptyComments(): void
+    {
+        $nodes = (new ParserFactory())->createForHostVersion()->parse(<<<'PHP'
+            <?php
+            namespace App;
+            use Model\Base;
+            class Subject extends Base {
+                function empty() {}
+                /** @return self */
+                function own() {}
+                /** @return parent */
+                function inherited() {}
+            }
+            /** @return Base */
+            function outside() {}
+            PHP) ?? [];
+        $index = new DocIndex();
+        $names = new NameResolver();
+        (new NodeTraverser($names, new DocContext($index, $names)))->traverse($nodes);
+
+        self::assertSame('App\Subject', $index->returned('App\Subject::own')?->objects());
+        self::assertSame('Model\Base', $index->returned('App\Subject::inherited')?->objects());
+        self::assertSame('Model\Base', $index->returned('App\outside')?->objects());
+        self::assertSame(['app\subject::own', 'app\subject::inherited', 'app\outside'], array_keys($index->blocks));
+    }
+
     public function testLeaveNodeRestoresTheEnclosingNamespaceAfterAClass(): void
     {
         $nodes = (new ParserFactory())->createForHostVersion()->parse('<?php namespace App; /** @template T of Item */ class Subject {} /** @return T */ function run() {}') ?? [];
