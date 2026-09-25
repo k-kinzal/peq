@@ -19,6 +19,11 @@ use PHPUnit\Framework\TestCase;
 #[Medium]
 final class NativeAnalyzerTest extends TestCase
 {
+    public function testBuildOfAnEmptySelectionHasNoSymbols(): void
+    {
+        self::assertSame([], (new NativeAnalyzer())->build([], '')->nodes());
+    }
+
     public function testAnalyzeReadsTheSymbolsDeclaredUnderThePath(): void
     {
         $graph = (new NativeAnalyzer())->analyze(dirname(__DIR__, 3).'/Fixture/Sample');

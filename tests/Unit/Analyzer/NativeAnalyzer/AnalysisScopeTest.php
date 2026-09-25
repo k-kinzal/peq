@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\NativeAnalyzer;
 
+use App\Analyzer\CachedSyntax;
 use App\Analyzer\Graph\Node\ClassNode;
 use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\Node\MethodNode;
@@ -36,6 +37,7 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(AnalysisScope::class)]
+#[UsesClass(CachedSyntax::class)]
 #[UsesClass(AnonymousClassNaming::class)]
 #[UsesClass(AutoloadIndex::class)]
 #[UsesClass(ClassLikeDeclaration::class)]

@@ -7,6 +7,7 @@ namespace App\Action;
 use App\Analyzer\Analyzer;
 use App\Analyzer\DebugAnalyzer\DebugAnalyzer;
 use App\Analyzer\NativeAnalyzer\NativeAnalyzer;
+use App\Analyzer\PhaseCache;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use App\Config\AnalyzerKind;
 use App\Config\Config;
@@ -44,16 +45,20 @@ final class AnalyzerChoice
      */
     public static function forConfig(Config $config): Analyzer
     {
+        $cache = $config->analyzer === AnalyzerKind::Debug ? null : PhaseCache::inWorkingDirectory();
+
         return match ($config->analyzer) {
             AnalyzerKind::PhpStan => new PhpStanAnalyzer(
                 includes: $config->includes,
                 excludes: $config->excludes,
                 phpVersion: $config->phpVersion?->id,
+                cache: $cache,
             ),
             AnalyzerKind::Native => new NativeAnalyzer(
                 includes: $config->includes,
                 excludes: $config->excludes,
                 phpVersion: $config->phpVersion?->id,
+                cache: $cache,
             ),
             AnalyzerKind::Debug => new DebugAnalyzer(
                 seed: $config->debug->seed,
