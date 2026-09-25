@@ -82,6 +82,8 @@ use Symfony\Component\Console\Output\BufferedOutput;
 #[UsesClass(LayoutItem::class)]
 #[UsesClass(RowPlacement::class)]
 #[UsesClass(PhpVersion::class)]
+#[UsesClass(NullDatum::class)]
+#[UsesClass(\App\Reporter\Query\EdgeCaption::class)]
 #[Small]
 final class QueryReporterFactoryTest extends TestCase
 {

@@ -50,6 +50,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(UnknownNodeId::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
 #[UsesClass(RandomSource::class)]
+#[UsesClass(NodeId\ClosureNodeId::class)]
 #[Small]
 final class NodeIdGeneratorTest extends TestCase
 {

@@ -107,7 +107,7 @@ final class ClassWalkerTest extends TestCase
         $walker->method($method, $class, NodeKind::Klass, AnalysisScope::inFile($index, $source->path)->enteringClass('App\Invoice', null), $source);
 
         self::assertEquals(
-            new InstantiationEdge(new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 4, 1, 93)),
+            new InstantiationEdge(new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 4, 1, 93, 103)),
             $recorder->graph()->edge(MethodNodeId::of('App\Invoice', 'total'), ClassNodeId::of('App\Money')),
         );
     }

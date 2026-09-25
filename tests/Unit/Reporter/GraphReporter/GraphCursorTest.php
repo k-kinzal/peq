@@ -80,6 +80,7 @@ use Tests\Fixture\Gql\SampleGraph;
 #[UsesClass(DiagramNode::class)]
 #[UsesClass(DepthFirstTraversal::class)]
 #[UsesClass(DepthFirstWalk::class)]
+#[UsesClass(\App\Reporter\CallOccurrences::class)]
 #[Small]
 final class GraphCursorTest extends TestCase
 {

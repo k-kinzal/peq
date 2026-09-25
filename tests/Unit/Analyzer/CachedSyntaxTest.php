@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(PhaseCache::class)]
 #[UsesClass(SourceParser::class)]
 #[UsesClass(WorkingDirectory::class)]
+#[UsesClass(\App\Analyzer\Declaration\Calls\WrittenCalls::class)]
 #[Small]
 final class CachedSyntaxTest extends TestCase
 {

@@ -234,6 +234,8 @@ use Tests\Fixture\Gql\SampleGraph;
 #[UsesClass(LayoutItem::class)]
 #[UsesClass(RowPlacement::class)]
 #[UsesClass(NullDatum::class)]
+#[UsesClass(NullDatum::class)]
+#[UsesClass(\App\Reporter\Query\EdgeCaption::class)]
 #[Small]
 final class DiagramWriterTest extends TestCase
 {

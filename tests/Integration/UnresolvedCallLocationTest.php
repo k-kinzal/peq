@@ -49,9 +49,9 @@ final class UnresolvedCallLocationTest extends TestCase
             ['unresolved-call@'.$file.':3:20', '3', '20', '67'],
             ['unresolved-call@'.$file.':4:5', '4', '5', '88'],
         ], array_map(static fn ($row): array => array_map(static fn ($value): string => $value->toText(), $row->values), $answer->rows));
-        self::assertEquals(new FileMeta($file, 3, 5, 52), $graph->nodeNamed('unresolved-call@'.$file.':3:5')?->meta());
-        self::assertEquals(new FileMeta($file, 3, 20, 67), $graph->nodeNamed('unresolved-call@'.$file.':3:20')?->meta());
-        self::assertEquals(new FileMeta($file, 4, 5, 88), $graph->nodeNamed('unresolved-call@'.$file.':4:5')?->meta());
+        self::assertEquals(new FileMeta($file, 3, 5, 52, 64), $graph->nodeNamed('unresolved-call@'.$file.':3:5')?->meta());
+        self::assertEquals(new FileMeta($file, 3, 20, 67, 81), $graph->nodeNamed('unresolved-call@'.$file.':3:20')?->meta());
+        self::assertEquals(new FileMeta($file, 4, 5, 88, 102), $graph->nodeNamed('unresolved-call@'.$file.':4:5')?->meta());
     }
 
     /**

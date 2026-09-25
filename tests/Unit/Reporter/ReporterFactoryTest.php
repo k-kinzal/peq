@@ -83,6 +83,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 #[UsesClass(\App\Reporter\TreeReporter\TreeCursor::class)]
 #[UsesClass(TreeReporter::class)]
 #[UsesClass(\App\Reporter\TreeReporter\TreeReporterOptions::class)]
+#[UsesClass(\App\Reporter\CallOccurrences::class)]
 #[Small]
 final class ReporterFactoryTest extends TestCase
 {

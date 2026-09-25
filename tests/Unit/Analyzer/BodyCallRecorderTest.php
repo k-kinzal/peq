@@ -44,6 +44,10 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(\App\Analyzer\Graph\Resolution\TypeConstraint::class)]
 #[UsesClass(ReceiverBinding::class)]
 #[CoversClass(BodyCallRecorder::class)]
+#[UsesClass(\App\Analyzer\Declaration\Calls\CallSites::class)]
+#[UsesClass(\App\Analyzer\Declaration\ExpressionText::class)]
+#[UsesClass(\App\Analyzer\Graph\Call\CallSite::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Usage\FunctionCallEdge::class)]
 #[Small]
 final class BodyCallRecorderTest extends TestCase
 {

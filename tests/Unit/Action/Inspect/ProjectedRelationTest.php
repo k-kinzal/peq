@@ -23,6 +23,11 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(\App\Analyzer\Graph\Node\MethodNode::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
 #[CoversClass(ProjectedRelation::class)]
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Usage\StaticCallEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\Graph::class)]
+#[UsesClass(\App\Analyzer\Graph\NodeId\UnknownNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\Node\UnknownNode::class)]
 #[Small]
 final class ProjectedRelationTest extends TestCase
 {

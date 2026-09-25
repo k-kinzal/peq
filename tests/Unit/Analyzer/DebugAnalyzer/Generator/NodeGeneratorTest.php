@@ -55,6 +55,10 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(\App\Analyzer\Graph\Node\UnknownNode::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
 #[UsesClass(RandomSource::class)]
+#[UsesClass(\App\Analyzer\Graph\Declaration\Modifiers::class)]
+#[UsesClass(\App\Analyzer\Graph\Declaration\SymbolDeclaration::class)]
+#[UsesClass(\App\Analyzer\Graph\NodeId\ClosureNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\Node\ClosureNode::class)]
 #[Small]
 final class NodeGeneratorTest extends TestCase
 {

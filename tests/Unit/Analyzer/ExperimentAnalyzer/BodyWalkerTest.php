@@ -48,17 +48,17 @@ final class BodyWalkerTest extends TestCase
     {
         yield 'what the body itself reaches out to' => [
             "<?php\nnamespace App;\nclass Invoice { public function total(): void { \$money = new \\App\\Money(); } }\n",
-            [new InstantiationEdge(new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 3, 1, 78))],
+            [new InstantiationEdge(new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 3, 1, 78, 93))],
         ];
 
         yield 'what a closure in the body reaches out to' => [
             "<?php\nnamespace App;\nclass Invoice { public function total(): void { \$closure = function () { return new \\App\\Money(); }; } }\n",
-            [new InstantiationEdge(new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 3, 1, 101))],
+            [new InstantiationEdge(new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 3, 1, 101, 116))],
         ];
 
-        yield 'what an anonymous class in the body reaches out to' => [
+        yield 'an anonymous class body belongs to its own method' => [
             "<?php\nnamespace App;\nclass Invoice { public function total(): void { \$made = new class { public function inner(): mixed { return new \\App\\Money(); } }; } }\n",
-            [new InstantiationEdge(new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 3, 1, 129))],
+            [],
         ];
 
         yield 'a body that reaches nothing' => [

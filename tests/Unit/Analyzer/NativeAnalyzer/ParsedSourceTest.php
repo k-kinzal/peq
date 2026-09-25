@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(ClassLikeDeclaration::class)]
 #[UsesClass(SourceIndex::class)]
 #[UsesClass(SourceParser::class)]
+#[UsesClass(\App\Analyzer\Declaration\Calls\WrittenCalls::class)]
 #[Small]
 final class ParsedSourceTest extends TestCase
 {

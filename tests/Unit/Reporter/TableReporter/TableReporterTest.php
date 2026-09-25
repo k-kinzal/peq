@@ -45,6 +45,13 @@ use Symfony\Component\Console\Output\BufferedOutput;
 #[UsesClass(\App\Reporter\TableReporter\TableCursor::class)]
 #[UsesClass(DepthFirstTraversal::class)]
 #[UsesClass(\App\Reporter\Traversal\DepthFirstWalk::class)]
+#[UsesClass(\App\Analyzer\Graph\Call\CallOccurrence::class)]
+#[UsesClass(\App\Analyzer\Graph\Call\CallSite::class)]
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Usage\FunctionCallEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\NodeId\FunctionNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\Node\FunctionNode::class)]
+#[UsesClass(\App\Reporter\CallOccurrences::class)]
 #[Small]
 final class TableReporterTest extends TestCase
 {
