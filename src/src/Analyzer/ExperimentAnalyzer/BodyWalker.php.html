@@ -40,56 +40,44 @@
 <span class="src-line" id="L4"><a class="ln" href="#L4">4</a></span>
 <span class="src-line" id="L5"><a class="ln" href="#L5">5</a><span class="tok-kw">namespace</span> <span class="tok-id">App\Analyzer\ExperimentAnalyzer</span>;</span>
 <span class="src-line" id="L6"><a class="ln" href="#L6">6</a></span>
-<span class="src-line" id="L7"><a class="ln" href="#L7">7</a><span class="tok-kw">use</span> <span class="tok-id">App\Analyzer\ExperimentAnalyzer\Emitter\UsageEmitter</span>;</span>
-<span class="src-line" id="L8"><a class="ln" href="#L8">8</a><span class="tok-kw">use</span> <span class="tok-id">App\Analyzer\Graph\Edge</span>;</span>
-<span class="src-line" id="L9"><a class="ln" href="#L9">9</a><span class="tok-kw">use</span> <span class="tok-id">PhpParser\Node\Stmt</span>;</span>
-<span class="src-line" id="L10"><a class="ln" href="#L10">10</a><span class="tok-kw">use</span> <span class="tok-id">PhpParser\NodeFinder</span>;</span>
-<span class="src-line" id="L11"><a class="ln" href="#L11">11</a></span>
-<span class="src-line" id="L12"><a class="ln" href="#L12">12</a><span class="tok-com">/**</span></span>
-<span class="src-line" id="L13"><a class="ln" href="#L13">13</a><span class="tok-com"> * Everything the body of a method reaches out to.</span></span>
-<span class="src-line" id="L14"><a class="ln" href="#L14">14</a><span class="tok-com"> *</span></span>
-<span class="src-line" id="L15"><a class="ln" href="#L15">15</a><span class="tok-com"> * A body is read as one region rather than as a nest of scopes: what a closure</span></span>
-<span class="src-line" id="L16"><a class="ln" href="#L16">16</a><span class="tok-com"> * written inside a method reaches is reached by that method, and so is what an anonymous</span></span>
-<span class="src-line" id="L17"><a class="ln" href="#L17">17</a><span class="tok-com"> * class written inside it reaches, because neither of them is a symbol an impact</span></span>
-<span class="src-line" id="L18"><a class="ln" href="#L18">18</a><span class="tok-com"> * analysis can report. Every expression found anywhere in the body is therefore</span></span>
-<span class="src-line" id="L19"><a class="ln" href="#L19">19</a><span class="tok-com"> * attributed to the method the body belongs to.</span></span>
-<span class="src-line" id="L20"><a class="ln" href="#L20">20</a><span class="tok-com"> *</span></span>
-<span class="src-line" id="L21"><a class="ln" href="#L21">21</a><span class="tok-com"> * @visibility namespace</span></span>
-<span class="src-line" id="L22"><a class="ln" href="#L22">22</a><span class="tok-com"> */</span></span>
-<span class="src-line" id="L23"><a class="ln" href="#L23">23</a><span class="tok-kw">final</span> <span class="tok-kw">class</span> <span class="tok-id">BodyWalker</span></span>
-<span class="src-line" id="L24"><a class="ln" href="#L24">24</a>{</span>
-<span class="src-line" id="L25"><a class="ln" href="#L25">25</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L26"><a class="ln" href="#L26">26</a><span class="tok-com">     * The finder that locates the expressions a body writes, reused across bodies.</span></span>
-<span class="src-line" id="L27"><a class="ln" href="#L27">27</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L28"><a class="ln" href="#L28">28</a>    <span class="tok-kw">private</span> <span class="tok-kw">readonly</span> <span class="tok-id">NodeFinder</span> <span class="tok-var">$finder</span>;</span>
-<span class="src-line" id="L29"><a class="ln" href="#L29">29</a></span>
-<span class="src-line" id="L30"><a class="ln" href="#L30">30</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L31"><a class="ln" href="#L31">31</a><span class="tok-com">     * Prepares a walk over method bodies.</span></span>
-<span class="src-line" id="L32"><a class="ln" href="#L32">32</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L33"><a class="ln" href="#L33">33</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">__construct</span>()</span>
-<span class="src-line" id="L34"><a class="ln" href="#L34">34</a>    {</span>
-<span class="src-line" id="L35"><a class="ln" href="#L35">35</a>        <span class="tok-var">$this</span>-&gt;<span class="tok-id">finder</span> = <span class="tok-kw">new</span> <span class="tok-id">NodeFinder</span>();</span>
-<span class="src-line" id="L36"><a class="ln" href="#L36">36</a>    }</span>
-<span class="src-line" id="L37"><a class="ln" href="#L37">37</a></span>
-<span class="src-line" id="L38"><a class="ln" href="#L38">38</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L39"><a class="ln" href="#L39">39</a><span class="tok-com">     * Records the relations written inside one method body.</span></span>
-<span class="src-line" id="L40"><a class="ln" href="#L40">40</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L41"><a class="ln" href="#L41">41</a><span class="tok-com">     * @param list&lt;Stmt&gt;    $body  The statements of the body, as they are written</span></span>
-<span class="src-line" id="L42"><a class="ln" href="#L42">42</a><span class="tok-com">     * @param AnalysisScope $scope The method the body belongs to</span></span>
-<span class="src-line" id="L43"><a class="ln" href="#L43">43</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L44"><a class="ln" href="#L44">44</a><span class="tok-com">     * @return list&lt;Edge&gt; The relations the body writes</span></span>
-<span class="src-line" id="L45"><a class="ln" href="#L45">45</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L46"><a class="ln" href="#L46">46</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">relations</span>(<span class="tok-kw">array</span> <span class="tok-var">$body</span>, <span class="tok-id">AnalysisScope</span> <span class="tok-var">$scope</span>): <span class="tok-kw">array</span></span>
-<span class="src-line" id="L47"><a class="ln" href="#L47">47</a>    {</span>
-<span class="src-line" id="L48"><a class="ln" href="#L48">48</a>        <span class="tok-var">$relations</span> = [];</span>
-<span class="src-line" id="L49"><a class="ln" href="#L49">49</a>        <span class="tok-kw">foreach</span> (<span class="tok-var">$this</span>-&gt;<span class="tok-id">finder</span>-&gt;<span class="tok-id">find</span>(<span class="tok-var">$body</span>, <span class="tok-id">UsageEmitter</span>::<span class="tok-id">records</span>(...)) <span class="tok-kw">as</span> <span class="tok-var">$expression</span>) {</span>
-<span class="src-line" id="L50"><a class="ln" href="#L50">50</a>            <span class="tok-id">array_push</span>(<span class="tok-var">$relations</span>, ...<span class="tok-id">UsageEmitter</span>::<span class="tok-id">emit</span>(<span class="tok-var">$expression</span>, <span class="tok-var">$scope</span>));</span>
-<span class="src-line" id="L51"><a class="ln" href="#L51">51</a>        }</span>
-<span class="src-line" id="L52"><a class="ln" href="#L52">52</a></span>
-<span class="src-line" id="L53"><a class="ln" href="#L53">53</a>        <span class="tok-kw">return</span> <span class="tok-var">$relations</span>;</span>
-<span class="src-line" id="L54"><a class="ln" href="#L54">54</a>    }</span>
-<span class="src-line" id="L55"><a class="ln" href="#L55">55</a>}</span>
-<span class="src-line" id="L56"><a class="ln" href="#L56">56</a></span>
+<span class="src-line" id="L7"><a class="ln" href="#L7">7</a><span class="tok-kw">use</span> <span class="tok-id">App\Analyzer\CallBody</span>;</span>
+<span class="src-line" id="L8"><a class="ln" href="#L8">8</a><span class="tok-kw">use</span> <span class="tok-id">App\Analyzer\ExperimentAnalyzer\Emitter\UsageEmitter</span>;</span>
+<span class="src-line" id="L9"><a class="ln" href="#L9">9</a><span class="tok-kw">use</span> <span class="tok-id">App\Analyzer\Graph\Edge</span>;</span>
+<span class="src-line" id="L10"><a class="ln" href="#L10">10</a><span class="tok-kw">use</span> <span class="tok-id">PhpParser\Node\Stmt</span>;</span>
+<span class="src-line" id="L11"><a class="ln" href="#L11">11</a><span class="tok-kw">use</span> <span class="tok-id">PhpParser\NodeTraverser</span>;</span>
+<span class="src-line" id="L12"><a class="ln" href="#L12">12</a></span>
+<span class="src-line" id="L13"><a class="ln" href="#L13">13</a><span class="tok-com">/**</span></span>
+<span class="src-line" id="L14"><a class="ln" href="#L14">14</a><span class="tok-com"> * Everything the body of a method reaches out to.</span></span>
+<span class="src-line" id="L15"><a class="ln" href="#L15">15</a><span class="tok-com"> *</span></span>
+<span class="src-line" id="L16"><a class="ln" href="#L16">16</a><span class="tok-com"> * Nested named declarations are analysed separately. Closure expressions remain</span></span>
+<span class="src-line" id="L17"><a class="ln" href="#L17">17</a><span class="tok-com"> * visible here for dependency discovery; the shared call-site pass assigns their</span></span>
+<span class="src-line" id="L18"><a class="ln" href="#L18">18</a><span class="tok-com"> * calls to independent lexical scopes before a consumer selects a projection.</span></span>
+<span class="src-line" id="L19"><a class="ln" href="#L19">19</a><span class="tok-com"> *</span></span>
+<span class="src-line" id="L20"><a class="ln" href="#L20">20</a><span class="tok-com"> * @visibility namespace</span></span>
+<span class="src-line" id="L21"><a class="ln" href="#L21">21</a><span class="tok-com"> */</span></span>
+<span class="src-line" id="L22"><a class="ln" href="#L22">22</a><span class="tok-kw">final</span> <span class="tok-kw">class</span> <span class="tok-id">BodyWalker</span></span>
+<span class="src-line" id="L23"><a class="ln" href="#L23">23</a>{</span>
+<span class="src-line" id="L24"><a class="ln" href="#L24">24</a>    <span class="tok-com">/**</span></span>
+<span class="src-line" id="L25"><a class="ln" href="#L25">25</a><span class="tok-com">     * Records the relations written inside one method body.</span></span>
+<span class="src-line" id="L26"><a class="ln" href="#L26">26</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L27"><a class="ln" href="#L27">27</a><span class="tok-com">     * @param list&lt;Stmt&gt;    $body  The statements of the body, as they are written</span></span>
+<span class="src-line" id="L28"><a class="ln" href="#L28">28</a><span class="tok-com">     * @param AnalysisScope $scope The method the body belongs to</span></span>
+<span class="src-line" id="L29"><a class="ln" href="#L29">29</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L30"><a class="ln" href="#L30">30</a><span class="tok-com">     * @return list&lt;Edge&gt; The relations the body writes</span></span>
+<span class="src-line" id="L31"><a class="ln" href="#L31">31</a><span class="tok-com">     */</span></span>
+<span class="src-line" id="L32"><a class="ln" href="#L32">32</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">relations</span>(<span class="tok-kw">array</span> <span class="tok-var">$body</span>, <span class="tok-id">AnalysisScope</span> <span class="tok-var">$scope</span>): <span class="tok-kw">array</span></span>
+<span class="src-line" id="L33"><a class="ln" href="#L33">33</a>    {</span>
+<span class="src-line" id="L34"><a class="ln" href="#L34">34</a>        <span class="tok-var">$relations</span> = [];</span>
+<span class="src-line" id="L35"><a class="ln" href="#L35">35</a>        <span class="tok-var">$visitor</span> = <span class="tok-kw">new</span> <span class="tok-id">CallBody</span>(<span class="tok-id">UsageEmitter</span>::<span class="tok-id">records</span>(...));</span>
+<span class="src-line" id="L36"><a class="ln" href="#L36">36</a>        (<span class="tok-kw">new</span> <span class="tok-id">NodeTraverser</span>(<span class="tok-var">$visitor</span>))-&gt;<span class="tok-id">traverse</span>(<span class="tok-var">$body</span>);</span>
+<span class="src-line" id="L37"><a class="ln" href="#L37">37</a>        <span class="tok-kw">foreach</span> (<span class="tok-var">$visitor</span>-&gt;<span class="tok-id">expressions</span> <span class="tok-kw">as</span> <span class="tok-var">$expression</span>) {</span>
+<span class="src-line" id="L38"><a class="ln" href="#L38">38</a>            <span class="tok-id">array_push</span>(<span class="tok-var">$relations</span>, ...<span class="tok-id">UsageEmitter</span>::<span class="tok-id">emit</span>(<span class="tok-var">$expression</span>, <span class="tok-var">$scope</span>));</span>
+<span class="src-line" id="L39"><a class="ln" href="#L39">39</a>        }</span>
+<span class="src-line" id="L40"><a class="ln" href="#L40">40</a></span>
+<span class="src-line" id="L41"><a class="ln" href="#L41">41</a>        <span class="tok-kw">return</span> <span class="tok-var">$relations</span>;</span>
+<span class="src-line" id="L42"><a class="ln" href="#L42">42</a>    }</span>
+<span class="src-line" id="L43"><a class="ln" href="#L43">43</a>}</span>
+<span class="src-line" id="L44"><a class="ln" href="#L44">44</a></span>
 </code></pre>
 </main>
 <footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>

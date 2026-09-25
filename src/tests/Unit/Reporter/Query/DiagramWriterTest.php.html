@@ -270,142 +270,143 @@
 <span class="src-line" id="L234"><a class="ln" href="#L234">234</a>#[<span class="tok-id">UsesClass</span>(<span class="tok-id">LayoutItem</span>::<span class="tok-kw">class</span>)]</span>
 <span class="src-line" id="L235"><a class="ln" href="#L235">235</a>#[<span class="tok-id">UsesClass</span>(<span class="tok-id">RowPlacement</span>::<span class="tok-kw">class</span>)]</span>
 <span class="src-line" id="L236"><a class="ln" href="#L236">236</a>#[<span class="tok-id">UsesClass</span>(<span class="tok-id">NullDatum</span>::<span class="tok-kw">class</span>)]</span>
-<span class="src-line" id="L237"><a class="ln" href="#L237">237</a>#[<span class="tok-id">Small</span>]</span>
-<span class="src-line" id="L238"><a class="ln" href="#L238">238</a><span class="tok-kw">final</span> <span class="tok-kw">class</span> <span class="tok-id">DiagramWriterTest</span> <span class="tok-kw">extends</span> <span class="tok-id">TestCase</span></span>
-<span class="src-line" id="L239"><a class="ln" href="#L239">239</a>{</span>
-<span class="src-line" id="L240"><a class="ln" href="#L240">240</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L241"><a class="ln" href="#L241">241</a><span class="tok-com">     * @throws GqlException</span></span>
-<span class="src-line" id="L242"><a class="ln" href="#L242">242</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L243"><a class="ln" href="#L243">243</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testReportDrawsThePieceOfGraphAQueryFoundWithTheArrowsTheGraphHoldsBetweenIt</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L244"><a class="ln" href="#L244">244</a>    {</span>
-<span class="src-line" id="L245"><a class="ln" href="#L245">245</a>        <span class="tok-var">$graph</span> = <span class="tok-id">GraphProjection</span>::<span class="tok-id">of</span>(<span class="tok-id">SampleGraph</span>::<span class="tok-id">analysed</span>());</span>
-<span class="src-line" id="L246"><a class="ln" href="#L246">246</a>        <span class="tok-var">$answered</span> = (<span class="tok-kw">new</span> <span class="tok-id">QueryExecution</span>(<span class="tok-var">$graph</span>, <span class="tok-num">10</span>))</span>
-<span class="src-line" id="L247"><a class="ln" href="#L247">247</a>            -&gt;<span class="tok-id">query</span>(<span class="tok-str">&quot;MATCH (c:Class WHERE c.name = &#039;Store&#039;)-[:declaresMethod]-&gt;(m) RETURN c, m&quot;</span>)</span>
-<span class="src-line" id="L248"><a class="ln" href="#L248">248</a>        ;</span>
-<span class="src-line" id="L249"><a class="ln" href="#L249">249</a>        <span class="tok-var">$output</span> = <span class="tok-kw">new</span> <span class="tok-id">BufferedOutput</span>();</span>
-<span class="src-line" id="L250"><a class="ln" href="#L250">250</a></span>
-<span class="src-line" id="L251"><a class="ln" href="#L251">251</a>        (<span class="tok-kw">new</span> <span class="tok-id">DiagramWriter</span>(<span class="tok-var">$graph</span>, <span class="tok-kw">new</span> <span class="tok-id">TerminalRenderer</span>()))-&gt;<span class="tok-id">report</span>(<span class="tok-var">$answered</span>, <span class="tok-var">$output</span>);</span>
-<span class="src-line" id="L252"><a class="ln" href="#L252">252</a></span>
-<span class="src-line" id="L253"><a class="ln" href="#L253">253</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(<span class="tok-str">&quot;App\\Cache\\Store ──▶ App\\Cache\\Store::get\n&quot;</span>, <span class="tok-var">$output</span>-&gt;<span class="tok-id">fetch</span>());</span>
-<span class="src-line" id="L254"><a class="ln" href="#L254">254</a>    }</span>
-<span class="src-line" id="L255"><a class="ln" href="#L255">255</a></span>
-<span class="src-line" id="L256"><a class="ln" href="#L256">256</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L257"><a class="ln" href="#L257">257</a><span class="tok-com">     * @throws GqlException</span></span>
-<span class="src-line" id="L258"><a class="ln" href="#L258">258</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L259"><a class="ln" href="#L259">259</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testReportDrawsAPathAQueryBoundOneColumnAStep</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L260"><a class="ln" href="#L260">260</a>    {</span>
-<span class="src-line" id="L261"><a class="ln" href="#L261">261</a>        <span class="tok-var">$graph</span> = <span class="tok-id">GraphProjection</span>::<span class="tok-id">of</span>(<span class="tok-id">SampleGraph</span>::<span class="tok-id">analysed</span>());</span>
-<span class="src-line" id="L262"><a class="ln" href="#L262">262</a>        <span class="tok-var">$answered</span> = (<span class="tok-kw">new</span> <span class="tok-id">QueryExecution</span>(<span class="tok-var">$graph</span>, <span class="tok-num">10</span>))</span>
-<span class="src-line" id="L263"><a class="ln" href="#L263">263</a>            -&gt;<span class="tok-id">query</span>(<span class="tok-str">&quot;MATCH p = (s:Method WHERE s.name = &#039;show&#039;)-[:methodCall]-&gt;{1,2}(t) RETURN p&quot;</span>)</span>
-<span class="src-line" id="L264"><a class="ln" href="#L264">264</a>        ;</span>
-<span class="src-line" id="L265"><a class="ln" href="#L265">265</a>        <span class="tok-var">$output</span> = <span class="tok-kw">new</span> <span class="tok-id">BufferedOutput</span>();</span>
-<span class="src-line" id="L266"><a class="ln" href="#L266">266</a></span>
-<span class="src-line" id="L267"><a class="ln" href="#L267">267</a>        (<span class="tok-kw">new</span> <span class="tok-id">DiagramWriter</span>(<span class="tok-var">$graph</span>, <span class="tok-kw">new</span> <span class="tok-id">TerminalRenderer</span>()))-&gt;<span class="tok-id">report</span>(<span class="tok-var">$answered</span>, <span class="tok-var">$output</span>);</span>
-<span class="src-line" id="L268"><a class="ln" href="#L268">268</a></span>
-<span class="src-line" id="L269"><a class="ln" href="#L269">269</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(</span>
-<span class="src-line" id="L270"><a class="ln" href="#L270">270</a>            <span class="tok-str">&quot;App\\Http\\Controller::show ──▶ App\\Domain\\Invoice::total ──▶ App\\Cache\\Store::get\n&quot;</span>,</span>
-<span class="src-line" id="L271"><a class="ln" href="#L271">271</a>            <span class="tok-var">$output</span>-&gt;<span class="tok-id">fetch</span>(),</span>
-<span class="src-line" id="L272"><a class="ln" href="#L272">272</a>        );</span>
-<span class="src-line" id="L273"><a class="ln" href="#L273">273</a>    }</span>
-<span class="src-line" id="L274"><a class="ln" href="#L274">274</a></span>
-<span class="src-line" id="L275"><a class="ln" href="#L275">275</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L276"><a class="ln" href="#L276">276</a><span class="tok-com">     * @throws GqlException</span></span>
-<span class="src-line" id="L277"><a class="ln" href="#L277">277</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L278"><a class="ln" href="#L278">278</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testReportWritesThePieceOfGraphAQueryFoundAsTheRendererItIsGivenWritesIt</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L279"><a class="ln" href="#L279">279</a>    {</span>
-<span class="src-line" id="L280"><a class="ln" href="#L280">280</a>        <span class="tok-var">$graph</span> = <span class="tok-id">GraphProjection</span>::<span class="tok-id">of</span>(<span class="tok-id">SampleGraph</span>::<span class="tok-id">analysed</span>());</span>
-<span class="src-line" id="L281"><a class="ln" href="#L281">281</a>        <span class="tok-var">$answered</span> = (<span class="tok-kw">new</span> <span class="tok-id">QueryExecution</span>(<span class="tok-var">$graph</span>, <span class="tok-num">10</span>))</span>
-<span class="src-line" id="L282"><a class="ln" href="#L282">282</a>            -&gt;<span class="tok-id">query</span>(<span class="tok-str">&quot;MATCH (c:Class WHERE c.name = &#039;Store&#039;)-[:declaresMethod]-&gt;(m) RETURN c, m&quot;</span>)</span>
-<span class="src-line" id="L283"><a class="ln" href="#L283">283</a>        ;</span>
-<span class="src-line" id="L284"><a class="ln" href="#L284">284</a>        <span class="tok-var">$output</span> = <span class="tok-kw">new</span> <span class="tok-id">BufferedOutput</span>();</span>
-<span class="src-line" id="L285"><a class="ln" href="#L285">285</a></span>
-<span class="src-line" id="L286"><a class="ln" href="#L286">286</a>        (<span class="tok-kw">new</span> <span class="tok-id">DiagramWriter</span>(<span class="tok-var">$graph</span>, <span class="tok-kw">new</span> <span class="tok-id">MermaidRenderer</span>()))-&gt;<span class="tok-id">report</span>(<span class="tok-var">$answered</span>, <span class="tok-var">$output</span>);</span>
-<span class="src-line" id="L287"><a class="ln" href="#L287">287</a></span>
-<span class="src-line" id="L288"><a class="ln" href="#L288">288</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(</span>
-<span class="src-line" id="L289"><a class="ln" href="#L289">289</a>            &lt;&lt;&lt;&#039;MERMAID&#039;</span>
-<span class="src-line" id="L290"><a class="ln" href="#L290">290</a><span class="tok-str">                flowchart LR</span></span>
-<span class="src-line" id="L291"><a class="ln" href="#L291">291</a><span class="tok-str">                    n1[&quot;App\Cache\Store&quot;]</span></span>
-<span class="src-line" id="L292"><a class="ln" href="#L292">292</a><span class="tok-str">                    n2[&quot;App\Cache\Store::get&quot;]</span></span>
-<span class="src-line" id="L293"><a class="ln" href="#L293">293</a><span class="tok-str">                    n1 --&gt;|&quot;declaresMethod&quot;| n2</span></span>
-<span class="src-line" id="L294"><a class="ln" href="#L294">294</a></span>
-<span class="src-line" id="L295"><a class="ln" href="#L295">295</a>                MERMAID,</span>
-<span class="src-line" id="L296"><a class="ln" href="#L296">296</a>            <span class="tok-var">$output</span>-&gt;<span class="tok-id">fetch</span>(),</span>
-<span class="src-line" id="L297"><a class="ln" href="#L297">297</a>        );</span>
-<span class="src-line" id="L298"><a class="ln" href="#L298">298</a>    }</span>
-<span class="src-line" id="L299"><a class="ln" href="#L299">299</a></span>
-<span class="src-line" id="L300"><a class="ln" href="#L300">300</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testReportDrawsNoArrowBetweenSymbolsWhenThereIsNoGraphToReadItFrom</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L301"><a class="ln" href="#L301">301</a>    {</span>
-<span class="src-line" id="L302"><a class="ln" href="#L302">302</a>        <span class="tok-var">$answered</span> = <span class="tok-kw">new</span> <span class="tok-id">ResultTable</span>(</span>
-<span class="src-line" id="L303"><a class="ln" href="#L303">303</a>            [<span class="tok-kw">new</span> <span class="tok-id">ResultColumn</span>(<span class="tok-str">&#039;c&#039;</span>, <span class="tok-str">&#039;NODE&#039;</span>), <span class="tok-kw">new</span> <span class="tok-id">ResultColumn</span>(<span class="tok-str">&#039;m&#039;</span>, <span class="tok-str">&#039;NODE&#039;</span>)],</span>
-<span class="src-line" id="L304"><a class="ln" href="#L304">304</a>            [<span class="tok-kw">new</span> <span class="tok-id">ResultRow</span>([<span class="tok-kw">new</span> <span class="tok-id">NodeDatum</span>(<span class="tok-str">&#039;App\Cache\Store&#039;</span>), <span class="tok-kw">new</span> <span class="tok-id">NodeDatum</span>(<span class="tok-str">&#039;App\Cache\Store::get&#039;</span>)])],</span>
-<span class="src-line" id="L305"><a class="ln" href="#L305">305</a>        );</span>
-<span class="src-line" id="L306"><a class="ln" href="#L306">306</a>        <span class="tok-var">$output</span> = <span class="tok-kw">new</span> <span class="tok-id">BufferedOutput</span>();</span>
-<span class="src-line" id="L307"><a class="ln" href="#L307">307</a></span>
-<span class="src-line" id="L308"><a class="ln" href="#L308">308</a>        (<span class="tok-kw">new</span> <span class="tok-id">DiagramWriter</span>(<span class="tok-id">null</span>, <span class="tok-kw">new</span> <span class="tok-id">MermaidRenderer</span>()))-&gt;<span class="tok-id">report</span>(<span class="tok-var">$answered</span>, <span class="tok-var">$output</span>);</span>
-<span class="src-line" id="L309"><a class="ln" href="#L309">309</a></span>
-<span class="src-line" id="L310"><a class="ln" href="#L310">310</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(</span>
-<span class="src-line" id="L311"><a class="ln" href="#L311">311</a>            &lt;&lt;&lt;&#039;MERMAID&#039;</span>
-<span class="src-line" id="L312"><a class="ln" href="#L312">312</a><span class="tok-str">                flowchart LR</span></span>
-<span class="src-line" id="L313"><a class="ln" href="#L313">313</a><span class="tok-str">                    n1[&quot;App\Cache\Store&quot;]</span></span>
-<span class="src-line" id="L314"><a class="ln" href="#L314">314</a><span class="tok-str">                    n2[&quot;App\Cache\Store::get&quot;]</span></span>
-<span class="src-line" id="L315"><a class="ln" href="#L315">315</a></span>
-<span class="src-line" id="L316"><a class="ln" href="#L316">316</a>                MERMAID,</span>
-<span class="src-line" id="L317"><a class="ln" href="#L317">317</a>            <span class="tok-var">$output</span>-&gt;<span class="tok-id">fetch</span>(),</span>
-<span class="src-line" id="L318"><a class="ln" href="#L318">318</a>        );</span>
-<span class="src-line" id="L319"><a class="ln" href="#L319">319</a>    }</span>
-<span class="src-line" id="L320"><a class="ln" href="#L320">320</a></span>
-<span class="src-line" id="L321"><a class="ln" href="#L321">321</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testReportDrawsARelationTheAnswerHoldsWithoutNeedingTheGraph</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L322"><a class="ln" href="#L322">322</a>    {</span>
-<span class="src-line" id="L323"><a class="ln" href="#L323">323</a>        <span class="tok-var">$call</span> = <span class="tok-kw">new</span> <span class="tok-id">EdgeDatum</span>(<span class="tok-str">&#039;e&#039;</span>, [<span class="tok-str">&#039;methodCall&#039;</span>, <span class="tok-str">&#039;call&#039;</span>, <span class="tok-str">&#039;usage&#039;</span>], [], <span class="tok-str">&#039;App\Domain\Invoice::total&#039;</span>, <span class="tok-str">&#039;App\Cache\Store::get&#039;</span>);</span>
-<span class="src-line" id="L324"><a class="ln" href="#L324">324</a>        <span class="tok-var">$answered</span> = <span class="tok-kw">new</span> <span class="tok-id">ResultTable</span>([<span class="tok-kw">new</span> <span class="tok-id">ResultColumn</span>(<span class="tok-str">&#039;e&#039;</span>, <span class="tok-str">&#039;EDGE&#039;</span>)], [<span class="tok-kw">new</span> <span class="tok-id">ResultRow</span>([<span class="tok-var">$call</span>])]);</span>
-<span class="src-line" id="L325"><a class="ln" href="#L325">325</a>        <span class="tok-var">$output</span> = <span class="tok-kw">new</span> <span class="tok-id">BufferedOutput</span>();</span>
-<span class="src-line" id="L326"><a class="ln" href="#L326">326</a></span>
-<span class="src-line" id="L327"><a class="ln" href="#L327">327</a>        (<span class="tok-kw">new</span> <span class="tok-id">DiagramWriter</span>(<span class="tok-id">null</span>, <span class="tok-kw">new</span> <span class="tok-id">MermaidRenderer</span>()))-&gt;<span class="tok-id">report</span>(<span class="tok-var">$answered</span>, <span class="tok-var">$output</span>);</span>
-<span class="src-line" id="L328"><a class="ln" href="#L328">328</a></span>
-<span class="src-line" id="L329"><a class="ln" href="#L329">329</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(</span>
-<span class="src-line" id="L330"><a class="ln" href="#L330">330</a>            &lt;&lt;&lt;&#039;MERMAID&#039;</span>
-<span class="src-line" id="L331"><a class="ln" href="#L331">331</a><span class="tok-str">                flowchart LR</span></span>
-<span class="src-line" id="L332"><a class="ln" href="#L332">332</a><span class="tok-str">                    n1[&quot;App\Domain\Invoice::total&quot;]</span></span>
-<span class="src-line" id="L333"><a class="ln" href="#L333">333</a><span class="tok-str">                    n2[&quot;App\Cache\Store::get&quot;]</span></span>
-<span class="src-line" id="L334"><a class="ln" href="#L334">334</a><span class="tok-str">                    n1 --&gt;|&quot;methodCall&quot;| n2</span></span>
-<span class="src-line" id="L335"><a class="ln" href="#L335">335</a></span>
-<span class="src-line" id="L336"><a class="ln" href="#L336">336</a>                MERMAID,</span>
-<span class="src-line" id="L337"><a class="ln" href="#L337">337</a>            <span class="tok-var">$output</span>-&gt;<span class="tok-id">fetch</span>(),</span>
-<span class="src-line" id="L338"><a class="ln" href="#L338">338</a>        );</span>
-<span class="src-line" id="L339"><a class="ln" href="#L339">339</a>    }</span>
-<span class="src-line" id="L340"><a class="ln" href="#L340">340</a></span>
-<span class="src-line" id="L341"><a class="ln" href="#L341">341</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testReportDrawsInTheTerminalWhenNoRendererIsGiven</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L342"><a class="ln" href="#L342">342</a>    {</span>
-<span class="src-line" id="L343"><a class="ln" href="#L343">343</a>        <span class="tok-var">$call</span> = <span class="tok-kw">new</span> <span class="tok-id">EdgeDatum</span>(<span class="tok-str">&#039;e&#039;</span>, [<span class="tok-str">&#039;methodCall&#039;</span>, <span class="tok-str">&#039;call&#039;</span>, <span class="tok-str">&#039;usage&#039;</span>], [], <span class="tok-str">&#039;App\Domain\Invoice::total&#039;</span>, <span class="tok-str">&#039;App\Cache\Store::get&#039;</span>);</span>
-<span class="src-line" id="L344"><a class="ln" href="#L344">344</a>        <span class="tok-var">$answered</span> = <span class="tok-kw">new</span> <span class="tok-id">ResultTable</span>([<span class="tok-kw">new</span> <span class="tok-id">ResultColumn</span>(<span class="tok-str">&#039;e&#039;</span>, <span class="tok-str">&#039;EDGE&#039;</span>)], [<span class="tok-kw">new</span> <span class="tok-id">ResultRow</span>([<span class="tok-var">$call</span>])]);</span>
-<span class="src-line" id="L345"><a class="ln" href="#L345">345</a>        <span class="tok-var">$output</span> = <span class="tok-kw">new</span> <span class="tok-id">BufferedOutput</span>();</span>
-<span class="src-line" id="L346"><a class="ln" href="#L346">346</a></span>
-<span class="src-line" id="L347"><a class="ln" href="#L347">347</a>        (<span class="tok-kw">new</span> <span class="tok-id">DiagramWriter</span>())-&gt;<span class="tok-id">report</span>(<span class="tok-var">$answered</span>, <span class="tok-var">$output</span>);</span>
-<span class="src-line" id="L348"><a class="ln" href="#L348">348</a></span>
-<span class="src-line" id="L349"><a class="ln" href="#L349">349</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(<span class="tok-str">&quot;App\\Domain\\Invoice::total ──▶ App\\Cache\\Store::get\n&quot;</span>, <span class="tok-var">$output</span>-&gt;<span class="tok-id">fetch</span>());</span>
-<span class="src-line" id="L350"><a class="ln" href="#L350">350</a>    }</span>
-<span class="src-line" id="L351"><a class="ln" href="#L351">351</a></span>
-<span class="src-line" id="L352"><a class="ln" href="#L352">352</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testReportRejectsAnAnswerWithoutTheRequiredElements</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L353"><a class="ln" href="#L353">353</a>    {</span>
-<span class="src-line" id="L354"><a class="ln" href="#L354">354</a>        <span class="tok-var">$answered</span> = <span class="tok-kw">new</span> <span class="tok-id">ResultTable</span>([<span class="tok-kw">new</span> <span class="tok-id">ResultColumn</span>(<span class="tok-str">&#039;n&#039;</span>, <span class="tok-str">&#039;INT64&#039;</span>)], [<span class="tok-kw">new</span> <span class="tok-id">ResultRow</span>([<span class="tok-kw">new</span> <span class="tok-id">IntegerDatum</span>(<span class="tok-num">1</span>)])]);</span>
-<span class="src-line" id="L355"><a class="ln" href="#L355">355</a>        <span class="tok-var">$output</span> = <span class="tok-kw">new</span> <span class="tok-id">BufferedOutput</span>();</span>
-<span class="src-line" id="L356"><a class="ln" href="#L356">356</a></span>
-<span class="src-line" id="L357"><a class="ln" href="#L357">357</a>        <span class="tok-var">$this</span>-&gt;<span class="tok-id">expectException</span>(<span class="tok-id">QueryOutputException</span>::<span class="tok-kw">class</span>);</span>
-<span class="src-line" id="L358"><a class="ln" href="#L358">358</a>        <span class="tok-var">$this</span>-&gt;<span class="tok-id">expectExceptionMessage</span>(<span class="tok-str">&#039;Graph output requires nodes, edges or paths, but the result contains none. Return elements (for example, RETURN n instead of RETURN n.id), or use --output=table or --output=json.&#039;</span>);</span>
-<span class="src-line" id="L359"><a class="ln" href="#L359">359</a></span>
-<span class="src-line" id="L360"><a class="ln" href="#L360">360</a>        (<span class="tok-kw">new</span> <span class="tok-id">DiagramWriter</span>(<span class="tok-id">null</span>, <span class="tok-kw">new</span> <span class="tok-id">MermaidRenderer</span>()))-&gt;<span class="tok-id">report</span>(<span class="tok-var">$answered</span>, <span class="tok-var">$output</span>);</span>
-<span class="src-line" id="L361"><a class="ln" href="#L361">361</a>    }</span>
-<span class="src-line" id="L362"><a class="ln" href="#L362">362</a></span>
-<span class="src-line" id="L363"><a class="ln" href="#L363">363</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testReportDrawsNothingForAnAnswerThatFoundNothing</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L364"><a class="ln" href="#L364">364</a>    {</span>
-<span class="src-line" id="L365"><a class="ln" href="#L365">365</a>        <span class="tok-var">$output</span> = <span class="tok-kw">new</span> <span class="tok-id">BufferedOutput</span>();</span>
-<span class="src-line" id="L366"><a class="ln" href="#L366">366</a></span>
-<span class="src-line" id="L367"><a class="ln" href="#L367">367</a>        (<span class="tok-kw">new</span> <span class="tok-id">DiagramWriter</span>(<span class="tok-id">null</span>, <span class="tok-kw">new</span> <span class="tok-id">MermaidRenderer</span>()))-&gt;<span class="tok-id">report</span>(<span class="tok-id">ResultTable</span>::<span class="tok-id">nothing</span>(), <span class="tok-var">$output</span>);</span>
-<span class="src-line" id="L368"><a class="ln" href="#L368">368</a></span>
-<span class="src-line" id="L369"><a class="ln" href="#L369">369</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(<span class="tok-str">&#039;&#039;</span>, <span class="tok-var">$output</span>-&gt;<span class="tok-id">fetch</span>());</span>
-<span class="src-line" id="L370"><a class="ln" href="#L370">370</a>    }</span>
-<span class="src-line" id="L371"><a class="ln" href="#L371">371</a>}</span>
-<span class="src-line" id="L372"><a class="ln" href="#L372">372</a></span>
+<span class="src-line" id="L237"><a class="ln" href="#L237">237</a>#[<span class="tok-id">UsesClass</span>(<span class="tok-id">\App\Reporter\Query\EdgeCaption</span>::<span class="tok-kw">class</span>)]</span>
+<span class="src-line" id="L238"><a class="ln" href="#L238">238</a>#[<span class="tok-id">Small</span>]</span>
+<span class="src-line" id="L239"><a class="ln" href="#L239">239</a><span class="tok-kw">final</span> <span class="tok-kw">class</span> <span class="tok-id">DiagramWriterTest</span> <span class="tok-kw">extends</span> <span class="tok-id">TestCase</span></span>
+<span class="src-line" id="L240"><a class="ln" href="#L240">240</a>{</span>
+<span class="src-line" id="L241"><a class="ln" href="#L241">241</a>    <span class="tok-com">/**</span></span>
+<span class="src-line" id="L242"><a class="ln" href="#L242">242</a><span class="tok-com">     * @throws GqlException</span></span>
+<span class="src-line" id="L243"><a class="ln" href="#L243">243</a><span class="tok-com">     */</span></span>
+<span class="src-line" id="L244"><a class="ln" href="#L244">244</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testReportDrawsThePieceOfGraphAQueryFoundWithTheArrowsTheGraphHoldsBetweenIt</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L245"><a class="ln" href="#L245">245</a>    {</span>
+<span class="src-line" id="L246"><a class="ln" href="#L246">246</a>        <span class="tok-var">$graph</span> = <span class="tok-id">GraphProjection</span>::<span class="tok-id">of</span>(<span class="tok-id">SampleGraph</span>::<span class="tok-id">analysed</span>());</span>
+<span class="src-line" id="L247"><a class="ln" href="#L247">247</a>        <span class="tok-var">$answered</span> = (<span class="tok-kw">new</span> <span class="tok-id">QueryExecution</span>(<span class="tok-var">$graph</span>, <span class="tok-num">10</span>))</span>
+<span class="src-line" id="L248"><a class="ln" href="#L248">248</a>            -&gt;<span class="tok-id">query</span>(<span class="tok-str">&quot;MATCH (c:Class WHERE c.name = &#039;Store&#039;)-[:declaresMethod]-&gt;(m) RETURN c, m&quot;</span>)</span>
+<span class="src-line" id="L249"><a class="ln" href="#L249">249</a>        ;</span>
+<span class="src-line" id="L250"><a class="ln" href="#L250">250</a>        <span class="tok-var">$output</span> = <span class="tok-kw">new</span> <span class="tok-id">BufferedOutput</span>();</span>
+<span class="src-line" id="L251"><a class="ln" href="#L251">251</a></span>
+<span class="src-line" id="L252"><a class="ln" href="#L252">252</a>        (<span class="tok-kw">new</span> <span class="tok-id">DiagramWriter</span>(<span class="tok-var">$graph</span>, <span class="tok-kw">new</span> <span class="tok-id">TerminalRenderer</span>()))-&gt;<span class="tok-id">report</span>(<span class="tok-var">$answered</span>, <span class="tok-var">$output</span>);</span>
+<span class="src-line" id="L253"><a class="ln" href="#L253">253</a></span>
+<span class="src-line" id="L254"><a class="ln" href="#L254">254</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(<span class="tok-str">&quot;App\\Cache\\Store ──▶ App\\Cache\\Store::get\n&quot;</span>, <span class="tok-var">$output</span>-&gt;<span class="tok-id">fetch</span>());</span>
+<span class="src-line" id="L255"><a class="ln" href="#L255">255</a>    }</span>
+<span class="src-line" id="L256"><a class="ln" href="#L256">256</a></span>
+<span class="src-line" id="L257"><a class="ln" href="#L257">257</a>    <span class="tok-com">/**</span></span>
+<span class="src-line" id="L258"><a class="ln" href="#L258">258</a><span class="tok-com">     * @throws GqlException</span></span>
+<span class="src-line" id="L259"><a class="ln" href="#L259">259</a><span class="tok-com">     */</span></span>
+<span class="src-line" id="L260"><a class="ln" href="#L260">260</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testReportDrawsAPathAQueryBoundOneColumnAStep</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L261"><a class="ln" href="#L261">261</a>    {</span>
+<span class="src-line" id="L262"><a class="ln" href="#L262">262</a>        <span class="tok-var">$graph</span> = <span class="tok-id">GraphProjection</span>::<span class="tok-id">of</span>(<span class="tok-id">SampleGraph</span>::<span class="tok-id">analysed</span>());</span>
+<span class="src-line" id="L263"><a class="ln" href="#L263">263</a>        <span class="tok-var">$answered</span> = (<span class="tok-kw">new</span> <span class="tok-id">QueryExecution</span>(<span class="tok-var">$graph</span>, <span class="tok-num">10</span>))</span>
+<span class="src-line" id="L264"><a class="ln" href="#L264">264</a>            -&gt;<span class="tok-id">query</span>(<span class="tok-str">&quot;MATCH p = (s:Method WHERE s.name = &#039;show&#039;)-[:methodCall]-&gt;{1,2}(t) RETURN p&quot;</span>)</span>
+<span class="src-line" id="L265"><a class="ln" href="#L265">265</a>        ;</span>
+<span class="src-line" id="L266"><a class="ln" href="#L266">266</a>        <span class="tok-var">$output</span> = <span class="tok-kw">new</span> <span class="tok-id">BufferedOutput</span>();</span>
+<span class="src-line" id="L267"><a class="ln" href="#L267">267</a></span>
+<span class="src-line" id="L268"><a class="ln" href="#L268">268</a>        (<span class="tok-kw">new</span> <span class="tok-id">DiagramWriter</span>(<span class="tok-var">$graph</span>, <span class="tok-kw">new</span> <span class="tok-id">TerminalRenderer</span>()))-&gt;<span class="tok-id">report</span>(<span class="tok-var">$answered</span>, <span class="tok-var">$output</span>);</span>
+<span class="src-line" id="L269"><a class="ln" href="#L269">269</a></span>
+<span class="src-line" id="L270"><a class="ln" href="#L270">270</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(</span>
+<span class="src-line" id="L271"><a class="ln" href="#L271">271</a>            <span class="tok-str">&quot;App\\Http\\Controller::show ──▶ App\\Domain\\Invoice::total ──▶ App\\Cache\\Store::get\n&quot;</span>,</span>
+<span class="src-line" id="L272"><a class="ln" href="#L272">272</a>            <span class="tok-var">$output</span>-&gt;<span class="tok-id">fetch</span>(),</span>
+<span class="src-line" id="L273"><a class="ln" href="#L273">273</a>        );</span>
+<span class="src-line" id="L274"><a class="ln" href="#L274">274</a>    }</span>
+<span class="src-line" id="L275"><a class="ln" href="#L275">275</a></span>
+<span class="src-line" id="L276"><a class="ln" href="#L276">276</a>    <span class="tok-com">/**</span></span>
+<span class="src-line" id="L277"><a class="ln" href="#L277">277</a><span class="tok-com">     * @throws GqlException</span></span>
+<span class="src-line" id="L278"><a class="ln" href="#L278">278</a><span class="tok-com">     */</span></span>
+<span class="src-line" id="L279"><a class="ln" href="#L279">279</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testReportWritesThePieceOfGraphAQueryFoundAsTheRendererItIsGivenWritesIt</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L280"><a class="ln" href="#L280">280</a>    {</span>
+<span class="src-line" id="L281"><a class="ln" href="#L281">281</a>        <span class="tok-var">$graph</span> = <span class="tok-id">GraphProjection</span>::<span class="tok-id">of</span>(<span class="tok-id">SampleGraph</span>::<span class="tok-id">analysed</span>());</span>
+<span class="src-line" id="L282"><a class="ln" href="#L282">282</a>        <span class="tok-var">$answered</span> = (<span class="tok-kw">new</span> <span class="tok-id">QueryExecution</span>(<span class="tok-var">$graph</span>, <span class="tok-num">10</span>))</span>
+<span class="src-line" id="L283"><a class="ln" href="#L283">283</a>            -&gt;<span class="tok-id">query</span>(<span class="tok-str">&quot;MATCH (c:Class WHERE c.name = &#039;Store&#039;)-[:declaresMethod]-&gt;(m) RETURN c, m&quot;</span>)</span>
+<span class="src-line" id="L284"><a class="ln" href="#L284">284</a>        ;</span>
+<span class="src-line" id="L285"><a class="ln" href="#L285">285</a>        <span class="tok-var">$output</span> = <span class="tok-kw">new</span> <span class="tok-id">BufferedOutput</span>();</span>
+<span class="src-line" id="L286"><a class="ln" href="#L286">286</a></span>
+<span class="src-line" id="L287"><a class="ln" href="#L287">287</a>        (<span class="tok-kw">new</span> <span class="tok-id">DiagramWriter</span>(<span class="tok-var">$graph</span>, <span class="tok-kw">new</span> <span class="tok-id">MermaidRenderer</span>()))-&gt;<span class="tok-id">report</span>(<span class="tok-var">$answered</span>, <span class="tok-var">$output</span>);</span>
+<span class="src-line" id="L288"><a class="ln" href="#L288">288</a></span>
+<span class="src-line" id="L289"><a class="ln" href="#L289">289</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(</span>
+<span class="src-line" id="L290"><a class="ln" href="#L290">290</a>            &lt;&lt;&lt;&#039;MERMAID&#039;</span>
+<span class="src-line" id="L291"><a class="ln" href="#L291">291</a><span class="tok-str">                flowchart LR</span></span>
+<span class="src-line" id="L292"><a class="ln" href="#L292">292</a><span class="tok-str">                    n1[&quot;App\Cache\Store&quot;]</span></span>
+<span class="src-line" id="L293"><a class="ln" href="#L293">293</a><span class="tok-str">                    n2[&quot;App\Cache\Store::get&quot;]</span></span>
+<span class="src-line" id="L294"><a class="ln" href="#L294">294</a><span class="tok-str">                    n1 --&gt;|&quot;declaresMethod&quot;| n2</span></span>
+<span class="src-line" id="L295"><a class="ln" href="#L295">295</a></span>
+<span class="src-line" id="L296"><a class="ln" href="#L296">296</a>                MERMAID,</span>
+<span class="src-line" id="L297"><a class="ln" href="#L297">297</a>            <span class="tok-var">$output</span>-&gt;<span class="tok-id">fetch</span>(),</span>
+<span class="src-line" id="L298"><a class="ln" href="#L298">298</a>        );</span>
+<span class="src-line" id="L299"><a class="ln" href="#L299">299</a>    }</span>
+<span class="src-line" id="L300"><a class="ln" href="#L300">300</a></span>
+<span class="src-line" id="L301"><a class="ln" href="#L301">301</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testReportDrawsNoArrowBetweenSymbolsWhenThereIsNoGraphToReadItFrom</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L302"><a class="ln" href="#L302">302</a>    {</span>
+<span class="src-line" id="L303"><a class="ln" href="#L303">303</a>        <span class="tok-var">$answered</span> = <span class="tok-kw">new</span> <span class="tok-id">ResultTable</span>(</span>
+<span class="src-line" id="L304"><a class="ln" href="#L304">304</a>            [<span class="tok-kw">new</span> <span class="tok-id">ResultColumn</span>(<span class="tok-str">&#039;c&#039;</span>, <span class="tok-str">&#039;NODE&#039;</span>), <span class="tok-kw">new</span> <span class="tok-id">ResultColumn</span>(<span class="tok-str">&#039;m&#039;</span>, <span class="tok-str">&#039;NODE&#039;</span>)],</span>
+<span class="src-line" id="L305"><a class="ln" href="#L305">305</a>            [<span class="tok-kw">new</span> <span class="tok-id">ResultRow</span>([<span class="tok-kw">new</span> <span class="tok-id">NodeDatum</span>(<span class="tok-str">&#039;App\Cache\Store&#039;</span>), <span class="tok-kw">new</span> <span class="tok-id">NodeDatum</span>(<span class="tok-str">&#039;App\Cache\Store::get&#039;</span>)])],</span>
+<span class="src-line" id="L306"><a class="ln" href="#L306">306</a>        );</span>
+<span class="src-line" id="L307"><a class="ln" href="#L307">307</a>        <span class="tok-var">$output</span> = <span class="tok-kw">new</span> <span class="tok-id">BufferedOutput</span>();</span>
+<span class="src-line" id="L308"><a class="ln" href="#L308">308</a></span>
+<span class="src-line" id="L309"><a class="ln" href="#L309">309</a>        (<span class="tok-kw">new</span> <span class="tok-id">DiagramWriter</span>(<span class="tok-id">null</span>, <span class="tok-kw">new</span> <span class="tok-id">MermaidRenderer</span>()))-&gt;<span class="tok-id">report</span>(<span class="tok-var">$answered</span>, <span class="tok-var">$output</span>);</span>
+<span class="src-line" id="L310"><a class="ln" href="#L310">310</a></span>
+<span class="src-line" id="L311"><a class="ln" href="#L311">311</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(</span>
+<span class="src-line" id="L312"><a class="ln" href="#L312">312</a>            &lt;&lt;&lt;&#039;MERMAID&#039;</span>
+<span class="src-line" id="L313"><a class="ln" href="#L313">313</a><span class="tok-str">                flowchart LR</span></span>
+<span class="src-line" id="L314"><a class="ln" href="#L314">314</a><span class="tok-str">                    n1[&quot;App\Cache\Store&quot;]</span></span>
+<span class="src-line" id="L315"><a class="ln" href="#L315">315</a><span class="tok-str">                    n2[&quot;App\Cache\Store::get&quot;]</span></span>
+<span class="src-line" id="L316"><a class="ln" href="#L316">316</a></span>
+<span class="src-line" id="L317"><a class="ln" href="#L317">317</a>                MERMAID,</span>
+<span class="src-line" id="L318"><a class="ln" href="#L318">318</a>            <span class="tok-var">$output</span>-&gt;<span class="tok-id">fetch</span>(),</span>
+<span class="src-line" id="L319"><a class="ln" href="#L319">319</a>        );</span>
+<span class="src-line" id="L320"><a class="ln" href="#L320">320</a>    }</span>
+<span class="src-line" id="L321"><a class="ln" href="#L321">321</a></span>
+<span class="src-line" id="L322"><a class="ln" href="#L322">322</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testReportDrawsARelationTheAnswerHoldsWithoutNeedingTheGraph</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L323"><a class="ln" href="#L323">323</a>    {</span>
+<span class="src-line" id="L324"><a class="ln" href="#L324">324</a>        <span class="tok-var">$call</span> = <span class="tok-kw">new</span> <span class="tok-id">EdgeDatum</span>(<span class="tok-str">&#039;e&#039;</span>, [<span class="tok-str">&#039;methodCall&#039;</span>, <span class="tok-str">&#039;call&#039;</span>, <span class="tok-str">&#039;usage&#039;</span>], [], <span class="tok-str">&#039;App\Domain\Invoice::total&#039;</span>, <span class="tok-str">&#039;App\Cache\Store::get&#039;</span>);</span>
+<span class="src-line" id="L325"><a class="ln" href="#L325">325</a>        <span class="tok-var">$answered</span> = <span class="tok-kw">new</span> <span class="tok-id">ResultTable</span>([<span class="tok-kw">new</span> <span class="tok-id">ResultColumn</span>(<span class="tok-str">&#039;e&#039;</span>, <span class="tok-str">&#039;EDGE&#039;</span>)], [<span class="tok-kw">new</span> <span class="tok-id">ResultRow</span>([<span class="tok-var">$call</span>])]);</span>
+<span class="src-line" id="L326"><a class="ln" href="#L326">326</a>        <span class="tok-var">$output</span> = <span class="tok-kw">new</span> <span class="tok-id">BufferedOutput</span>();</span>
+<span class="src-line" id="L327"><a class="ln" href="#L327">327</a></span>
+<span class="src-line" id="L328"><a class="ln" href="#L328">328</a>        (<span class="tok-kw">new</span> <span class="tok-id">DiagramWriter</span>(<span class="tok-id">null</span>, <span class="tok-kw">new</span> <span class="tok-id">MermaidRenderer</span>()))-&gt;<span class="tok-id">report</span>(<span class="tok-var">$answered</span>, <span class="tok-var">$output</span>);</span>
+<span class="src-line" id="L329"><a class="ln" href="#L329">329</a></span>
+<span class="src-line" id="L330"><a class="ln" href="#L330">330</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(</span>
+<span class="src-line" id="L331"><a class="ln" href="#L331">331</a>            &lt;&lt;&lt;&#039;MERMAID&#039;</span>
+<span class="src-line" id="L332"><a class="ln" href="#L332">332</a><span class="tok-str">                flowchart LR</span></span>
+<span class="src-line" id="L333"><a class="ln" href="#L333">333</a><span class="tok-str">                    n1[&quot;App\Domain\Invoice::total&quot;]</span></span>
+<span class="src-line" id="L334"><a class="ln" href="#L334">334</a><span class="tok-str">                    n2[&quot;App\Cache\Store::get&quot;]</span></span>
+<span class="src-line" id="L335"><a class="ln" href="#L335">335</a><span class="tok-str">                    n1 --&gt;|&quot;methodCall&quot;| n2</span></span>
+<span class="src-line" id="L336"><a class="ln" href="#L336">336</a></span>
+<span class="src-line" id="L337"><a class="ln" href="#L337">337</a>                MERMAID,</span>
+<span class="src-line" id="L338"><a class="ln" href="#L338">338</a>            <span class="tok-var">$output</span>-&gt;<span class="tok-id">fetch</span>(),</span>
+<span class="src-line" id="L339"><a class="ln" href="#L339">339</a>        );</span>
+<span class="src-line" id="L340"><a class="ln" href="#L340">340</a>    }</span>
+<span class="src-line" id="L341"><a class="ln" href="#L341">341</a></span>
+<span class="src-line" id="L342"><a class="ln" href="#L342">342</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testReportDrawsInTheTerminalWhenNoRendererIsGiven</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L343"><a class="ln" href="#L343">343</a>    {</span>
+<span class="src-line" id="L344"><a class="ln" href="#L344">344</a>        <span class="tok-var">$call</span> = <span class="tok-kw">new</span> <span class="tok-id">EdgeDatum</span>(<span class="tok-str">&#039;e&#039;</span>, [<span class="tok-str">&#039;methodCall&#039;</span>, <span class="tok-str">&#039;call&#039;</span>, <span class="tok-str">&#039;usage&#039;</span>], [], <span class="tok-str">&#039;App\Domain\Invoice::total&#039;</span>, <span class="tok-str">&#039;App\Cache\Store::get&#039;</span>);</span>
+<span class="src-line" id="L345"><a class="ln" href="#L345">345</a>        <span class="tok-var">$answered</span> = <span class="tok-kw">new</span> <span class="tok-id">ResultTable</span>([<span class="tok-kw">new</span> <span class="tok-id">ResultColumn</span>(<span class="tok-str">&#039;e&#039;</span>, <span class="tok-str">&#039;EDGE&#039;</span>)], [<span class="tok-kw">new</span> <span class="tok-id">ResultRow</span>([<span class="tok-var">$call</span>])]);</span>
+<span class="src-line" id="L346"><a class="ln" href="#L346">346</a>        <span class="tok-var">$output</span> = <span class="tok-kw">new</span> <span class="tok-id">BufferedOutput</span>();</span>
+<span class="src-line" id="L347"><a class="ln" href="#L347">347</a></span>
+<span class="src-line" id="L348"><a class="ln" href="#L348">348</a>        (<span class="tok-kw">new</span> <span class="tok-id">DiagramWriter</span>())-&gt;<span class="tok-id">report</span>(<span class="tok-var">$answered</span>, <span class="tok-var">$output</span>);</span>
+<span class="src-line" id="L349"><a class="ln" href="#L349">349</a></span>
+<span class="src-line" id="L350"><a class="ln" href="#L350">350</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(<span class="tok-str">&quot;App\\Domain\\Invoice::total ──▶ App\\Cache\\Store::get\n&quot;</span>, <span class="tok-var">$output</span>-&gt;<span class="tok-id">fetch</span>());</span>
+<span class="src-line" id="L351"><a class="ln" href="#L351">351</a>    }</span>
+<span class="src-line" id="L352"><a class="ln" href="#L352">352</a></span>
+<span class="src-line" id="L353"><a class="ln" href="#L353">353</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testReportRejectsAnAnswerWithoutTheRequiredElements</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L354"><a class="ln" href="#L354">354</a>    {</span>
+<span class="src-line" id="L355"><a class="ln" href="#L355">355</a>        <span class="tok-var">$answered</span> = <span class="tok-kw">new</span> <span class="tok-id">ResultTable</span>([<span class="tok-kw">new</span> <span class="tok-id">ResultColumn</span>(<span class="tok-str">&#039;n&#039;</span>, <span class="tok-str">&#039;INT64&#039;</span>)], [<span class="tok-kw">new</span> <span class="tok-id">ResultRow</span>([<span class="tok-kw">new</span> <span class="tok-id">IntegerDatum</span>(<span class="tok-num">1</span>)])]);</span>
+<span class="src-line" id="L356"><a class="ln" href="#L356">356</a>        <span class="tok-var">$output</span> = <span class="tok-kw">new</span> <span class="tok-id">BufferedOutput</span>();</span>
+<span class="src-line" id="L357"><a class="ln" href="#L357">357</a></span>
+<span class="src-line" id="L358"><a class="ln" href="#L358">358</a>        <span class="tok-var">$this</span>-&gt;<span class="tok-id">expectException</span>(<span class="tok-id">QueryOutputException</span>::<span class="tok-kw">class</span>);</span>
+<span class="src-line" id="L359"><a class="ln" href="#L359">359</a>        <span class="tok-var">$this</span>-&gt;<span class="tok-id">expectExceptionMessage</span>(<span class="tok-str">&#039;Graph output requires nodes, edges or paths, but the result contains none. Return elements (for example, RETURN n instead of RETURN n.id), or use --output=table or --output=json.&#039;</span>);</span>
+<span class="src-line" id="L360"><a class="ln" href="#L360">360</a></span>
+<span class="src-line" id="L361"><a class="ln" href="#L361">361</a>        (<span class="tok-kw">new</span> <span class="tok-id">DiagramWriter</span>(<span class="tok-id">null</span>, <span class="tok-kw">new</span> <span class="tok-id">MermaidRenderer</span>()))-&gt;<span class="tok-id">report</span>(<span class="tok-var">$answered</span>, <span class="tok-var">$output</span>);</span>
+<span class="src-line" id="L362"><a class="ln" href="#L362">362</a>    }</span>
+<span class="src-line" id="L363"><a class="ln" href="#L363">363</a></span>
+<span class="src-line" id="L364"><a class="ln" href="#L364">364</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testReportDrawsNothingForAnAnswerThatFoundNothing</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L365"><a class="ln" href="#L365">365</a>    {</span>
+<span class="src-line" id="L366"><a class="ln" href="#L366">366</a>        <span class="tok-var">$output</span> = <span class="tok-kw">new</span> <span class="tok-id">BufferedOutput</span>();</span>
+<span class="src-line" id="L367"><a class="ln" href="#L367">367</a></span>
+<span class="src-line" id="L368"><a class="ln" href="#L368">368</a>        (<span class="tok-kw">new</span> <span class="tok-id">DiagramWriter</span>(<span class="tok-id">null</span>, <span class="tok-kw">new</span> <span class="tok-id">MermaidRenderer</span>()))-&gt;<span class="tok-id">report</span>(<span class="tok-id">ResultTable</span>::<span class="tok-id">nothing</span>(), <span class="tok-var">$output</span>);</span>
+<span class="src-line" id="L369"><a class="ln" href="#L369">369</a></span>
+<span class="src-line" id="L370"><a class="ln" href="#L370">370</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(<span class="tok-str">&#039;&#039;</span>, <span class="tok-var">$output</span>-&gt;<span class="tok-id">fetch</span>());</span>
+<span class="src-line" id="L371"><a class="ln" href="#L371">371</a>    }</span>
+<span class="src-line" id="L372"><a class="ln" href="#L372">372</a>}</span>
+<span class="src-line" id="L373"><a class="ln" href="#L373">373</a></span>
 </code></pre>
 </main>
 <footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>

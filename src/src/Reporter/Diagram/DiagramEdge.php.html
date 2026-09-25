@@ -58,27 +58,28 @@
 <span class="src-line" id="L22"><a class="ln" href="#L22">22</a>        <span class="tok-kw">public</span> <span class="tok-id">string</span> <span class="tok-var">$origin</span>,</span>
 <span class="src-line" id="L23"><a class="ln" href="#L23">23</a>        <span class="tok-kw">public</span> <span class="tok-id">string</span> <span class="tok-var">$target</span>,</span>
 <span class="src-line" id="L24"><a class="ln" href="#L24">24</a>        <span class="tok-kw">public</span> <span class="tok-id">string</span> <span class="tok-var">$label</span> = <span class="tok-str">&#039;&#039;</span>,</span>
-<span class="src-line" id="L25"><a class="ln" href="#L25">25</a>    ) {}</span>
-<span class="src-line" id="L26"><a class="ln" href="#L26">26</a></span>
-<span class="src-line" id="L27"><a class="ln" href="#L27">27</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L28"><a class="ln" href="#L28">28</a><span class="tok-com">     * Returns what tells this relation apart from every other in the drawing.</span></span>
-<span class="src-line" id="L29"><a class="ln" href="#L29">29</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L30"><a class="ln" href="#L30">30</a><span class="tok-com">     * Two symbols may be related more than once — a method that both calls another</span></span>
-<span class="src-line" id="L31"><a class="ln" href="#L31">31</a><span class="tok-com">     * and takes its type as a parameter — and a drawing should show both arrows. What</span></span>
-<span class="src-line" id="L32"><a class="ln" href="#L32">32</a><span class="tok-com">     * it should not show is the same arrow twice, which happens whenever a walk</span></span>
-<span class="src-line" id="L33"><a class="ln" href="#L33">33</a><span class="tok-com">     * reaches the same pair from two directions.</span></span>
-<span class="src-line" id="L34"><a class="ln" href="#L34">34</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L35"><a class="ln" href="#L35">35</a><span class="tok-com">     * @example A relation is told apart by its two ends and what it is</span></span>
-<span class="src-line" id="L36"><a class="ln" href="#L36">36</a><span class="tok-com">     *     (new \App\Reporter\Diagram\DiagramEdge(&#039;a&#039;, &#039;b&#039;, &#039;calls&#039;))-&gt;signature() // =&gt; &#039;a|calls|b&#039;</span></span>
-<span class="src-line" id="L37"><a class="ln" href="#L37">37</a><span class="tok-com">     *</span></span>
-<span class="src-line" id="L38"><a class="ln" href="#L38">38</a><span class="tok-com">     * @return string What identifies the relation in the drawing</span></span>
-<span class="src-line" id="L39"><a class="ln" href="#L39">39</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L40"><a class="ln" href="#L40">40</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">signature</span>(): <span class="tok-id">string</span></span>
-<span class="src-line" id="L41"><a class="ln" href="#L41">41</a>    {</span>
-<span class="src-line" id="L42"><a class="ln" href="#L42">42</a>        <span class="tok-kw">return</span> <span class="tok-var">$this</span>-&gt;<span class="tok-id">origin</span>.<span class="tok-str">&#039;|&#039;</span>.<span class="tok-var">$this</span>-&gt;<span class="tok-id">label</span>.<span class="tok-str">&#039;|&#039;</span>.<span class="tok-var">$this</span>-&gt;<span class="tok-id">target</span>;</span>
-<span class="src-line" id="L43"><a class="ln" href="#L43">43</a>    }</span>
-<span class="src-line" id="L44"><a class="ln" href="#L44">44</a>}</span>
-<span class="src-line" id="L45"><a class="ln" href="#L45">45</a></span>
+<span class="src-line" id="L25"><a class="ln" href="#L25">25</a>        <span class="tok-kw">public</span> <span class="tok-id">bool</span> <span class="tok-var">$detailed</span> = <span class="tok-id">false</span>,</span>
+<span class="src-line" id="L26"><a class="ln" href="#L26">26</a>    ) {}</span>
+<span class="src-line" id="L27"><a class="ln" href="#L27">27</a></span>
+<span class="src-line" id="L28"><a class="ln" href="#L28">28</a>    <span class="tok-com">/**</span></span>
+<span class="src-line" id="L29"><a class="ln" href="#L29">29</a><span class="tok-com">     * Returns what tells this relation apart from every other in the drawing.</span></span>
+<span class="src-line" id="L30"><a class="ln" href="#L30">30</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L31"><a class="ln" href="#L31">31</a><span class="tok-com">     * Two symbols may be related more than once — a method that both calls another</span></span>
+<span class="src-line" id="L32"><a class="ln" href="#L32">32</a><span class="tok-com">     * and takes its type as a parameter — and a drawing should show both arrows. What</span></span>
+<span class="src-line" id="L33"><a class="ln" href="#L33">33</a><span class="tok-com">     * it should not show is the same arrow twice, which happens whenever a walk</span></span>
+<span class="src-line" id="L34"><a class="ln" href="#L34">34</a><span class="tok-com">     * reaches the same pair from two directions.</span></span>
+<span class="src-line" id="L35"><a class="ln" href="#L35">35</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L36"><a class="ln" href="#L36">36</a><span class="tok-com">     * @example A relation is told apart by its two ends and what it is</span></span>
+<span class="src-line" id="L37"><a class="ln" href="#L37">37</a><span class="tok-com">     *     (new \App\Reporter\Diagram\DiagramEdge(&#039;a&#039;, &#039;b&#039;, &#039;calls&#039;))-&gt;signature() // =&gt; &#039;a|calls|b&#039;</span></span>
+<span class="src-line" id="L38"><a class="ln" href="#L38">38</a><span class="tok-com">     *</span></span>
+<span class="src-line" id="L39"><a class="ln" href="#L39">39</a><span class="tok-com">     * @return string What identifies the relation in the drawing</span></span>
+<span class="src-line" id="L40"><a class="ln" href="#L40">40</a><span class="tok-com">     */</span></span>
+<span class="src-line" id="L41"><a class="ln" href="#L41">41</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">signature</span>(): <span class="tok-id">string</span></span>
+<span class="src-line" id="L42"><a class="ln" href="#L42">42</a>    {</span>
+<span class="src-line" id="L43"><a class="ln" href="#L43">43</a>        <span class="tok-kw">return</span> <span class="tok-var">$this</span>-&gt;<span class="tok-id">origin</span>.<span class="tok-str">&#039;|&#039;</span>.<span class="tok-var">$this</span>-&gt;<span class="tok-id">label</span>.<span class="tok-str">&#039;|&#039;</span>.<span class="tok-var">$this</span>-&gt;<span class="tok-id">target</span>;</span>
+<span class="src-line" id="L44"><a class="ln" href="#L44">44</a>    }</span>
+<span class="src-line" id="L45"><a class="ln" href="#L45">45</a>}</span>
+<span class="src-line" id="L46"><a class="ln" href="#L46">46</a></span>
 </code></pre>
 </main>
 <footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>

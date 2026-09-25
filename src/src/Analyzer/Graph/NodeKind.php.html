@@ -63,25 +63,28 @@
 <span class="src-line" id="L27"><a class="ln" href="#L27">27</a>    <span class="tok-com">/** Represents a global function */</span></span>
 <span class="src-line" id="L28"><a class="ln" href="#L28">28</a>    <span class="tok-kw">case</span> <span class="tok-kw">Function</span> = <span class="tok-str">&#039;function&#039;</span>;</span>
 <span class="src-line" id="L29"><a class="ln" href="#L29">29</a></span>
-<span class="src-line" id="L30"><a class="ln" href="#L30">30</a>    <span class="tok-com">/** Represents a PHP interface */</span></span>
-<span class="src-line" id="L31"><a class="ln" href="#L31">31</a>    <span class="tok-kw">case</span> <span class="tok-kw">Interface</span> = <span class="tok-str">&#039;interface&#039;</span>;</span>
+<span class="src-line" id="L30"><a class="ln" href="#L30">30</a>    <span class="tok-com">/** Represents an anonymous function or arrow function */</span></span>
+<span class="src-line" id="L31"><a class="ln" href="#L31">31</a>    <span class="tok-kw">case</span> <span class="tok-id">Closure</span> = <span class="tok-str">&#039;closure&#039;</span>;</span>
 <span class="src-line" id="L32"><a class="ln" href="#L32">32</a></span>
-<span class="src-line" id="L33"><a class="ln" href="#L33">33</a>    <span class="tok-com">/** Represents a class method */</span></span>
-<span class="src-line" id="L34"><a class="ln" href="#L34">34</a>    <span class="tok-kw">case</span> <span class="tok-id">Method</span> = <span class="tok-str">&#039;method&#039;</span>;</span>
+<span class="src-line" id="L33"><a class="ln" href="#L33">33</a>    <span class="tok-com">/** Represents a PHP interface */</span></span>
+<span class="src-line" id="L34"><a class="ln" href="#L34">34</a>    <span class="tok-kw">case</span> <span class="tok-kw">Interface</span> = <span class="tok-str">&#039;interface&#039;</span>;</span>
 <span class="src-line" id="L35"><a class="ln" href="#L35">35</a></span>
-<span class="src-line" id="L36"><a class="ln" href="#L36">36</a>    <span class="tok-com">/** Represents a class property */</span></span>
-<span class="src-line" id="L37"><a class="ln" href="#L37">37</a>    <span class="tok-kw">case</span> <span class="tok-id">Property</span> = <span class="tok-str">&#039;property&#039;</span>;</span>
+<span class="src-line" id="L36"><a class="ln" href="#L36">36</a>    <span class="tok-com">/** Represents a class method */</span></span>
+<span class="src-line" id="L37"><a class="ln" href="#L37">37</a>    <span class="tok-kw">case</span> <span class="tok-id">Method</span> = <span class="tok-str">&#039;method&#039;</span>;</span>
 <span class="src-line" id="L38"><a class="ln" href="#L38">38</a></span>
-<span class="src-line" id="L39"><a class="ln" href="#L39">39</a>    <span class="tok-com">/** Represents a PHP trait */</span></span>
-<span class="src-line" id="L40"><a class="ln" href="#L40">40</a>    <span class="tok-kw">case</span> <span class="tok-kw">Trait</span> = <span class="tok-str">&#039;trait&#039;</span>;</span>
+<span class="src-line" id="L39"><a class="ln" href="#L39">39</a>    <span class="tok-com">/** Represents a class property */</span></span>
+<span class="src-line" id="L40"><a class="ln" href="#L40">40</a>    <span class="tok-kw">case</span> <span class="tok-id">Property</span> = <span class="tok-str">&#039;property&#039;</span>;</span>
 <span class="src-line" id="L41"><a class="ln" href="#L41">41</a></span>
-<span class="src-line" id="L42"><a class="ln" href="#L42">42</a>    <span class="tok-com">/** Represents a builtin PHP type (e.g., string, int, array) */</span></span>
-<span class="src-line" id="L43"><a class="ln" href="#L43">43</a>    <span class="tok-kw">case</span> <span class="tok-id">Builtin</span> = <span class="tok-str">&#039;builtin&#039;</span>;</span>
+<span class="src-line" id="L42"><a class="ln" href="#L42">42</a>    <span class="tok-com">/** Represents a PHP trait */</span></span>
+<span class="src-line" id="L43"><a class="ln" href="#L43">43</a>    <span class="tok-kw">case</span> <span class="tok-kw">Trait</span> = <span class="tok-str">&#039;trait&#039;</span>;</span>
 <span class="src-line" id="L44"><a class="ln" href="#L44">44</a></span>
-<span class="src-line" id="L45"><a class="ln" href="#L45">45</a>    <span class="tok-com">/** Represents an unknown or unresolved type */</span></span>
-<span class="src-line" id="L46"><a class="ln" href="#L46">46</a>    <span class="tok-kw">case</span> <span class="tok-id">Unknown</span> = <span class="tok-str">&#039;unknown&#039;</span>;</span>
-<span class="src-line" id="L47"><a class="ln" href="#L47">47</a>}</span>
-<span class="src-line" id="L48"><a class="ln" href="#L48">48</a></span>
+<span class="src-line" id="L45"><a class="ln" href="#L45">45</a>    <span class="tok-com">/** Represents a builtin PHP type (e.g., string, int, array) */</span></span>
+<span class="src-line" id="L46"><a class="ln" href="#L46">46</a>    <span class="tok-kw">case</span> <span class="tok-id">Builtin</span> = <span class="tok-str">&#039;builtin&#039;</span>;</span>
+<span class="src-line" id="L47"><a class="ln" href="#L47">47</a></span>
+<span class="src-line" id="L48"><a class="ln" href="#L48">48</a>    <span class="tok-com">/** Represents an unknown or unresolved type */</span></span>
+<span class="src-line" id="L49"><a class="ln" href="#L49">49</a>    <span class="tok-kw">case</span> <span class="tok-id">Unknown</span> = <span class="tok-str">&#039;unknown&#039;</span>;</span>
+<span class="src-line" id="L50"><a class="ln" href="#L50">50</a>}</span>
+<span class="src-line" id="L51"><a class="ln" href="#L51">51</a></span>
 </code></pre>
 </main>
 <footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>
