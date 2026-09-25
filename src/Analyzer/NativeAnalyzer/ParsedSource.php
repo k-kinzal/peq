@@ -15,13 +15,13 @@ use PhpParser\Node\Stmt\Trait_;
 use PhpParser\NodeFinder;
 
 /**
- * One analysed file, parsed once and answered from many times.
+ * One active analysed file, answered from while a walker or lookup holds it.
  *
  * A file is read for three different questions — what it declares, what its method
  * bodies reach out to, and what its anonymous classes are called — and parsing it
- * once for each of them is the cost that makes an analyzer slow. Parsing is therefore
- * done once, at the point the file enters the analysis, and everything after that is
- * a lookup.
+ * once for each question is wasteful. These lookups share a tree for the active
+ * file; SourceIndex retains declaration locations instead of keeping every file
+ * alive for the duration of the project analysis.
  *
  * @visibility namespace
  */

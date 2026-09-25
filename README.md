@@ -350,6 +350,12 @@ attempted. Released PHARs use their embedded release version. Source installatio
 use a content digest of peq's sources, configuration and dependency lock file, so
 local implementation changes invalidate the cache too.
 
+Graph entries are streamed in small batches. Inverse edges and lookup indexes are
+rebuilt when an entry is read, so cache writes and reads do not allocate a serialized
+copy of the entire graph. Native analysis indexes declaration locations and loads
+syntax one file at a time; the graph itself still grows with the symbols and call
+occurrences in the selected sources.
+
 Add `.peq.cache/` to your project's `.gitignore`. Delete that directory to force a
 fresh analysis. Damaged entries are recomputed, and an unavailable cache location
 falls back to ordinary analysis. Writes are atomic and version changes are locked

@@ -14,6 +14,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use WeakReference;
 
 /**
  * @internal
@@ -67,5 +68,17 @@ final class AuthoredEdgeTest extends TestCase
         $edge = new MethodCallEdge($node, $node, new FileMeta('/project/src/Domain/Invoice.php', 12, 1));
 
         self::assertSame([$node->id(), $node->id()], [$edge->from(), $edge->to()]);
+    }
+
+    public function testFromRetainsTheIdentifierWithoutKeepingTheEndpointAlive(): void
+    {
+        $node = new MethodNode(MethodNodeId::of('Service', 'run'));
+        $reference = WeakReference::create($node);
+        $edge = new MethodCallEdge($node, $node, new FileMeta('/project/Service.php', 3, 1));
+        unset($node);
+
+        self::assertNull($reference->get());
+        self::assertSame('Service::run', $edge->from()->toString());
+        self::assertSame('Service::run', $edge->to()->toString());
     }
 }

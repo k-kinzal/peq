@@ -250,4 +250,21 @@ final class Graph
 
         return $forward;
     }
+
+    /**
+     * Iterates stored values without copying adjacency lists or derived indexes.
+     *
+     * @return iterable<Edge|Node> Nodes followed by forward relations
+     */
+    public function elements(): iterable
+    {
+        yield from $this->nodes;
+        foreach ($this->adjacency as $edges) {
+            foreach ($edges as $edge) {
+                if (!$edge instanceof InverseEdge) {
+                    yield $edge;
+                }
+            }
+        }
+    }
 }

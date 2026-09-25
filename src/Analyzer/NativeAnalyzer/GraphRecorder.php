@@ -14,17 +14,28 @@ use App\Analyzer\Graph\Node;
  * A walk meets a symbol and a relation to it in whatever order the source happens to
  * be written, and a graph cannot be built in that order: recording a relation before
  * the symbol it points at would leave the graph holding a placeholder where it could
- * have held the symbol itself. Everything found is therefore collected first, and the
- * graph is built from it in two passes, symbols before relations.
+ * have held the symbol itself. Declarations are deduplicated as they arrive, and the
+ * graph is built in two passes, symbols before relations.
  *
  * @visibility namespace
  */
 final class GraphRecorder
 {
     /**
-     * @var list<Edge|Node> Everything the walk has found so far
+     * Deduplicates declarations as they arrive, before any relation is attached.
      */
-    private array $found = [];
+    private readonly Graph $nodes;
+
+    /** @var list<Edge> */
+    private array $edges = [];
+
+    /**
+     * Starts a declaration table independent of the pending relations.
+     */
+    public function __construct()
+    {
+        $this->nodes = new Graph();
+    }
 
     /**
      * Records what one step of the walk found.
@@ -34,7 +45,11 @@ final class GraphRecorder
     public function record(array $symbols): void
     {
         foreach ($symbols as $symbol) {
-            $this->found[] = $symbol;
+            if ($symbol instanceof Node) {
+                $this->nodes->addNode($symbol);
+            } else {
+                $this->edges[] = $symbol;
+            }
         }
     }
 
@@ -50,16 +65,8 @@ final class GraphRecorder
     public function graph(): Graph
     {
         $graph = new Graph();
-        foreach ($this->found as $symbol) {
-            if ($symbol instanceof Node) {
-                $graph->addNode($symbol);
-            }
-        }
-        foreach ($this->found as $symbol) {
-            if ($symbol instanceof Edge) {
-                $graph->addEdge($symbol);
-            }
-        }
+        $graph->addNodes($this->nodes->nodes());
+        $graph->addEdges($this->edges);
 
         return $graph;
     }

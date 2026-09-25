@@ -19,6 +19,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use WeakReference;
 
 /**
  * @internal
@@ -210,5 +211,34 @@ final class SourceIndexTest extends TestCase
         $root = vfsStream::setup('project');
 
         self::assertNull(SourceIndex::parse((new ParserFactory())->createForHostVersion(), $root->url().'/Missing.php'));
+    }
+
+    public function testIterateSourcesYieldsFilesInSelectionOrder(): void
+    {
+        $root = vfsStream::setup('project', null, ['First.php' => '<?php class One {}', 'Second.php' => '<?php class Two {}']);
+        $index = SourceIndex::of([$root->url().'/First.php', $root->url().'/Second.php'], $root->url());
+
+        self::assertSame(
+            ['vfs://project/First.php', 'vfs://project/Second.php'],
+            array_map(static fn (ParsedSource $source): string => $source->path, iterator_to_array($index->iterateSources())),
+        );
+    }
+
+    public function testSourceOfReleasesPreviousSyntaxAndReloadsCrossFileDeclarations(): void
+    {
+        $root = vfsStream::setup('project', null, ['First.php' => '<?php trait Shared {} function helper() {}', 'Second.php' => '<?php class Consumer { use Shared; }']);
+        $index = SourceIndex::of([$root->url().'/First.php', $root->url().'/Second.php'], $root->url());
+        $first = $index->sourceOf($root->url().'/First.php');
+        self::assertNotNull($first);
+        $reference = WeakReference::create($first);
+        self::assertSame($first, $index->sourceOf($root->url().'/First.php'));
+        unset($first);
+
+        self::assertNotNull($index->sourceOf($root->url().'/Second.php'));
+        self::assertNull($reference->get());
+        self::assertTrue($index->declaresFunction('helper'));
+        self::assertTrue($index->knowsClass('Shared'));
+        self::assertSame(NodeKind::Trait, $index->classLike('Shared')?->kind);
+        self::assertSame('vfs://project/First.php', $index->classLike('Shared')->source->path);
     }
 }

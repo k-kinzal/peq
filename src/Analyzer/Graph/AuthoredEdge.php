@@ -17,7 +17,7 @@ use Override;
  *
  * Edges are constructed from nodes because that is what the analyzer has at hand and
  * because the node types constrain which relations are expressible. The Edge contract
- * exposes identifiers rather than nodes, so the nodes stay behind this class: a
+ * exposes identifiers rather than nodes, so only those identifiers are retained: a
  * consumer that needs the node asks the graph for it by identifier.
  *
  * The counterpart is InverseEdge, which is not authored but derived: it carries the
@@ -25,16 +25,25 @@ use Override;
  */
 abstract readonly class AuthoredEdge implements Edge
 {
+    /** @var NodeId<Node> */
+    private NodeId $fromId;
+
+    /** @var NodeId<Node> */
+    private NodeId $toId;
+
     /**
      * @param Node     $fromNode The node this relation starts at
      * @param Node     $toNode   The node this relation points at
      * @param FileMeta $meta     Where in the source code the relation is written
      */
     protected function __construct(
-        private Node $fromNode,
-        private Node $toNode,
+        Node $fromNode,
+        Node $toNode,
         private FileMeta $meta,
-    ) {}
+    ) {
+        $this->fromId = $fromNode->id();
+        $this->toId = $toNode->id();
+    }
 
     /**
      * Returns the identifier of the node this edge starts at.
@@ -44,7 +53,7 @@ abstract readonly class AuthoredEdge implements Edge
     #[Override]
     public function from(): NodeId
     {
-        return $this->fromNode->id();
+        return $this->fromId;
     }
 
     /**
@@ -55,7 +64,7 @@ abstract readonly class AuthoredEdge implements Edge
     #[Override]
     public function to(): NodeId
     {
-        return $this->toNode->id();
+        return $this->toId;
     }
 
     /**

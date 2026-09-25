@@ -17,6 +17,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
+use Tests\Fixture\Analyzer\EquivalenceCorpus;
 
 /**
  * @internal
@@ -204,5 +205,28 @@ final class AnalysisCacheTest extends TestCase
         self::assertStringContainsString('Invoice', $inspect->getOutput());
         self::assertNotSame('previous-release', file_get_contents($directory->path.'/.peq.cache/version'));
         $directory->delete();
+    }
+
+    #[DataProvider('providerEngines')]
+    public function testCallArgumentsClosuresAndPossibleDispatchSurviveCacheReuse(string $engine): void
+    {
+        $directory = WorkingDirectory::at(sys_get_temp_dir().'/peq-call-cache-'.uniqid());
+        $sources = [
+            ...EquivalenceCorpus::SCENARIOS['written arguments and separate lexical call scopes'],
+            ...EquivalenceCorpus::SCENARIOS['typed receivers and possible implementations'],
+            ...EquivalenceCorpus::SCENARIOS['nullable compound receivers and repeated attributes'],
+        ];
+        array_map($directory->write(...), array_keys($sources), array_values($sources));
+        $cache = new PhaseCache(new CacheStorage($directory->path.'/cache', 'v1'));
+        $uncached = $engine === 'native' ? new NativeAnalyzer() : new PhpStanAnalyzer();
+        $cached = $engine === 'native' ? new NativeAnalyzer(cache: $cache) : new PhpStanAnalyzer(cache: $cache);
+
+        try {
+            $expected = GraphSnapshot::of($uncached->analyze($directory->path));
+            self::assertEquals($expected, GraphSnapshot::of($cached->analyze($directory->path)));
+            self::assertEquals($expected, GraphSnapshot::of($cached->analyze($directory->path)));
+        } finally {
+            $directory->delete();
+        }
     }
 }

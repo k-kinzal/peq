@@ -6,10 +6,12 @@ namespace Tests\Unit\Analyzer;
 
 use App\Analyzer\CacheStorage;
 use App\Analyzer\PhpStanAnalyzer\WorkingDirectory;
+use ArrayIterator;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 /**
  * @internal
@@ -137,6 +139,39 @@ final class CacheStorageTest extends TestCase
 
         self::assertTrue(CacheStorage::remove($directory->path.'/phase'));
         self::assertDirectoryDoesNotExist($directory->path.'/phase');
+        $directory->delete();
+    }
+
+    public function testWriteConsumesChunksInOrderWithoutConcatenatingTheEntry(): void
+    {
+        $directory = WorkingDirectory::at(sys_get_temp_dir().'/peq-cache-'.uniqid());
+        $storage = new CacheStorage($directory->path, 'v1');
+
+        self::assertTrue($storage->write('graph.cache', new ArrayIterator(['header', '', 'first', 'second'])));
+        self::assertSame('headerfirstsecond', file_get_contents($directory->path.'/graph.cache'));
+        self::assertSame([], glob($directory->path.'/.write-*'));
+        $directory->delete();
+    }
+
+    public function testWriteAnInterruptedStreamLeavesThePreviousEntryIntact(): void
+    {
+        $directory = WorkingDirectory::at(sys_get_temp_dir().'/peq-cache-'.uniqid());
+        $storage = new CacheStorage($directory->path, 'v1');
+        $storage->write('graph.cache', 'previous');
+        $chunks = (static function (): iterable {
+            yield 'partial';
+
+            throw new RuntimeException('interrupted');
+        })();
+
+        try {
+            $storage->write('graph.cache', $chunks);
+            self::fail('The stream failure must propagate.');
+        } catch (RuntimeException $failure) {
+            self::assertSame('interrupted', $failure->getMessage());
+        }
+        self::assertSame('previous', file_get_contents($directory->path.'/graph.cache'));
+        self::assertSame([], glob($directory->path.'/.write-*'));
         $directory->delete();
     }
 }

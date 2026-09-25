@@ -12,14 +12,19 @@ use PhpParser\Node\Stmt\Function_;
 use PhpParser\NodeFinder;
 
 /**
- * Reads callable bodies once per source file, including methods imported from traits.
+ * Reads callable bodies with at most one source file retained between lookups.
  */
 final class CallSources
 {
     /**
-     * @var array<string, list<ClassMethod|Function_>>
+     * @var list<ClassMethod|Function_>
      */
-    private array $files = [];
+    private array $declarations = [];
+
+    /**
+     * Only the most recently used file stays parsed, including a missing file.
+     */
+    private ?string $path = null;
 
     /**
      * Selects the PHP version used to read callable bodies.
@@ -35,8 +40,12 @@ final class CallSources
         if ($meta === null) {
             return null;
         }
-        $declarations = $this->files[$meta->path] ??= $this->read($meta->path);
-        $candidates = array_values(array_filter($declarations, static fn (ClassMethod|Function_ $node): bool => $node->getStartLine() === $meta->line));
+        if ($this->path !== $meta->path) {
+            $this->declarations = [];
+            $this->path = $meta->path;
+            $this->declarations = $this->read($meta->path);
+        }
+        $candidates = array_values(array_filter($this->declarations, static fn (ClassMethod|Function_ $node): bool => $node->getStartLine() === $meta->line));
         foreach ($candidates as $candidate) {
             if ($candidate instanceof ClassMethod && $candidate->getAttribute('peqOwner') === ClassHierarchy::owner($symbol) && str_ends_with(strtolower($symbol->id()->toString()), '::'.strtolower($candidate->name->toString()))) {
                 return $candidate;

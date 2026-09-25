@@ -31,6 +31,7 @@ final class CallEnrichment
                     $scope = CallSites::of(array_values($body), $node, $node->meta()->path ?? '');
                     $sites[$node->id()->toString()] = $scope;
                     $recorder->record(array_values($body), $node, $scope);
+                    $scope->expressions = [];
                 }
             }
         }

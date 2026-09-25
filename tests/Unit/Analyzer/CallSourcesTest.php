@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use WeakReference;
 
 /**
  * @internal
@@ -111,5 +112,28 @@ final class CallSourcesTest extends TestCase
         unlink($file);
 
         self::assertSame([], $bodies);
+    }
+
+    public function testCallableReleasesThePreviousFileAndCanReadItAgain(): void
+    {
+        $first = tempnam(sys_get_temp_dir(), 'peq-bodies-');
+        $second = tempnam(sys_get_temp_dir(), 'peq-bodies-');
+        self::assertNotFalse($first);
+        self::assertNotFalse($second);
+        file_put_contents($first, '<?php class First { function run() { first(); } }');
+        file_put_contents($second, '<?php class Second { function run() { second(); } }');
+        $firstNode = new \App\Analyzer\Graph\Node\MethodNode(\App\Analyzer\Graph\NodeId\MethodNodeId::of('First', 'run'), true, new \App\Analyzer\Graph\FileMeta($first, 1, 1));
+        $secondNode = new \App\Analyzer\Graph\Node\MethodNode(\App\Analyzer\Graph\NodeId\MethodNodeId::of('Second', 'run'), true, new \App\Analyzer\Graph\FileMeta($second, 1, 1));
+        $reader = new CallSources(80300);
+        $body = $reader->callable($firstNode);
+        self::assertNotNull($body);
+        $reference = WeakReference::create($body);
+        unset($body);
+
+        self::assertNotNull($reader->callable($secondNode));
+        self::assertNull($reference->get());
+        self::assertNotNull($reader->callable($firstNode));
+        unlink($first);
+        unlink($second);
     }
 }

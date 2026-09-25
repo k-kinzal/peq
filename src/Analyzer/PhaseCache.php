@@ -44,22 +44,31 @@ final readonly class PhaseCache
     {
         $name = hash('sha256', $phase).'-'.hash('sha256', $slot).'.cache';
         $header = $phase."\n".$fingerprint."\n";
-        $entry = $this->storage->locked(function () use ($name): ?string {
+        $value = $this->storage->locked(function () use ($name, $header): ?object {
             $path = $this->storage->directory.'/'.$name;
-            $contents = !is_link($path) && is_file($path) ? @file_get_contents($path) : false;
-
-            return $contents === false ? null : $contents;
-        });
-        if ($entry !== null && str_starts_with($entry, $header)) {
-            $value = CacheCodec::decode(substr($entry, strlen($header)));
-            if ($value instanceof $type) {
-                return $value;
+            $stream = !is_link($path) && is_file($path) ? @fopen($path, 'rb') : false;
+            if ($stream === false) {
+                return null;
             }
+
+            try {
+                return fread($stream, strlen($header)) === $header ? CacheCodec::decode($stream) : null;
+            } finally {
+                fclose($stream);
+            }
+        });
+        if ($value instanceof $type) {
+            return $value;
         }
+        unset($value);
 
         $value = $compute();
-        $contents = $header.CacheCodec::encode($value);
-        $this->storage->locked(function () use ($name, $contents): ?string {
+        $this->storage->locked(function () use ($name, $header, $value): null {
+            $contents = (static function () use ($header, $value): iterable {
+                yield $header;
+
+                yield from CacheCodec::encode($value);
+            })();
             $this->storage->write($name, $contents);
 
             return null;
