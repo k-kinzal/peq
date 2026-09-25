@@ -7,16 +7,23 @@ namespace App\Analyzer;
 use App\Analyzer\Declaration\PhpDoc\DocIndex;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\Resolution\ClassHierarchy;
+use Override;
+use PhpParser\Node as Syntax;
 use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
-use PhpParser\NodeFinder;
+use PhpParser\NodeVisitorAbstract;
 
 /**
  * Reads callable bodies once per source file, including methods imported from traits.
  */
-final class CallSources
+final class CallSources extends NodeVisitorAbstract
 {
+    /**
+     * @var list<ClassMethod|Function_>
+     */
+    private array $declarations = [];
+
     /**
      * @var array<string, list<ClassMethod|Function_>>
      */
@@ -85,25 +92,37 @@ final class CallSources
         if ($resolved === null) {
             return [];
         }
-        $this->docs->read($resolved);
-        $classes = (new NodeFinder())->findInstanceOf($resolved, \PhpParser\Node\Stmt\ClassLike::class);
-        foreach ($classes as $class) {
-            foreach ($class->getMethods() as $method) {
-                $method->setAttribute('peqOwner', $class->namespacedName?->toString());
+        $this->declarations = [];
+        $this->docs->read($resolved, $this);
+
+        return $this->declarations;
+    }
+
+    /**
+     * Collects callable owners and trait aliases during the PHPDoc namespace walk.
+     */
+    #[Override]
+    public function enterNode(Syntax $node): null
+    {
+        if ($node instanceof Syntax\Stmt\ClassLike) {
+            foreach ($node->getMethods() as $method) {
+                $method->setAttribute('peqOwner', $node->namespacedName?->toString());
             }
-            foreach ($class->getTraitUses() as $use) {
+            foreach ($node->getTraitUses() as $use) {
                 foreach ($use->adaptations as $adaptation) {
-                    if ($adaptation instanceof \PhpParser\Node\Stmt\TraitUseAdaptation\Alias && $adaptation->newName !== null) {
-                        $this->aliases[strtolower($class->namespacedName?->toString().'::'.$adaptation->newName->toString())] = [
+                    if ($adaptation instanceof Syntax\Stmt\TraitUseAdaptation\Alias && $adaptation->newName !== null) {
+                        $this->aliases[strtolower($node->namespacedName?->toString().'::'.$adaptation->newName->toString())] = [
                             'method' => strtolower($adaptation->method->toString()),
-                            'traits' => array_values(array_map(static fn (\PhpParser\Node\Name $name): string => strtolower($name->toString()), $adaptation->trait === null ? $use->traits : [$adaptation->trait])),
+                            'traits' => array_values(array_map(static fn (Syntax\Name $name): string => strtolower($name->toString()), $adaptation->trait === null ? $use->traits : [$adaptation->trait])),
                         ];
                     }
                 }
             }
         }
-        $found = (new NodeFinder())->find($resolved, static fn (object $node): bool => $node instanceof ClassMethod || $node instanceof Function_);
+        if ($node instanceof ClassMethod || $node instanceof Function_) {
+            $this->declarations[] = $node;
+        }
 
-        return array_values(array_filter($found, static fn (object $node): bool => $node instanceof ClassMethod || $node instanceof Function_));
+        return null;
     }
 }

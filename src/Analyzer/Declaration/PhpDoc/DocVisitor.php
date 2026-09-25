@@ -41,18 +41,34 @@ final class DocVisitor extends NodeVisitorAbstract
 
     /**
      * Records comments against declarations already collected by the engine.
+     *
+     * @param null|array<string, true> $classes Resolved class names shared across files
      */
     public function __construct(
         private readonly Graph $graph,
         private readonly string $file,
         private readonly DocParser $parser,
         private readonly NameResolver $names,
+        ?array $classes = null,
     ) {
+        $this->classes = $classes ?? self::classes($graph);
+    }
+
+    /**
+     * Indexes declared class names once before documentation adds unresolved targets.
+     *
+     * @return array<string, true>
+     */
+    public static function classes(Graph $graph): array
+    {
+        $classes = [];
         foreach ($graph->nodes() as $symbol) {
             if (in_array($symbol->kind(), [NodeKind::Klass, NodeKind::Interface, NodeKind::Trait, NodeKind::Enum], true) && $symbol->resolved()) {
-                $this->classes[strtolower($symbol->id()->toString())] = true;
+                $classes[strtolower($symbol->id()->toString())] = true;
             }
         }
+
+        return $classes;
     }
 
     /**

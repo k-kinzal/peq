@@ -121,7 +121,7 @@ final class DocVisitorTest extends TestCase
         ], $edges);
     }
 
-    public function testEnterNodeRecognizesOnlyResolvedClassLikeDeclarationsAsTypes(): void
+    public function testClassesAndEnterNodeRecognizeOnlyResolvedClassLikeDeclarationsAsTypes(): void
     {
         $graph = new Graph();
         $graph->addNodes([
@@ -140,10 +140,12 @@ final class DocVisitorTest extends TestCase
             function run() {}
             PHP;
         $names = new NameResolver();
-        $visitor = new DocVisitor($graph, '/source.php', new DocParser(), $names);
+        $classes = DocVisitor::classes($graph);
+        $visitor = new DocVisitor($graph, '/source.php', new DocParser(), $names, $classes);
 
         (new NodeTraverser($names, $visitor))->traverse((new ParserFactory())->createForNewestSupportedVersion()->parse($source) ?? []);
 
+        self::assertSame(['app\php_version_id' => true, 'app\php_int_max' => true, 'app\php_int_min' => true, 'app\php_os' => true], $classes);
         self::assertSame(['App\PHP_VERSION_ID', 'App\PHP_INT_MAX', 'App\PHP_INT_MIN', 'App\PHP_OS'], array_map(static fn (Edge $edge): string => $edge->to()->toString(), $graph->forwardEdges()));
     }
 

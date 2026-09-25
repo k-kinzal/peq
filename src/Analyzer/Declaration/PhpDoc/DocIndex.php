@@ -8,8 +8,10 @@ use App\Analyzer\Graph\NodeKind;
 use App\Analyzer\Graph\Resolution\ClassHierarchy;
 use PhpParser\Node;
 use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
 use PhpParser\NodeVisitor\NameResolver;
 use PHPStan\PhpDocParser\Ast\PhpDoc\TypeAliasImportTagValueNode;
+use WeakMap;
 
 /**
  * Resolves documented declarations within the analysed source set, without autoloading it.
@@ -17,17 +19,30 @@ use PHPStan\PhpDocParser\Ast\PhpDoc\TypeAliasImportTagValueNode;
 final class DocIndex
 {
     /**
+     * @var WeakMap<DocBlock, array<string, array<string, DocExpression>>>
+     */
+    private WeakMap $selected;
+
+    /**
      * @var array<string, DocBlock>
      */
     public array $blocks = [];
 
     /**
+     * Retains selected types for each parsed comment across receiver lookups.
+     */
+    public function __construct()
+    {
+        $this->selected = new WeakMap();
+    }
+
+    /**
      * @param list<Node> $nodes
      */
-    public function read(array $nodes): void
+    public function read(array $nodes, NodeVisitor ...$visitors): void
     {
         $names = new NameResolver();
-        (new NodeTraverser($names, new DocContext($this, $names)))->traverse($nodes);
+        (new NodeTraverser($names, new DocContext($this, $names), ...$visitors))->traverse($nodes);
     }
 
     /**
@@ -58,10 +73,16 @@ final class DocIndex
         if ($block === null) {
             return [];
         }
+        $selected = $this->selected[$block] ?? [];
+        if (isset($selected[$family])) {
+            return $selected[$family];
+        }
         $types = [];
         foreach ($block->types($family) as $name => $type) {
             $types[$name] = new DocExpression($type, $block->scopeFor($family, $name), $this);
         }
+        $selected[$family] = $types;
+        $this->selected[$block] = $selected;
 
         return $types;
     }

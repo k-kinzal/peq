@@ -60,7 +60,7 @@ final class CallSourcesTest extends TestCase
         self::assertSame($body, $reader->callable($source));
     }
 
-    public function testCallableResolvesAnExplicitTraitAliasAmongSameLineDeclarations(): void
+    public function testEnterNodeIndexesOwnersAndExplicitTraitAliasesDuringRead(): void
     {
         $file = tempnam(sys_get_temp_dir(), 'peq-trait-alias-');
         self::assertNotFalse($file);

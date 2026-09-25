@@ -22,6 +22,20 @@ use PHPUnit\Framework\TestCase;
 #[Small]
 final class DocIndexTest extends TestCase
 {
+    public function testTypesKeepsParametersAndReturnsSeparateAcrossRepeatedLookups(): void
+    {
+        $nodes = (new ParserFactory())->createForHostVersion()->parse("<?php /**\n * @param Input \$value\n * @return Output\n */ function run(\$value) {}") ?? [];
+        $index = new DocIndex();
+        $index->read(array_values($nodes));
+        $block = DocIndex::block($nodes[0]);
+
+        self::assertSame('Input', $index->types($block, 'param')['value']->objects());
+        self::assertSame('Output', $index->types($block, 'return')['']->objects());
+        self::assertSame('Input', $index->types($block, 'param')['value']->objects());
+        self::assertSame('Output', $index->types($block, 'return')['']->objects());
+        self::assertSame([], $index->types($block, 'var'));
+    }
+
     public function testReadReturnedAndAliasKeepImportedTypesInTheirOriginalNamespace(): void
     {
         $nodes = (new ParserFactory())->createForHostVersion()->parse(<<<'PHP'
