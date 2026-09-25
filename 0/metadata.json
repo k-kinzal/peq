@@ -1,0 +1,53 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M3B28YHKCMGYQ1KJQSR497EC",
+  "session_id": "01a0d366-2281-7310-8d11-bcaa9e0fde8d",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-25T01:18:30.934587Z",
+  "branch": "fix/native-phpdoc-diff",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocNamesTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocOwnersTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocParserTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocScopeTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocVisitorTest.php"
+  ],
+  "agent": "Codex",
+  "model": "gpt-6-astra",
+  "turn_id": "b3242ff8cb57",
+  "checkpoint_transcript_start": 930,
+  "transcript_lines_at_start": 930,
+  "compact_transcript_start": 108,
+  "token_usage": {
+    "input_tokens": 99159,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1344384,
+    "output_tokens": 10628,
+    "api_call_count": 17
+  },
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-25T01:18:30.76505Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 0,
+    "total_lines_changed": 0,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}

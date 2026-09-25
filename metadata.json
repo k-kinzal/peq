@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M3B28YHKCMGYQ1KJQSR497EC",
+  "strategy": "manual-commit",
+  "branch": "fix/native-phpdoc-diff",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocNamesTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocOwnersTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocParserTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocScopeTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocVisitorTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 99159,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1344384,
+    "output_tokens": 10628,
+    "api_call_count": 17
+  }
+}
