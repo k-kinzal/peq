@@ -1,0 +1,60 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M3B9M0X5QN1C0H1MMFYKY14F",
+  "strategy": "manual-commit",
+  "branch": "feat/call-site-arguments",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/Analyzer/ExperimentAnalyzer/BodyWalker.php",
+    "src/Analyzer/ExperimentAnalyzer/Emitter/UsageEmitter.php",
+    "tests/Integration/UnresolvedCallLocationTest.php",
+    "tests/Unit/Action/Inspect/ProjectedRelationTest.php",
+    "tests/Unit/Analyzer/BodyCallRecorderTest.php",
+    "tests/Unit/Analyzer/CachedSyntaxTest.php",
+    "tests/Unit/Analyzer/CallSourcesTest.php",
+    "tests/Unit/Analyzer/DebugAnalyzer/Generator/NodeGeneratorTest.php",
+    "tests/Unit/Analyzer/DebugAnalyzer/Generator/NodeIdGeneratorTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/BodyWalkerTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/ClassWalkerTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Emitter/UsageEmitterTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/SourceWalkerTest.php",
+    "tests/Unit/Analyzer/NativeAnalyzer/AnalysisScopeTest.php",
+    "tests/Unit/Analyzer/NativeAnalyzer/ParsedSourceTest.php",
+    "tests/Unit/Analyzer/NativeAnalyzer/SourceIndexTest.php",
+    "tests/Unit/Analyzer/NativeAnalyzer/TraitFlatteningTest.php",
+    "tests/Unit/Reporter/DotReporter/DotReporterTest.php",
+    "tests/Unit/Reporter/DotReporter/StatementRendererTest.php",
+    "tests/Unit/Reporter/GraphReporter/GraphCursorTest.php",
+    "tests/Unit/Reporter/GraphReporter/GraphReporterTest.php",
+    "tests/Unit/Reporter/JsonReporter/JsonCursorTest.php",
+    "tests/Unit/Reporter/JsonReporter/JsonReporterTest.php",
+    "tests/Unit/Reporter/Query/DiagramWriterTest.php",
+    "tests/Unit/Reporter/Query/DotWriterTest.php",
+    "tests/Unit/Reporter/Query/QueryReporterFactoryTest.php",
+    "tests/Unit/Reporter/Query/QueryReporterTest.php",
+    "tests/Unit/Reporter/Query/ResultElementsTest.php",
+    "tests/Unit/Reporter/Query/TreeWriterTest.php",
+    "tests/Unit/Reporter/ReporterFactoryTest.php",
+    "tests/Unit/Reporter/ReporterTest.php",
+    "tests/Unit/Reporter/TableReporter/TableCursorTest.php",
+    "tests/Unit/Reporter/TableReporter/TableReporterTest.php",
+    "tests/Unit/Reporter/TreeReporter/TreeCursorTest.php",
+    "tests/Unit/Reporter/TreeReporter/TreeReporterTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 47772,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 4408576,
+    "output_tokens": 10341,
+    "api_call_count": 31
+  }
+}
