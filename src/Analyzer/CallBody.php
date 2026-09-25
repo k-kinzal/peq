@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer;
 
+use Closure;
 use Override;
 use PhpParser\Node;
 use PhpParser\NodeVisitor;
@@ -20,6 +21,11 @@ final class CallBody extends NodeVisitorAbstract
     public array $expressions = [];
 
     /**
+     * @param null|Closure(Node): bool $select Retain only expressions the consumer records
+     */
+    public function __construct(private readonly ?Closure $select = null) {}
+
+    /**
      * Records expressions in this callable's scope.
      */
     #[Override]
@@ -28,7 +34,9 @@ final class CallBody extends NodeVisitorAbstract
         if ($node instanceof Node\Stmt\ClassLike || $node instanceof Node\Stmt\Function_) {
             return NodeVisitor::DONT_TRAVERSE_CHILDREN;
         }
-        $this->expressions[] = $node;
+        if ($this->select === null || ($this->select)($node)) {
+            $this->expressions[] = $node;
+        }
 
         return null;
     }

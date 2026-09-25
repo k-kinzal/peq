@@ -61,7 +61,7 @@ final class InClassMethodNodeProcessor
 
         $sourceNode = SourceResolver::resolve($scope);
         $items = [];
-        $visitor = new CallBody();
+        $visitor = new CallBody(self::handles(...));
         (new NodeTraverser($visitor))->traverse($body);
         foreach ($visitor->expressions as $usage) {
             array_push($items, ...self::dispatch($usage, $scope, $sourceNode));

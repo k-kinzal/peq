@@ -66,4 +66,13 @@ final class BodyWalkerTest extends TestCase
             [],
         ];
     }
+
+    public function testRelationsSkipsUnlocatedNodesThatCannotDeclareADependency(): void
+    {
+        $root = vfsStream::setup('project', null, ['Walked.php' => '<?php class C { function run() {} }']);
+        $index = SourceIndex::of([$root->url().'/Walked.php'], $root->url());
+        $scope = AnalysisScope::inFile($index, 'vfs://project/Walked.php')->enteringClass('C', null)->enteringMethod('run');
+
+        self::assertSame([], (new BodyWalker())->relations([new \PhpParser\Node\Stmt\Nop()], $scope));
+    }
 }

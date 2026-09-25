@@ -32,7 +32,7 @@ final class BodyWalker
     public function relations(array $body, AnalysisScope $scope): array
     {
         $relations = [];
-        $visitor = new CallBody();
+        $visitor = new CallBody(UsageEmitter::records(...));
         (new NodeTraverser($visitor))->traverse($body);
         foreach ($visitor->expressions as $expression) {
             array_push($relations, ...UsageEmitter::emit($expression, $scope));
