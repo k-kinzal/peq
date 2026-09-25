@@ -8,27 +8,25 @@ use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\GraphSnapshot;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use Generator;
-use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
-use PHPUnit\Framework\Attributes\UsesNamespace;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
 
 /**
+ * PHPStan's documented receiver types, observed through both graph engines.
+ *
+ * Covers nothing on purpose: each case runs a PHPStan analysis in a process of its
+ * own, so the class as a whole takes longer than Infection's timeout. Counting it as
+ * the covering test of the classes it exercises made Infection skip every mutant in
+ * them rather than run it; their unit tests are the covering tests.
+ *
  * @internal
  */
-#[CoversClass(\App\Analyzer\Declaration\PhpDoc\DocBlock::class)]
-#[CoversClass(\App\Analyzer\Declaration\PhpDoc\DocContext::class)]
-#[CoversClass(\App\Analyzer\Declaration\PhpDoc\DocExpression::class)]
-#[CoversClass(\App\Analyzer\Declaration\PhpDoc\DocIndex::class)]
-#[CoversClass(\App\Analyzer\ReceiverBinding::class)]
-#[CoversClass(\App\Analyzer\BodyCallRecorder::class)]
-#[CoversClass(\App\Analyzer\CallSources::class)]
-#[CoversClass(\App\Analyzer\CallEnrichment::class)]
-#[UsesNamespace('App\Analyzer')]
+#[CoversNothing]
 #[Large]
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]

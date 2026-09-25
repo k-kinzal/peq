@@ -151,7 +151,11 @@ cannot make a case pass. Receiver fixtures must assert the actual call targets a
 `PhpDocCoverageTest` inventories the installed PHPStan tag resolver and PHPDoc parser;
 new upstream tags and type AST nodes require executable fixtures, including negative
 cases for metadata. `PhpDocResolutionDifferenceTest` uses PHPStan's own resolver as
-an independent oracle for selected types and prefix precedence.
+an independent oracle for selected types and prefix precedence. Every test under
+`tests/Diff` covers nothing: Infection counts a covering class's whole run time
+against its timeout, and a class that runs PHPStan once per case exceeds it, so
+declaring one as coverage makes Infection skip every mutant it reaches instead of
+running it, which the whole-tree mutation job rejects.
 
 ## Adding to the Query Language
 
