@@ -147,7 +147,11 @@ answers that are otherwise the same.
 
 PHPDoc changes also run `composer test:diff`. Its fixtures assert actual documented
 dependencies as well as graph equality, so two engines ignoring the same annotation
-cannot make a case pass.
+cannot make a case pass. Receiver fixtures must assert the actual call targets as well.
+`PhpDocCoverageTest` inventories the installed PHPStan tag resolver and PHPDoc parser;
+new upstream tags and type AST nodes require executable fixtures, including negative
+cases for metadata. `PhpDocResolutionDifferenceTest` uses PHPStan's own resolver as
+an independent oracle for selected types and prefix precedence.
 
 ## Adding to the Query Language
 

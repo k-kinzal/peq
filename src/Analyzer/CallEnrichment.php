@@ -22,15 +22,21 @@ final class CallEnrichment
     public static function of(Graph $graph, ?int $phpVersion = null, ?PhaseCache $cache = null): Graph
     {
         $sources = new CallSources($phpVersion, $cache);
-        $recorder = new BodyCallRecorder($graph, new ClassHierarchy($graph));
+        foreach ($graph->nodes() as $node) {
+            if ($node->resolved() && $node->meta() !== null) {
+                $sources->file($node->meta()->path);
+            }
+        }
+        $recorder = new BodyCallRecorder($graph, new ClassHierarchy($graph), $sources->docs);
         $sites = [];
         foreach ($graph->nodes() as $node) {
             if (($node instanceof MethodNode || $node instanceof FunctionNode) && $node->resolved()) {
-                $body = $sources->callable($node)?->getStmts();
+                $callable = $sources->callable($node);
+                $body = $callable?->getStmts();
                 if ($body !== null) {
                     $scope = CallSites::of(array_values($body), $node, $node->meta()->path ?? '');
                     $sites[$node->id()->toString()] = $scope;
-                    $recorder->record(array_values($body), $node, $scope);
+                    $recorder->record(array_values($body), $node, $scope, $callable);
                 }
             }
         }

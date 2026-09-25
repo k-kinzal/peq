@@ -43,6 +43,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(ClassHierarchy::class)]
 #[UsesClass(\App\Analyzer\Graph\Resolution\TypeConstraint::class)]
 #[UsesClass(ReceiverBinding::class)]
+#[\PHPUnit\Framework\Attributes\UsesNamespace('App\Analyzer\Declaration\PhpDoc')]
 #[CoversClass(BodyCallRecorder::class)]
 #[UsesClass(\App\Analyzer\Declaration\Calls\CallSites::class)]
 #[UsesClass(\App\Analyzer\Declaration\ExpressionText::class)]

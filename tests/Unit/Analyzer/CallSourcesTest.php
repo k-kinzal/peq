@@ -19,6 +19,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
 #[UsesClass(\App\Analyzer\Graph\Resolution\ClassHierarchy::class)]
 #[UsesClass(\App\Analyzer\SourceParser::class)]
+#[\PHPUnit\Framework\Attributes\UsesNamespace('App\Analyzer\Declaration\PhpDoc')]
 #[CoversClass(CallSources::class)]
 #[UsesClass(\App\Analyzer\CachedSyntax::class)]
 #[UsesClass(\App\Analyzer\Declaration\Calls\WrittenCalls::class)]
@@ -38,9 +39,9 @@ final class CallSourcesTest extends TestCase
         self::assertCount(2, $body->getStmts() ?? []);
     }
 
-    public function testReadTreatsAnUnavailableFileAsHavingNoBodies(): void
+    public function testFileCachesAnUnavailableFileAsHavingNoBodies(): void
     {
-        self::assertSame([], (new CallSources(80300))->read('/peq-file-that-does-not-exist.php'));
+        self::assertSame([], (new CallSources(80300))->file('/peq-file-that-does-not-exist.php'));
     }
 
     public function testCallableDisambiguatesOwnersAndMethodNamesOnTheSameLine(): void

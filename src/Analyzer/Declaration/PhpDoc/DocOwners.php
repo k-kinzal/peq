@@ -23,6 +23,7 @@ final class DocOwners
             $node instanceof Stmt\ClassLike => [$scope->class ?? ''],
             $node instanceof Stmt\Function_ => [$node->namespacedName?->toString() ?? ''],
             $node instanceof Stmt\ClassMethod => [$scope->class.'::'.$node->name->toString()],
+            $node instanceof Node\Param && $node->flags !== 0 && $node->var instanceof Node\Expr\Variable && is_string($node->var->name) => [$scope->class.'::'.$node->var->name],
             $node instanceof Stmt\Property => array_map(static fn (Node\PropertyItem $property): string => $scope->class.'::'.$property->name->toString(), $node->props),
             $node instanceof Stmt\ClassConst => array_map(static fn (Node\Const_ $constant): string => $scope->class.'::'.$constant->name->toString(), $node->consts),
             $node instanceof Stmt\EnumCase => [$scope->class.'::'.$node->name->toString()],

@@ -67,8 +67,10 @@ final class DocVisitor extends NodeVisitorAbstract
             $scope = new DocScope($scope->names, $node->namespacedName?->toString(), $node instanceof Stmt\Class_ ? $node->extends?->toString() : null, classes: $this->classes);
         }
         $this->sources = DocOwners::of($node, $scope, $this->graph) ?? $this->sources;
-        $comment = $node->getDocComment();
-        if ($comment !== null) {
+        foreach ($node->getComments() as $comment) {
+            if (!$comment instanceof \PhpParser\Comment\Doc) {
+                continue;
+            }
             $doc = $this->parser->parse($comment->getText());
             $scope = $scope->withTypes($doc);
             $this->record($doc, $scope, $comment->getStartLine(), $comment->getStartFilePos());

@@ -266,7 +266,8 @@ types (including promoted and inherited properties), declared return types, name
 `new` expressions, and simple local assignments. Nullable, union and intersection
 types are supported. Assignment inference is flow-insensitive and collects known
 alternatives. It does not execute factories, read DI container configuration or
-resolve arbitrary PHPDoc/dynamic values. Unknown receivers and dynamic method names
+perform PHPStan's full control-flow analysis or resolve arbitrary dynamic values.
+PHPDoc receiver types are described below. Unknown receivers and dynamic method names
 remain unresolved call occurrences, queryable with `e.resolution = "unresolved"`.
 Their identifiers use `unresolved-call@file:line:column`, for example
 `unresolved-call@/app/Controller.php:12:5`. Lines and columns are 1-based and point
@@ -300,8 +301,33 @@ reverse traversal. They do not change PHP signatures, create magic method bodies
 or apply PHPStan's type checking and control-flow narrowing. Both ordinary and
 prefixed tags retain their written dependencies. Metadata tags and prose do not
 create type references; a malformed tag does not discard neighbouring valid tags.
-Documentation on a trait member is attributed to the trait when that member has
-no separate graph symbol.
+Every consecutive Docblock contributes its own occurrences. A `@var` on a promoted
+parameter belongs to the promoted property. Documentation on a trait member is
+attributed to the trait when that member has no separate graph symbol.
+
+PHPDoc also supplies receiver types for both engines:
+
+| Source of a value | How calls use its documentation |
+|-------------------|---------------------------------|
+| Parameters and closure parameters | `@param`, `@phan-param`, `@psalm-param`, `@phpstan-param` |
+| Properties and local variables | `@var` and its supported prefixes; promoted constructor `@param` types |
+| Function and method results | `@return` and its supported prefixes, including inherited method documentation |
+| Magic members | Readable `@property` / `@property-read` and `@method` result types |
+| Containers | Array offsets, shape keys and `foreach` values use the element type |
+| Local type names | Template bounds and local/imported aliases retain their declaring namespace |
+
+For example, `/** @param Service $service */ function run($service) { $service->work(); }`
+records a call to `Service::work`. With `list<Service>`, only an element such as
+`$service[0]` has that receiver type: the list itself is not a `Service`.
+PHPStan-prefixed parameter, variable and return types take precedence over Psalm,
+Phan and ordinary tags, independently of their order. All written tags still
+contribute documentation dependencies, including overridden annotations.
+
+This is source-based receiver resolution, not PHPStan's complete type inference.
+Assertion-based branch narrowing, output-parameter effects after calls, generic
+argument inference, extensions and framework-specific dynamic return types are not
+applied by either peq engine. Their written type references remain dependencies;
+metadata such as purity and invocation timing does not name a dependency.
 
 ```bash
 peq graph 'MATCH (s)-[:phpDoc]->(t) RETURN s.id, t.id' src
@@ -312,10 +338,19 @@ The difference suite in `tests/Diff/` checks the
 [PHPDoc annotations](https://phpstan.org/writing-php-code/phpdocs-basics) and
 [type syntax](https://phpstan.org/writing-php-code/phpdoc-types) supported by the
 installed PHPStan version. It compares complete canonical graphs, asserts the
-expected documented types and source locations, and runs native analysis in a
-separate process so PHPStan's bundled parser cannot mask differences in the parser
+expected documented types, source locations and actual call targets, and runs native
+analysis in a separate process so PHPStan's bundled parser cannot mask differences in the parser
 shipped with the PHAR. The small `phpstan/phpdoc-parser` library is a runtime
 dependency; the `phpstan/phpstan` analysis engine remains a development dependency.
+
+The suite also checks selected types against PHPStan's own PHPDoc resolver, outside
+peq's shared enrichment pass. A coverage test reads the installed parser and
+PHPStan tag resolver and requires an executable dependency fixture for every tag,
+including explicit negative cases for metadata. Every upstream type AST shape must
+also occur in the corpus. Dependency upgrades therefore fail the suite when the
+annotation vocabulary grows without corresponding cases. Graph equality alone is
+not sufficient: two engines omitting the same edge must fail the expected-target
+assertions.
 
 ## Analysis cache
 

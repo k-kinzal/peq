@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Analyzer;
 
 use App\Analyzer\Declaration\Calls\CallSites;
+use App\Analyzer\Declaration\PhpDoc\DocIndex;
 use App\Analyzer\Graph\Edge\Usage\FunctionCallEdge;
 use App\Analyzer\Graph\Edge\Usage\MethodCallEdge;
 use App\Analyzer\Graph\Edge\Usage\StaticCallEdge;
@@ -30,23 +31,28 @@ final readonly class BodyCallRecorder
     /**
      * Prepares call recording against the indexed declarations.
      */
-    public function __construct(private Graph $graph, private ClassHierarchy $hierarchy) {}
+    public function __construct(private Graph $graph, private ClassHierarchy $hierarchy, private DocIndex $docs = new DocIndex()) {}
 
     /**
      * @param list<Node> $body
      */
-    public function record(array $body, FunctionNode|MethodNode $source, ?CallSites $sites = null): void
+    public function record(array $body, FunctionNode|MethodNode $source, ?CallSites $sites = null, ?Node\FunctionLike $callable = null): void
     {
         $sites ??= CallSites::of($body, $source, $source->meta()->path ?? '');
         foreach ([$source, ...$sites->closures] as $scope) {
-            $types = new ReceiverBinding($this->hierarchy, $scope);
             $nodes = $sites->expressions[$scope->id()->toString()] ?? [];
+            $syntax = $scope === $source ? $callable : ($nodes[0] ?? null);
+            $types = new ReceiverBinding($this->hierarchy, $scope, $this->docs, $syntax instanceof Node ? $syntax : null);
             foreach ($nodes as $node) {
                 if ($node instanceof Expr\Assign) {
                     $types->assign($node);
                 }
             }
             foreach ($nodes as $node) {
+                $types->annotate($node);
+                if ($node instanceof Expr\Assign) {
+                    $types->assign($node);
+                }
                 if ($node instanceof Expr\CallLike && $node->isFirstClassCallable()) {
                     $this->reference($node, $source, $types);
                 }

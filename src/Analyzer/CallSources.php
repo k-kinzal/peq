@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer;
 
+use App\Analyzer\Declaration\PhpDoc\DocIndex;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\Resolution\ClassHierarchy;
 use PhpParser\Node\FunctionLike;
@@ -24,7 +25,15 @@ final class CallSources
     /**
      * Selects the PHP version used to read callable bodies.
      */
-    public function __construct(private readonly ?int $version, private readonly ?PhaseCache $cache = null) {}
+    public function __construct(private readonly ?int $version, private readonly ?PhaseCache $cache = null, public readonly DocIndex $docs = new DocIndex()) {}
+
+    /**
+     * @return list<ClassMethod|Function_>
+     */
+    public function file(string $path): array
+    {
+        return $this->files[$path] ??= $this->read($path);
+    }
 
     /**
      * Finds the syntax of a graph declaration by its source location.
@@ -35,7 +44,7 @@ final class CallSources
         if ($meta === null) {
             return null;
         }
-        $declarations = $this->files[$meta->path] ??= $this->read($meta->path);
+        $declarations = $this->file($meta->path);
         $candidates = array_values(array_filter($declarations, static fn (ClassMethod|Function_ $node): bool => $node->getStartLine() === $meta->line));
         foreach ($candidates as $candidate) {
             if ($candidate instanceof ClassMethod && $candidate->getAttribute('peqOwner') === ClassHierarchy::owner($symbol) && str_ends_with(strtolower($symbol->id()->toString()), '::'.strtolower($candidate->name->toString()))) {
@@ -62,6 +71,7 @@ final class CallSources
         if ($resolved === null) {
             return [];
         }
+        $this->docs->read($resolved);
         $classes = (new NodeFinder())->findInstanceOf($resolved, \PhpParser\Node\Stmt\ClassLike::class);
         foreach ($classes as $class) {
             foreach ($class->getMethods() as $method) {
