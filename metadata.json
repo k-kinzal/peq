@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M3BWB8ERECJWCTRGCVF3FKAH",
+  "strategy": "manual-commit",
+  "branch": "fix/phpdoc-engine-parity",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/Analyzer/Declaration/PhpDoc/DocBlock.php",
+    "src/Analyzer/Declaration/PhpDoc/DocIndex.php",
+    "tests/Diff/PhpDocCallDifferenceTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocBlockTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 10335,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1515392,
+    "output_tokens": 5761,
+    "api_call_count": 7
+  }
+}
