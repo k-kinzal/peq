@@ -1,0 +1,48 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M3C0Y85CXBC6B83240Y8VTGV",
+  "strategy": "manual-commit",
+  "branch": "fix/analysis-memory",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "README.md",
+    "src/Analyzer/CacheCodec.php",
+    "src/Analyzer/CacheStorage.php",
+    "src/Analyzer/CallEnrichment.php",
+    "src/Analyzer/CallSources.php",
+    "src/Analyzer/Graph/AuthoredEdge.php",
+    "src/Analyzer/Graph/Graph.php",
+    "src/Analyzer/NativeAnalyzer/GraphRecorder.php",
+    "src/Analyzer/NativeAnalyzer/NativeAnalyzer.php",
+    "src/Analyzer/NativeAnalyzer/ParsedSource.php",
+    "src/Analyzer/NativeAnalyzer/SourceIndex.php",
+    "src/Analyzer/NativeAnalyzer/SourceWalker.php",
+    "src/Analyzer/PhaseCache.php",
+    "tests/Integration/AnalysisCacheTest.php",
+    "tests/Integration/AnalysisMemoryTest.php",
+    "tests/Unit/Analyzer/CacheCodecTest.php",
+    "tests/Unit/Analyzer/CacheStorageTest.php",
+    "tests/Unit/Analyzer/CallSourcesTest.php",
+    "tests/Unit/Analyzer/Graph/AuthoredEdgeTest.php",
+    "tests/Unit/Analyzer/Graph/GraphTest.php",
+    "tests/Unit/Analyzer/NativeAnalyzer/GraphRecorderTest.php",
+    "tests/Unit/Analyzer/NativeAnalyzer/SourceIndexTest.php",
+    "tests/Unit/Analyzer/NativeAnalyzer/SourceWalkerTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 290604,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 7942656,
+    "output_tokens": 42135,
+    "api_call_count": 60
+  }
+}
