@@ -225,6 +225,10 @@ types are supported. Assignment inference is flow-insensitive and collects known
 alternatives. It does not execute factories, read DI container configuration or
 resolve arbitrary PHPDoc/dynamic values. Unknown receivers and dynamic method names
 remain unresolved call occurrences, queryable with `e.resolution = "unresolved"`.
+Their identifiers use `unresolved-call@file:line:column`, for example
+`unresolved-call@/app/Controller.php:12:5`. Lines and columns are 1-based and point
+to the start of the call expression. Columns count bytes within the line, with a
+tab counting as one byte; the file-wide byte offset remains available as `offset`.
 External methods such as `PDO::query` remain named unresolved symbols when their
 sources were not analyzed. Instantiation is a separate `instantiation` relation;
 `calls` follows explicit method, static and function calls, not constructor or

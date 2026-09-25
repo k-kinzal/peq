@@ -84,13 +84,15 @@ final class BodyCallRecorderTest extends TestCase
         $graph = new Graph();
         $source = new FunctionNode(FunctionNodeId::of('run'), true, new FileMeta('/source.php', 1, 1));
         $graph->addNode($source);
-        $call = new MethodCall(new Variable('unknown'), 'run', [], ['startLine' => 2, 'startFilePos' => 20]);
+        $call = new MethodCall(new Variable('unknown'), 'run', [], ['startLine' => 2, 'startFilePos' => 20, 'peqStartColumn' => 5]);
         $hierarchy = new ClassHierarchy($graph);
 
         (new BodyCallRecorder($graph, $hierarchy))->call($call, $source, new ReceiverBinding($hierarchy, $source));
 
         self::assertCount(1, $graph->forwardEdges());
-        self::assertSame('unresolved-call@/source.php:20', $graph->forwardEdges()[0]->to()->toString());
+        self::assertSame('unresolved-call@/source.php:2:5', $graph->forwardEdges()[0]->to()->toString());
+        self::assertEquals(new FileMeta('/source.php', 2, 5, 20), $graph->forwardEdges()[0]->meta());
+        self::assertEquals(new FileMeta('/source.php', 2, 5, 20), $graph->nodeNamed('unresolved-call@/source.php:2:5')?->meta());
     }
 
     public function testTargetsOnlyUseTheIntersectionMemberThatDeclaresTheMethod(): void
@@ -137,7 +139,7 @@ final class BodyCallRecorderTest extends TestCase
         $call = new MethodCall(new Variable('this'), new Variable('name'), [], ['startLine' => 2, 'startFilePos' => 20]);
 
         (new BodyCallRecorder($graph, $hierarchy))->call($call, $source, new ReceiverBinding($hierarchy, $source));
-        $target = $graph->nodeNamed('unresolved-call@/source.php:20');
+        $target = $graph->nodeNamed('unresolved-call@/source.php:2:1');
         $edges = $graph->forwardEdges();
 
         self::assertNotNull($target);
