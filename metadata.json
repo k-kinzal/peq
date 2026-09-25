@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M3B4PD91QC1D1JC1144WBPW5",
+  "strategy": "manual-commit",
+  "branch": "fix/unresolved-call-source-location",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "README.md",
+    "src/Analyzer/BodyCallRecorder.php",
+    "src/Analyzer/CachedSyntax.php",
+    "tests/Integration/UnresolvedCallLocationTest.php",
+    "tests/Unit/Analyzer/BodyCallRecorderTest.php",
+    "tests/Unit/Analyzer/CachedSyntaxTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 97320,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 2277376,
+    "output_tokens": 13145,
+    "api_call_count": 31
+  }
+}
