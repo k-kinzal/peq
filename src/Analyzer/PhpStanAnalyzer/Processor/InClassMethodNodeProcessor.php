@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer\PhpStanAnalyzer\Processor;
 
+use App\Analyzer\CallBody;
 use App\Analyzer\Graph\Edge;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\PhpStanAnalyzer\Processor\Usage\CatchProcessor;
@@ -18,7 +19,7 @@ use App\Analyzer\PhpStanAnalyzer\Processor\Usage\StaticPropertyAccessProcessor;
 use App\Analyzer\PhpStanAnalyzer\ReparsedSource;
 use App\Analyzer\PhpStanAnalyzer\SourceResolver;
 use PhpParser\Node as PhpParserNode;
-use PhpParser\NodeFinder;
+use PhpParser\NodeTraverser;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\InClassMethodNode;
 
@@ -60,7 +61,9 @@ final class InClassMethodNodeProcessor
 
         $sourceNode = SourceResolver::resolve($scope);
         $items = [];
-        foreach ((new NodeFinder())->find($body, self::handles(...)) as $usage) {
+        $visitor = new CallBody();
+        (new NodeTraverser($visitor))->traverse($body);
+        foreach ($visitor->expressions as $usage) {
             array_push($items, ...self::dispatch($usage, $scope, $sourceNode));
         }
 

@@ -24,10 +24,12 @@ final class FileMetaTest extends TestCase
 
     public function testLineAndColumnAreKeptAsTheyWereGiven(): void
     {
-        $meta = new FileMeta('/project/src/Domain/Invoice.php', 10, 5);
+        $meta = new FileMeta('/project/src/Domain/Invoice.php', 10, 5, 30, 40);
 
         self::assertSame(10, $meta->line);
         self::assertSame(5, $meta->column);
+        self::assertSame(30, $meta->offset);
+        self::assertSame(40, $meta->endOffset);
     }
 
     #[DataProvider('providerPathsAndTheirFileNames')]

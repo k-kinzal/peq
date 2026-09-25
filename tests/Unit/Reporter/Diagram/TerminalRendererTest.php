@@ -937,4 +937,20 @@ final class TerminalRendererTest extends TestCase
             (new TerminalRenderer(120))->draw($diagram),
         );
     }
+
+    public function testDrawListsEachDetailedOccurrenceBesideTheSharedWiring(): void
+    {
+        $diagram = new Diagram();
+        $diagram->add(new DiagramNode('A'));
+        $diagram->add(new DiagramNode('B'));
+        $diagram->relate(new DiagramEdge('A', 'B', 'call: B(1) @ /a.php:2:5', detailed: true));
+        $diagram->relate(new DiagramEdge('A', 'B', 'call: B(2) @ /a.php:2:11', detailed: true));
+
+        self::assertSame([
+            'A ──▶ B',
+            '',
+            'A -> B | call: B(1) @ /a.php:2:5',
+            'A -> B | call: B(2) @ /a.php:2:11',
+        ], (new TerminalRenderer())->draw($diagram));
+    }
 }

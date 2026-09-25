@@ -116,6 +116,14 @@ final readonly class TerminalRenderer implements DiagramRenderer
             array_push($lines, ...$this->band($layout, $routes, $first, $last));
         }
 
+        $details = array_values(array_filter($diagram->edges(), static fn (DiagramEdge $edge): bool => $edge->detailed));
+        if ($details !== []) {
+            $lines[] = '';
+            foreach ($details as $edge) {
+                $lines[] = $edge->origin.' -> '.$edge->target.' | '.$edge->label;
+            }
+        }
+
         return $lines;
     }
 

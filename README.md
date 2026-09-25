@@ -179,7 +179,7 @@ A query with no rows still succeeds (exit code 0) and reports `[02000] note: no 
 on stderr. JSON carries that status in its output document instead. Diagnostics
 stay out of stdout so they do not become part of a redirected diagram.
 
-### Calls, implementations and attributes
+### Calls, arguments, implementations and attributes
 
 The full graph distinguishes source calls from possible dispatches:
 
@@ -187,6 +187,8 @@ The full graph distinguishes source calls from possible dispatches:
 |------------|---------|-----------------------|
 | `methodCall` (also `` `call` ``) | A named receiver call or an unresolved occurrence | `resolution`, `declaredTarget`, `receiverType` when known; `expression` when unresolved |
 | `possibleCall` | A possible implementation body for a source call | `resolution = "possible"`, `declaredTarget`, `receiverType`, `implementationType`, `basis = "class-hierarchy"` |
+| `callableReference` | First-class callable creation such as `target(...)`, without an invocation | The same source facts as calls; `callableReference = TRUE` |
+| `declaresClosure` | Lexical containment of a closure or arrow function | Its declaration location |
 | `attribute` | One attribute occurrence | `arguments` (written expressions), `` `parameter` `` when attached to a parameter |
 
 `possibleCall` belongs to `usage`, separately from the source-call family. Select
@@ -196,6 +198,47 @@ Calls and attributes carry `file`, `line`, `column` and a byte `offset` when kno
 Repeated occurrences, even on the same line, have distinct edge identities.
 Consumers should treat edge IDs as opaque and use `DISTINCT` when counting symbols
 rather than occurrences. No query-language extension is needed for these facts.
+
+Every recorded function call, method call, static call and instantiation keeps its
+original `expression` and ordered `arguments`. These are source text, not evaluated
+values: `$value`, `'literal'`, `Config::MODE` and `1 + 2` keep their spelling, as do
+named arguments (`mode: Config::MODE`), unpacking (`...$items`), parentheses and
+spacing inside expressions. `argumentNames` and `argumentTypes` align with that
+list; an unknown name or type is `NULL`. Types describe the written argument
+expression and are limited to syntax-certain strings, integers, floats, booleans,
+null and arrays. Variables and constant references are not evaluated or assigned
+inferred argument types. An unpacked array is still one written argument.
+
+`argumentCount` counts written arguments. `callSite` identifies one written site,
+shared by all its possible targets, and `endOffset` is its inclusive ending byte
+offset. Even nested calls sharing a starting position have separate sites. Site
+IDs describe the current source snapshot and can change when a file is edited.
+
+```bash
+peq graph 'MATCH (caller)-[e:`call`]->(callee)
+           RETURN caller.id, callee.id, e.callSite, e.expression,
+                  e.arguments, e.argumentNames, e.argumentTypes,
+                  e.file, e.line, e.column' src
+```
+
+With `--filter=calls` or `--filter=all`, all output formats retain individual call
+occurrences: JSON adds a `calls` list to each affected traversal entry, tree and
+table show written calls, DOT and Mermaid label each occurrence, and the terminal
+graph lists occurrences below its shared wiring. `--filter=depend` aggregates
+repeated relations between owners before formatting, keeping dependency reports
+concise. Reverse traversal retains the same source facts.
+
+Closures and arrow functions are separate `Closure` / `Callable` nodes, named
+`Enclosing::method{closure@line:column}` (or `function{closure@line:column}`). Calls
+inside them originate there, not at the enclosing named callable. The
+`enclosingSymbol` property identifies that named owner on both nodes and sites.
+Inspection follows `declaresClosure` for navigation; this is containment, not
+proof that a closure executes. GQL callers can explicitly include this label when
+walking lexical scopes. Dependency inspection folds the scopes back onto their
+owners. First-class callable references participate in dependencies and the full
+graph, but do not count as invocations in the `calls` filter or the `call` label.
+Resolution of dynamic function names and arbitrary callback invocation remains
+outside the existing target resolver.
 
 Find methods downstream from an action that call PDO, then retrieve their method
 attributes (excluding parameter attributes):

@@ -16,6 +16,12 @@ enum EdgeKind: string
     /** Represents a function call relationship */
     case FunctionCall = 'function-call';
 
+    /** Creates a callable value without invoking it */
+    case CallableReference = 'callable-reference';
+
+    /** Declares a nested anonymous callable without invoking its body */
+    case DeclarationClosure = 'declaration-closure';
+
     /** Represents an instance method call relationship */
     case MethodCall = 'method-call';
 
@@ -107,6 +113,8 @@ enum EdgeKind: string
     {
         return match ($this) {
             self::FunctionCall,
+            self::CallableReference,
+            self::DeclarationClosure,
             self::MethodCall,
             self::PossibleCall,
             self::StaticCall,

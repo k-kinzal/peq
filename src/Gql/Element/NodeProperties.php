@@ -6,6 +6,7 @@ namespace App\Gql\Element;
 
 use App\Analyzer\Graph\Declaration\SymbolDeclaration;
 use App\Analyzer\Graph\Node;
+use App\Analyzer\Graph\Node\ClosureNode;
 use App\Analyzer\Graph\QualifiedName;
 use App\Gql\Datum\BooleanDatum;
 use App\Gql\Datum\Datum;
@@ -53,6 +54,7 @@ final class NodeProperties
             'resolved' => new BooleanDatum($node->resolved()),
             ...self::naming($id),
             ...self::location($node),
+            ...($node instanceof ClosureNode ? ['enclosingSymbol' => new StringDatum($node->owner->id()->toString())] : []),
         ];
 
         $declared = $node->declaration();
@@ -83,6 +85,7 @@ final class NodeProperties
             'name' => 'STRING',
             'namespace' => 'STRING',
             'owner' => 'STRING',
+            'enclosingSymbol' => 'STRING',
             'resolved' => 'BOOL',
             'file' => 'STRING',
             'fileName' => 'STRING',

@@ -75,9 +75,11 @@ final class EdgeIdentityTest extends TestCase
             new MethodCallEdge($a, $b, new FileMeta('/first.php', 2, 5, 20)),
             new MethodCallEdge($a, $b, new FileMeta('/first.php', 2, 3, 21)),
             new MethodCallEdge($a, $b, $meta, 'Specialized'),
+            new MethodCallEdge($a, $b, new FileMeta('/first.php', 2, 3, 20, 30)),
+            new MethodCallEdge($a, $b, new FileMeta('/first.php', 2, 3, 20, 40)),
         ];
 
-        self::assertCount(10, array_unique(array_map(EdgeIdentity::of(...), $edges)));
+        self::assertCount(12, array_unique(array_map(EdgeIdentity::of(...), $edges)));
         self::assertSame(EdgeIdentity::of($call), EdgeIdentity::of(new MethodCallEdge($a, $b, $meta)));
     }
 

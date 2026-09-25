@@ -100,7 +100,7 @@ final class EdgePropertiesTest extends TestCase
     public function testAllNamesEveryPropertyARelationCarriesAndWhatKindOfValueItHolds(): void
     {
         self::assertSame(
-            ['kind' => 'STRING', 'file' => 'STRING', 'fileName' => 'STRING', 'line' => 'INT64', 'column' => 'INT64', 'offset' => 'INT64', 'resolution' => 'STRING', 'receiverType' => 'STRING', 'declaredTarget' => 'STRING', 'basis' => 'STRING', 'implementationType' => 'STRING', 'expression' => 'STRING', 'arguments' => 'LIST<STRING>', 'parameter' => 'STRING'],
+            ['kind' => 'STRING', 'file' => 'STRING', 'fileName' => 'STRING', 'line' => 'INT64', 'column' => 'INT64', 'offset' => 'INT64', 'resolution' => 'STRING', 'receiverType' => 'STRING', 'declaredTarget' => 'STRING', 'basis' => 'STRING', 'implementationType' => 'STRING', 'expression' => 'STRING', 'arguments' => 'LIST<STRING>', 'argumentCount' => 'INT64', 'argumentNames' => 'LIST<STRING>', 'argumentTypes' => 'LIST<STRING>', 'callSite' => 'STRING', 'enclosingSymbol' => 'STRING', 'endOffset' => 'INT64', 'callableReference' => 'BOOL', 'parameter' => 'STRING'],
             EdgeProperties::all(),
         );
     }

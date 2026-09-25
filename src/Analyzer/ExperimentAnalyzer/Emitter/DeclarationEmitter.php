@@ -94,7 +94,7 @@ final class DeclarationEmitter
             NodeKind::Klass,
             NodeKind::Constant,
             NodeKind::EnumCase,
-            NodeKind::Function,
+            NodeKind::Function, NodeKind::Closure,
             NodeKind::Method,
             NodeKind::Property,
             NodeKind::Builtin,

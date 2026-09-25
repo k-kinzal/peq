@@ -9,6 +9,7 @@ use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId;
 use App\Reporter\Reporter;
 use App\Reporter\Traversal;
+use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -61,7 +62,7 @@ final class TableReporter implements Reporter
 
         (new Table($output))
             ->setHeaders(self::HEADERS)
-            ->setRows($rows)
+            ->setRows(array_map(static fn (array $row): array => array_map(OutputFormatter::escape(...), $row), $rows))
             ->render()
         ;
     }

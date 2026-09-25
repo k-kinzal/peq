@@ -90,6 +90,7 @@ final class TargetPhpVersionContractTest extends TestCase
             'Tests\Fixture\Target\Php74\Totals::amounts',
             'Tests\Fixture\Target\Php74\Totals::cached',
             'Tests\Fixture\Target\Php74\Totals::total',
+            'Tests\Fixture\Target\Php74\Totals::total{closure@17:36}',
             'array_map',
             'array_sum',
         ]];

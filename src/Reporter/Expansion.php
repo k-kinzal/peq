@@ -114,6 +114,7 @@ final class Expansion
             NodeKind::EnumCase,
             NodeKind::Enum,
             NodeKind::Function,
+            NodeKind::Closure,
             NodeKind::Interface,
             NodeKind::Method,
             NodeKind::Property,

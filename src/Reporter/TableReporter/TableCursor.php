@@ -7,6 +7,7 @@ namespace App\Reporter\TableReporter;
 use App\Analyzer\Graph\Direction;
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node;
+use App\Reporter\CallOccurrences;
 use App\Reporter\Expansion;
 use App\Reporter\RelationNotice;
 
@@ -76,6 +77,9 @@ final class TableCursor
 
         $possible = $this->graph !== null && RelationNotice::possible($this->graph, $depth > 0 ? ($this->parents[$depth - 1] ?? null) : null, $node, $this->direction);
         $label = $node->id()->toString().($possible ? ' (possible)' : '');
+        $parent = $depth > 0 ? ($this->parents[$depth - 1] ?? null) : null;
+        $calls = $this->graph === null ? [] : CallOccurrences::between($this->graph, $parent?->id(), $node->id(), $this->direction);
+        $label .= $calls === [] ? '' : ' ['.implode('; ', array_map(CallOccurrences::text(...), $calls)).']';
         $this->parents[$depth] = $node;
         $this->rows[] = [
             (string) $depth,

@@ -80,7 +80,7 @@ final class ReparseStrategyContractTest extends TestCase
         unlink($file);
         $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
-        self::assertContains('Tests\Contract\Analyzer\Reparse\WithClosure::run -[instantiation]-> Tests\Contract\Analyzer\Reparse\Target', $relations);
+        self::assertContains('Tests\Contract\Analyzer\Reparse\WithClosure::run{closure@9:14} -[instantiation]-> Tests\Contract\Analyzer\Reparse\Target', $relations);
     }
 
     #[Test]

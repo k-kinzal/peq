@@ -92,4 +92,21 @@ final class ProjectedRelationTest extends TestCase
 
         self::assertSame($edge, $edge->invert()->invert());
     }
+
+    public function testAddToCollapsesOccurrencesButRetainsKindsAndTargets(): void
+    {
+        $from = new \App\Analyzer\Graph\Node\MethodNode(\App\Analyzer\Graph\NodeId\MethodNodeId::of('A', 'run'));
+        $to = new \App\Analyzer\Graph\Node\MethodNode(\App\Analyzer\Graph\NodeId\MethodNodeId::of('B', 'run'));
+        $other = new \App\Analyzer\Graph\Node\MethodNode(\App\Analyzer\Graph\NodeId\MethodNodeId::of('C', 'run'));
+        $graph = new \App\Analyzer\Graph\Graph();
+        $first = new ProjectedRelation($from, $to, new \App\Analyzer\Graph\Edge\Usage\MethodCallEdge($from, $to, new \App\Analyzer\Graph\FileMeta('/a.php', 1, 1)));
+        $first->addTo($graph);
+        (new ProjectedRelation($from, $to, new \App\Analyzer\Graph\Edge\Usage\MethodCallEdge($from, $to, new \App\Analyzer\Graph\FileMeta('/a.php', 2, 1))))->addTo($graph);
+        $differentKind = new ProjectedRelation($from, $to, new \App\Analyzer\Graph\Edge\Usage\StaticCallEdge($from, $to, new \App\Analyzer\Graph\FileMeta('/a.php', 3, 1)));
+        $differentKind->addTo($graph);
+        $differentTarget = new ProjectedRelation($from, $other, new \App\Analyzer\Graph\Edge\Usage\MethodCallEdge($from, $other, new \App\Analyzer\Graph\FileMeta('/a.php', 4, 1)));
+        $differentTarget->addTo($graph);
+
+        self::assertSame([$first, $differentKind, $differentTarget], $graph->forwardEdges());
+    }
 }

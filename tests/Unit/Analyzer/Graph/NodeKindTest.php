@@ -18,7 +18,7 @@ final class NodeKindTest extends TestCase
 {
     public function testEveryKindOfSymbolPhpDeclaresHasACase(): void
     {
-        self::assertCount(11, NodeKind::cases());
+        self::assertCount(12, NodeKind::cases());
     }
 
     public function testClassIsSpelledWithoutThePhpKeyword(): void

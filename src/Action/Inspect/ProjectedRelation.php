@@ -8,6 +8,7 @@ use App\Analyzer\Graph\Edge;
 use App\Analyzer\Graph\Edge\Inverse\UsedByEdge;
 use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\FileMeta;
+use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId;
 use Override;
@@ -21,6 +22,19 @@ final readonly class ProjectedRelation implements Edge
      * Projects a relation onto its owning symbols for an inspection.
      */
     public function __construct(private Node $origin, private Node $target, public Edge $evidence) {}
+
+    /**
+     * Adds one dependency per kind and pair of owners, regardless of occurrence count.
+     */
+    public function addTo(Graph $graph): void
+    {
+        foreach ($graph->edges($this->from()) as $edge) {
+            if ($edge->kind() === $this->kind() && $edge->to()->toString() === $this->to()->toString()) {
+                return;
+            }
+        }
+        $graph->addEdge($this);
+    }
 
     /**
      * @return NodeId<Node>

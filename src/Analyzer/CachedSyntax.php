@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace App\Analyzer;
 
+use App\Analyzer\Declaration\Calls\WrittenCalls;
 use PhpParser\ErrorHandler\Collecting;
-use PhpParser\Node;
-use PhpParser\Node\Expr\MethodCall;
-use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Stmt;
-use PhpParser\NodeFinder;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\Parser;
@@ -58,11 +55,7 @@ final readonly class CachedSyntax
         if ($parsed === null || $errors->hasErrors()) {
             return new self(null);
         }
-        foreach ((new NodeFinder())->find($parsed, static fn (Node $node): bool => $node instanceof MethodCall || $node instanceof NullsafeMethodCall) as $call) {
-            $offset = $call->getStartFilePos();
-            $newline = strrpos($contents, "\n", $offset - strlen($contents));
-            $call->setAttribute('peqStartColumn', $offset - ($newline === false ? -1 : $newline));
-        }
+        WrittenCalls::capture(array_values($parsed), $contents);
         $resolved = [];
         foreach ((new NodeTraverser(new NameResolver()))->traverse($parsed) as $statement) {
             if ($statement instanceof Stmt) {

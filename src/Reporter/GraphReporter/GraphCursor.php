@@ -6,6 +6,7 @@ namespace App\Reporter\GraphReporter;
 
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node;
+use App\Reporter\CallOccurrences;
 use App\Reporter\Diagram\Diagram;
 use App\Reporter\Diagram\DiagramEdge;
 use App\Reporter\Diagram\DiagramNode;
@@ -96,7 +97,8 @@ final class GraphCursor
                     $diagram->relate(new DiagramEdge(
                         $edge->from()->toString(),
                         $edge->to()->toString(),
-                        $edge->kind()->value,
+                        CallOccurrences::label($edge),
+                        CallOccurrences::site($edge) !== null,
                     ));
                 }
             }

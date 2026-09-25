@@ -27,6 +27,9 @@ enum NodeKind: string
     /** Represents a global function */
     case Function = 'function';
 
+    /** Represents an anonymous function or arrow function */
+    case Closure = 'closure';
+
     /** Represents a PHP interface */
     case Interface = 'interface';
 

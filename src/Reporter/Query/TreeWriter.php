@@ -121,7 +121,7 @@ final class TreeWriter implements QueryReporter
             if ($element instanceof NodeDatum) {
                 $steps[] = $crossed === null
                     ? new TreeStep('', $element->id)
-                    : new TreeStep($crossed->label(), $element->id, $crossed->origin === $element->id && $crossed->target !== $element->id);
+                    : new TreeStep(EdgeCaption::of($crossed), $element->id, $crossed->origin === $element->id && $crossed->target !== $element->id);
                 $crossed = null;
             }
         }

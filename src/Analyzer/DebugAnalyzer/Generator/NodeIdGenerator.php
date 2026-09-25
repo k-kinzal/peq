@@ -11,6 +11,7 @@ use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId;
 use App\Analyzer\Graph\NodeId\BuiltinNodeId;
 use App\Analyzer\Graph\NodeId\ClassNodeId;
+use App\Analyzer\Graph\NodeId\ClosureNodeId;
 use App\Analyzer\Graph\NodeId\ConstantNodeId;
 use App\Analyzer\Graph\NodeId\EnumCaseNodeId;
 use App\Analyzer\Graph\NodeId\EnumNodeId;
@@ -89,6 +90,7 @@ final readonly class NodeIdGenerator
             NodeKind::Method => $this->methodNodeId(),
             NodeKind::Property => $this->propertyNodeId(),
             NodeKind::Function => $this->functionNodeId(),
+            NodeKind::Closure => $this->closureNodeId(),
             NodeKind::Constant => $this->constantNodeId(),
             NodeKind::EnumCase => $this->enumCaseNodeId(),
             NodeKind::Builtin => $this->builtinNodeId(),
@@ -172,6 +174,14 @@ final readonly class NodeIdGenerator
     public function functionNodeId(): FunctionNodeId
     {
         return new FunctionNodeId($this->names->namespace(), $this->names->functionName());
+    }
+
+    /**
+     * Generates a closure location inside a named function.
+     */
+    public function closureNodeId(): ClosureNodeId
+    {
+        return new ClosureNodeId($this->functionNodeId()->toString(), $this->random->numberBetween(1, 100), 1);
     }
 
     /**

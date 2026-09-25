@@ -43,7 +43,7 @@ final class ClosureEdgeContractTest extends TestCase
         unlink($file);
         $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
-        self::assertSame(['Tests\Contract\Analyzer\Closure\Subject::run -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep'], array_values(array_filter($relations, static fn (string $relation): bool => $relation === 'Tests\Contract\Analyzer\Closure\Subject::run -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep')));
+        self::assertSame(['Tests\Contract\Analyzer\Closure\Subject::run{closure@9:14} -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep'], array_values(array_filter($relations, static fn (string $relation): bool => $relation === 'Tests\Contract\Analyzer\Closure\Subject::run{closure@9:14} -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep')));
     }
 
     #[Test]
@@ -73,7 +73,7 @@ final class ClosureEdgeContractTest extends TestCase
         unlink($file);
         $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
-        self::assertSame(['Tests\Contract\Analyzer\Closure\Subject::run -[static-call]-> Tests\Contract\Analyzer\Closure\Dep::make'], array_values(array_filter($relations, static fn (string $relation): bool => $relation === 'Tests\Contract\Analyzer\Closure\Subject::run -[static-call]-> Tests\Contract\Analyzer\Closure\Dep::make')));
+        self::assertSame(['Tests\Contract\Analyzer\Closure\Subject::run{closure@11:14} -[static-call]-> Tests\Contract\Analyzer\Closure\Dep::make'], array_values(array_filter($relations, static fn (string $relation): bool => $relation === 'Tests\Contract\Analyzer\Closure\Subject::run{closure@11:14} -[static-call]-> Tests\Contract\Analyzer\Closure\Dep::make')));
     }
 
     #[Test]
@@ -103,6 +103,6 @@ final class ClosureEdgeContractTest extends TestCase
         unlink($file);
         $relations = array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges());
 
-        self::assertSame(['Tests\Contract\Analyzer\Closure\Subject::run -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep'], array_values(array_filter($relations, static fn (string $relation): bool => $relation === 'Tests\Contract\Analyzer\Closure\Subject::run -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep')));
+        self::assertSame(['Tests\Contract\Analyzer\Closure\Subject::run{closure@10:18} -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep'], array_values(array_filter($relations, static fn (string $relation): bool => $relation === 'Tests\Contract\Analyzer\Closure\Subject::run{closure@10:18} -[instantiation]-> Tests\Contract\Analyzer\Closure\Dep')));
     }
 }

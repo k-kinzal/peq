@@ -240,4 +240,16 @@ final class NodeGeneratorTest extends TestCase
         self::assertInstanceOf(EnumNode::class, $node);
         self::assertSame('AdRerumHarum\EnimDolor\ModiMinusEnum', $node->id()->toString());
     }
+
+    public function testClosureNodePreservesAnExplicitLocationIdentity(): void
+    {
+        $random = new RandomSource(1);
+        $ids = new NodeIdGenerator(new NameGenerator($random), $random);
+        $generator = new NodeGenerator($ids, $random);
+        $id = new \App\Analyzer\Graph\NodeId\ClosureNodeId('run', 2, 3);
+        $node = $generator->closureNode($id);
+        self::assertSame($id, $node->id());
+        self::assertSame('run', $node->owner->id()->toString());
+        self::assertSame(NodeKind::Closure, $node->kind());
+    }
 }

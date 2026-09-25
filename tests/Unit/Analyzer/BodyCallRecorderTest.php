@@ -159,4 +159,20 @@ final class BodyCallRecorderTest extends TestCase
 
         self::assertSame([], $graph->forwardEdges());
     }
+
+    public function testReferenceRecordsNamedFunctionsWithoutTreatingThePlaceholderAsAnArgument(): void
+    {
+        $graph = new Graph();
+        $source = new FunctionNode(FunctionNodeId::of('A'), true, new FileMeta('/source.php', 1, 1));
+        $target = new FunctionNode(FunctionNodeId::of('Example\B'), true);
+        $graph->addNodes([$source, $target]);
+        $hierarchy = new ClassHierarchy($graph);
+        $recorder = new BodyCallRecorder($graph, $hierarchy);
+        $name = new \PhpParser\Node\Name('B', ['namespacedName' => new \PhpParser\Node\Name('Example\B')]);
+        $call = new \PhpParser\Node\Expr\FuncCall($name, [new \PhpParser\Node\VariadicPlaceholder()], ['startLine' => 2, 'startFilePos' => 20]);
+        $recorder->reference($call, $source, new ReceiverBinding($hierarchy, $source));
+        self::assertCount(1, $graph->forwardEdges());
+        self::assertSame('Example\B', $graph->forwardEdges()[0]->to()->toString());
+        self::assertSame(20, $graph->forwardEdges()[0]->meta()->offset);
+    }
 }

@@ -197,6 +197,7 @@ deptrac:
       - Config
 
     Analyzer:
+      - Declaration
       - Graph
 
     Declaration:

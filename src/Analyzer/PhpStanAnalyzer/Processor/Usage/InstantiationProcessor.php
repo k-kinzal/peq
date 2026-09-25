@@ -50,7 +50,7 @@ final class InstantiationProcessor
                     null
                 );
                 if ($sourceNode instanceof FunctionNode || $sourceNode instanceof MethodNode) {
-                    $meta = new FileMeta($scope->getFile(), $node->getStartLine(), 1, $node->getStartFilePos());
+                    $meta = new FileMeta($scope->getFile(), $node->getStartLine(), 1, $node->getStartFilePos(), $node->getEndFilePos() < 0 ? null : $node->getEndFilePos());
                     $items[] = new InstantiationEdge($sourceNode, $targetNode, $meta);
                 }
             }

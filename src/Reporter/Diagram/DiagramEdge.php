@@ -22,6 +22,7 @@ final readonly class DiagramEdge
         public string $origin,
         public string $target,
         public string $label = '',
+        public bool $detailed = false,
     ) {}
 
     /**
