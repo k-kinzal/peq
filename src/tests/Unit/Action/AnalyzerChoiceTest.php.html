@@ -75,43 +75,46 @@
 <span class="src-line" id="L39"><a class="ln" href="#L39">39</a>#[<span class="tok-id">UsesClass</span>(<span class="tok-id">Direction</span>::<span class="tok-kw">class</span>)]</span>
 <span class="src-line" id="L40"><a class="ln" href="#L40">40</a>#[<span class="tok-id">UsesClass</span>(<span class="tok-id">PhpVersion</span>::<span class="tok-kw">class</span>)]</span>
 <span class="src-line" id="L41"><a class="ln" href="#L41">41</a>#[<span class="tok-id">UsesClass</span>(<span class="tok-id">ContainerFactory</span>::<span class="tok-kw">class</span>)]</span>
-<span class="src-line" id="L42"><a class="ln" href="#L42">42</a>#[<span class="tok-id">Small</span>]</span>
-<span class="src-line" id="L43"><a class="ln" href="#L43">43</a><span class="tok-kw">final</span> <span class="tok-kw">class</span> <span class="tok-id">AnalyzerChoiceTest</span> <span class="tok-kw">extends</span> <span class="tok-id">TestCase</span></span>
-<span class="src-line" id="L44"><a class="ln" href="#L44">44</a>{</span>
-<span class="src-line" id="L45"><a class="ln" href="#L45">45</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L46"><a class="ln" href="#L46">46</a><span class="tok-com">     * @throws ConfigException</span></span>
-<span class="src-line" id="L47"><a class="ln" href="#L47">47</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L48"><a class="ln" href="#L48">48</a>    #[<span class="tok-id">DataProvider</span>(<span class="tok-str">&#039;providerKindsAndTheAnalyzerTheyName&#039;</span>)]</span>
-<span class="src-line" id="L49"><a class="ln" href="#L49">49</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testForConfigBuildsTheAnalyzerTheConfigurationNames</span>(<span class="tok-id">string</span> <span class="tok-var">$kind</span>, <span class="tok-id">string</span> <span class="tok-var">$expected</span>): <span class="tok-id">void</span></span>
-<span class="src-line" id="L50"><a class="ln" href="#L50">50</a>    {</span>
-<span class="src-line" id="L51"><a class="ln" href="#L51">51</a>        <span class="tok-var">$config</span> = <span class="tok-id">Config</span>::<span class="tok-id">fromArray</span>([<span class="tok-str">&#039;basePath&#039;</span> =&gt; <span class="tok-str">&#039;.&#039;</span>, <span class="tok-str">&#039;direction&#039;</span> =&gt; <span class="tok-str">&#039;uses&#039;</span>, <span class="tok-str">&#039;type&#039;</span> =&gt; <span class="tok-var">$kind</span>]);</span>
-<span class="src-line" id="L52"><a class="ln" href="#L52">52</a></span>
-<span class="src-line" id="L53"><a class="ln" href="#L53">53</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(<span class="tok-var">$expected</span>, <span class="tok-id">AnalyzerChoice</span>::<span class="tok-id">forConfig</span>(<span class="tok-var">$config</span>)::<span class="tok-kw">class</span>);</span>
-<span class="src-line" id="L54"><a class="ln" href="#L54">54</a>    }</span>
+<span class="src-line" id="L42"><a class="ln" href="#L42">42</a>#[<span class="tok-id">UsesClass</span>(<span class="tok-id">\App\Analyzer\PhaseCache</span>::<span class="tok-kw">class</span>)]</span>
+<span class="src-line" id="L43"><a class="ln" href="#L43">43</a>#[<span class="tok-id">UsesClass</span>(<span class="tok-id">\App\Analyzer\CacheStorage</span>::<span class="tok-kw">class</span>)]</span>
+<span class="src-line" id="L44"><a class="ln" href="#L44">44</a>#[<span class="tok-id">UsesClass</span>(<span class="tok-id">\App\Analyzer\ExecutionVersion</span>::<span class="tok-kw">class</span>)]</span>
+<span class="src-line" id="L45"><a class="ln" href="#L45">45</a>#[<span class="tok-id">Small</span>]</span>
+<span class="src-line" id="L46"><a class="ln" href="#L46">46</a><span class="tok-kw">final</span> <span class="tok-kw">class</span> <span class="tok-id">AnalyzerChoiceTest</span> <span class="tok-kw">extends</span> <span class="tok-id">TestCase</span></span>
+<span class="src-line" id="L47"><a class="ln" href="#L47">47</a>{</span>
+<span class="src-line" id="L48"><a class="ln" href="#L48">48</a>    <span class="tok-com">/**</span></span>
+<span class="src-line" id="L49"><a class="ln" href="#L49">49</a><span class="tok-com">     * @throws ConfigException</span></span>
+<span class="src-line" id="L50"><a class="ln" href="#L50">50</a><span class="tok-com">     */</span></span>
+<span class="src-line" id="L51"><a class="ln" href="#L51">51</a>    #[<span class="tok-id">DataProvider</span>(<span class="tok-str">&#039;providerKindsAndTheAnalyzerTheyName&#039;</span>)]</span>
+<span class="src-line" id="L52"><a class="ln" href="#L52">52</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testForConfigBuildsTheAnalyzerTheConfigurationNames</span>(<span class="tok-id">string</span> <span class="tok-var">$kind</span>, <span class="tok-id">string</span> <span class="tok-var">$expected</span>): <span class="tok-id">void</span></span>
+<span class="src-line" id="L53"><a class="ln" href="#L53">53</a>    {</span>
+<span class="src-line" id="L54"><a class="ln" href="#L54">54</a>        <span class="tok-var">$config</span> = <span class="tok-id">Config</span>::<span class="tok-id">fromArray</span>([<span class="tok-str">&#039;basePath&#039;</span> =&gt; <span class="tok-str">&#039;.&#039;</span>, <span class="tok-str">&#039;direction&#039;</span> =&gt; <span class="tok-str">&#039;uses&#039;</span>, <span class="tok-str">&#039;type&#039;</span> =&gt; <span class="tok-var">$kind</span>]);</span>
 <span class="src-line" id="L55"><a class="ln" href="#L55">55</a></span>
-<span class="src-line" id="L56"><a class="ln" href="#L56">56</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L57"><a class="ln" href="#L57">57</a><span class="tok-com">     * @return iterable&lt;string, array{string, string}&gt;</span></span>
-<span class="src-line" id="L58"><a class="ln" href="#L58">58</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L59"><a class="ln" href="#L59">59</a>    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">function</span> <span class="tok-id">providerKindsAndTheAnalyzerTheyName</span>(): <span class="tok-id">iterable</span></span>
-<span class="src-line" id="L60"><a class="ln" href="#L60">60</a>    {</span>
-<span class="src-line" id="L61"><a class="ln" href="#L61">61</a>        <span class="tok-kw">yield</span> <span class="tok-str">&#039;the one that reads the sources itself&#039;</span> =&gt; [<span class="tok-str">&#039;native&#039;</span>, <span class="tok-id">NativeAnalyzer</span>::<span class="tok-kw">class</span>];</span>
-<span class="src-line" id="L62"><a class="ln" href="#L62">62</a></span>
-<span class="src-line" id="L63"><a class="ln" href="#L63">63</a>        <span class="tok-kw">yield</span> <span class="tok-str">&#039;the one that asks PHPStan&#039;</span> =&gt; [<span class="tok-str">&#039;phpstan&#039;</span>, <span class="tok-id">PhpStanAnalyzer</span>::<span class="tok-kw">class</span>];</span>
-<span class="src-line" id="L64"><a class="ln" href="#L64">64</a></span>
-<span class="src-line" id="L65"><a class="ln" href="#L65">65</a>        <span class="tok-kw">yield</span> <span class="tok-str">&#039;the one that reads no sources at all&#039;</span> =&gt; [<span class="tok-str">&#039;debug&#039;</span>, <span class="tok-id">DebugAnalyzer</span>::<span class="tok-kw">class</span>];</span>
-<span class="src-line" id="L66"><a class="ln" href="#L66">66</a>    }</span>
+<span class="src-line" id="L56"><a class="ln" href="#L56">56</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(<span class="tok-var">$expected</span>, <span class="tok-id">AnalyzerChoice</span>::<span class="tok-id">forConfig</span>(<span class="tok-var">$config</span>)::<span class="tok-kw">class</span>);</span>
+<span class="src-line" id="L57"><a class="ln" href="#L57">57</a>    }</span>
+<span class="src-line" id="L58"><a class="ln" href="#L58">58</a></span>
+<span class="src-line" id="L59"><a class="ln" href="#L59">59</a>    <span class="tok-com">/**</span></span>
+<span class="src-line" id="L60"><a class="ln" href="#L60">60</a><span class="tok-com">     * @return iterable&lt;string, array{string, string}&gt;</span></span>
+<span class="src-line" id="L61"><a class="ln" href="#L61">61</a><span class="tok-com">     */</span></span>
+<span class="src-line" id="L62"><a class="ln" href="#L62">62</a>    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">function</span> <span class="tok-id">providerKindsAndTheAnalyzerTheyName</span>(): <span class="tok-id">iterable</span></span>
+<span class="src-line" id="L63"><a class="ln" href="#L63">63</a>    {</span>
+<span class="src-line" id="L64"><a class="ln" href="#L64">64</a>        <span class="tok-kw">yield</span> <span class="tok-str">&#039;the one that reads the sources itself&#039;</span> =&gt; [<span class="tok-str">&#039;native&#039;</span>, <span class="tok-id">NativeAnalyzer</span>::<span class="tok-kw">class</span>];</span>
+<span class="src-line" id="L65"><a class="ln" href="#L65">65</a></span>
+<span class="src-line" id="L66"><a class="ln" href="#L66">66</a>        <span class="tok-kw">yield</span> <span class="tok-str">&#039;the one that asks PHPStan&#039;</span> =&gt; [<span class="tok-str">&#039;phpstan&#039;</span>, <span class="tok-id">PhpStanAnalyzer</span>::<span class="tok-kw">class</span>];</span>
 <span class="src-line" id="L67"><a class="ln" href="#L67">67</a></span>
-<span class="src-line" id="L68"><a class="ln" href="#L68">68</a>    <span class="tok-com">/**</span></span>
-<span class="src-line" id="L69"><a class="ln" href="#L69">69</a><span class="tok-com">     * @throws ConfigException</span></span>
-<span class="src-line" id="L70"><a class="ln" href="#L70">70</a><span class="tok-com">     */</span></span>
-<span class="src-line" id="L71"><a class="ln" href="#L71">71</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testForConfigMakesTheSameChoiceForTheSameSettings</span>(): <span class="tok-id">void</span></span>
-<span class="src-line" id="L72"><a class="ln" href="#L72">72</a>    {</span>
-<span class="src-line" id="L73"><a class="ln" href="#L73">73</a>        <span class="tok-var">$config</span> = <span class="tok-id">Config</span>::<span class="tok-id">fromArray</span>([<span class="tok-str">&#039;basePath&#039;</span> =&gt; <span class="tok-str">&#039;.&#039;</span>, <span class="tok-str">&#039;direction&#039;</span> =&gt; <span class="tok-str">&#039;uses&#039;</span>, <span class="tok-str">&#039;type&#039;</span> =&gt; <span class="tok-str">&#039;native&#039;</span>]);</span>
-<span class="src-line" id="L74"><a class="ln" href="#L74">74</a></span>
-<span class="src-line" id="L75"><a class="ln" href="#L75">75</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(<span class="tok-id">AnalyzerChoice</span>::<span class="tok-id">forConfig</span>(<span class="tok-var">$config</span>)::<span class="tok-kw">class</span>, <span class="tok-id">AnalyzerChoice</span>::<span class="tok-id">forConfig</span>(<span class="tok-var">$config</span>)::<span class="tok-kw">class</span>);</span>
-<span class="src-line" id="L76"><a class="ln" href="#L76">76</a>    }</span>
-<span class="src-line" id="L77"><a class="ln" href="#L77">77</a>}</span>
-<span class="src-line" id="L78"><a class="ln" href="#L78">78</a></span>
+<span class="src-line" id="L68"><a class="ln" href="#L68">68</a>        <span class="tok-kw">yield</span> <span class="tok-str">&#039;the one that reads no sources at all&#039;</span> =&gt; [<span class="tok-str">&#039;debug&#039;</span>, <span class="tok-id">DebugAnalyzer</span>::<span class="tok-kw">class</span>];</span>
+<span class="src-line" id="L69"><a class="ln" href="#L69">69</a>    }</span>
+<span class="src-line" id="L70"><a class="ln" href="#L70">70</a></span>
+<span class="src-line" id="L71"><a class="ln" href="#L71">71</a>    <span class="tok-com">/**</span></span>
+<span class="src-line" id="L72"><a class="ln" href="#L72">72</a><span class="tok-com">     * @throws ConfigException</span></span>
+<span class="src-line" id="L73"><a class="ln" href="#L73">73</a><span class="tok-com">     */</span></span>
+<span class="src-line" id="L74"><a class="ln" href="#L74">74</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testForConfigMakesTheSameChoiceForTheSameSettings</span>(): <span class="tok-id">void</span></span>
+<span class="src-line" id="L75"><a class="ln" href="#L75">75</a>    {</span>
+<span class="src-line" id="L76"><a class="ln" href="#L76">76</a>        <span class="tok-var">$config</span> = <span class="tok-id">Config</span>::<span class="tok-id">fromArray</span>([<span class="tok-str">&#039;basePath&#039;</span> =&gt; <span class="tok-str">&#039;.&#039;</span>, <span class="tok-str">&#039;direction&#039;</span> =&gt; <span class="tok-str">&#039;uses&#039;</span>, <span class="tok-str">&#039;type&#039;</span> =&gt; <span class="tok-str">&#039;native&#039;</span>]);</span>
+<span class="src-line" id="L77"><a class="ln" href="#L77">77</a></span>
+<span class="src-line" id="L78"><a class="ln" href="#L78">78</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(<span class="tok-id">AnalyzerChoice</span>::<span class="tok-id">forConfig</span>(<span class="tok-var">$config</span>)::<span class="tok-kw">class</span>, <span class="tok-id">AnalyzerChoice</span>::<span class="tok-id">forConfig</span>(<span class="tok-var">$config</span>)::<span class="tok-kw">class</span>);</span>
+<span class="src-line" id="L79"><a class="ln" href="#L79">79</a>    }</span>
+<span class="src-line" id="L80"><a class="ln" href="#L80">80</a>}</span>
+<span class="src-line" id="L81"><a class="ln" href="#L81">81</a></span>
 </code></pre>
 </main>
 <footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>
