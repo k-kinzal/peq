@@ -74,7 +74,10 @@ final readonly class BodyCallRecorder
         $receiver = $types->of($call->var);
         $owners = TypeConstraint::of($receiver)->names();
         if ($owners === [] || !$call->name instanceof Node\Identifier) {
-            $target = new UnknownNode(new UnknownNodeId('unresolved-call@'.$file.':'.$call->getStartFilePos()), false, $meta);
+            $column = $call->getAttribute('peqStartColumn', 1);
+            assert(is_int($column));
+            $meta = new FileMeta($file, $call->getStartLine(), $column, $call->getStartFilePos());
+            $target = new UnknownNode(new UnknownNodeId('unresolved-call@'.$file.':'.$meta->line.':'.$meta->column), false, $meta);
             $this->graph->addNode($target);
             $this->graph->addEdge(new MethodCallEdge($source, $target, $meta, expression: (new Standard())->prettyPrintExpr($call)));
 

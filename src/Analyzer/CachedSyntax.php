@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace App\Analyzer;
 
 use PhpParser\ErrorHandler\Collecting;
+use PhpParser\Node;
+use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Stmt;
+use PhpParser\NodeFinder;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\Parser;
@@ -45,6 +49,7 @@ final readonly class CachedSyntax
 
     /**
      * Resolves names within one file, recording syntax errors as an absent tree.
+     * Receiver call columns stay with the cached syntax after the text is discarded.
      */
     public static function parse(string $contents, Parser $parser): self
     {
@@ -52,6 +57,11 @@ final readonly class CachedSyntax
         $parsed = $parser->parse($contents, $errors);
         if ($parsed === null || $errors->hasErrors()) {
             return new self(null);
+        }
+        foreach ((new NodeFinder())->find($parsed, static fn (Node $node): bool => $node instanceof MethodCall || $node instanceof NullsafeMethodCall) as $call) {
+            $offset = $call->getStartFilePos();
+            $newline = strrpos($contents, "\n", $offset - strlen($contents));
+            $call->setAttribute('peqStartColumn', $offset - ($newline === false ? -1 : $newline));
         }
         $resolved = [];
         foreach ((new NodeTraverser(new NameResolver()))->traverse($parsed) as $statement) {
