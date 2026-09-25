@@ -34,12 +34,18 @@ final readonly class DotWriter implements QueryReporter
      *
      * @param ResultTable     $result What the query answered
      * @param OutputInterface $output Where it is written
+     *
+     * @throws QueryOutputException When a nonempty result contains no graph elements
      */
     #[Override]
     public function report(ResultTable $result, OutputInterface $output): void
     {
         $diagram = ResultElements::of($result, $this->graph);
         if ($diagram->empty()) {
+            if ($result->rows !== []) {
+                throw new QueryOutputException('Graph output requires nodes, edges or paths, but the result contains none. Return elements (for example, RETURN n instead of RETURN n.id), or use --output=table or --output=json.');
+            }
+
             return;
         }
 

@@ -25,6 +25,7 @@ use App\Gql\Result\ResultTable;
 use App\Reporter\Query\QueryReporterFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Medium;
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Command\Command;
@@ -326,5 +327,177 @@ final class GraphCommandTest extends TestCase
 
         self::assertSame(Command::FAILURE, $status);
         self::assertStringContainsString('phpVersion', $tester->getDisplay());
+    }
+
+    #[TestWith(['graph', 'RETURN 1 AS n'])]
+    #[TestWith(['mermaid', 'RETURN 1 AS n'])]
+    #[TestWith(['dot', 'RETURN 1 AS n'])]
+    #[TestWith(['graph', 'MATCH (n) RETURN n.id LIMIT 1'])]
+    #[TestWith(['mermaid', 'MATCH (n) RETURN n.id LIMIT 1'])]
+    #[TestWith(['dot', 'MATCH (n) RETURN n.id LIMIT 1'])]
+    #[TestWith(['graph', 'RETURN NULL AS n'])]
+    #[TestWith(['mermaid', 'RETURN [] AS n'])]
+    #[TestWith(['dot', 'RETURN [[1], [NULL]] AS n'])]
+    public function testExecuteRejectsResultsWithNoGraphElements(string $format, string $query): void
+    {
+        $tester = new CommandTester(new GraphCommand(new QueryAction()));
+
+        $status = $tester->execute([
+            'query' => $query,
+            '--type' => 'debug',
+            '--debug-depth' => '3',
+            '--debug-seed' => '42',
+            '--output' => $format,
+            '--config' => __DIR__.'/absent.yaml',
+        ], ['capture_stderr_separately' => true]);
+
+        self::assertSame(Command::FAILURE, $status);
+        self::assertSame('', $tester->getDisplay());
+        self::assertSame(
+            "Graph output requires nodes, edges or paths, but the result contains none. Return elements (for example, RETURN n instead of RETURN n.id), or use --output=table or --output=json.\n",
+            $tester->getErrorOutput(),
+        );
+    }
+
+    #[TestWith(['RETURN 1 AS n'])]
+    #[TestWith(['MATCH (n) RETURN n LIMIT 1'])]
+    public function testExecuteRejectsTreeResultsWithNoPaths(string $query): void
+    {
+        $tester = new CommandTester(new GraphCommand(new QueryAction()));
+
+        $status = $tester->execute([
+            'query' => $query,
+            '--type' => 'debug',
+            '--debug-depth' => '3',
+            '--debug-seed' => '42',
+            '--output' => 'tree',
+            '--config' => __DIR__.'/absent.yaml',
+        ], ['capture_stderr_separately' => true]);
+
+        self::assertSame(Command::FAILURE, $status);
+        self::assertSame('', $tester->getDisplay());
+        self::assertSame(
+            "Tree output requires paths, but the result contains none. Bind and return a path (for example, MATCH p = (a)-->(b) RETURN p), or use --output=table or --output=json.\n",
+            $tester->getErrorOutput(),
+        );
+    }
+
+    #[TestWith(['graph'])]
+    #[TestWith(['mermaid'])]
+    #[TestWith(['dot'])]
+    #[TestWith(['tree'])]
+    #[TestWith(['table'])]
+    public function testExecuteReportsNoDataOnStderrWithoutFailing(string $format): void
+    {
+        $tester = new CommandTester(new GraphCommand(new QueryAction()));
+
+        $status = $tester->execute([
+            'query' => 'MATCH (n) WHERE FALSE RETURN n',
+            '--type' => 'debug',
+            '--debug-depth' => '3',
+            '--debug-seed' => '42',
+            '--output' => $format,
+            '--config' => __DIR__.'/absent.yaml',
+        ], ['capture_stderr_separately' => true]);
+
+        self::assertSame(Command::SUCCESS, $status);
+        self::assertSame('', $tester->getDisplay());
+        self::assertSame("[02000] note: no data\n", $tester->getErrorOutput());
+    }
+
+    public function testExecuteKeepsTheJsonNoDataStatusInTheDocument(): void
+    {
+        $tester = new CommandTester(new GraphCommand(new QueryAction()));
+
+        $status = $tester->execute([
+            'query' => 'MATCH (n) WHERE FALSE RETURN n',
+            '--type' => 'debug',
+            '--debug-depth' => '3',
+            '--debug-seed' => '42',
+            '--output' => 'json',
+            '--config' => __DIR__.'/absent.yaml',
+        ], ['capture_stderr_separately' => true]);
+
+        self::assertSame(Command::SUCCESS, $status);
+        self::assertSame(
+            '{"status":"02000","condition":"note: no data","columns":[{"name":"n","type":"NULL"}],"rows":[]}'."\n",
+            $tester->getDisplay(),
+        );
+        self::assertSame('', $tester->getErrorOutput());
+    }
+
+    #[TestWith(['graph', 'Graph output requires nodes, edges or paths'])]
+    #[TestWith(['mermaid', 'Graph output requires nodes, edges or paths'])]
+    #[TestWith(['dot', 'Graph output requires nodes, edges or paths'])]
+    #[TestWith(['tree', 'Tree output requires paths'])]
+    public function testExecuteExplainsAnUnsupportedSchemaOutput(string $format, string $expected): void
+    {
+        $tester = new CommandTester(new GraphCommand(new QueryAction()));
+
+        $status = $tester->execute([
+            '--schema' => true,
+            '--output' => $format,
+            '--config' => __DIR__.'/absent.yaml',
+        ], ['capture_stderr_separately' => true]);
+
+        self::assertSame(Command::FAILURE, $status);
+        self::assertSame('', $tester->getDisplay());
+        self::assertStringContainsString($expected, $tester->getErrorOutput());
+        self::assertStringContainsString('--output=table or --output=json', $tester->getErrorOutput());
+    }
+
+    #[TestWith(['graph', '──▶'])]
+    #[TestWith(['mermaid', 'flowchart LR'])]
+    #[TestWith(['dot', 'digraph peq {'])]
+    #[TestWith(['tree', '──>'])]
+    public function testExecuteDrawsReturnedPathsWithoutDiagnostics(string $format, string $expected): void
+    {
+        $tester = new CommandTester(new GraphCommand(new QueryAction()));
+
+        $status = $tester->execute([
+            'query' => 'MATCH p = (a)-[e]->(b) RETURN p LIMIT 1',
+            '--type' => 'debug',
+            '--debug-depth' => '3',
+            '--debug-seed' => '42',
+            '--output' => $format,
+            '--config' => __DIR__.'/absent.yaml',
+        ], ['capture_stderr_separately' => true]);
+
+        self::assertSame(Command::SUCCESS, $status);
+        self::assertStringContainsString($expected, $tester->getDisplay());
+        self::assertSame('', $tester->getErrorOutput());
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    public function testWriteReportsNoDataWhenTheOutputHasNoSeparateErrorStream(): void
+    {
+        $config = Config::fromArray(['basePath' => '.', 'direction' => 'uses', 'type' => 'native', 'output' => 'graph']);
+        $output = new BufferedOutput();
+
+        (new GraphCommand(new QueryAction()))->write($config, ResultTable::nothing(), null, $output);
+
+        self::assertSame("[02000] note: no data\n", $output->fetch());
+    }
+
+    public function testExecuteReportsAnOutputFailureWhenThereIsNoSeparateErrorStream(): void
+    {
+        $tester = new CommandTester(new GraphCommand(new QueryAction()));
+
+        $status = $tester->execute([
+            'query' => 'RETURN 1 AS n',
+            '--type' => 'debug',
+            '--debug-depth' => '3',
+            '--debug-seed' => '42',
+            '--output' => 'graph',
+            '--config' => __DIR__.'/absent.yaml',
+        ]);
+
+        self::assertSame(Command::FAILURE, $status);
+        self::assertSame(
+            "Graph output requires nodes, edges or paths, but the result contains none. Return elements (for example, RETURN n instead of RETURN n.id), or use --output=table or --output=json.\n",
+            $tester->getDisplay(),
+        );
     }
 }

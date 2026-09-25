@@ -20,6 +20,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(\App\Analyzer\Graph\Resolution\ClassHierarchy::class)]
 #[UsesClass(\App\Analyzer\SourceParser::class)]
 #[CoversClass(CallSources::class)]
+#[UsesClass(\App\Analyzer\CachedSyntax::class)]
 #[Small]
 final class CallSourcesTest extends TestCase
 {

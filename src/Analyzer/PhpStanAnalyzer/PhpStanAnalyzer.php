@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Analyzer\PhpStanAnalyzer;
 
 use App\Analyzer\AnalysisFailedException;
+use App\Analyzer\AnalysisInputs;
 use App\Analyzer\Analyzer;
 use App\Analyzer\CallEnrichment;
 use App\Analyzer\Declaration\PhpDoc\DocDependencies;
 use App\Analyzer\Graph\Graph;
+use App\Analyzer\PhaseCache;
 use App\Analyzer\PhpFileCollector;
 use App\Analyzer\PhpStanAnalyzer\Collector\DependencyCollector;
 use App\Analyzer\PhpStanAnalyzer\Collector\InClassMethodCollector;
@@ -49,6 +51,7 @@ final readonly class PhpStanAnalyzer implements Analyzer
      * @param PhpFileCollector   $fileCollector    Selects which files the analysis covers
      * @param GraphBuilder       $graphBuilder     Assembles the graph from what the collectors reported
      * @param list<class-string> $collectors       The collectors the graph is assembled from: declarations and method bodies unless narrowed
+     * @param null|PhaseCache    $cache            Reuses completed phases, or null for uncached analysis
      */
     public function __construct(
         private array $includes = [],
@@ -58,6 +61,7 @@ final readonly class PhpStanAnalyzer implements Analyzer
         private PhpFileCollector $fileCollector = new PhpFileCollector(),
         private GraphBuilder $graphBuilder = new GraphBuilder(),
         private array $collectors = [DependencyCollector::class, InClassMethodCollector::class],
+        private ?PhaseCache $cache = null,
     ) {}
 
     /**
@@ -87,11 +91,22 @@ final readonly class PhpStanAnalyzer implements Analyzer
             return new Graph();
         }
 
-        $report = $this->collect($this->containerFactory->create($files, $this->collectors, $this->phpVersion), $files);
+        $build = function () use ($files): Graph {
+            $report = $this->collect($this->containerFactory->create($files, $this->collectors, $this->phpVersion), $files);
 
-        $graph = DocDependencies::enrich($this->graphBuilder->build($report->symbols()), $files, SourceParser::forVersion($this->phpVersion));
+            return DocDependencies::enrich($this->graphBuilder->build($report->symbols()), $files, SourceParser::forVersion($this->phpVersion));
+        };
+        if ($this->cache === null) {
+            return CallEnrichment::of($build(), $this->phpVersion);
+        }
+        $slot = serialize([$realPath !== false ? $realPath : $path, getcwd(), $this->includes, $this->excludes, $this->phpVersion, $this->collectors]);
+        $fingerprint = AnalysisInputs::fingerprint($files, [$this->phpVersion, $this->collectors]);
 
-        return CallEnrichment::of($graph, $this->phpVersion);
+        return $this->cache->remember('phpstan-enriched', $slot, $fingerprint, Graph::class, fn (): Graph => CallEnrichment::of(
+            $this->cache->remember('phpstan-graph', $slot, $fingerprint, Graph::class, $build),
+            $this->phpVersion,
+            $this->cache,
+        ));
     }
 
     /**

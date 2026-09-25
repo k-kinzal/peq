@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Analyzer\NativeAnalyzer;
 
+use App\Analyzer\CachedSyntax;
 use App\Analyzer\NativeAnalyzer\AnonymousClassNaming;
 use App\Analyzer\NativeAnalyzer\AutoloadIndex;
 use App\Analyzer\NativeAnalyzer\ClassLikeDeclaration;
@@ -28,6 +29,7 @@ use PHPUnit\Framework\TestCase;
  * @internal
  */
 #[CoversClass(TraitFlattening::class)]
+#[UsesClass(CachedSyntax::class)]
 #[UsesClass(AnonymousClassNaming::class)]
 #[UsesClass(AutoloadIndex::class)]
 #[UsesClass(ClassLikeDeclaration::class)]

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Analyzer\NativeAnalyzer;
 
+use App\Analyzer\AnalysisInputs;
 use App\Analyzer\Analyzer;
 use App\Analyzer\CallEnrichment;
 use App\Analyzer\Declaration\PhpDoc\DocDependencies;
 use App\Analyzer\Graph\Graph;
+use App\Analyzer\PhaseCache;
 use App\Analyzer\PhpFileCollector;
 use App\Analyzer\SourceParser;
 
@@ -41,12 +43,14 @@ final class NativeAnalyzer implements Analyzer
      * @param null|int         $phpVersion    The PHP version the sources are read as, in PHP_VERSION_ID
      *                                        form, or null to read them as the version peq runs on
      * @param PhpFileCollector $fileCollector Selects which files the analysis covers
+     * @param null|PhaseCache  $cache         Reuses completed phases, or null for uncached analysis
      */
     public function __construct(
         private readonly array $includes = [],
         private readonly array $excludes = [],
         private readonly ?int $phpVersion = null,
         private readonly PhpFileCollector $fileCollector = new PhpFileCollector(),
+        private readonly ?PhaseCache $cache = null,
     ) {}
 
     /**
@@ -73,16 +77,35 @@ final class NativeAnalyzer implements Analyzer
         }
 
         $workingDirectory = getcwd();
-        $index = SourceIndex::of($files, $workingDirectory === false ? '' : $workingDirectory, $this->phpVersion);
+        $directory = $workingDirectory === false ? '' : $workingDirectory;
+        $build = fn (): Graph => $this->build($files, $directory);
+        if ($this->cache === null) {
+            return CallEnrichment::of($build(), $this->phpVersion);
+        }
+        $slot = serialize([$realPath !== false ? $realPath : $path, $directory, $this->includes, $this->excludes, $this->phpVersion]);
+        $fingerprint = AnalysisInputs::fingerprint($files, [$this->phpVersion], reflectSources: false);
 
+        return $this->cache->remember('native-enriched', $slot, $fingerprint, Graph::class, fn (): Graph => CallEnrichment::of(
+            $this->cache->remember('native-graph', $slot, $fingerprint, Graph::class, $build),
+            $this->phpVersion,
+            $this->cache,
+        ));
+    }
+
+    /**
+     * Resolves project-wide declarations before walking file-local syntax.
+     *
+     * @param list<string> $files
+     */
+    public function build(array $files, string $directory): Graph
+    {
+        $index = SourceIndex::of($files, $directory, $this->phpVersion, $this->cache);
         $recorder = new GraphRecorder();
         $walker = new SourceWalker($index, $recorder);
         foreach ($index->sources() as $source) {
             $walker->walkFile($source);
         }
 
-        $graph = DocDependencies::enrich($recorder->graph(), $files, SourceParser::forVersion($this->phpVersion));
-
-        return CallEnrichment::of($graph, $this->phpVersion);
+        return DocDependencies::enrich($recorder->graph(), $files, SourceParser::forVersion($this->phpVersion));
     }
 }

@@ -6,13 +6,10 @@ namespace App\Analyzer;
 
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\Resolution\ClassHierarchy;
-use PhpParser\ErrorHandler\Collecting;
 use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\NodeFinder;
-use PhpParser\NodeTraverser;
-use PhpParser\NodeVisitor\NameResolver;
 
 /**
  * Reads callable bodies once per source file, including methods imported from traits.
@@ -27,7 +24,7 @@ final class CallSources
     /**
      * Selects the PHP version used to read callable bodies.
      */
-    public function __construct(private readonly ?int $version) {}
+    public function __construct(private readonly ?int $version, private readonly ?PhaseCache $cache = null) {}
 
     /**
      * Finds the syntax of a graph declaration by its source location.
@@ -61,17 +58,10 @@ final class CallSources
      */
     public function read(string $path): array
     {
-        $text = is_readable($path) ? file_get_contents($path) : false;
-        if ($text === false) {
+        $resolved = CachedSyntax::read($path, SourceParser::forVersion($this->version), $this->version, $this->cache)->statements;
+        if ($resolved === null) {
             return [];
         }
-        $errors = new Collecting();
-        $statements = SourceParser::forVersion($this->version)->parse($text, $errors);
-        if ($statements === null || $errors->hasErrors()) {
-            return [];
-        }
-        $traverser = new NodeTraverser(new NameResolver());
-        $resolved = $traverser->traverse($statements);
         $classes = (new NodeFinder())->findInstanceOf($resolved, \PhpParser\Node\Stmt\ClassLike::class);
         foreach ($classes as $class) {
             foreach ($class->getMethods() as $method) {
