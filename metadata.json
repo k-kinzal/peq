@@ -1,0 +1,54 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M3CD4JNFP8BP94PD80SMEQ09",
+  "strategy": "manual-commit",
+  "branch": "fix/analysis-memory",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "AGENTS.md",
+    "README.md",
+    "src/Analyzer/BodyCallRecorder.php",
+    "src/Analyzer/CallEnrichment.php",
+    "src/Analyzer/CallSources.php",
+    "src/Analyzer/Declaration/PhpDoc/DocBlock.php",
+    "src/Analyzer/Declaration/PhpDoc/DocContext.php",
+    "src/Analyzer/Declaration/PhpDoc/DocDependencies.php",
+    "src/Analyzer/Declaration/PhpDoc/DocExpression.php",
+    "src/Analyzer/Declaration/PhpDoc/DocIndex.php",
+    "src/Analyzer/Declaration/PhpDoc/DocOwners.php",
+    "src/Analyzer/Declaration/PhpDoc/DocScope.php",
+    "src/Analyzer/Declaration/PhpDoc/DocVisitor.php",
+    "src/Analyzer/ReceiverBinding.php",
+    "tests/Diff/PhpDocCallDifferenceTest.php",
+    "tests/Diff/PhpDocCoverageTest.php",
+    "tests/Diff/PhpDocDifferenceTest.php",
+    "tests/Diff/PhpDocResolutionDifferenceTest.php",
+    "tests/Integration/AnalysisCacheTest.php",
+    "tests/Unit/Analyzer/BodyCallRecorderTest.php",
+    "tests/Unit/Analyzer/CallSourcesTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocBlockTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocContextTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocExpressionTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocIndexTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocOwnersTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocScopeTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocVisitorTest.php",
+    "tests/Unit/Analyzer/ReceiverBindingTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 154099,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1051520,
+    "output_tokens": 4943,
+    "api_call_count": 8
+  }
+}

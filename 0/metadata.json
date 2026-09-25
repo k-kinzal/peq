@@ -1,0 +1,77 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M3CD4JNFP8BP94PD80SMEQ09",
+  "session_id": "01a0d7f6-99c7-7581-bcea-603c426da5cb",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-25T13:47:36.524244Z",
+  "branch": "fix/analysis-memory",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "AGENTS.md",
+    "README.md",
+    "src/Analyzer/BodyCallRecorder.php",
+    "src/Analyzer/CallEnrichment.php",
+    "src/Analyzer/CallSources.php",
+    "src/Analyzer/Declaration/PhpDoc/DocBlock.php",
+    "src/Analyzer/Declaration/PhpDoc/DocContext.php",
+    "src/Analyzer/Declaration/PhpDoc/DocDependencies.php",
+    "src/Analyzer/Declaration/PhpDoc/DocExpression.php",
+    "src/Analyzer/Declaration/PhpDoc/DocIndex.php",
+    "src/Analyzer/Declaration/PhpDoc/DocOwners.php",
+    "src/Analyzer/Declaration/PhpDoc/DocScope.php",
+    "src/Analyzer/Declaration/PhpDoc/DocVisitor.php",
+    "src/Analyzer/ReceiverBinding.php",
+    "tests/Diff/PhpDocCallDifferenceTest.php",
+    "tests/Diff/PhpDocCoverageTest.php",
+    "tests/Diff/PhpDocDifferenceTest.php",
+    "tests/Diff/PhpDocResolutionDifferenceTest.php",
+    "tests/Integration/AnalysisCacheTest.php",
+    "tests/Unit/Analyzer/BodyCallRecorderTest.php",
+    "tests/Unit/Analyzer/CallSourcesTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocBlockTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocContextTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocExpressionTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocIndexTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocOwnersTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocScopeTest.php",
+    "tests/Unit/Analyzer/Declaration/PhpDoc/DocVisitorTest.php",
+    "tests/Unit/Analyzer/ReceiverBindingTest.php"
+  ],
+  "agent": "Codex",
+  "model": "gpt-6-astra",
+  "turn_id": "6ae442ae057d",
+  "checkpoint_transcript_start": 1037,
+  "transcript_lines_at_start": 1037,
+  "compact_transcript_start": 134,
+  "token_usage": {
+    "input_tokens": 154099,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1051520,
+    "output_tokens": 4943,
+    "api_call_count": 8
+  },
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-25T13:47:36.357802Z",
+    "agent_lines": 12,
+    "agent_removed": 191,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 12,
+    "total_lines_changed": 203,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
