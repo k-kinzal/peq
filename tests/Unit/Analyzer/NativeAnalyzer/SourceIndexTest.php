@@ -19,6 +19,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use WeakReference;
 
 /**
  * @internal
@@ -210,5 +211,68 @@ final class SourceIndexTest extends TestCase
         $root = vfsStream::setup('project');
 
         self::assertNull(SourceIndex::parse((new ParserFactory())->createForHostVersion(), $root->url().'/Missing.php'));
+    }
+
+    public function testIterateSourcesYieldsFilesInSelectionOrder(): void
+    {
+        $root = vfsStream::setup('project', null, ['First.php' => '<?php class One {}', 'Second.php' => '<?php class Two {}']);
+        $index = SourceIndex::of([$root->url().'/First.php', $root->url().'/Second.php'], $root->url());
+
+        self::assertSame(
+            ['vfs://project/First.php', 'vfs://project/Second.php'],
+            array_map(static fn (ParsedSource $source): string => $source->path, iterator_to_array($index->iterateSources())),
+        );
+    }
+
+    public function testSourceOfReleasesPreviousSyntaxAndReloadsCrossFileDeclarations(): void
+    {
+        $root = vfsStream::setup('project', null, ['First.php' => '<?php trait Shared {} function helper() {}', 'Second.php' => '<?php class Consumer { use Shared; }']);
+        $index = SourceIndex::of([$root->url().'/First.php', $root->url().'/Second.php'], $root->url());
+        $first = $index->sourceOf($root->url().'/First.php');
+        self::assertNotNull($first);
+        $reference = WeakReference::create($first);
+        self::assertSame($first, $index->sourceOf($root->url().'/First.php'));
+        unset($first);
+
+        self::assertNotNull($index->sourceOf($root->url().'/Second.php'));
+        self::assertNull($reference->get());
+        self::assertTrue($index->declaresFunction('helper'));
+        self::assertTrue($index->knowsClass('Shared'));
+        self::assertSame(NodeKind::Trait, $index->classLike('Shared')?->kind);
+        self::assertSame('vfs://project/First.php', $index->classLike('Shared')->source->path);
+    }
+
+    public function testSourceOfReusesActiveSyntaxAcrossTraitLookups(): void
+    {
+        $root = vfsStream::setup('project', null, [
+            'Consumer.php' => '<?php class Consumer { use Shared; }',
+            'Shared.php' => '<?php trait Shared { use Nested; }',
+            'Nested.php' => '<?php trait Nested { function run() {} }',
+        ]);
+        $index = SourceIndex::of([$root->url().'/Consumer.php', $root->url().'/Shared.php', $root->url().'/Nested.php'], $root->url());
+        $consumer = $index->sourceOf($root->url().'/Consumer.php');
+        $shared = $index->classLike('Shared');
+        $nested = $index->classLike('Nested');
+
+        self::assertNotNull($consumer);
+        self::assertNotNull($shared);
+        self::assertNotNull($nested);
+        self::assertSame($consumer, $index->sourceOf($root->url().'/Consumer.php'));
+        self::assertSame($shared->source, $index->classLike('Shared')?->source);
+        self::assertSame($nested->source, $index->classLike('Nested')?->source);
+        $reference = WeakReference::create($shared->source);
+        unset($shared);
+
+        self::assertNull($reference->get());
+        self::assertSame(NodeKind::Trait, $index->classLike('Shared')->kind);
+    }
+
+    public function testSourceOfReportsAFileRemovedAfterIndexing(): void
+    {
+        $root = vfsStream::setup('project', null, ['Removed.php' => '<?php class Removed {}']);
+        $index = SourceIndex::of([$root->url().'/Removed.php'], $root->url());
+        unlink($root->url().'/Removed.php');
+
+        self::assertNull($index->sourceOf($root->url().'/Removed.php'));
     }
 }

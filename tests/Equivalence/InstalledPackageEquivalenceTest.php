@@ -6,7 +6,6 @@ namespace Tests\Equivalence;
 
 use App\Analyzer\AnalysisFailedException;
 use App\Analyzer\Graph\GraphSnapshot;
-use App\Analyzer\NativeAnalyzer\NativeAnalyzer;
 use App\Analyzer\PhpStanAnalyzer\PhpStanAnalyzer;
 use FilesystemIterator;
 use Generator;
@@ -18,6 +17,7 @@ use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RegexIterator;
+use Symfony\Component\Process\Process;
 
 /**
  * Both engines over the source trees of the packages this checkout has installed.
@@ -30,7 +30,8 @@ use RegexIterator;
  *
  * Reading all of them costs more memory than one process can hold, because the
  * reference engine keeps what it reflected over, so each package is read in a
- * process of its own.
+ * process of its own. Native analysis runs concurrently in another process, keeping
+ * PHPStan's runtime state out of the candidate while both read the same sources.
  *
  * @internal
  */
@@ -48,11 +49,28 @@ final class InstalledPackageEquivalenceTest extends TestCase
     #[DataProvider('providerInstalledPackages')]
     public function testBothEnginesDescribeTheSameGraphOfRealCode(string $package, string $path): void
     {
-        $reference = GraphSnapshot::of((new PhpStanAnalyzer())->analyze($path));
-        $candidate = GraphSnapshot::of((new NativeAnalyzer())->analyze($path));
+        $native = new Process([PHP_BINARY, '-d', 'memory_limit='.ini_get('memory_limit'), '-d', 'zend.assertions=1', '-r', <<<'PHP'
+            require $argv[1];
+            $graph = (new App\Analyzer\NativeAnalyzer\NativeAnalyzer())->analyze($argv[2]);
+            if (class_exists(PHPStan\DependencyInjection\ContainerFactory::class, false)) {
+                throw new RuntimeException('Native analysis loaded the PHPStan engine.');
+            }
+            echo serialize(App\Analyzer\Graph\GraphSnapshot::of($graph));
+            PHP, dirname(__DIR__, 2).'/vendor/autoload.php', $path]);
+        $native->start();
 
-        self::assertNotSame([], $reference->nodes, $package.' gives the engines nothing to disagree about');
-        self::assertSame($reference->fingerprint(), $candidate->fingerprint(), $package.': '.$candidate->differenceFrom($reference)->describe());
+        try {
+            $reference = GraphSnapshot::of((new PhpStanAnalyzer())->analyze($path));
+            $native->wait();
+            self::assertTrue($native->isSuccessful(), $package.': '.$native->getErrorOutput());
+            $candidate = unserialize($native->getOutput(), ['allowed_classes' => [GraphSnapshot::class]]);
+
+            self::assertInstanceOf(GraphSnapshot::class, $candidate);
+            self::assertNotSame([], $reference->nodes, $package.' gives the engines nothing to disagree about');
+            self::assertSame($reference->fingerprint(), $candidate->fingerprint(), $package.': '.$candidate->differenceFrom($reference)->describe());
+        } finally {
+            $native->stop();
+        }
     }
 
     /**

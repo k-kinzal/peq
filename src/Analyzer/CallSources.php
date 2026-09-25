@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer;
 
+use App\Analyzer\Declaration\PhpDoc\DocBlock;
 use App\Analyzer\Declaration\PhpDoc\DocIndex;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\Resolution\ClassHierarchy;
@@ -15,7 +16,7 @@ use PhpParser\Node\Stmt\Function_;
 use PhpParser\NodeVisitorAbstract;
 
 /**
- * Reads callable bodies once per source file, including methods imported from traits.
+ * Reads callable bodies with at most one source file retained between lookups.
  */
 final class CallSources extends NodeVisitorAbstract
 {
@@ -25,14 +26,21 @@ final class CallSources extends NodeVisitorAbstract
     private array $declarations = [];
 
     /**
-     * @var array<string, list<ClassMethod|Function_>>
+     * Only the most recently used file stays parsed, including a missing file.
      */
-    private array $files = [];
+    private ?string $path = null;
 
     /**
      * @var array<string, array{method: string, traits: list<string>}>
      */
     private array $aliases = [];
+
+    /**
+     * Declaration locations let PHPDoc lookups reuse indexed comments without syntax.
+     *
+     * @var array<string, array{string, int}>
+     */
+    private array $declared = [];
 
     /**
      * Selects the PHP version used to read callable bodies.
@@ -44,7 +52,22 @@ final class CallSources extends NodeVisitorAbstract
      */
     public function file(string $path): array
     {
-        return $this->files[$path] ??= $this->read($path);
+        return $this->path === $path ? $this->declarations : $this->read($path);
+    }
+
+    /**
+     * Reads indexed method documentation, locating imported trait bodies when needed.
+     */
+    public function documentation(Node $symbol): ?DocBlock
+    {
+        $meta = $symbol->meta();
+        $key = DocIndex::key($symbol->id()->toString());
+        if ($meta !== null && ($this->declared[$key] ?? null) === [$meta->path, $meta->line]) {
+            return $this->docs->blocks[$key] ?? null;
+        }
+        $syntax = $this->callable($symbol);
+
+        return $syntax === null ? null : DocIndex::block($syntax);
     }
 
     /**
@@ -88,11 +111,12 @@ final class CallSources extends NodeVisitorAbstract
      */
     public function read(string $path): array
     {
+        $this->declarations = [];
+        $this->path = $path;
         $resolved = CachedSyntax::read($path, SourceParser::forVersion($this->version), $this->version, $this->cache)->statements;
         if ($resolved === null) {
             return [];
         }
-        $this->declarations = [];
         $this->docs->read($resolved, $this);
 
         return $this->declarations;
@@ -121,6 +145,12 @@ final class CallSources extends NodeVisitorAbstract
         }
         if ($node instanceof ClassMethod || $node instanceof Function_) {
             $this->declarations[] = $node;
+        }
+        if ($node instanceof ClassMethod && $this->path !== null) {
+            $owner = $node->getAttribute('peqOwner');
+            if (is_string($owner)) {
+                $this->declared[DocIndex::key($owner.'::'.$node->name->toString())] = [$this->path, $node->getStartLine()];
+            }
         }
 
         return null;

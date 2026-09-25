@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Analyzer\NativeAnalyzer;
 
 use App\Analyzer\CachedSyntax;
+use App\Analyzer\Graph\NodeKind;
 use App\Analyzer\PhaseCache;
 use App\Analyzer\SourceParser;
 use PhpParser\Node\Stmt;
@@ -12,9 +13,10 @@ use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\NodeFinder;
 use PhpParser\Parser;
+use WeakReference;
 
 /**
- * Everything the analysed files declare, read before any of them is walked.
+ * The names and locations declared by the analysed files, indexed before walking.
  *
  * A walk cannot be a single pass over the sources, because what one file means
  * depends on what another declares: a class takes its methods on from a trait
@@ -33,11 +35,26 @@ use PhpParser\Parser;
 final class SourceIndex
 {
     /**
-     * @param string                              $workingDirectory The directory the analysis runs in
-     * @param AutoloadIndex                       $autoloaded       The classes the project can reach beyond the analysed files
-     * @param array<string, ParsedSource>         $sourcesByPath    The analysed files, keyed by path, in the order they are analysed
-     * @param array<string, ClassLikeDeclaration> $classLikes       The declarations they hold, keyed by lower-cased name
-     * @param array<string, true>                 $functions        The functions they declare, keyed by lower-cased name
+     * Retains only the most recently requested file; active walkers own their trees.
+     */
+    private ?ParsedSource $loaded = null;
+
+    /**
+     * Reuses trees still owned by a walker without extending their lifetime.
+     *
+     * @var array<string, WeakReference<ParsedSource>>
+     */
+    private array $active = [];
+
+    /**
+     * @param string                                                           $workingDirectory The directory the analysis runs in
+     * @param AutoloadIndex                                                    $autoloaded       The classes the project can reach beyond the analysed files
+     * @param array<string, true>                                              $sourcesByPath    The readable files, in analysis order
+     * @param array<string, array{file: string, name: string, kind: NodeKind}> $classLikes       Declaration locations, keyed by lower-cased name
+     * @param array<string, true>                                              $functions        The functions they declare, keyed by lower-cased name
+     * @param Parser                                                           $parser           Reads one file at a time for later lookups
+     * @param null|int                                                         $phpVersion       The language version used for cached syntax
+     * @param null|PhaseCache                                                  $cache            Reuses syntax after edits to other files
      */
     public function __construct(
         private readonly string $workingDirectory,
@@ -45,6 +62,9 @@ final class SourceIndex
         private readonly array $sourcesByPath,
         private readonly array $classLikes,
         private readonly array $functions,
+        private readonly Parser $parser,
+        private readonly ?int $phpVersion = null,
+        private readonly ?PhaseCache $cache = null,
     ) {}
 
     /**
@@ -81,8 +101,7 @@ final class SourceIndex
             if ($statements === null) {
                 continue;
             }
-            $source = new ParsedSource($file, $statements, AnonymousClassNaming::of($statements));
-            $sources[$file] = $source;
+            $sources[$file] = true;
 
             foreach ((new NodeFinder())->find($statements, static fn (object $node): bool => $node instanceof ClassLike || $node instanceof Function_) as $declaration) {
                 if ($declaration instanceof Function_ && $declaration->namespacedName !== null) {
@@ -96,12 +115,12 @@ final class SourceIndex
                 $kind = ClassLikeDeclaration::kindOf($declaration);
                 $name = $declaration->namespacedName->toString();
                 if ($kind !== null && !isset($classLikes[strtolower($name)])) {
-                    $classLikes[strtolower($name)] = new ClassLikeDeclaration($name, $kind, $source, $declaration);
+                    $classLikes[strtolower($name)] = ['file' => $file, 'name' => $name, 'kind' => $kind];
                 }
             }
         }
 
-        return new self($workingDirectory, AutoloadIndex::at($workingDirectory), $sources, $classLikes, $functions);
+        return new self($workingDirectory, AutoloadIndex::at($workingDirectory), $sources, $classLikes, $functions, $parser, $phpVersion, $cache);
     }
 
     /**
@@ -147,13 +166,13 @@ final class SourceIndex
     }
 
     /**
-     * Returns the analysed files, in the order they are analysed.
+     * Materializes the analysed files; analysis itself uses iterateSources() to bound memory.
      *
      * @return list<ParsedSource> The parsed files
      */
     public function sources(): array
     {
-        return array_values($this->sourcesByPath);
+        return iterator_to_array($this->iterateSources(), false);
     }
 
     /**
@@ -165,7 +184,22 @@ final class SourceIndex
      */
     public function sourceOf(string $file): ?ParsedSource
     {
-        return $this->sourcesByPath[$file] ?? null;
+        if (!isset($this->sourcesByPath[$file])) {
+            return null;
+        }
+        $active = ($this->active[$file] ?? null)?->get();
+        if ($active !== null) {
+            return $this->loaded = $active;
+        }
+        $this->loaded = null;
+        $statements = CachedSyntax::read($file, $this->parser, $this->phpVersion, $this->cache)->statements;
+        if ($statements === null) {
+            return null;
+        }
+        $this->loaded = new ParsedSource($file, $statements, AnonymousClassNaming::of($statements));
+        $this->active[$file] = WeakReference::create($this->loaded);
+
+        return $this->loaded;
     }
 
     /**
@@ -177,7 +211,14 @@ final class SourceIndex
      */
     public function classLike(string $name): ?ClassLikeDeclaration
     {
-        return $this->classLikes[strtolower($name)] ?? null;
+        $location = $this->classLikes[strtolower($name)] ?? null;
+        if ($location === null) {
+            return null;
+        }
+        $source = $this->sourceOf($location['file']);
+        $node = $source?->declarationOf($location['name']);
+
+        return $source === null || $node === null ? null : new ClassLikeDeclaration($location['name'], $location['kind'], $source, $node);
     }
 
     /**
@@ -206,6 +247,21 @@ final class SourceIndex
      */
     public function knowsClass(string $name): bool
     {
-        return $this->classLike($name) !== null || $this->autoloaded->knows($name);
+        return isset($this->classLikes[strtolower($name)]) || $this->autoloaded->knows($name);
+    }
+
+    /**
+     * Walks the selected files without materializing a project-wide syntax tree.
+     *
+     * @return iterable<int, ParsedSource>
+     */
+    public function iterateSources(): iterable
+    {
+        foreach ($this->sourcesByPath as $file => $_) {
+            $source = $this->sourceOf($file);
+            if ($source !== null) {
+                yield $source;
+            }
+        }
     }
 }

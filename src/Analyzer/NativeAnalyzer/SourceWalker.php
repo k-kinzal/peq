@@ -32,20 +32,13 @@ use PhpParser\Node\Stmt\Trait_;
 final class SourceWalker
 {
     /**
-     * The walk that reads what a class body holds.
-     */
-    private readonly ClassWalker $classWalker;
-
-    /**
      * @param SourceIndex   $index    What the analysed files declare
      * @param GraphRecorder $recorder Where what the walk finds is collected
      */
     public function __construct(
         private readonly SourceIndex $index,
         private readonly GraphRecorder $recorder,
-    ) {
-        $this->classWalker = new ClassWalker($index, $recorder, $this);
-    }
+    ) {}
 
     /**
      * Walks one analysed file from its top.
@@ -103,7 +96,7 @@ final class SourceWalker
      */
     public function descend(PhpParserNode $node, AnalysisScope $scope, ParsedSource $source): void
     {
-        $subNodes = get_object_vars($node);
+        $subNodes = (array) $node;
         foreach ($node->getSubNodeNames() as $name) {
             $child = $subNodes[$name] ?? null;
             if ($child instanceof PhpParserNode) {
@@ -141,7 +134,7 @@ final class SourceWalker
                 return;
             }
             $name = $source->anonymous->nameOf($node, $this->index->relativePathOf($scope->file));
-            $this->classWalker->walk($node, NodeKind::Klass, $name, $scope, $source);
+            (new ClassWalker($this->index, $this->recorder, $this))->walk($node, NodeKind::Klass, $name, $scope, $source);
 
             return;
         }
@@ -153,6 +146,6 @@ final class SourceWalker
             return;
         }
 
-        $this->classWalker->walk($node, $kind, $name, $scope, $source);
+        (new ClassWalker($this->index, $this->recorder, $this))->walk($node, $kind, $name, $scope, $source);
     }
 }

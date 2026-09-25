@@ -16,12 +16,14 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use WeakReference;
 
 /**
  * @internal
  */
 #[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
 #[CoversClass(GraphRecorder::class)]
+#[UsesClass(\App\Analyzer\Graph\NodePrecedence::class)]
 #[UsesClass(\App\Analyzer\Graph\AuthoredEdge::class)]
 #[UsesClass(InstantiationEdge::class)]
 #[UsesClass(\App\Analyzer\Graph\Edge\Inverse\UsedByEdge::class)]
@@ -75,5 +77,18 @@ final class GraphRecorderTest extends TestCase
         $recorder->record([new ClassNode(ClassNodeId::of('App\Domain\Money'), true, $meta)]);
 
         self::assertSame(NodeKind::Klass, $recorder->graph()->nodeNamed('App\Domain\Money')?->kind());
+    }
+
+    public function testRecordDiscardsRepeatedReferencesOnceADeclarationIsKnown(): void
+    {
+        $recorder = new GraphRecorder();
+        $recorder->record([new ClassNode(ClassNodeId::of('Service'), true, new FileMeta('/project/Service.php', 1, 1))]);
+        $node = new ClassNode(ClassNodeId::of('Service'));
+        $reference = WeakReference::create($node);
+        $recorder->record([$node]);
+        unset($node);
+
+        self::assertNull($reference->get());
+        self::assertTrue($recorder->graph()->nodeNamed('Service')?->resolved());
     }
 }

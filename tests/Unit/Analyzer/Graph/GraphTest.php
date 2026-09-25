@@ -317,4 +317,16 @@ final class GraphTest extends TestCase
         self::assertNotNull($merged->nodeNamed('App\Domain\Invoice'));
         self::assertNotNull($merged->nodeNamed('App\Domain\Money'));
     }
+
+    public function testElementsYieldsNodesBeforeForwardEdgesWithoutInverseEdges(): void
+    {
+        $first = new MethodNode(MethodNodeId::of('Service', 'run'));
+        $second = new MethodNode(MethodNodeId::of('Service', 'step'));
+        $edge = new MethodCallEdge($first, $second, new FileMeta('/project/Service.php', 3, 1));
+        $graph = new Graph();
+        $graph->addNodes([$first, $second]);
+        $graph->addEdge($edge);
+
+        self::assertSame([$first, $second, $edge], iterator_to_array($graph->elements(), false));
+    }
 }

@@ -23,6 +23,7 @@ use org\bovigo\vfs\vfsStream;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Medium;
 use PHPUnit\Framework\TestCase;
+use WeakReference;
 
 /**
  * @internal
@@ -145,5 +146,15 @@ final class SourceWalkerTest extends TestCase
             ['AnonymousClass'.md5('Walked.php:3').'::inner', 'AnonymousClass'.md5('Walked.php:3')],
             array_map(static fn (Node $node): string => $node->id()->toString(), $recorder->graph()->nodes()),
         );
+    }
+
+    public function testWalkFileReleasesItsIndexWithoutWaitingForCycleCollection(): void
+    {
+        $index = SourceIndex::of([], '');
+        $reference = WeakReference::create($index);
+        $walker = new SourceWalker($index, new GraphRecorder());
+        unset($index, $walker);
+
+        self::assertNull($reference->get());
     }
 }

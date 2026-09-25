@@ -102,10 +102,13 @@ final class NativeAnalyzer implements Analyzer
         $index = SourceIndex::of($files, $directory, $this->phpVersion, $this->cache);
         $recorder = new GraphRecorder();
         $walker = new SourceWalker($index, $recorder);
-        foreach ($index->sources() as $source) {
+        foreach ($index->iterateSources() as $source) {
             $walker->walkFile($source);
         }
 
-        return DocDependencies::enrich($recorder->graph(), $files, SourceParser::forVersion($this->phpVersion));
+        $graph = $recorder->graph();
+        unset($walker, $index, $source, $recorder);
+
+        return DocDependencies::enrich($graph, $files, SourceParser::forVersion($this->phpVersion));
     }
 }

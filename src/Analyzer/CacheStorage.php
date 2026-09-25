@@ -22,9 +22,13 @@ final readonly class CacheStorage
     /**
      * Reads or replaces an entry while holding the version lock.
      *
-     * @param Closure(): ?string $operation The operation within this cache directory
+     * @template T
+     *
+     * @param Closure(): T $operation The operation within this cache directory
+     *
+     * @return null|T
      */
-    public function locked(Closure $operation): ?string
+    public function locked(Closure $operation): mixed
     {
         if (is_link($this->directory) || is_file($this->directory) || (!is_dir($this->directory) && !@mkdir($this->directory, 0o700, true) && !is_dir($this->directory))) {
             return null;
@@ -91,19 +95,40 @@ final readonly class CacheStorage
 
     /**
      * Atomically replaces one file; a failed write leaves the previous entry intact.
+     *
+     * @param iterable<string>|string $contents
      */
-    public function write(string $name, string $contents): bool
+    public function write(string $name, iterable|string $contents): bool
     {
         $temporary = @tempnam($this->directory, '.write-');
         if ($temporary === false) {
             return false;
         }
-        $written = @file_put_contents($temporary, $contents) === strlen($contents)
-            && @rename($temporary, $this->directory.'/'.$name);
-        if (!$written) {
-            @unlink($temporary);
-        }
+        $stream = @fopen($temporary, 'wb');
 
-        return $written;
+        try {
+            if ($stream === false) {
+                return false;
+            }
+            foreach (is_string($contents) ? [$contents] : $contents as $part) {
+                if (@fwrite($stream, $part) !== strlen($part)) {
+                    return false;
+                }
+            }
+            if (!@fflush($stream)) {
+                return false;
+            }
+            fclose($stream);
+            $stream = false;
+
+            return @rename($temporary, $this->directory.'/'.$name);
+        } finally {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+            if (is_file($temporary)) {
+                @unlink($temporary);
+            }
+        }
     }
 }
