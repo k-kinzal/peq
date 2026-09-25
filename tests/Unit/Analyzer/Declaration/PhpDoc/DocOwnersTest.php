@@ -45,6 +45,18 @@ use PHPUnit\Framework\TestCase;
 #[Small]
 final class DocOwnersTest extends TestCase
 {
+    public function testOfPromotedParameterFindsItsProperty(): void
+    {
+        $graph = new Graph();
+        $property = new PropertyNode(PropertyNodeId::of('Subject', 'item'), true);
+        $graph->addNode($property);
+        $scope = new DocScope(new NameContext(new Collecting()), 'Subject');
+        $parameter = new \PhpParser\Node\Param(new \PhpParser\Node\Expr\Variable('item'), flags: \PhpParser\Modifiers::PUBLIC);
+
+        self::assertSame([$property], DocOwners::of($parameter, $scope, $graph));
+        self::assertNull(DocOwners::of(new \PhpParser\Node\Param(new \PhpParser\Node\Expr\Variable('item')), $scope, $graph));
+    }
+
     public function testOfOnePropertyStatementFindsEveryDeclaredProperty(): void
     {
         $graph = new Graph();

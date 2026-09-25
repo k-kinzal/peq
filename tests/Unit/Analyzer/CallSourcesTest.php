@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Analyzer;
 
 use App\Analyzer\CallSources;
+use org\bovigo\vfs\vfsStream;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -20,6 +21,7 @@ use WeakReference;
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
 #[UsesClass(\App\Analyzer\Graph\Resolution\ClassHierarchy::class)]
 #[UsesClass(\App\Analyzer\SourceParser::class)]
+#[\PHPUnit\Framework\Attributes\UsesNamespace('App\Analyzer\Declaration\PhpDoc')]
 #[CoversClass(CallSources::class)]
 #[UsesClass(\App\Analyzer\CachedSyntax::class)]
 #[UsesClass(\App\Analyzer\Declaration\Calls\WrittenCalls::class)]
@@ -39,9 +41,9 @@ final class CallSourcesTest extends TestCase
         self::assertCount(2, $body->getStmts() ?? []);
     }
 
-    public function testReadTreatsAnUnavailableFileAsHavingNoBodies(): void
+    public function testFileCachesAnUnavailableFileAsHavingNoBodies(): void
     {
-        self::assertSame([], (new CallSources(80300))->read('/peq-file-that-does-not-exist.php'));
+        self::assertSame([], (new CallSources(80300))->file('/peq-file-that-does-not-exist.php'));
     }
 
     public function testCallableDisambiguatesOwnersAndMethodNamesOnTheSameLine(): void
@@ -58,6 +60,21 @@ final class CallSourcesTest extends TestCase
         self::assertInstanceOf(\PhpParser\Node\Stmt\ClassMethod::class, $body);
         self::assertSame('function Run()\n{\n    second();\n}', str_replace("\n", '\n', (new \PhpParser\PrettyPrinter\Standard())->prettyPrint([$body])));
         self::assertSame($body, $reader->callable($source));
+    }
+
+    public function testEnterNodeIndexesOwnersAndExplicitTraitAliasesDuringRead(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'peq-trait-alias-');
+        self::assertNotFalse($file);
+        file_put_contents($file, '<?php trait First { function original() {} function extra() {} } trait Second { function unrelated() {} } class Subject { use First, Second { First::original as alias; } } function unrelated() {}');
+        $reader = new CallSources(80300);
+        $source = new \App\Analyzer\Graph\Node\MethodNode(\App\Analyzer\Graph\NodeId\MethodNodeId::of('Subject', 'alias'), true, new \App\Analyzer\Graph\FileMeta($file, 1, 1));
+        $body = $reader->callable($source);
+        unlink($file);
+
+        self::assertInstanceOf(\PhpParser\Node\Stmt\ClassMethod::class, $body);
+        self::assertSame('original', $body->name->toString());
+        self::assertSame('First', $body->getAttribute('peqOwner'));
     }
 
     public function testCallableFallsBackToAnAliasedTraitBodyAtItsOriginalLine(): void
@@ -135,5 +152,43 @@ final class CallSourcesTest extends TestCase
         self::assertNotNull($reader->callable($firstNode));
         unlink($first);
         unlink($second);
+    }
+
+    public function testFileKeepsDocumentationAndTraitAliasesAfterReleasingSyntax(): void
+    {
+        $root = vfsStream::setup('project', null, [
+            'Shared.php' => '<?php trait Shared { /** @return Target */ function original() {} function other() {} }',
+            'Consumer.php' => '<?php class Consumer { use Shared { original as alias; } }',
+        ]);
+        $reader = new CallSources(80300);
+        $declarations = $reader->file($root->url().'/Shared.php');
+        $reference = WeakReference::create($declarations[0]);
+        self::assertSame($declarations, $reader->file($root->url().'/Shared.php'));
+        unset($declarations);
+
+        self::assertSame([], $reader->file($root->url().'/Consumer.php'));
+        self::assertNull($reference->get());
+        self::assertSame('Target', $reader->docs->returned('Shared::original')?->objects());
+
+        $alias = new \App\Analyzer\Graph\Node\MethodNode(\App\Analyzer\Graph\NodeId\MethodNodeId::of('Consumer', 'alias'), true, new \App\Analyzer\Graph\FileMeta($root->url().'/Shared.php', 1, 1));
+        $body = $reader->callable($alias);
+
+        self::assertInstanceOf(\PhpParser\Node\Stmt\ClassMethod::class, $body);
+        self::assertSame('original', $body->name->toString());
+        self::assertSame('Shared', $body->getAttribute('peqOwner'));
+    }
+
+    public function testReadReplacesTheCachedFileEvenWhenTheNextFileIsMissing(): void
+    {
+        $root = vfsStream::setup('project', null, ['First.php' => '<?php function first() {}']);
+        $reader = new CallSources(80300);
+        $declarations = $reader->file($root->url().'/First.php');
+        $reference = WeakReference::create($declarations[0]);
+        unset($declarations);
+
+        self::assertSame([], $reader->read($root->url().'/Missing.php'));
+        self::assertNull($reference->get());
+        self::assertSame([], $reader->file($root->url().'/Missing.php'));
+        self::assertSame(['first'], array_map(static fn ($node): string => $node->name->toString(), $reader->file($root->url().'/First.php')));
     }
 }

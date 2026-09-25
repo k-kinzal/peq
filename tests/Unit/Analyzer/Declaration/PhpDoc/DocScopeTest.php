@@ -23,6 +23,16 @@ use PHPUnit\Framework\TestCase;
 #[Small]
 final class DocScopeTest extends TestCase
 {
+    public function testInClassPreservesTheTraitsAliasOrigin(): void
+    {
+        $scope = new DocScope(new NameContext(new Collecting()), 'Factory');
+        $consumer = $scope->inClass('Subject');
+
+        self::assertSame('Subject', $consumer->class);
+        self::assertSame('Factory', $consumer->typeClass);
+        self::assertSame('Factory', $consumer->withTypes(new \PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocNode([]))->typeClass);
+    }
+
     public function testResolveRespectsImportsAndSpecialNames(): void
     {
         $names = new NameContext(new Collecting());

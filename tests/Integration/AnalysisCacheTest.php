@@ -111,6 +111,37 @@ final class AnalysisCacheTest extends TestCase
         $directory->delete();
     }
 
+    #[DataProvider('providerEngines')]
+    public function testDocumentedReceiversRebuildAfterCommentOnlyEdits(string $engine): void
+    {
+        $directory = WorkingDirectory::at(sys_get_temp_dir().'/peq-phpdoc-call-cache-'.uniqid());
+        $text = '<?php class Alpha { function run() {} } class Bravo { function run() {} } /** @param Alpha $value */ function callIt($value) { $value->run(); }';
+        $source = $directory->write('source.php', $text);
+        touch($source, 1000000000);
+        $cache = new PhaseCache(new CacheStorage($directory->path.'/.peq.cache', 'v1'));
+        $analyzer = $engine === 'native' ? new NativeAnalyzer(cache: $cache) : new PhpStanAnalyzer(cache: $cache);
+        $cold = $analyzer->analyze($source);
+        $warm = $analyzer->analyze($source);
+        $entries = glob($directory->path.'/.peq.cache/'.hash('sha256', $engine.'-enriched').'-*.cache');
+        self::assertNotFalse($entries);
+        array_map(unlink(...), $entries);
+        $partial = $analyzer->analyze($source);
+        $calls = array_values(array_filter($partial->forwardEdges(), static fn (Edge $edge): bool => $edge->kind() === EdgeKind::MethodCall));
+
+        self::assertSame(['Alpha::run'], array_map(static fn (Edge $edge): string => $edge->to()->toString(), $calls));
+        self::assertEquals(GraphSnapshot::of($cold), GraphSnapshot::of($warm));
+        self::assertEquals(GraphSnapshot::of($cold), GraphSnapshot::of($partial));
+
+        file_put_contents($source, str_replace('@param Alpha', '@param Bravo', $text));
+        touch($source, 1000000000);
+        $edited = $analyzer->analyze($source);
+        $calls = array_values(array_filter($edited->forwardEdges(), static fn (Edge $edge): bool => $edge->kind() === EdgeKind::MethodCall));
+
+        self::assertSame(['Bravo::run'], array_map(static fn (Edge $edge): string => $edge->to()->toString(), $calls));
+        self::assertEquals(GraphSnapshot::of($edited), GraphSnapshot::of($analyzer->analyze($source)));
+        $directory->delete();
+    }
+
     public function testEditsRebuildCrossFileRelationsWhileReusingUnchangedSyntax(): void
     {
         $directory = WorkingDirectory::at(sys_get_temp_dir().'/peq-analysis-'.uniqid());
