@@ -25,6 +25,19 @@ final class DocParserTest extends TestCase
         self::assertInstanceOf(InvalidTagValueNode::class, $doc->getTags()[0]->value);
         self::assertInstanceOf(ReturnTagValueNode::class, $doc->getTags()[1]->value);
         self::assertSame(3, $doc->getTags()[1]->getAttribute('startLine'));
+        self::assertSame(7, $doc->getTags()[0]->getAttribute('peqOffset'));
+        self::assertSame(37, $doc->getTags()[1]->getAttribute('peqOffset'));
         self::assertSame('list<Item>', (string) $doc->getReturnTagValues()[0]->type);
+    }
+
+    public function testParseMeasuresOffsetsInBytesAcrossMultibyteTextAndCrLf(): void
+    {
+        $doc = (new DocParser())->parse("/** Résumé\r\n * @return Item\r\n * @throws Failure\r\n */");
+        $tags = array_values($doc->getTags());
+
+        self::assertSame(2, $tags[0]->getAttribute('startLine'));
+        self::assertSame(17, $tags[0]->getAttribute('peqOffset'));
+        self::assertSame(3, $tags[1]->getAttribute('startLine'));
+        self::assertSame(34, $tags[1]->getAttribute('peqOffset'));
     }
 }

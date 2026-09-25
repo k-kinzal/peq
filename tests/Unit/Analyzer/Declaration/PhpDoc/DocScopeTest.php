@@ -38,6 +38,9 @@ final class DocScopeTest extends TestCase
         self::assertSame('App\Subject', $scope->resolve('static'));
         self::assertSame('App\Subject', $scope->resolve('$this'));
         self::assertSame('App\Base', $scope->resolve('parent'));
+        self::assertSame('App\Subject', $scope->resolve('SELF'));
+        self::assertSame('App\Subject', $scope->resolve('STATIC'));
+        self::assertSame('App\Base', $scope->resolve('PARENT'));
     }
 
     public function testWithTypesKeepsLocalBindingsWithoutMutatingTheOuterScope(): void
@@ -53,5 +56,36 @@ final class DocScopeTest extends TestCase
         self::assertSame('Schema', (string) $inner->localTypes['Imported']);
         self::assertNull($inner->resolve('self'));
         self::assertNull($inner->resolve('parent'));
+    }
+
+    public function testResolveDistinguishesConstantsFromDeclaredClasses(): void
+    {
+        $names = new NameContext(new Collecting());
+        $names->startNamespace(new Name('App'));
+        $names->addAlias(new Name('PHP_INT_MAX'), 'Limit', Use_::TYPE_NORMAL);
+        $scope = new DocScope($names, classes: ['app\php_version_id' => true]);
+
+        self::assertSame('App\PHP_VERSION_ID', $scope->resolve('PHP_VERSION_ID'));
+        self::assertNull($scope->resolve('PHP_INT_MAX'));
+        self::assertNull($scope->resolve('Limit'));
+        self::assertNull($scope->resolve('\PHP_INT_MAX'));
+        self::assertSame('App\Unknown', $scope->resolve('Unknown'));
+    }
+
+    public function testWithTypesPreservesTheEnclosingClassAndBindings(): void
+    {
+        $names = new NameContext(new Collecting());
+        $names->startNamespace(new Name('App'));
+        $outer = new DocScope($names, 'App\Subject', 'App\Base', ['T' => null], ['app\php_version_id' => true]);
+        $inner = $outer->withTypes((new DocParser())->parse('/** @phpstan-import-type Row from Schema */'));
+
+        self::assertSame($names, $inner->names);
+        self::assertSame('App\Subject', $inner->resolve('self'));
+        self::assertSame('App\Base', $inner->resolve('parent'));
+        self::assertSame('App\PHP_VERSION_ID', $inner->resolve('PHP_VERSION_ID'));
+        self::assertSame(['T', 'Row'], array_keys($inner->localTypes));
+        self::assertNull($inner->localTypes['T']);
+        self::assertSame('Schema', (string) $inner->localTypes['Row']);
+        self::assertSame(['T' => null], $outer->localTypes);
     }
 }

@@ -77,5 +77,25 @@ final class DocNamesTest extends TestCase
         yield 'recursive alias' => ["/**\n * @phpstan-type Row array{next: Row, item: Item}\n * @return Row\n */", ['App\Item']];
 
         yield 'malformed type' => ['/** @return array{broken */', []];
+
+        yield 'Doctrine arguments are not type references' => ['/** @Custom(Item::class) */', []];
+
+        yield 'callable template scope' => ['/** @param callable<T of Item>(T): T $callback */', ['App\Item']];
+
+        yield 'method template scope' => ['/** @method T map<T of Item>(T $value) */', ['App\Item']];
+
+        yield 'uppercase integer range' => ['/** @return INT<min, max> */', []];
+
+        yield 'constant integer bounds' => ['/** @return int<Item::MIN, Item::MAX> */', ['App\Item']];
+
+        yield 'constant and literal integer bounds' => ['/** @return int<0, Item::MAX> */', ['App\Item']];
+
+        yield 'duplicates retain a sequential list' => ['/** @return array{Item, Item, Other} */', ['App\Item', 'App\Other']];
+
+        yield 'scalar types are case insensitive' => ['/** @return INT|STRING|BOOL|FLOAT|OBJECT|MIXED */', []];
+
+        yield 'unknown hyphenated pseudo type' => ['/** @return future-pseudo-type */', []];
+
+        yield 'OCI class names retain their hyphen' => ['/** @return OCI-Lob */', ['App\OCI-Lob']];
     }
 }
