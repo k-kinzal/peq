@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M3B9ZHNFXDMW1GF2DHAA860Q",
+  "strategy": "manual-commit",
+  "branch": "feat/call-site-arguments",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/Unit/Reporter/Query/DiagramWriterTest.php",
+    "tests/Unit/Reporter/Query/DotWriterTest.php",
+    "tests/Unit/Reporter/Query/QueryReporterFactoryTest.php",
+    "tests/Unit/Reporter/Query/QueryReporterTest.php",
+    "tests/Unit/Reporter/Query/ResultElementsTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 19306,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 3742848,
+    "output_tokens": 5491,
+    "api_call_count": 21
+  }
+}
