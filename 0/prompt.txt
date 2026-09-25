@@ -1,0 +1,4 @@
+https://github.com/k-kinzal/peq/pull/53 にてDocblockの対応をしてもらいましたが@varや@paramなどサポートできていない範囲が大量にあるようです。
+おそらく@phpstan-xxxなどの特殊系なども対応できていないと思っており、PHPStan Engineと同一の結果にNative Engineもなるようにならなければいけません。どうやったら漏れなく対応できるでしょうか？
+
+修正はWorktreeで行い、PRを作成ください。このPJは英語PJなことに注意ください。
