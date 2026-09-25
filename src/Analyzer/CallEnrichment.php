@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Analyzer;
 
 use App\Analyzer\Declaration\Calls\CallSites;
+use App\Analyzer\Declaration\PhpDoc\DocBlock;
+use App\Analyzer\Declaration\PhpDoc\DocIndex;
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\Node\MethodNode;
@@ -25,6 +27,16 @@ final class CallEnrichment
         foreach ($graph->nodes() as $node) {
             if ($node->resolved() && $node->meta() !== null) {
                 $sources->file($node->meta()->path);
+            }
+        }
+        foreach ($graph->nodes() as $node) {
+            if ($node instanceof MethodNode && $node->resolved()) {
+                $syntax = $sources->callable($node);
+                $block = $syntax === null ? null : DocIndex::block($syntax);
+                $owner = ClassHierarchy::owner($node);
+                if ($block !== null && $owner !== null) {
+                    $sources->docs->blocks[DocIndex::key($node->id()->toString())] = new DocBlock($block->doc, $block->scope->inClass($owner));
+                }
             }
         }
         $recorder = new BodyCallRecorder($graph, new ClassHierarchy($graph), $sources->docs);

@@ -27,6 +27,7 @@ final readonly class DocScope
         public ?string $parent = null,
         public array $localTypes = [],
         public array $classes = [],
+        public ?string $typeClass = null,
     ) {}
 
     /**
@@ -46,7 +47,15 @@ final readonly class DocScope
             }
         }
 
-        return new self($this->names, $this->class, $this->parent, $types, $this->classes);
+        return new self($this->names, $this->class, $this->parent, $types, $this->classes, $this->typeClass);
+    }
+
+    /**
+     * Trait methods take self from their consumer but keep their original type aliases.
+     */
+    public function inClass(string $class): self
+    {
+        return new self($this->names, $class, $this->parent, $this->localTypes, $this->classes, $this->typeClass ?? $this->class);
     }
 
     /**

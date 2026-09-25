@@ -311,7 +311,7 @@ PHPDoc also supplies receiver types for both engines:
 |-------------------|---------------------------------|
 | Parameters and closure parameters | `@param`, `@phan-param`, `@psalm-param`, `@phpstan-param` |
 | Properties and local variables | `@var` and its supported prefixes; promoted constructor `@param` types |
-| Function and method results | `@return` and its supported prefixes, including inherited method documentation |
+| Function and method results | `@return` and its supported prefixes, including inherited documentation and methods imported from traits |
 | Magic members | Readable `@property` / `@property-read` and `@method` result types |
 | Containers | Array offsets, shape keys and `foreach` values use the element type |
 | Local type names | Template bounds and local/imported aliases retain their declaring namespace |

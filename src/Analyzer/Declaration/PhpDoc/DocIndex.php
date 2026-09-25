@@ -128,7 +128,7 @@ final class DocIndex
             return null;
         }
         $expanding[] = $key;
-        $class = $this->blocks[self::key($scope->class ?? '')] ?? null;
+        $class = $this->blocks[self::key($scope->typeClass ?? $scope->class ?? '')] ?? null;
         foreach ($class?->doc->getTags() ?? [] as $tag) {
             $value = $tag->value;
             if ($value instanceof TypeAliasImportTagValueNode && ($value->importedAs ?? $value->importedAlias) === $name) {

@@ -41,7 +41,8 @@ final class ReceiverBinding
         foreach ($source->declaration()?->signature->parameters ?? [] as $parameter) {
             $this->variables[$parameter->name] = $parameter->type ?? '';
         }
-        $this->documented = $this->docs->types($syntax === null ? null : DocIndex::block($syntax), 'param');
+        $block = $this->docs->blocks[DocIndex::key($source->id()->toString())] ?? ($syntax === null ? null : DocIndex::block($syntax));
+        $this->documented = $this->docs->types($block, 'param');
     }
 
     /**

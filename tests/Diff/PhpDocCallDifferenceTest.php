@@ -138,6 +138,12 @@ final class PhpDocCallDifferenceTest extends TestCase
 
         yield 'union array elements' => ['/** @param list<Target>|list<Other> $values */ function run($values) { $values[0]->work(); }', ['Doc\Other::work', 'Doc\Target::work']];
 
+        yield 'trait return under an imported alias' => ['trait Factory { /** @return Target */ function make() {} } class Subject { use Factory { make as create; } } function run(Subject $s) { $s->create()->work(); }', ['Doc\Target::work']];
+
+        yield 'trait self return uses the consuming class' => ['trait Factory { /** @return self */ function make() {} } class Subject { use Factory; function work() {} } function run(Subject $s) { $s->make()->work(); }', ['Doc\Subject::work']];
+
+        yield 'trait imported type keeps its origin' => ['/** @phpstan-type Item Target */ class Schema {} /** @phpstan-import-type Item from Schema */ trait Factory { /** @return Item */ function make() {} } class Subject { use Factory; } function run(Subject $s) { $s->make()->work(); }', ['Doc\Target::work']];
+
         yield 'magic property' => ['/** @property-read Target $value */ class Subject { function run() { $this->value->work(); } }', ['Doc\Target::work']];
 
         yield 'magic method return' => ['/** @method Target make() */ class Subject { function run() { $this->make()->work(); } }', ['Doc\Target::work']];

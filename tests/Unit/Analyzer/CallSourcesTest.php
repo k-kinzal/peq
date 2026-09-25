@@ -60,6 +60,21 @@ final class CallSourcesTest extends TestCase
         self::assertSame($body, $reader->callable($source));
     }
 
+    public function testCallableResolvesAnExplicitTraitAliasAmongSameLineDeclarations(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'peq-trait-alias-');
+        self::assertNotFalse($file);
+        file_put_contents($file, '<?php trait First { function original() {} function extra() {} } trait Second { function unrelated() {} } class Subject { use First, Second { First::original as alias; } } function unrelated() {}');
+        $reader = new CallSources(80300);
+        $source = new \App\Analyzer\Graph\Node\MethodNode(\App\Analyzer\Graph\NodeId\MethodNodeId::of('Subject', 'alias'), true, new \App\Analyzer\Graph\FileMeta($file, 1, 1));
+        $body = $reader->callable($source);
+        unlink($file);
+
+        self::assertInstanceOf(\PhpParser\Node\Stmt\ClassMethod::class, $body);
+        self::assertSame('original', $body->name->toString());
+        self::assertSame('First', $body->getAttribute('peqOwner'));
+    }
+
     public function testCallableFallsBackToAnAliasedTraitBodyAtItsOriginalLine(): void
     {
         $file = tempnam(sys_get_temp_dir(), 'peq-bodies-');
