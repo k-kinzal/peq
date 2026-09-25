@@ -98,8 +98,27 @@
 <span class="src-line" id="L60" data-diff="added"><a class="ln" href="#L60">60</a></span>
 <span class="src-line" id="L61" data-diff="added"><a class="ln" href="#L61">61</a>        <span class="tok-kw">return</span> <span class="tok-var">$types</span>;</span>
 <span class="src-line" id="L62" data-diff="added"><a class="ln" href="#L62">62</a>    }</span>
-<span class="src-line" id="L63" data-diff="added"><a class="ln" href="#L63">63</a>}</span>
-<span class="src-line" id="L64" data-diff="added"><a class="ln" href="#L64">64</a></span>
+<span class="src-line" id="L63" data-diff="added"><a class="ln" href="#L63">63</a></span>
+<span class="src-line" id="L64" data-diff="added"><a class="ln" href="#L64">64</a>    <span class="tok-com">/**</span></span>
+<span class="src-line" id="L65" data-diff="added"><a class="ln" href="#L65">65</a><span class="tok-com">     * Magic method templates shadow class templates only within that annotation.</span></span>
+<span class="src-line" id="L66" data-diff="added"><a class="ln" href="#L66">66</a><span class="tok-com">     */</span></span>
+<span class="src-line" id="L67" data-diff="added"><a class="ln" href="#L67">67</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">scopeFor</span>(<span class="tok-id">string</span> <span class="tok-var">$family</span>, <span class="tok-id">string</span> <span class="tok-var">$name</span>): <span class="tok-id">DocScope</span></span>
+<span class="src-line" id="L68" data-diff="added"><a class="ln" href="#L68">68</a>    {</span>
+<span class="src-line" id="L69" data-diff="added"><a class="ln" href="#L69">69</a>        <span class="tok-var">$scope</span> = <span class="tok-var">$this</span>-&gt;<span class="tok-id">scope</span>;</span>
+<span class="src-line" id="L70" data-diff="added"><a class="ln" href="#L70">70</a>        <span class="tok-kw">if</span> (<span class="tok-var">$family</span> === <span class="tok-str">&#039;method&#039;</span>) {</span>
+<span class="src-line" id="L71" data-diff="added"><a class="ln" href="#L71">71</a>            <span class="tok-kw">foreach</span> ([<span class="tok-str">&#039;@method&#039;</span>, <span class="tok-str">&#039;@phan-method&#039;</span>, <span class="tok-str">&#039;@psalm-method&#039;</span>, <span class="tok-str">&#039;@phpstan-method&#039;</span>] <span class="tok-kw">as</span> <span class="tok-var">$tagName</span>) {</span>
+<span class="src-line" id="L72" data-diff="added"><a class="ln" href="#L72">72</a>                <span class="tok-kw">foreach</span> (<span class="tok-var">$this</span>-&gt;<span class="tok-id">doc</span>-&gt;<span class="tok-id">getMethodTagValues</span>(<span class="tok-var">$tagName</span>) <span class="tok-kw">as</span> <span class="tok-var">$method</span>) {</span>
+<span class="src-line" id="L73" data-diff="added"><a class="ln" href="#L73">73</a>                    <span class="tok-kw">if</span> (<span class="tok-id">strtolower</span>(<span class="tok-var">$method</span>-&gt;<span class="tok-id">methodName</span>) === <span class="tok-var">$name</span>) {</span>
+<span class="src-line" id="L74" data-diff="added"><a class="ln" href="#L74">74</a>                        <span class="tok-var">$scope</span> = <span class="tok-var">$this</span>-&gt;<span class="tok-id">scope</span>-&gt;<span class="tok-id">withTypes</span>(<span class="tok-kw">new</span> <span class="tok-id">PhpDocNode</span>(<span class="tok-id">array_map</span>(<span class="tok-kw">static</span> <span class="tok-kw">fn</span> (<span class="tok-id">\PHPStan\PhpDocParser\Ast\PhpDoc\TemplateTagValueNode</span> <span class="tok-var">$template</span>): <span class="tok-id">\PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode</span> =&gt; <span class="tok-kw">new</span> <span class="tok-id">\PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode</span>(<span class="tok-str">&#039;@template&#039;</span>, <span class="tok-var">$template</span>), <span class="tok-var">$method</span>-&gt;<span class="tok-id">templateTypes</span>)));</span>
+<span class="src-line" id="L75" data-diff="added"><a class="ln" href="#L75">75</a>                    }</span>
+<span class="src-line" id="L76" data-diff="added"><a class="ln" href="#L76">76</a>                }</span>
+<span class="src-line" id="L77" data-diff="added"><a class="ln" href="#L77">77</a>            }</span>
+<span class="src-line" id="L78" data-diff="added"><a class="ln" href="#L78">78</a>        }</span>
+<span class="src-line" id="L79" data-diff="added"><a class="ln" href="#L79">79</a></span>
+<span class="src-line" id="L80" data-diff="added"><a class="ln" href="#L80">80</a>        <span class="tok-kw">return</span> <span class="tok-var">$scope</span>;</span>
+<span class="src-line" id="L81" data-diff="added"><a class="ln" href="#L81">81</a>    }</span>
+<span class="src-line" id="L82" data-diff="added"><a class="ln" href="#L82">82</a>}</span>
+<span class="src-line" id="L83" data-diff="added"><a class="ln" href="#L83">83</a></span>
 </code></pre>
 </main>
 <footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>
