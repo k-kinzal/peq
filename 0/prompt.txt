@@ -1,0 +1,35 @@
+<task-notification>
+<task-id>besyejpis</task-id>
+<summary>Monitor event: "main CI run 36148940638 mutation job outcome"</summary>
+<event>[Monitor expired after 10m with no events delivered. Re-arm it if you still need the watch — and widen the filter if silence was unexpected.]</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>brvmu4u6m</task-id>
+<tool-use-id>toolu_01B79kCrQG5ihvano9YQrtRb</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-ab-Projects-peq/17fb897c-c0c2-46ca-8c37-cec6dc447e10/tasks/brvmu4u6m.output</output-file>
+<status>completed</status>
+<summary>Monitor "main CI run 36148940638 mutation job outcome" stream ended</summary>
+<event>completed failure mutation=completed/failure</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+続きを
+
+---
+
+<task-notification>
+<task-id>byaty2en2</task-id>
+<tool-use-id>toolu_018nrWhE4uKhF9smhnNQomYT</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-ab-Projects-peq/17fb897c-c0c2-46ca-8c37-cec6dc447e10/tasks/byaty2en2.output</output-file>
+<status>failed</status>
+<summary>Background command "Run the whole suite with coverage for Infection in the background" failed with exit code 144</summary>
+</task-notification>
+
+---
+
+続きを
