@@ -22,6 +22,17 @@ use PHPUnit\Framework\TestCase;
 #[Small]
 final class DocBlockTest extends TestCase
 {
+    public function testScopeForKeepsMagicMethodTemplatesLocal(): void
+    {
+        $doc = (new DocParser())->parse("/**\n * @template T of First\n * @method T make<T of Second>()\n * @method T other()\n */");
+        $scope = (new DocScope(new NameContext(new Collecting())))->withTypes($doc);
+        $block = new DocBlock($doc, $scope);
+
+        self::assertSame('Second', (string) $block->scopeFor('method', 'make')->localTypes['T']);
+        self::assertSame('First', (string) $block->scopeFor('method', 'other')->localTypes['T']);
+        self::assertSame($scope, $block->scopeFor('return', ''));
+    }
+
     public function testTypesSelectsPriorityIndependentlyOfWrittenOrder(): void
     {
         $block = new DocBlock((new DocParser())->parse("/**\n * @phpstan-param Item \$value\n * @psalm-param Other \$value\n * @param object \$value\n * @param Item ...\$rest\n */"), new DocScope(new NameContext(new Collecting())));

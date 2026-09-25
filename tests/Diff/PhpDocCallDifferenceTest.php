@@ -144,6 +144,8 @@ final class PhpDocCallDifferenceTest extends TestCase
 
         yield 'trait imported type keeps its origin' => ['/** @phpstan-type Item Target */ class Schema {} /** @phpstan-import-type Item from Schema */ trait Factory { /** @return Item */ function make() {} } class Subject { use Factory; } function run(Subject $s) { $s->make()->work(); }', ['Doc\Target::work']];
 
+        yield 'magic method template bound' => ['/** @method T make<T of Target>() */ class Subject {} function run(Subject $s) { $s->make()->work(); }', ['Doc\Target::work']];
+
         yield 'magic property' => ['/** @property-read Target $value */ class Subject { function run() { $this->value->work(); } }', ['Doc\Target::work']];
 
         yield 'magic method return' => ['/** @method Target make() */ class Subject { function run() { $this->make()->work(); } }', ['Doc\Target::work']];

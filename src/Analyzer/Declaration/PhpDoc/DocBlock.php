@@ -60,4 +60,23 @@ final readonly class DocBlock
 
         return $types;
     }
+
+    /**
+     * Magic method templates shadow class templates only within that annotation.
+     */
+    public function scopeFor(string $family, string $name): DocScope
+    {
+        $scope = $this->scope;
+        if ($family === 'method') {
+            foreach (['@method', '@phan-method', '@psalm-method', '@phpstan-method'] as $tagName) {
+                foreach ($this->doc->getMethodTagValues($tagName) as $method) {
+                    if (strtolower($method->methodName) === $name) {
+                        $scope = $this->scope->withTypes(new PhpDocNode(array_map(static fn (\PHPStan\PhpDocParser\Ast\PhpDoc\TemplateTagValueNode $template): \PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode => new \PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode('@template', $template), $method->templateTypes)));
+                    }
+                }
+            }
+        }
+
+        return $scope;
+    }
 }

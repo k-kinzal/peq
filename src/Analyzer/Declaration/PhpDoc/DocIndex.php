@@ -10,7 +10,6 @@ use PhpParser\Node;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
 use PHPStan\PhpDocParser\Ast\PhpDoc\TypeAliasImportTagValueNode;
-use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 
 /**
  * Resolves documented declarations within the analysed source set, without autoloading it.
@@ -56,7 +55,15 @@ final class DocIndex
      */
     public function types(?DocBlock $block, string $family): array
     {
-        return $block === null ? [] : array_map(fn (TypeNode $type): DocExpression => new DocExpression($type, $block->scope, $this), $block->types($family));
+        if ($block === null) {
+            return [];
+        }
+        $types = [];
+        foreach ($block->types($family) as $name => $type) {
+            $types[$name] = new DocExpression($type, $block->scopeFor($family, $name), $this);
+        }
+
+        return $types;
     }
 
     /**
