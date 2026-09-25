@@ -51,13 +51,13 @@
 <span class="src-line" id="L15"><a class="ln" href="#L15">15</a><span class="tok-kw">use</span> <span class="tok-id">PhpParser\NodeFinder</span>;</span>
 <span class="src-line" id="L16"><a class="ln" href="#L16">16</a></span>
 <span class="src-line" id="L17"><a class="ln" href="#L17">17</a><span class="tok-com">/**</span></span>
-<span class="src-line" id="L18"><a class="ln" href="#L18">18</a><span class="tok-com"> * One analysed file, parsed once and answered from many times.</span></span>
+<span class="src-line" id="L18"><a class="ln" href="#L18">18</a><span class="tok-com"> * One active analysed file, answered from while a walker or lookup holds it.</span></span>
 <span class="src-line" id="L19"><a class="ln" href="#L19">19</a><span class="tok-com"> *</span></span>
 <span class="src-line" id="L20"><a class="ln" href="#L20">20</a><span class="tok-com"> * A file is read for three different questions — what it declares, what its method</span></span>
 <span class="src-line" id="L21"><a class="ln" href="#L21">21</a><span class="tok-com"> * bodies reach out to, and what its anonymous classes are called — and parsing it</span></span>
-<span class="src-line" id="L22"><a class="ln" href="#L22">22</a><span class="tok-com"> * once for each of them is the cost that makes an analyzer slow. Parsing is therefore</span></span>
-<span class="src-line" id="L23"><a class="ln" href="#L23">23</a><span class="tok-com"> * done once, at the point the file enters the analysis, and everything after that is</span></span>
-<span class="src-line" id="L24"><a class="ln" href="#L24">24</a><span class="tok-com"> * a lookup.</span></span>
+<span class="src-line" id="L22"><a class="ln" href="#L22">22</a><span class="tok-com"> * once for each question is wasteful. These lookups share a tree for the active</span></span>
+<span class="src-line" id="L23"><a class="ln" href="#L23">23</a><span class="tok-com"> * file; SourceIndex retains declaration locations instead of keeping every file</span></span>
+<span class="src-line" id="L24"><a class="ln" href="#L24">24</a><span class="tok-com"> * alive for the duration of the project analysis.</span></span>
 <span class="src-line" id="L25"><a class="ln" href="#L25">25</a><span class="tok-com"> *</span></span>
 <span class="src-line" id="L26"><a class="ln" href="#L26">26</a><span class="tok-com"> * @visibility namespace</span></span>
 <span class="src-line" id="L27"><a class="ln" href="#L27">27</a><span class="tok-com"> */</span></span>

@@ -80,31 +80,40 @@
 <span class="src-line" id="L44"><a class="ln" href="#L44">44</a>    {</span>
 <span class="src-line" id="L45"><a class="ln" href="#L45">45</a>        <span class="tok-var">$name</span> = <span class="tok-id">hash</span>(<span class="tok-str">&#039;sha256&#039;</span>, <span class="tok-var">$phase</span>).<span class="tok-str">&#039;-&#039;</span>.<span class="tok-id">hash</span>(<span class="tok-str">&#039;sha256&#039;</span>, <span class="tok-var">$slot</span>).<span class="tok-str">&#039;.cache&#039;</span>;</span>
 <span class="src-line" id="L46"><a class="ln" href="#L46">46</a>        <span class="tok-var">$header</span> = <span class="tok-var">$phase</span>.<span class="tok-str">&quot;\n&quot;</span>.<span class="tok-var">$fingerprint</span>.<span class="tok-str">&quot;\n&quot;</span>;</span>
-<span class="src-line" id="L47"><a class="ln" href="#L47">47</a>        <span class="tok-var">$entry</span> = <span class="tok-var">$this</span>-&gt;<span class="tok-id">storage</span>-&gt;<span class="tok-id">locked</span>(<span class="tok-kw">function</span> () <span class="tok-kw">use</span> (<span class="tok-var">$name</span>): ?<span class="tok-id">string</span> {</span>
+<span class="src-line" id="L47"><a class="ln" href="#L47">47</a>        <span class="tok-var">$value</span> = <span class="tok-var">$this</span>-&gt;<span class="tok-id">storage</span>-&gt;<span class="tok-id">locked</span>(<span class="tok-kw">function</span> () <span class="tok-kw">use</span> (<span class="tok-var">$name</span>, <span class="tok-var">$header</span>): ?<span class="tok-id">object</span> {</span>
 <span class="src-line" id="L48"><a class="ln" href="#L48">48</a>            <span class="tok-var">$path</span> = <span class="tok-var">$this</span>-&gt;<span class="tok-id">storage</span>-&gt;<span class="tok-id">directory</span>.<span class="tok-str">&#039;/&#039;</span>.<span class="tok-var">$name</span>;</span>
-<span class="src-line" id="L49"><a class="ln" href="#L49">49</a>            <span class="tok-var">$contents</span> = !<span class="tok-id">is_link</span>(<span class="tok-var">$path</span>) &amp;&amp; <span class="tok-id">is_file</span>(<span class="tok-var">$path</span>) ? @<span class="tok-id">file_get_contents</span>(<span class="tok-var">$path</span>) : <span class="tok-id">false</span>;</span>
-<span class="src-line" id="L50"><a class="ln" href="#L50">50</a></span>
-<span class="src-line" id="L51"><a class="ln" href="#L51">51</a>            <span class="tok-kw">return</span> <span class="tok-var">$contents</span> === <span class="tok-id">false</span> ? <span class="tok-id">null</span> : <span class="tok-var">$contents</span>;</span>
-<span class="src-line" id="L52"><a class="ln" href="#L52">52</a>        });</span>
-<span class="src-line" id="L53"><a class="ln" href="#L53">53</a>        <span class="tok-kw">if</span> (<span class="tok-var">$entry</span> !== <span class="tok-id">null</span> &amp;&amp; <span class="tok-id">str_starts_with</span>(<span class="tok-var">$entry</span>, <span class="tok-var">$header</span>)) {</span>
-<span class="src-line" id="L54"><a class="ln" href="#L54">54</a>            <span class="tok-var">$value</span> = <span class="tok-id">CacheCodec</span>::<span class="tok-id">decode</span>(<span class="tok-id">substr</span>(<span class="tok-var">$entry</span>, <span class="tok-id">strlen</span>(<span class="tok-var">$header</span>)));</span>
-<span class="src-line" id="L55"><a class="ln" href="#L55">55</a>            <span class="tok-kw">if</span> (<span class="tok-var">$value</span> <span class="tok-kw">instanceof</span> <span class="tok-var">$type</span>) {</span>
-<span class="src-line" id="L56"><a class="ln" href="#L56">56</a>                <span class="tok-kw">return</span> <span class="tok-var">$value</span>;</span>
-<span class="src-line" id="L57"><a class="ln" href="#L57">57</a>            }</span>
-<span class="src-line" id="L58"><a class="ln" href="#L58">58</a>        }</span>
-<span class="src-line" id="L59"><a class="ln" href="#L59">59</a></span>
-<span class="src-line" id="L60"><a class="ln" href="#L60">60</a>        <span class="tok-var">$value</span> = <span class="tok-var">$compute</span>();</span>
-<span class="src-line" id="L61"><a class="ln" href="#L61">61</a>        <span class="tok-var">$contents</span> = <span class="tok-var">$header</span>.<span class="tok-id">CacheCodec</span>::<span class="tok-id">encode</span>(<span class="tok-var">$value</span>);</span>
-<span class="src-line" id="L62"><a class="ln" href="#L62">62</a>        <span class="tok-var">$this</span>-&gt;<span class="tok-id">storage</span>-&gt;<span class="tok-id">locked</span>(<span class="tok-kw">function</span> () <span class="tok-kw">use</span> (<span class="tok-var">$name</span>, <span class="tok-var">$contents</span>): ?<span class="tok-id">string</span> {</span>
-<span class="src-line" id="L63"><a class="ln" href="#L63">63</a>            <span class="tok-var">$this</span>-&gt;<span class="tok-id">storage</span>-&gt;<span class="tok-id">write</span>(<span class="tok-var">$name</span>, <span class="tok-var">$contents</span>);</span>
+<span class="src-line" id="L49"><a class="ln" href="#L49">49</a>            <span class="tok-var">$stream</span> = !<span class="tok-id">is_link</span>(<span class="tok-var">$path</span>) &amp;&amp; <span class="tok-id">is_file</span>(<span class="tok-var">$path</span>) ? @<span class="tok-id">fopen</span>(<span class="tok-var">$path</span>, <span class="tok-str">&#039;rb&#039;</span>) : <span class="tok-id">false</span>;</span>
+<span class="src-line" id="L50"><a class="ln" href="#L50">50</a>            <span class="tok-kw">if</span> (<span class="tok-var">$stream</span> === <span class="tok-id">false</span>) {</span>
+<span class="src-line" id="L51"><a class="ln" href="#L51">51</a>                <span class="tok-kw">return</span> <span class="tok-id">null</span>;</span>
+<span class="src-line" id="L52"><a class="ln" href="#L52">52</a>            }</span>
+<span class="src-line" id="L53"><a class="ln" href="#L53">53</a></span>
+<span class="src-line" id="L54"><a class="ln" href="#L54">54</a>            <span class="tok-kw">try</span> {</span>
+<span class="src-line" id="L55"><a class="ln" href="#L55">55</a>                <span class="tok-kw">return</span> <span class="tok-id">fread</span>(<span class="tok-var">$stream</span>, <span class="tok-id">strlen</span>(<span class="tok-var">$header</span>)) === <span class="tok-var">$header</span> ? <span class="tok-id">CacheCodec</span>::<span class="tok-id">decode</span>(<span class="tok-var">$stream</span>) : <span class="tok-id">null</span>;</span>
+<span class="src-line" id="L56"><a class="ln" href="#L56">56</a>            } <span class="tok-kw">finally</span> {</span>
+<span class="src-line" id="L57"><a class="ln" href="#L57">57</a>                <span class="tok-id">fclose</span>(<span class="tok-var">$stream</span>);</span>
+<span class="src-line" id="L58"><a class="ln" href="#L58">58</a>            }</span>
+<span class="src-line" id="L59"><a class="ln" href="#L59">59</a>        });</span>
+<span class="src-line" id="L60"><a class="ln" href="#L60">60</a>        <span class="tok-kw">if</span> (<span class="tok-var">$value</span> <span class="tok-kw">instanceof</span> <span class="tok-var">$type</span>) {</span>
+<span class="src-line" id="L61"><a class="ln" href="#L61">61</a>            <span class="tok-kw">return</span> <span class="tok-var">$value</span>;</span>
+<span class="src-line" id="L62"><a class="ln" href="#L62">62</a>        }</span>
+<span class="src-line" id="L63"><a class="ln" href="#L63">63</a>        <span class="tok-kw">unset</span>(<span class="tok-var">$value</span>);</span>
 <span class="src-line" id="L64"><a class="ln" href="#L64">64</a></span>
-<span class="src-line" id="L65"><a class="ln" href="#L65">65</a>            <span class="tok-kw">return</span> <span class="tok-id">null</span>;</span>
-<span class="src-line" id="L66"><a class="ln" href="#L66">66</a>        });</span>
-<span class="src-line" id="L67"><a class="ln" href="#L67">67</a></span>
-<span class="src-line" id="L68"><a class="ln" href="#L68">68</a>        <span class="tok-kw">return</span> <span class="tok-var">$value</span>;</span>
-<span class="src-line" id="L69"><a class="ln" href="#L69">69</a>    }</span>
-<span class="src-line" id="L70"><a class="ln" href="#L70">70</a>}</span>
-<span class="src-line" id="L71"><a class="ln" href="#L71">71</a></span>
+<span class="src-line" id="L65"><a class="ln" href="#L65">65</a>        <span class="tok-var">$value</span> = <span class="tok-var">$compute</span>();</span>
+<span class="src-line" id="L66"><a class="ln" href="#L66">66</a>        <span class="tok-var">$this</span>-&gt;<span class="tok-id">storage</span>-&gt;<span class="tok-id">locked</span>(<span class="tok-kw">function</span> () <span class="tok-kw">use</span> (<span class="tok-var">$name</span>, <span class="tok-var">$header</span>, <span class="tok-var">$value</span>): <span class="tok-id">null</span> {</span>
+<span class="src-line" id="L67"><a class="ln" href="#L67">67</a>            <span class="tok-var">$contents</span> = (<span class="tok-kw">static</span> <span class="tok-kw">function</span> () <span class="tok-kw">use</span> (<span class="tok-var">$header</span>, <span class="tok-var">$value</span>): <span class="tok-id">iterable</span> {</span>
+<span class="src-line" id="L68"><a class="ln" href="#L68">68</a>                <span class="tok-kw">yield</span> <span class="tok-var">$header</span>;</span>
+<span class="src-line" id="L69"><a class="ln" href="#L69">69</a></span>
+<span class="src-line" id="L70"><a class="ln" href="#L70">70</a>                yield from <span class="tok-id">CacheCodec</span>::<span class="tok-id">encode</span>(<span class="tok-var">$value</span>);</span>
+<span class="src-line" id="L71"><a class="ln" href="#L71">71</a>            })();</span>
+<span class="src-line" id="L72"><a class="ln" href="#L72">72</a>            <span class="tok-var">$this</span>-&gt;<span class="tok-id">storage</span>-&gt;<span class="tok-id">write</span>(<span class="tok-var">$name</span>, <span class="tok-var">$contents</span>);</span>
+<span class="src-line" id="L73"><a class="ln" href="#L73">73</a></span>
+<span class="src-line" id="L74"><a class="ln" href="#L74">74</a>            <span class="tok-kw">return</span> <span class="tok-id">null</span>;</span>
+<span class="src-line" id="L75"><a class="ln" href="#L75">75</a>        });</span>
+<span class="src-line" id="L76"><a class="ln" href="#L76">76</a></span>
+<span class="src-line" id="L77"><a class="ln" href="#L77">77</a>        <span class="tok-kw">return</span> <span class="tok-var">$value</span>;</span>
+<span class="src-line" id="L78"><a class="ln" href="#L78">78</a>    }</span>
+<span class="src-line" id="L79"><a class="ln" href="#L79">79</a>}</span>
+<span class="src-line" id="L80"><a class="ln" href="#L80">80</a></span>
 </code></pre>
 </main>
 <footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>
