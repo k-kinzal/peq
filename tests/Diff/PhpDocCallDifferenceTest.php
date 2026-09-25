@@ -150,4 +150,32 @@ final class PhpDocCallDifferenceTest extends TestCase
 
         yield 'magic method return' => ['/** @method Target make() */ class Subject { function run() { $this->make()->work(); } }', ['Doc\Target::work']];
     }
+
+    /**
+     * Resolves a factory result through a type alias declared in a third source file.
+     */
+    public function testCrossFileAliasesAreAvailableBeforeTheFirstCallerIsRead(): void
+    {
+        $directory = sys_get_temp_dir().'/peq-phpdoc-cross-file-calls';
+        is_dir($directory) || mkdir($directory, 0o777, true);
+        file_put_contents($directory.'/a-caller.php', '<?php namespace Client; function run() { \Provider\Factory::make()->work(); }');
+        file_put_contents($directory.'/m-model.php', '<?php namespace Model; class Target { function work() {} } /** @phpstan-type Item Target */ class Schema {}');
+        file_put_contents($directory.'/z-factory.php', '<?php namespace Provider; /** @phpstan-import-type Item from \Model\Schema as Result */ class Factory { /** @return Result */ static function make() {} }');
+        $graph = (new PhpStanAnalyzer())->analyze($directory);
+        $calls = [];
+        foreach ($graph->forwardEdges() as $edge) {
+            if ($edge->kind() === EdgeKind::MethodCall) {
+                $calls[] = [$edge->from()->toString(), $edge->to()->toString()];
+            }
+        }
+        $native = new Process([PHP_BINARY, '-r', <<<'PHP'
+            require $argv[1];
+            $graph = (new App\Analyzer\NativeAnalyzer\NativeAnalyzer())->analyze($argv[2]);
+            echo App\Analyzer\Graph\GraphSnapshot::of($graph)->toString();
+            PHP, dirname(__DIR__, 2).'/vendor/autoload.php', $directory]);
+        $native->mustRun();
+
+        self::assertSame([['Client\run', 'Model\Target::work']], $calls);
+        self::assertSame(GraphSnapshot::of($graph)->toString(), $native->getOutput());
+    }
 }
