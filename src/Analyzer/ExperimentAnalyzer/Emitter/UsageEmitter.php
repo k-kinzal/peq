@@ -60,7 +60,7 @@ final class UsageEmitter
         if (!$source instanceof MethodNode && !$source instanceof FunctionNode) {
             return [];
         }
-        $meta = new FileMeta($scope->file, $node->getStartLine(), 1, $node->getStartFilePos());
+        $meta = new FileMeta($scope->file, $node->getStartLine(), 1, $node->getStartFilePos(), $node instanceof PhpParserNode\Expr\CallLike && $node->getEndFilePos() >= 0 ? $node->getEndFilePos() : null);
 
         return match (true) {
             $node instanceof PhpParserNode\Expr\ClassConstFetch => self::constantFetch($node, $scope, $source, $meta),

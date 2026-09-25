@@ -49,6 +49,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 #[UsesClass(\App\Reporter\Expansion::class)]
 #[UsesClass(DepthFirstTraversal::class)]
 #[UsesClass(LineRenderer::class)]
+#[UsesClass(\App\Reporter\CallOccurrences::class)]
 #[Small]
 final class TreeCursorTest extends TestCase
 {

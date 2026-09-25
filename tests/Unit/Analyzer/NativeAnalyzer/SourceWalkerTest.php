@@ -101,7 +101,7 @@ final class SourceWalkerTest extends TestCase
         (new SourceWalker($index, $recorder))->walk($source->statements[0], AnalysisScope::inFile($index, $source->path), $source);
 
         self::assertEquals(
-            new InstantiationEdge(new FunctionNode(FunctionNodeId::of('App\helper'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 4, 1, 71)),
+            new InstantiationEdge(new FunctionNode(FunctionNodeId::of('App\helper'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 4, 1, 71, 81)),
             $recorder->graph()->edge(FunctionNodeId::of('App\helper'), ClassNodeId::of('App\Money')),
         );
     }
@@ -116,7 +116,7 @@ final class SourceWalkerTest extends TestCase
         (new SourceWalker($index, $recorder))->walk($source->statements[0], AnalysisScope::inFile($index, $source->path), $source);
 
         self::assertEquals(
-            new InstantiationEdge(new FunctionNode(FunctionNodeId::of('App\helper'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 4, 1, 94)),
+            new InstantiationEdge(new FunctionNode(FunctionNodeId::of('App\helper'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 4, 1, 94, 104)),
             $recorder->graph()->edge(FunctionNodeId::of('App\helper'), ClassNodeId::of('App\Money')),
         );
     }

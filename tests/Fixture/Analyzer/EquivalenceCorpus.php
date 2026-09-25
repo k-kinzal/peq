@@ -28,6 +28,21 @@ final class EquivalenceCorpus
      * Every scenario, by name: the files it is made of, by file name.
      */
     public const SCENARIOS = [
+        'written arguments and separate lexical call scopes' => ['Sites.php' => <<<'PHP'
+            <?php
+            namespace Corpus\Sites;
+            class Config { const MODE = 'fixed'; }
+            class Chain { function step($x): self { return $this; } }
+            function target(...$args) {}
+            function caller($variable) {
+                target($variable); target('literal'); target(Config::MODE, 1 + 2);
+                $closure = function () { target(name: 'closure'); };
+                $arrow = fn () => target(...[1, 2]);
+                $reference = target(...);
+                $chain = new Chain();
+                $chain->step('first')->step('second');
+            }
+            PHP],
         'documented dependencies' => ['Docs.php' => <<<'PHP'
             <?php
             namespace Corpus\Documentation;

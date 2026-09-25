@@ -10,6 +10,7 @@ use App\Gql\Datum\EdgeDatum;
 use App\Gql\Datum\ListDatum;
 use App\Gql\Datum\NodeDatum;
 use App\Gql\Datum\PathDatum;
+use App\Gql\Datum\StringDatum;
 use App\Gql\Element\ElementGraph;
 use App\Gql\Result\ResultRow;
 use App\Gql\Result\ResultTable;
@@ -89,7 +90,7 @@ final class ResultElements
         }
 
         foreach ($graph->between($drawn) as $edge) {
-            $diagram->relate(new DiagramEdge($edge->origin, $edge->target, $edge->label()));
+            $diagram->relate(new DiagramEdge($edge->origin, $edge->target, EdgeCaption::of($edge), $edge->property('callSite') instanceof StringDatum));
         }
     }
 
@@ -133,7 +134,7 @@ final class ResultElements
             }
             $diagram->add(new DiagramNode($value->origin));
             $diagram->add(new DiagramNode($value->target));
-            $diagram->relate(new DiagramEdge($value->origin, $value->target, $value->label()));
+            $diagram->relate(new DiagramEdge($value->origin, $value->target, EdgeCaption::of($value), $value->property('callSite') instanceof StringDatum));
         }
     }
 

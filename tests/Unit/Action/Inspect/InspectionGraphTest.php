@@ -231,4 +231,15 @@ final class InspectionGraphTest extends TestCase
         self::assertSame(['Controller'], array_map(static fn ($edge): string => $edge->from()->toString(), $selected->forwardEdges()));
         self::assertSame(['Service::run'], array_map(static fn ($edge): string => $edge->to()->toString(), $selected->forwardEdges()));
     }
+
+    public function testOwnerRetainsAnInspectedClosureButFoldsOtherClosuresOntoTheirOwner(): void
+    {
+        $owner = new MethodNode(MethodNodeId::of('Service', 'run'));
+        $closure = new \App\Analyzer\Graph\Node\ClosureNode(new \App\Analyzer\Graph\NodeId\ClosureNodeId('Service::run', 3, 4), new FileMeta('/a.php', 3, 4), $owner, new \App\Analyzer\Graph\Declaration\SymbolDeclaration());
+        $graph = new Graph();
+        $graph->addNodes([$owner, $closure]);
+
+        self::assertSame($closure, InspectionGraph::owner($graph, $closure, $closure, true));
+        self::assertSame($owner, InspectionGraph::owner($graph, $closure, $owner, true));
+    }
 }

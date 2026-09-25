@@ -21,7 +21,7 @@ enum InspectFilter: string
     public static function forKind(NodeKind $kind): self
     {
         return match ($kind) {
-            NodeKind::Method, NodeKind::Function => self::Calls,
+            NodeKind::Method, NodeKind::Function, NodeKind::Closure => self::Calls,
             NodeKind::Klass, NodeKind::Interface, NodeKind::Trait, NodeKind::Enum => self::Depend,
             NodeKind::Constant, NodeKind::EnumCase, NodeKind::Property, NodeKind::Builtin, NodeKind::Unknown => self::All,
         };

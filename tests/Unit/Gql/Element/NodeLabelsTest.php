@@ -102,6 +102,7 @@ final class NodeLabelsTest extends TestCase
                 'Enum',
                 'Function',
                 'Callable',
+                'Closure',
                 'Interface',
                 'Method',
                 'Property',

@@ -43,6 +43,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(\App\Reporter\Continuation::class)]
 #[UsesClass(\App\Reporter\Expansion::class)]
 #[UsesClass(DepthFirstTraversal::class)]
+#[UsesClass(\App\Reporter\CallOccurrences::class)]
 #[Small]
 final class JsonCursorTest extends TestCase
 {

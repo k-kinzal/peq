@@ -6,6 +6,7 @@ namespace App\Reporter\TreeReporter;
 
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node;
+use App\Reporter\CallOccurrences;
 use App\Reporter\Continuation;
 use App\Reporter\Expansion;
 use App\Reporter\RelationNotice;
@@ -94,6 +95,10 @@ final class TreeCursor
             isPossible: RelationNotice::possible($this->graph, $depth > 0 ? ($this->parents[$depth - 1] ?? null) : null, $node, $this->traversal->direction()),
         ));
 
+        $parent = $depth > 0 ? ($this->parents[$depth - 1] ?? null) : null;
+        foreach (CallOccurrences::between($this->graph, $parent?->id(), $node->id(), $this->traversal->direction()) as $site) {
+            $this->output->writeln(str_repeat('    ', $depth + 1).CallOccurrences::text($site), OutputInterface::OUTPUT_RAW);
+        }
         $this->continuations[$depth] = !$isLastChild;
         $this->parents[$depth] = $node;
 

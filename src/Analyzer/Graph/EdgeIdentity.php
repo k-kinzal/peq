@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analyzer\Graph;
 
+use App\Analyzer\Graph\Call\CallOccurrence;
 use App\Analyzer\Graph\Edge\Declaration\AttributeEdge;
 use App\Analyzer\Graph\Edge\Usage\MethodCallEdge;
 use App\Analyzer\Graph\Edge\Usage\PossibleCallEdge;
@@ -24,17 +25,21 @@ final class EdgeIdentity
         $meta = $edge->meta();
 
         return $edge->from()->toString().'|'.$edge->kind()->value.'|'.$edge->to()->toString().'|'.hash('sha256', serialize([
-            $meta->path, $meta->line, $meta->column, $meta->offset, self::evidence($edge),
+            $meta->path, $meta->line, $meta->column, $meta->offset, self::evidence($edge), ...($meta->endOffset === null ? [] : [$meta->endOffset]),
         ]));
     }
 
     /**
      * Returns the source facts or dispatch evidence distinguishing an occurrence.
      *
-     * @return array<string, null|list<string>|string>
+     * @return array<string, null|bool|int|list<null|string>|string>
      */
     public static function evidence(Edge $edge): array
     {
+        if ($edge instanceof CallOccurrence) {
+            return [...self::evidence($edge->relation), ...$edge->site->facts()];
+        }
+
         return match (true) {
             $edge instanceof PossibleCallEdge => ['receiverType' => $edge->receiverType, 'declaredTarget' => $edge->call->to()->toString(), 'implementationType' => $edge->implementationType],
             $edge instanceof MethodCallEdge && $edge->expression !== null => ['expression' => $edge->expression],

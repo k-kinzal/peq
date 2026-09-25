@@ -20,10 +20,11 @@ final class CallEnrichmentTest extends TestCase
     {
         $graph = (new \App\Analyzer\NativeAnalyzer\NativeAnalyzer())->analyze(dirname(__DIR__, 2).'/Fixture/Source/Dip.php');
         $before = count($graph->forwardEdges());
+        $snapshot = \App\Analyzer\Graph\GraphSnapshot::of($graph);
 
         $enriched = CallEnrichment::of($graph, 80300);
 
-        self::assertSame($graph, $enriched);
+        self::assertEquals($snapshot, \App\Analyzer\Graph\GraphSnapshot::of($enriched));
         self::assertSame($before, count($enriched->forwardEdges()));
         self::assertNotNull($enriched->nodeNamed('PDO::query'));
     }

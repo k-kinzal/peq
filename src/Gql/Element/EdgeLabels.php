@@ -34,6 +34,8 @@ final class EdgeLabels
      */
     private const array NAMES = [
         'function-call' => 'functionCall',
+        'callable-reference' => 'callableReference',
+        'declaration-closure' => 'declaresClosure',
         'method-call' => 'methodCall',
         'possible-call' => 'possibleCall',
         'static-call' => 'staticCall',
@@ -110,7 +112,8 @@ final class EdgeLabels
             EdgeKind::MethodCall,
             EdgeKind::StaticCall => ['call', 'usage'],
 
-            EdgeKind::PossibleCall => ['usage'],
+            EdgeKind::PossibleCall,
+            EdgeKind::CallableReference => ['usage'],
 
             EdgeKind::Instantiation,
             EdgeKind::PropertyAccess,
@@ -119,6 +122,7 @@ final class EdgeLabels
             EdgeKind::Instanceof,
             EdgeKind::Catch => ['usage'],
 
+            EdgeKind::DeclarationClosure,
             EdgeKind::DeclarationMethod,
             EdgeKind::DeclarationProperty,
             EdgeKind::DeclarationConstant,

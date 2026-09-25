@@ -208,6 +208,7 @@ use Tests\Fixture\Gql\SampleGraph;
 #[UsesClass(PathPattern::class)]
 #[UsesClass(Query::class)]
 #[UsesClass(QueryBlock::class)]
+#[UsesClass(\App\Reporter\Query\EdgeCaption::class)]
 #[Small]
 final class ResultElementsTest extends TestCase
 {

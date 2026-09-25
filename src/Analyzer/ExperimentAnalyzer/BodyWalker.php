@@ -4,37 +4,23 @@ declare(strict_types=1);
 
 namespace App\Analyzer\ExperimentAnalyzer;
 
+use App\Analyzer\CallBody;
 use App\Analyzer\ExperimentAnalyzer\Emitter\UsageEmitter;
 use App\Analyzer\Graph\Edge;
 use PhpParser\Node\Stmt;
-use PhpParser\NodeFinder;
+use PhpParser\NodeTraverser;
 
 /**
  * Everything the body of a method reaches out to.
  *
- * A body is read as one region rather than as a nest of scopes: what a closure
- * written inside a method reaches is reached by that method, and so is what an anonymous
- * class written inside it reaches, because neither of them is a symbol an impact
- * analysis can report. Every expression found anywhere in the body is therefore
- * attributed to the method the body belongs to.
+ * Nested named declarations are analysed separately. Closure expressions remain
+ * visible here for dependency discovery; the shared call-site pass assigns their
+ * calls to independent lexical scopes before a consumer selects a projection.
  *
  * @visibility namespace
  */
 final class BodyWalker
 {
-    /**
-     * The finder that locates the expressions a body writes, reused across bodies.
-     */
-    private readonly NodeFinder $finder;
-
-    /**
-     * Prepares a walk over method bodies.
-     */
-    public function __construct()
-    {
-        $this->finder = new NodeFinder();
-    }
-
     /**
      * Records the relations written inside one method body.
      *
@@ -46,7 +32,9 @@ final class BodyWalker
     public function relations(array $body, AnalysisScope $scope): array
     {
         $relations = [];
-        foreach ($this->finder->find($body, UsageEmitter::records(...)) as $expression) {
+        $visitor = new CallBody(UsageEmitter::records(...));
+        (new NodeTraverser($visitor))->traverse($body);
+        foreach ($visitor->expressions as $expression) {
             array_push($relations, ...UsageEmitter::emit($expression, $scope));
         }
 

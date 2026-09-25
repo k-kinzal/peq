@@ -105,6 +105,7 @@ use Tests\Fixture\Gql\SampleGraph;
 #[UsesClass(DepthFirstTraversal::class)]
 #[UsesClass(DepthFirstWalk::class)]
 #[UsesClass(GraphCursor::class)]
+#[UsesClass(\App\Reporter\CallOccurrences::class)]
 #[Small]
 final class GraphReporterTest extends TestCase
 {

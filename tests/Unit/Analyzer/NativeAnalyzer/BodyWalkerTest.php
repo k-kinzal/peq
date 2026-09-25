@@ -48,22 +48,31 @@ final class BodyWalkerTest extends TestCase
     {
         yield 'what the body itself reaches out to' => [
             "<?php\nnamespace App;\nclass Invoice { public function total(): void { \$money = new \\App\\Money(); } }\n",
-            [new InstantiationEdge(new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 3, 1, 78))],
+            [new InstantiationEdge(new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 3, 1, 78, 93))],
         ];
 
         yield 'what a closure in the body reaches out to' => [
             "<?php\nnamespace App;\nclass Invoice { public function total(): void { \$closure = function () { return new \\App\\Money(); }; } }\n",
-            [new InstantiationEdge(new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 3, 1, 101))],
+            [new InstantiationEdge(new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 3, 1, 101, 116))],
         ];
 
-        yield 'what an anonymous class in the body reaches out to' => [
+        yield 'an anonymous class body belongs to its own method' => [
             "<?php\nnamespace App;\nclass Invoice { public function total(): void { \$made = new class { public function inner(): mixed { return new \\App\\Money(); } }; } }\n",
-            [new InstantiationEdge(new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null), new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('vfs://project/Walked.php', 3, 1, 129))],
+            [],
         ];
 
         yield 'a body that reaches nothing' => [
             "<?php\nnamespace App;\nclass Invoice { public function total(): int { return 1 + 1; } }\n",
             [],
         ];
+    }
+
+    public function testRelationsSkipsUnlocatedNodesThatCannotDeclareADependency(): void
+    {
+        $root = vfsStream::setup('project', null, ['Walked.php' => '<?php class C { function run() {} }']);
+        $index = SourceIndex::of([$root->url().'/Walked.php'], $root->url());
+        $scope = AnalysisScope::inFile($index, 'vfs://project/Walked.php')->enteringClass('C', null)->enteringMethod('run');
+
+        self::assertSame([], (new BodyWalker())->relations([new \PhpParser\Node\Stmt\Nop()], $scope));
     }
 }

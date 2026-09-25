@@ -53,6 +53,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(UnknownNode::class)]
 #[UsesClass(QualifiedName::class)]
 #[UsesClass(SourceParser::class)]
+#[UsesClass(\App\Analyzer\Declaration\Calls\WrittenCalls::class)]
 #[Small]
 final class AnalysisScopeTest extends TestCase
 {

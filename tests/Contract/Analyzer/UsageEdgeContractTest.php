@@ -47,7 +47,7 @@ final class UsageEdgeContractTest extends TestCase
         unlink($file);
 
         self::assertContains(
-            'Tests\Contract\Analyzer\Usage\Subject::testMethod -[instantiation]-> Tests\Contract\Analyzer\Usage\Dep',
+            $label === 'in_closure' ? 'Tests\Contract\Analyzer\Usage\Subject::testMethod{closure@13:14} -[instantiation]-> Tests\Contract\Analyzer\Usage\Dep' : 'Tests\Contract\Analyzer\Usage\Subject::testMethod -[instantiation]-> Tests\Contract\Analyzer\Usage\Dep',
             array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
             "Contract violated [{$label}]: Instantiation edge missing",
         );
@@ -104,7 +104,7 @@ final class UsageEdgeContractTest extends TestCase
         unlink($file);
 
         self::assertContains(
-            'Tests\Contract\Analyzer\Usage\Subject::testMethod -[static-call]-> Tests\Contract\Analyzer\Usage\Dep::staticMethod',
+            $label === 'in_closure' ? 'Tests\Contract\Analyzer\Usage\Subject::testMethod{closure@13:14} -[static-call]-> Tests\Contract\Analyzer\Usage\Dep::staticMethod' : 'Tests\Contract\Analyzer\Usage\Subject::testMethod -[static-call]-> Tests\Contract\Analyzer\Usage\Dep::staticMethod',
             array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
             "Contract violated [{$label}]: StaticCall edge missing",
         );
@@ -327,7 +327,7 @@ final class UsageEdgeContractTest extends TestCase
         unlink($file);
 
         self::assertContains(
-            'Subject::testMethod -[function-call]-> dep_func',
+            $label === 'in_closure' ? 'Subject::testMethod{closure@8:14} -[function-call]-> dep_func' : 'Subject::testMethod -[function-call]-> dep_func',
             array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
             "Contract violated [{$label}]: FunctionCall edge missing",
         );
@@ -379,7 +379,7 @@ final class UsageEdgeContractTest extends TestCase
         unlink($file);
 
         self::assertContains(
-            'Tests\Contract\Analyzer\Usage\Subject::testMethod -[method-call]-> Tests\Contract\Analyzer\Usage\Subject::helperMethod',
+            $label === 'in_closure' ? 'Tests\Contract\Analyzer\Usage\Subject::testMethod{closure@8:14} -[method-call]-> Tests\Contract\Analyzer\Usage\Subject::helperMethod' : 'Tests\Contract\Analyzer\Usage\Subject::testMethod -[method-call]-> Tests\Contract\Analyzer\Usage\Subject::helperMethod',
             array_map(static fn (Edge $edge): string => $edge->from()->toString().' -['.$edge->kind()->value.']-> '.$edge->to()->toString(), $graph->forwardEdges()),
             "Contract violated [{$label}]: MethodCall edge missing",
         );

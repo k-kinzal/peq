@@ -50,6 +50,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(UnknownNodeId::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
 #[UsesClass(RandomSource::class)]
+#[UsesClass(NodeId\ClosureNodeId::class)]
 #[Small]
 final class NodeIdGeneratorTest extends TestCase
 {
@@ -231,7 +232,7 @@ final class NodeIdGeneratorTest extends TestCase
      */
     public static function providerIdentifiersDrawnFromSeedSeven(): iterable
     {
-        yield 'nodeId' => [static fn (NodeIdGenerator $ids): NodeId => $ids->nodeId(), EnumNodeId::class, 'AdRerumHarum\EnimDolor\ModiMinusEnum'];
+        yield 'nodeId' => [static fn (NodeIdGenerator $ids): NodeId => $ids->nodeId(), BuiltinNodeId::class, 'AdRerumHarum\EnimDolor\ModiMinus'];
 
         yield 'classNodeId' => [static fn (NodeIdGenerator $ids): NodeId => $ids->classNodeId(), ClassNodeId::class, 'SaepeAdRerum\SedEnimDolor\ModiMinusClass'];
 
@@ -264,7 +265,7 @@ final class NodeIdGeneratorTest extends TestCase
         $ids = new NodeIdGenerator(new NameGenerator($random), $random);
 
         self::assertSame(
-            ['enum', 'unknown', 'enum_case', 'constant', 'trait', 'class', 'interface', 'function', 'function', 'trait', 'enum', 'enum_case'],
+            ['builtin', 'constant', 'closure', 'property', 'function', 'enum', 'builtin', 'property', 'interface', 'interface', 'method', 'class'],
             array_map(static fn (): string => $ids->nodeKind()->value, range(1, 12)),
         );
     }
@@ -284,7 +285,7 @@ final class NodeIdGeneratorTest extends TestCase
         $ids = new NodeIdGenerator(new NameGenerator($random), $random);
 
         self::assertSame(
-            ['declaration-enum-case', 'catch', 'declaration-constant', 'declaration-property', 'declaration-trait-use', 'declaration-method', 'declaration-type-return', 'instantiation', 'instantiation', 'declaration-trait-use', 'static-call', 'possible-call'],
+            ['instanceof', 'callable-reference', 'declaration-type-parameter', 'static-property-access', 'declaration-enum-case', 'method-call', 'declaration-trait-use', 'static-property-access', 'instantiation', 'declaration-type-return', 'declaration-type-property', 'function-call'],
             array_map(static fn (): string => $ids->edgeKind()->value, range(1, 12)),
         );
     }
@@ -329,5 +330,16 @@ final class NodeIdGeneratorTest extends TestCase
 
         self::assertSame(1, min($lines));
         self::assertSame(100, max($lines));
+    }
+
+    public function testClosureNodeIdCarriesTheContainingFunctionAndPosition(): void
+    {
+        $random = new RandomSource(1);
+        $generator = new NodeIdGenerator(new NameGenerator($random), $random);
+        $id = $generator->closureNodeId();
+        self::assertGreaterThanOrEqual(1, $id->line);
+        self::assertLessThanOrEqual(100, $id->line);
+        self::assertSame(1, $id->column);
+        self::assertStringContainsString('{closure@', $id->toString());
     }
 }

@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Gql\Element;
 
+use App\Analyzer\Graph\Call\CallOccurrence;
 use App\Analyzer\Graph\Edge;
 use App\Analyzer\Graph\Edge\Declaration\AttributeEdge;
 use App\Analyzer\Graph\Edge\Usage\MethodCallEdge;
 use App\Analyzer\Graph\Edge\Usage\PossibleCallEdge;
+use App\Gql\Datum\BooleanDatum;
 use App\Gql\Datum\Datum;
 use App\Gql\Datum\IntegerDatum;
 use App\Gql\Datum\ListDatum;
+use App\Gql\Datum\NullDatum;
 use App\Gql\Datum\StringDatum;
 
 /**
@@ -61,6 +64,20 @@ final class EdgeProperties
      */
     public static function evidence(Edge $edge): array
     {
+        if ($edge instanceof CallOccurrence) {
+            $facts = self::evidence($edge->relation);
+            foreach ($edge->site->facts() as $name => $value) {
+                $facts[$name] = match (true) {
+                    is_bool($value) => new BooleanDatum($value),
+                    is_int($value) => new IntegerDatum($value),
+                    is_string($value) => new StringDatum($value),
+                    default => new ListDatum(array_map(static fn (?string $item): Datum => $item === null ? new NullDatum() : new StringDatum($item), $value)),
+                };
+            }
+            $facts['argumentCount'] = new IntegerDatum(count($edge->site->arguments));
+
+            return $facts;
+        }
         if ($edge instanceof AttributeEdge) {
             return [
                 'arguments' => new ListDatum(array_map(static fn (string $argument): Datum => new StringDatum($argument), $edge->arguments)),
@@ -118,6 +135,13 @@ final class EdgeProperties
             'implementationType' => 'STRING',
             'expression' => 'STRING',
             'arguments' => 'LIST<STRING>',
+            'argumentCount' => 'INT64',
+            'argumentNames' => 'LIST<STRING>',
+            'argumentTypes' => 'LIST<STRING>',
+            'callSite' => 'STRING',
+            'enclosingSymbol' => 'STRING',
+            'endOffset' => 'INT64',
+            'callableReference' => 'BOOL',
             'parameter' => 'STRING',
         ];
     }

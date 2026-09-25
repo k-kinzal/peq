@@ -37,6 +37,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(SourceIndex::class)]
 #[UsesClass(TraitMethod::class)]
 #[UsesClass(SourceParser::class)]
+#[UsesClass(\App\Analyzer\Declaration\Calls\WrittenCalls::class)]
 #[Small]
 final class TraitFlatteningTest extends TestCase
 {

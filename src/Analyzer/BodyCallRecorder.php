@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Analyzer;
 
+use App\Analyzer\Declaration\Calls\CallSites;
+use App\Analyzer\Graph\Edge\Usage\FunctionCallEdge;
 use App\Analyzer\Graph\Edge\Usage\MethodCallEdge;
+use App\Analyzer\Graph\Edge\Usage\StaticCallEdge;
 use App\Analyzer\Graph\FileMeta;
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node\FunctionNode;
 use App\Analyzer\Graph\Node\MethodNode;
 use App\Analyzer\Graph\Node\UnknownNode;
+use App\Analyzer\Graph\NodeId\FunctionNodeId;
 use App\Analyzer\Graph\NodeId\MethodNodeId;
 use App\Analyzer\Graph\NodeId\UnknownNodeId;
 use App\Analyzer\Graph\Resolution\ClassHierarchy;
@@ -31,18 +35,48 @@ final readonly class BodyCallRecorder
     /**
      * @param list<Node> $body
      */
-    public function record(array $body, FunctionNode|MethodNode $source): void
+    public function record(array $body, FunctionNode|MethodNode $source, ?CallSites $sites = null): void
     {
-        $types = new ReceiverBinding($this->hierarchy, $source);
-        $nodes = $this->expressions($body);
-        foreach ($nodes as $node) {
-            if ($node instanceof Expr\Assign) {
-                $types->assign($node);
+        $sites ??= CallSites::of($body, $source, $source->meta()->path ?? '');
+        foreach ([$source, ...$sites->closures] as $scope) {
+            $types = new ReceiverBinding($this->hierarchy, $scope);
+            $nodes = $sites->expressions[$scope->id()->toString()] ?? [];
+            foreach ($nodes as $node) {
+                if ($node instanceof Expr\Assign) {
+                    $types->assign($node);
+                }
+            }
+            foreach ($nodes as $node) {
+                if ($node instanceof Expr\CallLike && $node->isFirstClassCallable()) {
+                    $this->reference($node, $source, $types);
+                }
+                if ($node instanceof Expr\MethodCall || $node instanceof Expr\NullsafeMethodCall) {
+                    $this->call($node, $source, $types);
+                }
             }
         }
-        foreach ($nodes as $node) {
-            if ($node instanceof Expr\MethodCall || $node instanceof Expr\NullsafeMethodCall) {
-                $this->call($node, $source, $types);
+    }
+
+    /**
+     * PHPStan reports first-class callable creation separately from ordinary calls.
+     */
+    public function reference(Expr\CallLike $call, FunctionNode|MethodNode $source, ReceiverBinding $types): void
+    {
+        $file = $source->meta()?->path;
+        if ($file === null) {
+            return;
+        }
+        $meta = new FileMeta($file, $call->getStartLine(), 1, $call->getStartFilePos(), $call->getEndFilePos() < 0 ? null : $call->getEndFilePos());
+        if ($call instanceof Expr\FuncCall && $call->name instanceof Node\Name) {
+            $namespaced = $call->name->getAttribute('namespacedName');
+            $name = $namespaced instanceof Node\Name && $this->graph->nodeNamed($namespaced->toString())?->resolved() === true
+                ? $namespaced->toString() : $call->name->toString();
+            $this->graph->addEdge(new FunctionCallEdge($source, new FunctionNode(FunctionNodeId::of($name)), $meta));
+        }
+        if ($call instanceof Expr\StaticCall && $call->class instanceof Node\Name && $call->name instanceof Node\Identifier) {
+            $name = $types->name($call->class);
+            if (!(new \App\Analyzer\Graph\QualifiedName($name))->isBuiltinType()) {
+                $this->graph->addEdge(new StaticCallEdge($source, new MethodNode(MethodNodeId::of($name, $call->name->toString())), $meta));
             }
         }
     }
@@ -70,13 +104,13 @@ final readonly class BodyCallRecorder
         if ($file === null) {
             return;
         }
-        $meta = new FileMeta($file, $call->getStartLine(), 1, $call->getStartFilePos());
+        $meta = new FileMeta($file, $call->getStartLine(), 1, $call->getStartFilePos(), $call->getEndFilePos() < 0 ? null : $call->getEndFilePos());
         $receiver = $types->of($call->var);
         $owners = TypeConstraint::of($receiver)->names();
         if ($owners === [] || !$call->name instanceof Node\Identifier) {
             $column = $call->getAttribute('peqStartColumn', 1);
             assert(is_int($column));
-            $meta = new FileMeta($file, $call->getStartLine(), $column, $call->getStartFilePos());
+            $meta = new FileMeta($file, $call->getStartLine(), $column, $call->getStartFilePos(), $call->getEndFilePos() < 0 ? null : $call->getEndFilePos());
             $target = new UnknownNode(new UnknownNodeId('unresolved-call@'.$file.':'.$meta->line.':'.$meta->column), false, $meta);
             $this->graph->addNode($target);
             $this->graph->addEdge(new MethodCallEdge($source, $target, $meta, expression: (new Standard())->prettyPrintExpr($call)));

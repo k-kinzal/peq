@@ -126,6 +126,7 @@ final class NodePropertiesTest extends TestCase
                 'name' => 'STRING',
                 'namespace' => 'STRING',
                 'owner' => 'STRING',
+                'enclosingSymbol' => 'STRING',
                 'resolved' => 'BOOL',
                 'file' => 'STRING',
                 'fileName' => 'STRING',

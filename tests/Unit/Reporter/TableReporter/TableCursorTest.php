@@ -39,6 +39,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
 #[UsesClass(\App\Reporter\Continuation::class)]
 #[UsesClass(\App\Reporter\Expansion::class)]
+#[UsesClass(\App\Reporter\CallOccurrences::class)]
 #[Small]
 final class TableCursorTest extends TestCase
 {

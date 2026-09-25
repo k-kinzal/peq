@@ -18,7 +18,8 @@ A CLI tool that analyzes PHP code dependencies and visualizes the blast radius o
 - **GQL is the query language** — `peq graph` runs ISO/IEC 39075 GQL, the standard the SQL committee publishes, so an agent already knows it; an invented syntax would have to be explained in every prompt. It runs that and nothing more: a word the standard does not define is a word peq refuses, which `composer spec` checks against ISO's own grammar artifact. Read-only by design: nothing in the language can change a graph peq has just read out of source code
 - **Two engines, one graph** — `PhpStanAnalyzer` is the reference; `NativeAnalyzer` reads sources directly and is checked against it by comparing canonical graph snapshots. A change to either must keep them identical
 - **The binary carries one engine** — `phpstan/phpstan` is a dev dependency, so the PHAR holds only `NativeAnalyzer`. `AnalyzerKind` offers a kind only when what it is built on is installed
-- **Graph model** — bidirectional adjacency list of nodes (Class, Method, Function, etc. — 11 kinds) and edges (MethodCall, Extends, PhpDoc, etc. — 24 kinds). Inverse edges (UsedBy, DeclaredIn) are generated automatically when an edge is added
+- **Graph model** — bidirectional adjacency list of nodes (Class, Method, Function, Closure, etc. — 12 kinds) and edges (MethodCall, Extends, PhpDoc, etc. — 26 kinds). Inverse edges (UsedBy, DeclaredIn) are generated automatically when an edge is added
+- **Call occurrences** — the shared enrichment pass retains written expressions, arguments and source ranges, with separate lexical closure scopes. Inspection projects this graph through `--filter`; dependency aggregation happens before reporters, while GQL keeps the full occurrence graph.
 
 ## Project Tradeoff Sliders
 

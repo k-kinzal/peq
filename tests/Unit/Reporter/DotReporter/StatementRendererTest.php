@@ -35,6 +35,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(MethodNode::class)]
 #[UsesClass(UnknownNode::class)]
 #[UsesClass(\App\Analyzer\Graph\QualifiedName::class)]
+#[UsesClass(\App\Reporter\CallOccurrences::class)]
 #[Small]
 final class StatementRendererTest extends TestCase
 {

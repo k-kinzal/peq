@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Action\Inspect;
 
+use App\Analyzer\Graph\Call\CallOccurrence;
 use App\Analyzer\Graph\Declaration\Visibility;
 use App\Analyzer\Graph\Direction;
 use App\Analyzer\Graph\Edge;
@@ -12,6 +13,7 @@ use App\Analyzer\Graph\EdgeKind;
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\Node\ClassNode;
+use App\Analyzer\Graph\Node\ClosureNode;
 use App\Analyzer\Graph\NodeId\ClassNodeId;
 use App\Analyzer\Graph\NodeKind;
 use App\Analyzer\Graph\Resolution\ClassHierarchy;
@@ -51,7 +53,7 @@ final class InspectionGraph
         $selected->addNodes($graph->nodes());
         $hierarchy = new ClassHierarchy($graph);
         foreach ($graph->forwardEdges() as $edge) {
-            if (self::isCall($edge)) {
+            if (self::isCall($edge) || $edge->kind() === EdgeKind::DeclarationClosure) {
                 $selected->addEdge($edge);
             }
             if ($edge->kind() === EdgeKind::DeclarationMethod && $hierarchy->isSubtype($root->id()->toString(), $edge->from()->toString())) {
@@ -86,7 +88,7 @@ final class InspectionGraph
             $scope[$id->toString()] = true;
             foreach ($graph->edges($id) as $edge) {
                 $original = $edge->kind()->direction() === Direction::UsedBy ? $edge->invert() : $edge;
-                if ($edge->kind()->direction() === $direction && self::isCall($original)) {
+                if ($edge->kind()->direction() === $direction && (self::isCall($original) || $original->kind() === EdgeKind::DeclarationClosure)) {
                     $pending[] = $edge->to();
                 }
             }
@@ -102,7 +104,7 @@ final class InspectionGraph
     {
         $selected = new Graph();
         $selected->addNode($root);
-        $callable = in_array($root->kind(), [NodeKind::Method, NodeKind::Function], true);
+        $callable = in_array($root->kind(), [NodeKind::Method, NodeKind::Function, NodeKind::Closure], true);
         $scope = $callable ? self::callableScope($graph, $root, $direction) : null;
         foreach ($graph->forwardEdges() as $edge) {
             if (self::isContainment($edge) || ($scope !== null && !isset($scope[($direction === Direction::Uses ? $edge->from() : $edge->to())->toString()]))) {
@@ -126,7 +128,7 @@ final class InspectionGraph
      */
     public static function isContainment(Edge $edge): bool
     {
-        return in_array($edge->kind(), [EdgeKind::DeclarationMethod, EdgeKind::DeclarationProperty, EdgeKind::DeclarationConstant, EdgeKind::DeclarationEnumCase], true);
+        return in_array($edge->kind(), [EdgeKind::DeclarationClosure, EdgeKind::DeclarationMethod, EdgeKind::DeclarationProperty, EdgeKind::DeclarationConstant, EdgeKind::DeclarationEnumCase], true);
     }
 
     /**
@@ -140,11 +142,12 @@ final class InspectionGraph
             return;
         }
         $selected->addNodes([$from, $to]);
-        $selected->addEdge(new ProjectedRelation($from, $to, $edge));
-        $implementation = $edge instanceof PossibleCallEdge && $edge->implementationType !== null ? $graph->nodeNamed($edge->implementationType) : null;
+        (new ProjectedRelation($from, $to, $edge))->addTo($selected);
+        $evidence = $edge instanceof CallOccurrence ? $edge->relation : $edge;
+        $implementation = $evidence instanceof PossibleCallEdge && $evidence->implementationType !== null ? $graph->nodeNamed($evidence->implementationType) : null;
         if ($implementation !== null && $implementation->id()->toString() !== $from->id()->toString()) {
             $selected->addNode($implementation);
-            $selected->addEdge(new ProjectedRelation($from, $implementation, $edge));
+            (new ProjectedRelation($from, $implementation, $edge))->addTo($selected);
         }
     }
 
@@ -156,8 +159,14 @@ final class InspectionGraph
         if ($node === null || $node->kind() === NodeKind::Builtin || str_starts_with($node->id()->toString(), 'unresolved-call@')) {
             return null;
         }
+        if ($callable && $node->id()->toString() === $root->id()->toString()) {
+            return $root;
+        }
+        if ($node instanceof ClosureNode) {
+            return self::owner($graph, $node->owner, $root, $callable);
+        }
         $owner = ClassHierarchy::owner($node);
-        if ($callable && ($node->id()->toString() === $root->id()->toString() || ($owner !== null && $owner === ClassHierarchy::owner($root)))) {
+        if ($callable && $owner !== null && $owner === ClassHierarchy::owner($root)) {
             return $root;
         }
         if ($owner !== null) {

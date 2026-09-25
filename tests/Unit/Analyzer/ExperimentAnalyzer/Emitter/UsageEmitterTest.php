@@ -79,17 +79,17 @@ final class UsageEmitterTest extends TestCase
 
         yield 'instantiating a class' => [
             "<?php\nnew \\App\\Money();\n",
-            [new InstantiationEdge($total, new ClassNode(ClassNodeId::of('App\Money'), false, null), $at)],
+            [new InstantiationEdge($total, new ClassNode(ClassNodeId::of('App\Money'), false, null), new FileMeta('/project/Invoice.php', 2, 1, 6, 21))],
         ];
 
         yield 'instantiating the class it is written in' => [
             "<?php\nnew self();\n",
-            [new InstantiationEdge($total, new ClassNode(ClassNodeId::of('App\Invoice'), false, null), $at)],
+            [new InstantiationEdge($total, new ClassNode(ClassNodeId::of('App\Invoice'), false, null), new FileMeta('/project/Invoice.php', 2, 1, 6, 15))],
         ];
 
         yield 'calling a static method' => [
             "<?php\n\\App\\Money::make();\n",
-            [new StaticCallEdge($total, new MethodNode(MethodNodeId::of('App\Money', 'make'), false, null), $at)],
+            [new StaticCallEdge($total, new MethodNode(MethodNodeId::of('App\Money', 'make'), false, null), new FileMeta('/project/Invoice.php', 2, 1, 6, 23))],
         ];
 
         yield 'reading a constant' => [
@@ -114,17 +114,17 @@ final class UsageEmitterTest extends TestCase
 
         yield 'calling a function' => [
             "<?php\n\\App\\helper();\n",
-            [new FunctionCallEdge($total, new FunctionNode(FunctionNodeId::of('App\helper'), false, null), $at)],
+            [new FunctionCallEdge($total, new FunctionNode(FunctionNodeId::of('App\helper'), false, null), new FileMeta('/project/Invoice.php', 2, 1, 6, 18))],
         ];
 
         yield 'calling a method on itself' => [
             "<?php\n\$this->helper();\n",
-            [new MethodCallEdge($total, new MethodNode(MethodNodeId::of('App\Invoice', 'helper'), false, null), $at)],
+            [new MethodCallEdge($total, new MethodNode(MethodNodeId::of('App\Invoice', 'helper'), false, null), new FileMeta('/project/Invoice.php', 2, 1, 6, 20))],
         ];
 
         yield 'calling a method on itself, carefully' => [
             "<?php\n\$this?->helper();\n",
-            [new MethodCallEdge($total, new MethodNode(MethodNodeId::of('App\Invoice', 'helper'), false, null), $at)],
+            [new MethodCallEdge($total, new MethodNode(MethodNodeId::of('App\Invoice', 'helper'), false, null), new FileMeta('/project/Invoice.php', 2, 1, 6, 21))],
         ];
 
         yield 'reading a property of itself' => [

@@ -27,4 +27,16 @@ final class CallBodyTest extends TestCase
 
         self::assertSame([$outer], $calls);
     }
+
+    public function testEnterNodeSelectsOnlyRequestedExpressionsWithinTheCallableBoundary(): void
+    {
+        $call = new \PhpParser\Node\Expr\FuncCall(new \PhpParser\Node\Name('B'));
+        $closure = new \PhpParser\Node\Expr\Closure(['stmts' => [new \PhpParser\Node\Stmt\Expression($call)]]);
+        $nested = new \PhpParser\Node\Stmt\Function_('nested', ['stmts' => [new \PhpParser\Node\Stmt\Expression(new \PhpParser\Node\Expr\FuncCall(new \PhpParser\Node\Name('C')))]]);
+        $visitor = new CallBody(static fn (\PhpParser\Node $node): bool => $node instanceof \PhpParser\Node\Expr\FuncCall);
+
+        (new \PhpParser\NodeTraverser($visitor))->traverse([new \PhpParser\Node\Stmt\Expression($closure), $nested]);
+
+        self::assertSame([$call], $visitor->expressions);
+    }
 }

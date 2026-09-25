@@ -65,6 +65,7 @@ final class NodeLabels
             NodeKind::Enum => ['Enum', 'ClassLike'],
             NodeKind::Method => ['Method', 'Member', 'Callable'],
             NodeKind::Function => ['Function', 'Callable'],
+            NodeKind::Closure => ['Closure', 'Callable'],
             NodeKind::Property => ['Property', 'Member'],
             NodeKind::Constant => ['Constant', 'Member'],
             NodeKind::EnumCase => ['EnumCase', 'Member'],

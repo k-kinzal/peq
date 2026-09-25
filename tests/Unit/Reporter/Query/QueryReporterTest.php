@@ -73,6 +73,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 #[UsesClass(LayeredLayout::class)]
 #[UsesClass(LayoutItem::class)]
 #[UsesClass(RowPlacement::class)]
+#[UsesClass(\App\Reporter\Query\EdgeCaption::class)]
 #[Small]
 final class QueryReporterTest extends TestCase
 {

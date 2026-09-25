@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Analyzer\DebugAnalyzer\Generator;
 
+use App\Analyzer\Graph\Declaration\SymbolDeclaration;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\Node\BuiltinNode;
 use App\Analyzer\Graph\Node\ClassNode;
+use App\Analyzer\Graph\Node\ClosureNode;
 use App\Analyzer\Graph\Node\ConstantNode;
 use App\Analyzer\Graph\Node\EnumCaseNode;
 use App\Analyzer\Graph\Node\EnumNode;
@@ -18,6 +20,7 @@ use App\Analyzer\Graph\Node\TraitNode;
 use App\Analyzer\Graph\Node\UnknownNode;
 use App\Analyzer\Graph\NodeId\BuiltinNodeId;
 use App\Analyzer\Graph\NodeId\ClassNodeId;
+use App\Analyzer\Graph\NodeId\ClosureNodeId;
 use App\Analyzer\Graph\NodeId\ConstantNodeId;
 use App\Analyzer\Graph\NodeId\EnumCaseNodeId;
 use App\Analyzer\Graph\NodeId\EnumNodeId;
@@ -67,6 +70,7 @@ final readonly class NodeGenerator
             NodeKind::Method => $this->methodNode(),
             NodeKind::Property => $this->propertyNode(),
             NodeKind::Function => $this->functionNode(),
+            NodeKind::Closure => $this->closureNode(),
             NodeKind::Constant => $this->constantNode(),
             NodeKind::EnumCase => $this->enumCaseNode(),
             NodeKind::Builtin => $this->builtinNode(),
@@ -200,6 +204,16 @@ final readonly class NodeGenerator
             resolved: $this->random->boolean(),
             meta: $this->ids->fileMeta(),
         );
+    }
+
+    /**
+     * Generates an anonymous callable with an explicit containing symbol.
+     */
+    public function closureNode(?ClosureNodeId $nodeId = null): ClosureNode
+    {
+        $id = $nodeId ?? $this->ids->closureNodeId();
+
+        return new ClosureNode($id, $this->ids->fileMeta(), $this->functionNode(FunctionNodeId::of($id->owner)), new SymbolDeclaration());
     }
 
     /**

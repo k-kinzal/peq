@@ -45,6 +45,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 #[UsesClass(\App\Reporter\DotReporter\StatementRenderer::class)]
 #[UsesClass(DepthFirstTraversal::class)]
 #[UsesClass(\App\Reporter\Traversal\DepthFirstWalk::class)]
+#[UsesClass(\App\Reporter\CallOccurrences::class)]
 #[Small]
 final class DotReporterTest extends TestCase
 {

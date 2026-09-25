@@ -210,6 +210,7 @@ use Tests\Fixture\Gql\SampleGraph;
 #[UsesClass(Quantifier::class)]
 #[UsesClass(Query::class)]
 #[UsesClass(QueryBlock::class)]
+#[UsesClass(\App\Reporter\Query\EdgeCaption::class)]
 #[Small]
 final class TreeWriterTest extends TestCase
 {

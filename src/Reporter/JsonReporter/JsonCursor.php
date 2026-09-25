@@ -7,6 +7,7 @@ namespace App\Reporter\JsonReporter;
 use App\Analyzer\Graph\Graph;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeId;
+use App\Reporter\CallOccurrences;
 use App\Reporter\Expansion;
 use App\Reporter\Traversal;
 
@@ -24,8 +25,10 @@ use App\Reporter\Traversal;
  * impact analysis actually asks — not only what is affected, but through what — and
  * it is the one thing the tree cannot show without becoming unreadable.
  *
+ * @phpstan-import-type ReportedCall from CallOccurrences
+ *
  * @phpstan-type ReportedFile array{path: string, line: int, column: int}
- * @phpstan-type ReportedNode array{id: string, kind: string, resolved: bool, depth: int, parent: null|string, relations: list<string>, truncated: null|string, file: null|ReportedFile}
+ * @phpstan-type ReportedNode array{id: string, kind: string, resolved: bool, depth: int, parent: null|string, relations: list<string>, truncated: null|string, file: null|ReportedFile, calls?: list<ReportedCall>}
  *
  * @visibility namespace
  */
@@ -76,6 +79,7 @@ final class JsonCursor
 
         $parent = $depth > 0 ? ($this->parents[$depth - 1] ?? null) : null;
         $meta = $node->meta();
+        $calls = CallOccurrences::between($this->graph, $parent, $node->id(), $this->traversal->direction());
 
         $this->reached[] = [
             'id' => $node->id()->toString(),
@@ -85,6 +89,7 @@ final class JsonCursor
             'parent' => $parent?->toString(),
             'relations' => $parent === null ? [] : $this->relations($parent, $node->id()),
             'truncated' => $continuation->marker(),
+            ...($calls === [] ? [] : ['calls' => array_map(CallOccurrences::json(...), $calls)]),
             'file' => $meta === null ? null : ['path' => $meta->path, 'line' => $meta->line, 'column' => $meta->column],
         ];
 

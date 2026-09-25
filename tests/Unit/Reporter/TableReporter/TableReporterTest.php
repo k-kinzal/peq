@@ -45,6 +45,13 @@ use Symfony\Component\Console\Output\BufferedOutput;
 #[UsesClass(\App\Reporter\TableReporter\TableCursor::class)]
 #[UsesClass(DepthFirstTraversal::class)]
 #[UsesClass(\App\Reporter\Traversal\DepthFirstWalk::class)]
+#[UsesClass(\App\Analyzer\Graph\Call\CallOccurrence::class)]
+#[UsesClass(\App\Analyzer\Graph\Call\CallSite::class)]
+#[UsesClass(\App\Analyzer\Graph\EdgeIdentity::class)]
+#[UsesClass(\App\Analyzer\Graph\Edge\Usage\FunctionCallEdge::class)]
+#[UsesClass(\App\Analyzer\Graph\NodeId\FunctionNodeId::class)]
+#[UsesClass(\App\Analyzer\Graph\Node\FunctionNode::class)]
+#[UsesClass(\App\Reporter\CallOccurrences::class)]
 #[Small]
 final class TableReporterTest extends TestCase
 {
@@ -124,5 +131,21 @@ final class TableReporterTest extends TestCase
         ]);
 
         yield 'App\Domain\Invoice declares total and lines, and total calls App\Domain\Money::add' => [$graph];
+    }
+
+    public function testReportKeepsMarkupInsideWrittenArgumentsLiteral(): void
+    {
+        $a = new \App\Analyzer\Graph\Node\FunctionNode(\App\Analyzer\Graph\NodeId\FunctionNodeId::of('A'), true);
+        $b = new \App\Analyzer\Graph\Node\FunctionNode(\App\Analyzer\Graph\NodeId\FunctionNodeId::of('B'), true);
+        $meta = new FileMeta('/a.php', 2, 1, 20);
+        $site = new \App\Analyzer\Graph\Call\CallSite($a, $a, $meta, 50, 'B("<info>value</info>")', []);
+        $graph = new Graph();
+        $graph->addNodes([$a, $b]);
+        $graph->addEdge(new \App\Analyzer\Graph\Call\CallOccurrence(new \App\Analyzer\Graph\Edge\Usage\FunctionCallEdge($a, $b, $meta), $site));
+        $output = new BufferedOutput();
+
+        (new TableReporter(new DepthFirstTraversal(Direction::Uses)))->report($graph, $a->id(), $output);
+
+        self::assertStringContainsString('B("<info>value</info>") @ /a.php:2:1', $output->fetch());
     }
 }

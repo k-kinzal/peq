@@ -21,6 +21,8 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(\App\Analyzer\SourceParser::class)]
 #[CoversClass(CallSources::class)]
 #[UsesClass(\App\Analyzer\CachedSyntax::class)]
+#[UsesClass(\App\Analyzer\Declaration\Calls\WrittenCalls::class)]
+#[UsesClass(\App\Analyzer\Graph\Call\CallArgument::class)]
 #[Small]
 final class CallSourcesTest extends TestCase
 {

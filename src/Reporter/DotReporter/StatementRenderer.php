@@ -7,6 +7,7 @@ namespace App\Reporter\DotReporter;
 use App\Analyzer\Graph\Edge;
 use App\Analyzer\Graph\Node;
 use App\Analyzer\Graph\NodeKind;
+use App\Reporter\CallOccurrences;
 
 /**
  * Renders a single statement of a Graphviz digraph.
@@ -81,11 +82,11 @@ final class StatementRenderer
     public function edge(Edge $edge): string
     {
         return sprintf(
-            '%s%s -> %s [label="%s"];',
+            '%s%s -> %s [label=%s];',
             self::INDENT,
             self::quote($edge->from()->toString()),
             self::quote($edge->to()->toString()),
-            $edge->kind()->value,
+            self::quote(CallOccurrences::label($edge)),
         );
     }
 
@@ -135,7 +136,8 @@ final class StatementRenderer
             NodeKind::Enum => 'tab',
 
             NodeKind::Method,
-            NodeKind::Function => 'ellipse',
+            NodeKind::Function,
+            NodeKind::Closure => 'ellipse',
 
             NodeKind::Property => 'parallelogram',
 
