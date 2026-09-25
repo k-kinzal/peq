@@ -13,6 +13,7 @@ use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\NodeFinder;
 use PhpParser\Parser;
+use WeakReference;
 
 /**
  * The names and locations declared by the analysed files, indexed before walking.
@@ -37,6 +38,13 @@ final class SourceIndex
      * Retains only the most recently requested file; active walkers own their trees.
      */
     private ?ParsedSource $loaded = null;
+
+    /**
+     * Reuses trees still owned by a walker without extending their lifetime.
+     *
+     * @var array<string, WeakReference<ParsedSource>>
+     */
+    private array $active = [];
 
     /**
      * @param string                                                           $workingDirectory The directory the analysis runs in
@@ -179,13 +187,19 @@ final class SourceIndex
         if (!isset($this->sourcesByPath[$file])) {
             return null;
         }
-        if ($this->loaded?->path === $file) {
-            return $this->loaded;
+        $active = ($this->active[$file] ?? null)?->get();
+        if ($active !== null) {
+            return $this->loaded = $active;
         }
         $this->loaded = null;
         $statements = CachedSyntax::read($file, $this->parser, $this->phpVersion, $this->cache)->statements;
+        if ($statements === null) {
+            return null;
+        }
+        $this->loaded = new ParsedSource($file, $statements, AnonymousClassNaming::of($statements));
+        $this->active[$file] = WeakReference::create($this->loaded);
 
-        return $this->loaded = $statements === null ? null : new ParsedSource($file, $statements, AnonymousClassNaming::of($statements));
+        return $this->loaded;
     }
 
     /**

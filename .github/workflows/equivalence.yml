@@ -32,9 +32,9 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         with:
           php-version: '8.5'
-          extensions: dom, filter, iconv, libxml, mbstring, pcntl, phar, simplexml, tokenizer, xmlwriter
+          extensions: dom, filter, iconv, libxml, mbstring, opcache, pcntl, phar, simplexml, tokenizer, xmlwriter
           coverage: none
-          ini-values: zend.assertions=1, memory_limit=4G
+          ini-values: zend.assertions=1, memory_limit=4G, opcache.enable_cli=1, opcache.jit=disable
 
       - name: Install dependencies
         uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
@@ -47,4 +47,12 @@ jobs:
         run: composer check-platform-reqs
 
       - name: Read every installed package with both engines
-        run: composer test:equivalence
+        run: composer test:equivalence -- --log-junit build/equivalence.xml
+
+      - name: Upload equivalence results and timings
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: engine-equivalence
+          path: build/equivalence.xml
+          if-no-files-found: ignore

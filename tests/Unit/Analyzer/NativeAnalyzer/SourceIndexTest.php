@@ -241,4 +241,38 @@ final class SourceIndexTest extends TestCase
         self::assertSame(NodeKind::Trait, $index->classLike('Shared')?->kind);
         self::assertSame('vfs://project/First.php', $index->classLike('Shared')->source->path);
     }
+
+    public function testSourceOfReusesActiveSyntaxAcrossTraitLookups(): void
+    {
+        $root = vfsStream::setup('project', null, [
+            'Consumer.php' => '<?php class Consumer { use Shared; }',
+            'Shared.php' => '<?php trait Shared { use Nested; }',
+            'Nested.php' => '<?php trait Nested { function run() {} }',
+        ]);
+        $index = SourceIndex::of([$root->url().'/Consumer.php', $root->url().'/Shared.php', $root->url().'/Nested.php'], $root->url());
+        $consumer = $index->sourceOf($root->url().'/Consumer.php');
+        $shared = $index->classLike('Shared');
+        $nested = $index->classLike('Nested');
+
+        self::assertNotNull($consumer);
+        self::assertNotNull($shared);
+        self::assertNotNull($nested);
+        self::assertSame($consumer, $index->sourceOf($root->url().'/Consumer.php'));
+        self::assertSame($shared->source, $index->classLike('Shared')?->source);
+        self::assertSame($nested->source, $index->classLike('Nested')?->source);
+        $reference = WeakReference::create($shared->source);
+        unset($shared);
+
+        self::assertNull($reference->get());
+        self::assertSame(NodeKind::Trait, $index->classLike('Shared')->kind);
+    }
+
+    public function testSourceOfReportsAFileRemovedAfterIndexing(): void
+    {
+        $root = vfsStream::setup('project', null, ['Removed.php' => '<?php class Removed {}']);
+        $index = SourceIndex::of([$root->url().'/Removed.php'], $root->url());
+        unlink($root->url().'/Removed.php');
+
+        self::assertNull($index->sourceOf($root->url().'/Removed.php'));
+    }
 }
