@@ -157,6 +157,12 @@ against its timeout, and a class that runs PHPStan once per case exceeds it, so
 declaring one as coverage makes Infection skip every mutant it reaches instead of
 running it, which the whole-tree mutation job rejects.
 
+Keep slow whole-project comparisons in their own `#[CoversNothing]` test classes.
+`ExperimentalAnalyzerEquivalenceTest` compares the experimental and native graphs;
+`ExperimentalSelfAnalysisTest` keeps coverage for the focused source-site checks.
+Putting both in one class charges every covered mutant for the whole-project run,
+even if only one of the focused checks executes that line.
+
 ## Adding to the Query Language
 
 The language is not ours to extend. A clause, an operator or a function that GQL does

@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Tests\Integration;
 
 use App\Analyzer\ExperimentAnalyzer\ExperimentAnalyzer;
-use App\Analyzer\Graph\GraphSnapshot;
-use App\Analyzer\NativeAnalyzer\NativeAnalyzer;
 use PHPUnit\Framework\Attributes\CoversNamespace;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Large;
@@ -53,14 +51,6 @@ final class ExperimentalSelfAnalysisTest extends TestCase
         yield 'the inner loop carries the pooled block' => ['App\Reporter\Diagram\Layout\RowPlacement::fit', 'src/Reporter/Diagram/Layout/RowPlacement.php', 105, 'block', [[102, 'write'], [105, 'write']]];
 
         yield 'spacing still refers to the parameter inside nested loops' => ['App\Reporter\Diagram\Layout\RowPlacement::fit', 'src/Reporter/Diagram/Layout/RowPlacement.php', 114, 'spacing', [[98, 'parameter']]];
-    }
-
-    public function testTheExperimentalSymbolPipelineMatchesNativeOnTheWholeProject(): void
-    {
-        $path = dirname(__DIR__, 2).'/src';
-        $expected = GraphSnapshot::of((new NativeAnalyzer())->analyze($path));
-        $actual = GraphSnapshot::of((new ExperimentAnalyzer())->analyze($path));
-        self::assertSame($expected->fingerprint(), $actual->fingerprint(), $actual->differenceFrom($expected)->describe());
     }
 
     public function testProjectAttributeSearchDoesNotCertifyAnUnconditionalFalseReturn(): void
