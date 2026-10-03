@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M415J4HZ42WX4NJW7EV1DH6M",
+  "strategy": "manual-commit",
+  "branch": "fix/ci-mutation-timeouts-20261004",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/Unit/Analyzer/ExperimentAnalyzer/AnalysisScopeTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/ClassWalkerTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Emitter/TypeMentionTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/Emitter/UsageEmitterTest.php",
+    "tests/Unit/Analyzer/ExperimentAnalyzer/ParsedSourceTest.php"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 40557,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 2942336,
+    "output_tokens": 9128,
+    "api_call_count": 26
+  }
+}
