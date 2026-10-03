@@ -192,6 +192,18 @@ final class ClassWalkerTest extends TestCase
         );
     }
 
+    public function testInReadingOrderKeepsConstantsBeforePropertiesAlongsideMethods(): void
+    {
+        $statements = (new ParserFactory())->createForHostVersion()->parse("<?php\nclass Ordered { public function instance(): void {} public int \$held = 0; public const KIND = 'ordered'; }\n") ?? [];
+        $class = (new NodeFinder())->findFirstInstanceOf($statements, Class_::class);
+        self::assertNotNull($class);
+
+        self::assertSame(
+            ['Stmt_ClassMethod', 'Stmt_ClassConst', 'Stmt_Property'],
+            array_map(static fn (Stmt $statement): string => $statement->getType(), ClassWalker::inReadingOrder($class->stmts)),
+        );
+    }
+
     public function testRenamedLeavesAMethodAloneWhenNothingRenamesIt(): void
     {
         $statements = (new ParserFactory())->createForHostVersion()->parse("<?php\nclass Named { public function written(): void {} }\n") ?? [];

@@ -102,6 +102,15 @@ final class ParsedSourceTest extends TestCase
         self::assertSame([], $source->methodsOf('App\Money'));
     }
 
+    public function testMethodsOfKeepsTheMethodsAvailableOnRepeatedReads(): void
+    {
+        $root = vfsStream::setup('project', null, ['Invoice.php' => "<?php\nnamespace App;\nclass Invoice { public function total(): void {} public function tax(): void {} }\n"]);
+        $source = SourceIndex::of([$root->url().'/Invoice.php'], $root->url())->sources()[0];
+        $source->methodsOf('App\Invoice');
+
+        self::assertSame(['total', 'tax'], array_keys($source->methodsOf('App\Invoice')));
+    }
+
     public function testMethodsOfKeepsTheMethodWrittenFirstWhenTwoAnswerToOneName(): void
     {
         $root = vfsStream::setup('project', null, ['Invoice.php' => "<?php\nnamespace App;\nclass Invoice { public function total(): int { \$inner = new class { public function total(): string { return ''; } }; return 1; } }\n"]);

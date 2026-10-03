@@ -61,6 +61,17 @@ final class AnalysisScopeTest extends TestCase
         self::assertEquals(new UnknownNode(new UnknownNodeId('/project/Only.php')), $scope->sourceNode());
     }
 
+    public function testSourceNodeStillNamesTheSameMethodOnRepeatedReads(): void
+    {
+        $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php')
+            ->enteringClass('App\Invoice', null)
+            ->enteringMethod('total')
+        ;
+        $scope->sourceNode();
+
+        self::assertEquals(new MethodNode(MethodNodeId::of('App\Invoice', 'total'), true, null), $scope->sourceNode());
+    }
+
     public function testEnteringClassMakesTheClassOwnWhatIsWritten(): void
     {
         $scope = AnalysisScope::inFile(SourceIndex::of([], '/project'), '/project/Only.php')->enteringClass('App\Invoice', null);

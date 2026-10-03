@@ -77,6 +77,15 @@ final class TypeMentionTest extends TestCase
         self::assertSame([], TypeMention::of($property->type, '/project/Invoice.php'));
     }
 
+    public function testOfMentionsNothingForAnUnresolvedSelfType(): void
+    {
+        $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nclass Written { public self \$held; }\n") ?? []);
+        $property = (new NodeFinder())->findFirstInstanceOf($parsed, Property::class);
+        self::assertNotNull($property);
+
+        self::assertSame([], TypeMention::of($property->type, '/project/Invoice.php'));
+    }
+
     public function testOfMentionsTheClassLikeAWrittenTypeNamesWhereItIsWritten(): void
     {
         $parsed = (new NodeTraverser(new NameResolver()))->traverse((new ParserFactory())->createForHostVersion()->parse("<?php\nclass Written {\n    public \\App\\Money \$held;\n}\n") ?? []);
