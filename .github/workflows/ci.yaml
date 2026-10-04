@@ -137,8 +137,17 @@ jobs:
       - name: Check installed platform requirements
         run: composer check-platform-reqs
 
+      - name: Select the mutation scope
+        id: mutation-scope
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != 'pull_request' ] || ! git diff --quiet "origin/${GITHUB_BASE_REF}...HEAD" -- infection.json5 phpunit.xml.dist; then
+            echo 'whole-tree=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'whole-tree=false' >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Mutation testing on changed lines
-        if: github.event_name == 'pull_request'
+        if: steps.mutation-scope.outputs.whole-tree == 'false'
         run: >-
           php -d memory_limit=4G "$(command -v infection)"
           --configuration=infection.json5
@@ -153,7 +162,7 @@ jobs:
           --logger-github
 
       - name: Mutation testing on the whole source tree
-        if: github.event_name != 'pull_request'
+        if: steps.mutation-scope.outputs.whole-tree == 'true'
         run: >-
           php -d memory_limit=4G "$(command -v infection)"
           --configuration=infection.json5
@@ -163,7 +172,7 @@ jobs:
           --logger-github
 
       - name: Reject skipped whole-tree mutants
-        if: github.event_name != 'pull_request'
+        if: steps.mutation-scope.outputs.whole-tree == 'true'
         run: |
           php -d memory_limit=1G -r '
             $report = json_decode(file_get_contents("build/infection/infection.json"), true, 512, JSON_THROW_ON_ERROR);
