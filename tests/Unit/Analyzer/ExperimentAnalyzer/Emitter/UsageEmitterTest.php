@@ -166,6 +166,8 @@ final class UsageEmitterTest extends TestCase
 
         yield 'reading a constant of a class named by a variable' => ["<?php\n\$held::ZERO;\n"];
 
+        yield 'testing against a class named by a variable' => ["<?php\n\$held instanceof \$type;\n"];
+
         yield 'adding two numbers' => ["<?php\n1 + 1;\n"];
     }
 

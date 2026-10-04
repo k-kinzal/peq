@@ -19,6 +19,6 @@
         "perMutator": "build/infection/per-mutator.md",
         "json": "build/infection/infection.json"
     },
-    "testFrameworkExtraArgs": "--no-extensions --exclude-group=pbt",
+    "testFrameworkExtraArgs": "--no-extensions --testsuite=unit --exclude-group=pbt",
     "testFramework": "phpunit"
 }
