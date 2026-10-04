@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M42DPDM84K4KWP93B4FFTMK3",
+  "strategy": "manual-commit",
+  "branch": "fix/ci-mutation-timeouts-20261004",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".github/workflows/ci.yaml"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 42376,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 3085824,
+    "output_tokens": 9087,
+    "api_call_count": 19
+  }
+}
