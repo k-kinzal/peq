@@ -1,0 +1,47 @@
+{
+  "cli_version": "0.10.3",
+  "checkpoint_id": "01M44TSXNWQF7F50W0BCDVZBR4",
+  "session_id": "01a109a8-cc5a-7052-87ee-b2110528c4fa",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-05T01:28:13.483477Z",
+  "branch": "fix/renovate-behat4",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "behat.dist.php",
+    "behat.yml.dist",
+    "composer.json",
+    "composer.lock"
+  ],
+  "agent": "Codex",
+  "model": "gpt-6-astra",
+  "turn_id": "efd290b27111",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 74271,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1156224,
+    "output_tokens": 5727,
+    "api_call_count": 20
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-05T01:28:13.446277Z",
+    "agent_lines": 206,
+    "agent_removed": 107,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 206,
+    "total_lines_changed": 313,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
