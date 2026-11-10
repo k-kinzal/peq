@@ -1814,20 +1814,20 @@
         },
         {
             "name": "behat/phpunit-assertions-extension",
-            "version": "v1.0.0",
+            "version": "v1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Behat/PHPUnitAssertionsExtension.git",
-                "reference": "055f263f4d59c7d424dabf3765be1e99cc0a7ddd"
+                "reference": "8774866c2aedc88d12828aa5cdf4bcd4ae30079c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Behat/PHPUnitAssertionsExtension/zipball/055f263f4d59c7d424dabf3765be1e99cc0a7ddd",
-                "reference": "055f263f4d59c7d424dabf3765be1e99cc0a7ddd",
+                "url": "https://api.github.com/repos/Behat/PHPUnitAssertionsExtension/zipball/8774866c2aedc88d12828aa5cdf4bcd4ae30079c",
+                "reference": "8774866c2aedc88d12828aa5cdf4bcd4ae30079c",
                 "shasum": ""
             },
             "require": {
-                "behat/behat": "^3.33 || ^4.0@alpha",
+                "behat/behat": "^3.34 || ^4.0",
                 "php": ">=8.2 <8.6",
                 "phpunit/phpunit": "^8.5 || ^9.6 || ^10.5 || ^11.5 || ^12.5 || ^13.3",
                 "symfony/dependency-injection": "^5.4 || ^6.4 || ^7.0 || ^8.0"
@@ -1867,7 +1867,7 @@
             ],
             "support": {
                 "issues": "https://github.com/Behat/PHPUnitAssertionsExtension/issues",
-                "source": "https://github.com/Behat/PHPUnitAssertionsExtension/tree/v1.0.0"
+                "source": "https://github.com/Behat/PHPUnitAssertionsExtension/tree/v1.1.0"
             },
             "funding": [
                 {
@@ -1883,7 +1883,8 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-09-21T20:20:17+00:00"
+            "time": "2026-11-10T17:51:08+00:00",
+            "published-time": "2026-11-10T18:24:19+00:00"
         },
         {
             "name": "clue/ndjson-react",
