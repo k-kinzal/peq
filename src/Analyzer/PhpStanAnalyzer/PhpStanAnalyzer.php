@@ -173,7 +173,7 @@ final readonly class PhpStanAnalyzer implements Analyzer
             )));
         }
 
-        return CollectorReport::of($result->getCollectedData(), $this->collectors);
+        return CollectorReport::of($result->getLazyCollectedData()->toArray(), $this->collectors);
     }
 
     /**
