@@ -68,7 +68,7 @@ final class VariableReporter
         $output = new BufferedOutput();
         $renderer->render($diagram, $output);
 
-        return rtrim($output->fetch());
+        return rtrim($output->fetch(), " \n\r\t\v\0");
     }
 
     /**

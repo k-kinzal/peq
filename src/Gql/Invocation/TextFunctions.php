@@ -115,7 +115,7 @@ final class TextFunctions
             return new NullDatum();
         }
 
-        return new StringDatum(trim(TextArgument::of($value)));
+        return new StringDatum(trim(TextArgument::of($value), " \n\r\t\v\0"));
     }
 
     /**

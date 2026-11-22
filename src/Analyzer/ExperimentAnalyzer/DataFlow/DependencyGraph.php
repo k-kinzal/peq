@@ -87,7 +87,7 @@ final class DependencyGraph
             $prefix = substr($this->source, 0, $position);
             $newline = strrpos($prefix, "\n");
             $column = $position - ($newline === false ? -1 : $newline);
-            $this->spans[$span] = [$column, trim(substr($this->source, $position, $node->getEndFilePos() - $position + 1))];
+            $this->spans[$span] = [$column, trim(substr($this->source, $position, $node->getEndFilePos() - $position + 1), " \n\r\t\v\0")];
         }
         [$column, $text] = $this->spans[$span];
         $id = ($variable ?? $kind).'@'.$node->getStartLine().':'.$column.':'.$kind.':'.$node->getEndFilePos();

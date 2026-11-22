@@ -112,6 +112,7 @@ final class TextFunctionsTest extends TestCase
     public function testTrimTakesTheWhitespaceOffBothEnds(): void
     {
         self::assertEquals(new StringDatum('Invoice'), TextFunctions::trim(new StringDatum('  Invoice ')));
+        self::assertEquals(new StringDatum("\fInvoice\f"), TextFunctions::trim(new StringDatum(" \n\r\t\v\0\fInvoice\f \n\r\t\v\0")));
     }
 
     /**

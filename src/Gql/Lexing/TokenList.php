@@ -164,6 +164,6 @@ final class TokenList
             return '';
         }
 
-        return trim(substr($this->source, $start, $end - $start));
+        return trim(substr($this->source, $start, $end - $start), " \n\r\t\v\0");
     }
 }

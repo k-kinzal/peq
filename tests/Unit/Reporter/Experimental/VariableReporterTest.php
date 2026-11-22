@@ -42,7 +42,9 @@ final class VariableReporterTest extends TestCase
     {
         $slice = new \App\Analyzer\ExperimentAnalyzer\DataFlow\Slice('f', '/f.php', \App\Analyzer\Graph\Direction::Uses, ['a'], [new \App\Analyzer\ExperimentAnalyzer\DataFlow\Occurrence('a', 'read', '$a', 1, 1, 1, '$a'), new \App\Analyzer\ExperimentAnalyzer\DataFlow\Occurrence('b', 'write', '$b', 2, 1, 2, '$b')], [new \App\Analyzer\ExperimentAnalyzer\DataFlow\Dependency('a', 'b', 'control', 'truthy')], []);
         $reporter = new \App\Reporter\Experimental\VariableReporter();
-        self::assertStringContainsString('control (truthy)', $reporter->diagram($slice, \App\Config\OutputFormat::Mermaid));
+        $diagram = $reporter->diagram($slice, \App\Config\OutputFormat::Mermaid);
+        self::assertStringContainsString('control (truthy)', $diagram);
+        self::assertFalse(str_ends_with($diagram, "\n"));
     }
 
     public function testTableWritesTheSelectedEdge(): void

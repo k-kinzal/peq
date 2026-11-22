@@ -25,7 +25,7 @@ final readonly class TypeConstraint
         foreach (explode('|', $text ?? '') as $union) {
             $members = [];
             foreach (explode('&', trim($union, '()? ')) as $name) {
-                $name = ltrim(trim($name), '\\');
+                $name = ltrim(trim($name, " \n\r\t\v\0"), '\\');
                 if ($name !== '' && !(new QualifiedName($name))->isBuiltinType()) {
                     $members[] = $name;
                 }
