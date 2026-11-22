@@ -54,7 +54,7 @@ final class DocNames
         if ($node instanceof CallableTypeNode || $node instanceof MethodTagValueNode) {
             $scope = $scope->withTypes(new PhpDocNode(array_map(static fn (TemplateTagValueNode $template): PhpDocTagNode => new PhpDocTagNode('@template', $template), $node->templateTypes)));
         }
-        if ($node instanceof GenericTypeNode && strtolower($node->type->name) === 'int') {
+        if ($node instanceof GenericTypeNode && strtolower((string) $node->type) === 'int') {
             $bounds = array_filter($node->genericTypes, static fn (TypeNode $type): bool => !$type instanceof IdentifierTypeNode || !in_array($type->name, ['min', 'max'], true));
 
             return array_values(array_unique(array_merge([], ...array_map(static fn (TypeNode $type): array => self::of($type, $scope, $expanding), $bounds))));
