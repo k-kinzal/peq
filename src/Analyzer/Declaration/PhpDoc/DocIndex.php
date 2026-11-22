@@ -160,7 +160,7 @@ final class DocIndex
         foreach ($class?->doc->getTags() ?? [] as $tag) {
             $value = $tag->value;
             if ($value instanceof TypeAliasImportTagValueNode && ($value->importedAs ?? $value->importedAlias) === $name) {
-                $from = $scope->resolve($value->importedFrom->name);
+                $from = $scope->resolve((string) $value->importedFrom);
                 $origin = $this->blocks[self::key($from ?? '')] ?? null;
 
                 return $origin === null ? null : $this->alias($value->importedAlias, $origin->scope, $expanding);

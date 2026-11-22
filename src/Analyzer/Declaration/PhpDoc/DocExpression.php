@@ -85,7 +85,7 @@ final readonly class DocExpression
         if ($type instanceof Type\ArrayTypeNode) {
             return $this->nested($type->type);
         }
-        if ($type instanceof Type\GenericTypeNode && in_array(strtolower($type->type->name), ['array', 'non-empty-array', 'list', 'non-empty-list', 'iterable'], true)) {
+        if ($type instanceof Type\GenericTypeNode && in_array(strtolower((string) $type->type), ['array', 'non-empty-array', 'list', 'non-empty-list', 'iterable'], true)) {
             $element = $type->genericTypes[array_key_last($type->genericTypes)] ?? null;
 
             return $element === null ? null : $this->nested($element);
