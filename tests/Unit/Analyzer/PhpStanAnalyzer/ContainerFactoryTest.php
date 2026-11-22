@@ -42,7 +42,7 @@ final class ContainerFactoryTest extends TestCase
         self::assertContains(InClassMethodCollector::class, $registered);
     }
 
-    public function testCreateRegistersOnlyTheCollectorsItIsGiven(): void
+    public function testCreateRegistersOnlyThePeqCollectorsItIsGiven(): void
     {
         $container = (new ContainerFactory())->create([dirname(__DIR__, 3).'/Fixture/Sample/AnalysedSample.php'], [InClassMethodCollector::class]);
         $registered = array_map(
@@ -50,7 +50,9 @@ final class ContainerFactoryTest extends TestCase
             array_values(array_filter($container->getServicesByTag('phpstan.collector'), 'is_object')),
         );
 
-        self::assertSame([InClassMethodCollector::class], $registered);
+        $peqCollectors = array_values(array_filter($registered, static fn (string $collector): bool => str_starts_with($collector, 'App\\')));
+
+        self::assertSame([InClassMethodCollector::class], $peqCollectors);
     }
 
     /**

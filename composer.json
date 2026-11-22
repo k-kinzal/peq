@@ -37,7 +37,7 @@
         "mikey179/vfsstream": "^1.6",
         "phpbench/phpbench": "^1.2",
         "phpcompatibility/php-compatibility": "^10.0@alpha",
-        "phpstan/phpstan": "^2.0",
+        "phpstan/phpstan": "^2.3.6",
         "phpstan/phpstan-strict-rules": "^2.0",
         "phpunit/phpunit": "^12.0.0",
         "squizlabs/php_codesniffer": "^4.0",
