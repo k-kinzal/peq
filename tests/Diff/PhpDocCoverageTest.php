@@ -54,6 +54,10 @@ final class PhpDocCoverageTest extends TestCase
 
     /**
      * Checks compound types as well as the tags that contain them.
+     *
+     * The upstream parser emits IdentifierTypeNode for qualified and relative
+     * names. Tools that already know a name refers to a class can construct
+     * FullyQualifiedNameNode or RelativeNameNode.
      */
     public function testEveryParsedTypeShapeIsExercised(): void
     {
@@ -76,8 +80,6 @@ final class PhpDocCoverageTest extends TestCase
                 }
             }
         }
-        // Tools that already know a name refers to a class can construct these
-        // nodes. The upstream parser emits IdentifierTypeNode for both forms.
         $programmaticNodes = [FullyQualifiedNameNode::class, RelativeNameNode::class];
         $missing = [];
         $files = glob(dirname(__DIR__, 2).'/vendor/phpstan/phpdoc-parser/src/Ast/Type/*Node.php');
