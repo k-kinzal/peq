@@ -209,7 +209,7 @@
 <span class="src-line" id="L173"><a class="ln" href="#L173">173</a>            )));</span>
 <span class="src-line" id="L174"><a class="ln" href="#L174">174</a>        }</span>
 <span class="src-line" id="L175"><a class="ln" href="#L175">175</a></span>
-<span class="src-line" id="L176"><a class="ln" href="#L176">176</a>        <span class="tok-kw">return</span> <span class="tok-id">CollectorReport</span>::<span class="tok-id">of</span>(<span class="tok-var">$result</span>-&gt;<span class="tok-id">getCollectedData</span>(), <span class="tok-var">$this</span>-&gt;<span class="tok-id">collectors</span>);</span>
+<span class="src-line" id="L176"><a class="ln" href="#L176">176</a>        <span class="tok-kw">return</span> <span class="tok-id">CollectorReport</span>::<span class="tok-id">of</span>(<span class="tok-var">$result</span>-&gt;<span class="tok-id">getLazyCollectedData</span>()-&gt;<span class="tok-id">toArray</span>(), <span class="tok-var">$this</span>-&gt;<span class="tok-id">collectors</span>);</span>
 <span class="src-line" id="L177"><a class="ln" href="#L177">177</a>    }</span>
 <span class="src-line" id="L178"><a class="ln" href="#L178">178</a></span>
 <span class="src-line" id="L179"><a class="ln" href="#L179">179</a>    <span class="tok-com">/**</span></span>
