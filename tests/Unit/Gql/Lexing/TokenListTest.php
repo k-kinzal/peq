@@ -121,7 +121,7 @@ final class TokenListTest extends TestCase
      */
     public function testTextBetweenQuotesTheQueryTheWayTheReaderWroteIt(): void
     {
-        $pieces = Lexer::over("RETURN p.firstName || ' '")->tokenize();
+        $pieces = Lexer::over("RETURN p.firstName || ' ' AS name")->tokenize();
 
         self::assertSame("p.firstName || ' '", $pieces->textBetween(1, 6));
     }

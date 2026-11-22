@@ -87,10 +87,10 @@ final class DependencyGraphTest extends TestCase
         $graph->select(4, '$a', 2);
     }
 
-    public function testLocationDoesNotInsertAnAnalysisNode(): void
+    public function testLocationTrimsTheSourceRangeWithoutInsertingAnAnalysisNode(): void
     {
-        $graph = new DependencyGraph('f', '/f.php', '<?php $a;');
-        $node = new \PhpParser\Node\Expr\Variable('a', ['startLine' => 1, 'endLine' => 1, 'startFilePos' => 6, 'endFilePos' => 7]);
+        $graph = new DependencyGraph('f', '/f.php', '<?php $a ;');
+        $node = new \PhpParser\Node\Expr\Variable('a', ['startLine' => 1, 'endLine' => 1, 'startFilePos' => 5, 'endFilePos' => 8]);
         self::assertSame('$a', $graph->location($node, 'syntax', '$a')->text);
         self::assertSame([], $graph->nodes);
     }

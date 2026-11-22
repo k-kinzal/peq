@@ -18,15 +18,15 @@ final class GithubIssueSenderTest extends TestCase
 {
     public function testSendPassesTheReviewedBodyThroughStdinWithoutAShell(): void
     {
-        $sender = new GithubIssueSender([PHP_BINARY, '-r', 'echo hash("sha256", stream_get_contents(STDIN));', '--']);
+        $sender = new GithubIssueSender([PHP_BINARY, '-r', 'echo " ", hash("sha256", stream_get_contents(STDIN)), "\n";', '--']);
         self::assertSame('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad', $sender->send(new IssueDraft('$(this must not execute)', 'abc')));
     }
 
     public function testSendReportsFailureWithoutClaimingPublication(): void
     {
-        $sender = new GithubIssueSender([PHP_BINARY, '-r', 'fwrite(STDERR, "offline failure"); exit(1);', '--']);
+        $sender = new GithubIssueSender([PHP_BINARY, '-r', 'fwrite(STDERR, " \noffline failure\n"); exit(1);', '--']);
         $this->expectException(InspectionRejected::class);
-        $this->expectExceptionMessage('offline failure');
+        $this->expectExceptionMessageMatches('/\AGitHub issue submission failed: offline failure\z/');
         $sender->send(new IssueDraft('Title', 'Body'));
     }
 }
