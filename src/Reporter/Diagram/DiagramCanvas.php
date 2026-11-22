@@ -205,7 +205,7 @@ final class DiagramCanvas
             if (!isset($this->text[$row]) && str_replace([' ', '│'], '', implode('', $cells)) === '') {
                 continue;
             }
-            $lines[] = rtrim(implode('', $cells));
+            $lines[] = rtrim(implode('', $cells), " \n\r\t\v\0");
         }
 
         return $lines;

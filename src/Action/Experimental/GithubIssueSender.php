@@ -36,9 +36,9 @@ final class GithubIssueSender implements IssueSender
         fclose($pipes[2]);
         $status = proc_close($process);
         if ($status !== 0 || $output === false) {
-            throw new InspectionRejected('GitHub issue submission failed: '.($error === false ? 'unknown error' : trim($error)));
+            throw new InspectionRejected('GitHub issue submission failed: '.($error === false ? 'unknown error' : trim($error, " \n\r\t\v\0")));
         }
 
-        return trim($output);
+        return trim($output, " \n\r\t\v\0");
     }
 }
