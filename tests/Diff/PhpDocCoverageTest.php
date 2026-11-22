@@ -8,6 +8,8 @@ use App\Analyzer\Declaration\PhpDoc\DocParser;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\NodeFinder;
 use PhpParser\ParserFactory;
+use PHPStan\PhpDocParser\Ast\Type\FullyQualifiedNameNode;
+use PHPStan\PhpDocParser\Ast\Type\RelativeNameNode;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\TestCase;
@@ -52,6 +54,10 @@ final class PhpDocCoverageTest extends TestCase
 
     /**
      * Checks compound types as well as the tags that contain them.
+     *
+     * The upstream parser emits IdentifierTypeNode for qualified and relative
+     * names. Tools that already know a name refers to a class can construct
+     * FullyQualifiedNameNode or RelativeNameNode.
      */
     public function testEveryParsedTypeShapeIsExercised(): void
     {
@@ -74,11 +80,12 @@ final class PhpDocCoverageTest extends TestCase
                 }
             }
         }
+        $programmaticNodes = [FullyQualifiedNameNode::class, RelativeNameNode::class];
         $missing = [];
         $files = glob(dirname(__DIR__, 2).'/vendor/phpstan/phpdoc-parser/src/Ast/Type/*Node.php');
         foreach ($files === false ? [] : $files as $file) {
             $class = 'PHPStan\PhpDocParser\Ast\Type\\'.basename($file, '.php');
-            if (!interface_exists($class) && !isset($seen[$class])) {
+            if (!interface_exists($class) && !in_array($class, $programmaticNodes, true) && !isset($seen[$class])) {
                 $missing[] = basename($file);
             }
         }
