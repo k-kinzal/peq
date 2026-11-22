@@ -72,10 +72,10 @@
 <span class="src-line" id="L36"><a class="ln" href="#L36">36</a>        <span class="tok-id">fclose</span>(<span class="tok-var">$pipes</span>[<span class="tok-num">2</span>]);</span>
 <span class="src-line" id="L37"><a class="ln" href="#L37">37</a>        <span class="tok-var">$status</span> = <span class="tok-id">proc_close</span>(<span class="tok-var">$process</span>);</span>
 <span class="src-line" id="L38"><a class="ln" href="#L38">38</a>        <span class="tok-kw">if</span> (<span class="tok-var">$status</span> !== <span class="tok-num">0</span> || <span class="tok-var">$output</span> === <span class="tok-id">false</span>) {</span>
-<span class="src-line" id="L39"><a class="ln" href="#L39">39</a>            <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-id">InspectionRejected</span>(<span class="tok-str">&#039;GitHub issue submission failed: &#039;</span>.(<span class="tok-var">$error</span> === <span class="tok-id">false</span> ? <span class="tok-str">&#039;unknown error&#039;</span> : <span class="tok-id">trim</span>(<span class="tok-var">$error</span>)));</span>
+<span class="src-line" id="L39"><a class="ln" href="#L39">39</a>            <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-id">InspectionRejected</span>(<span class="tok-str">&#039;GitHub issue submission failed: &#039;</span>.(<span class="tok-var">$error</span> === <span class="tok-id">false</span> ? <span class="tok-str">&#039;unknown error&#039;</span> : <span class="tok-id">trim</span>(<span class="tok-var">$error</span>, <span class="tok-str">&quot; \n\r\t\v\0&quot;</span>)));</span>
 <span class="src-line" id="L40"><a class="ln" href="#L40">40</a>        }</span>
 <span class="src-line" id="L41"><a class="ln" href="#L41">41</a></span>
-<span class="src-line" id="L42"><a class="ln" href="#L42">42</a>        <span class="tok-kw">return</span> <span class="tok-id">trim</span>(<span class="tok-var">$output</span>);</span>
+<span class="src-line" id="L42"><a class="ln" href="#L42">42</a>        <span class="tok-kw">return</span> <span class="tok-id">trim</span>(<span class="tok-var">$output</span>, <span class="tok-str">&quot; \n\r\t\v\0&quot;</span>);</span>
 <span class="src-line" id="L43"><a class="ln" href="#L43">43</a>    }</span>
 <span class="src-line" id="L44"><a class="ln" href="#L44">44</a>}</span>
 <span class="src-line" id="L45"><a class="ln" href="#L45">45</a></span>

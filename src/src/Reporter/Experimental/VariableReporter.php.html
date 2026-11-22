@@ -104,7 +104,7 @@
 <span class="src-line" id="L68"><a class="ln" href="#L68">68</a>        <span class="tok-var">$output</span> = <span class="tok-kw">new</span> <span class="tok-id">BufferedOutput</span>();</span>
 <span class="src-line" id="L69"><a class="ln" href="#L69">69</a>        <span class="tok-var">$renderer</span>-&gt;<span class="tok-id">render</span>(<span class="tok-var">$diagram</span>, <span class="tok-var">$output</span>);</span>
 <span class="src-line" id="L70"><a class="ln" href="#L70">70</a></span>
-<span class="src-line" id="L71"><a class="ln" href="#L71">71</a>        <span class="tok-kw">return</span> <span class="tok-id">rtrim</span>(<span class="tok-var">$output</span>-&gt;<span class="tok-id">fetch</span>());</span>
+<span class="src-line" id="L71"><a class="ln" href="#L71">71</a>        <span class="tok-kw">return</span> <span class="tok-id">rtrim</span>(<span class="tok-var">$output</span>-&gt;<span class="tok-id">fetch</span>(), <span class="tok-str">&quot; \n\r\t\v\0&quot;</span>);</span>
 <span class="src-line" id="L72"><a class="ln" href="#L72">72</a>    }</span>
 <span class="src-line" id="L73"><a class="ln" href="#L73">73</a></span>
 <span class="src-line" id="L74"><a class="ln" href="#L74">74</a>    <span class="tok-com">/**</span></span>

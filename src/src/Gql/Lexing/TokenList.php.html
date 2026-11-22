@@ -200,7 +200,7 @@
 <span class="src-line" id="L164"><a class="ln" href="#L164">164</a>            <span class="tok-kw">return</span> <span class="tok-str">&#039;&#039;</span>;</span>
 <span class="src-line" id="L165"><a class="ln" href="#L165">165</a>        }</span>
 <span class="src-line" id="L166"><a class="ln" href="#L166">166</a></span>
-<span class="src-line" id="L167"><a class="ln" href="#L167">167</a>        <span class="tok-kw">return</span> <span class="tok-id">trim</span>(<span class="tok-id">substr</span>(<span class="tok-var">$this</span>-&gt;<span class="tok-id">source</span>, <span class="tok-var">$start</span>, <span class="tok-var">$end</span> - <span class="tok-var">$start</span>));</span>
+<span class="src-line" id="L167"><a class="ln" href="#L167">167</a>        <span class="tok-kw">return</span> <span class="tok-id">trim</span>(<span class="tok-id">substr</span>(<span class="tok-var">$this</span>-&gt;<span class="tok-id">source</span>, <span class="tok-var">$start</span>, <span class="tok-var">$end</span> - <span class="tok-var">$start</span>), <span class="tok-str">&quot; \n\r\t\v\0&quot;</span>);</span>
 <span class="src-line" id="L168"><a class="ln" href="#L168">168</a>    }</span>
 <span class="src-line" id="L169"><a class="ln" href="#L169">169</a>}</span>
 <span class="src-line" id="L170"><a class="ln" href="#L170">170</a></span>

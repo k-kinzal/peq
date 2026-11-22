@@ -157,7 +157,7 @@
 <span class="src-line" id="L121"><a class="ln" href="#L121">121</a><span class="tok-com">     */</span></span>
 <span class="src-line" id="L122"><a class="ln" href="#L122">122</a>    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">testTextBetweenQuotesTheQueryTheWayTheReaderWroteIt</span>(): <span class="tok-id">void</span></span>
 <span class="src-line" id="L123"><a class="ln" href="#L123">123</a>    {</span>
-<span class="src-line" id="L124"><a class="ln" href="#L124">124</a>        <span class="tok-var">$pieces</span> = <span class="tok-id">Lexer</span>::<span class="tok-id">over</span>(<span class="tok-str">&quot;RETURN p.firstName || &#039; &#039;&quot;</span>)-&gt;<span class="tok-id">tokenize</span>();</span>
+<span class="src-line" id="L124"><a class="ln" href="#L124">124</a>        <span class="tok-var">$pieces</span> = <span class="tok-id">Lexer</span>::<span class="tok-id">over</span>(<span class="tok-str">&quot;RETURN p.firstName || &#039; &#039; AS name&quot;</span>)-&gt;<span class="tok-id">tokenize</span>();</span>
 <span class="src-line" id="L125"><a class="ln" href="#L125">125</a></span>
 <span class="src-line" id="L126"><a class="ln" href="#L126">126</a>        <span class="tok-id">self</span>::<span class="tok-id">assertSame</span>(<span class="tok-str">&quot;p.firstName || &#039; &#039;&quot;</span>, <span class="tok-var">$pieces</span>-&gt;<span class="tok-id">textBetween</span>(<span class="tok-num">1</span>, <span class="tok-num">6</span>));</span>
 <span class="src-line" id="L127"><a class="ln" href="#L127">127</a>    }</span>
